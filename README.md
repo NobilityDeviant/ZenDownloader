@@ -1,2 +1,5 @@
 # ZenDownloader
-A new and improved video downloader for wcofun.
+
+A new & fixed version of my old Wcofun Downloader made entirely with Kotlin & Jetpack Compose.
+
+It's almost done. :)
