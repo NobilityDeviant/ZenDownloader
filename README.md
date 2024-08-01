@@ -21,6 +21,4 @@ Create a new wco database with updated series & create the cleaner UI for it.
 
 Implement video download pausing.
 
-Implement a faster way to check if a video exists before it attempts to download.
-
 Create & test distributions for Linux & Mac.
