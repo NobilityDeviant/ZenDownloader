@@ -1,0 +1,320 @@
+{
+  "_note1": "KEEP THIS FILE! Check it into a version control system (VCS) like git.",
+  "_note2": "ObjectBox manages crucial IDs for your object model. See docs for details.",
+  "_note3": "If you have VCS merge conflicts, you must resolve them according to ObjectBox docs.",
+  "entities": [
+    {
+      "id": "1:8892465485924164600",
+      "lastPropertyId": "4:7602685187155677404",
+      "name": "CategoryLink",
+      "properties": [
+        {
+          "id": "1:8833002309751503823",
+          "name": "id",
+          "type": 6,
+          "flags": 1
+        },
+        {
+          "id": "3:6706274853690054191",
+          "name": "slug",
+          "type": 9
+        },
+        {
+          "id": "4:7602685187155677404",
+          "name": "type",
+          "type": 5
+        }
+      ],
+      "relations": []
+    },
+    {
+      "id": "2:8562217795792003412",
+      "lastPropertyId": "11:1979831508215526634",
+      "name": "Download",
+      "properties": [
+        {
+          "id": "1:190645320986004604",
+          "name": "id",
+          "type": 6,
+          "flags": 1
+        },
+        {
+          "id": "3:8949311799189454440",
+          "name": "name",
+          "type": 9
+        },
+        {
+          "id": "4:133564699459584982",
+          "name": "slug",
+          "type": 9
+        },
+        {
+          "id": "5:2261184338292194675",
+          "name": "seriesSlug",
+          "type": 9
+        },
+        {
+          "id": "6:6589625431974372919",
+          "name": "lastUpdated",
+          "type": 6
+        },
+        {
+          "id": "7:8270417853321997401",
+          "name": "downloadPath",
+          "type": 9
+        },
+        {
+          "id": "8:4051616899252018490",
+          "name": "dateAdded",
+          "type": 6
+        },
+        {
+          "id": "9:1456343944918718190",
+          "name": "fileSize",
+          "type": 6
+        },
+        {
+          "id": "10:5018330715711378470",
+          "name": "resolution",
+          "type": 5
+        },
+        {
+          "id": "11:1979831508215526634",
+          "name": "isMovie",
+          "type": 1
+        }
+      ],
+      "relations": []
+    },
+    {
+      "id": "3:6656632539774513118",
+      "lastPropertyId": "7:4388323985734326759",
+      "name": "Episode",
+      "properties": [
+        {
+          "id": "1:7897729230477966093",
+          "name": "id",
+          "type": 6,
+          "flags": 1
+        },
+        {
+          "id": "3:7485335325494378917",
+          "name": "name",
+          "type": 9
+        },
+        {
+          "id": "4:5338451474500209540",
+          "name": "slug",
+          "type": 9
+        },
+        {
+          "id": "5:669949293544647012",
+          "name": "seriesSlug",
+          "type": 9
+        },
+        {
+          "id": "6:2291069378504970159",
+          "name": "lastUpdated",
+          "type": 6
+        },
+        {
+          "id": "7:4388323985734326759",
+          "name": "isMovie",
+          "type": 1
+        }
+      ],
+      "relations": []
+    },
+    {
+      "id": "4:2512408600587088348",
+      "lastPropertyId": "5:2486022946717593083",
+      "name": "Genre",
+      "properties": [
+        {
+          "id": "1:5901756392989587080",
+          "name": "id",
+          "type": 6,
+          "flags": 1
+        },
+        {
+          "id": "3:7737344964591853",
+          "name": "name",
+          "type": 9
+        },
+        {
+          "id": "4:7268641414951116809",
+          "name": "slug",
+          "type": 9
+        }
+      ],
+      "relations": []
+    },
+    {
+      "id": "5:8519642208164416915",
+      "lastPropertyId": "10:2602839991970596041",
+      "name": "Series",
+      "properties": [
+        {
+          "id": "1:5902727733307066558",
+          "name": "id",
+          "type": 6,
+          "flags": 1
+        },
+        {
+          "id": "3:3137324253396987381",
+          "name": "slug",
+          "type": 9
+        },
+        {
+          "id": "4:2755408916383784708",
+          "name": "name",
+          "type": 9
+        },
+        {
+          "id": "5:4879864795633175465",
+          "name": "dateAdded",
+          "type": 9
+        },
+        {
+          "id": "6:7490888617603249011",
+          "name": "imageLink",
+          "type": 9
+        },
+        {
+          "id": "7:2050295734484900879",
+          "name": "description",
+          "type": 9
+        },
+        {
+          "id": "8:6688662739517502943",
+          "name": "lastUpdated",
+          "type": 6
+        },
+        {
+          "id": "9:1044970152670790172",
+          "name": "identity",
+          "type": 5
+        }
+      ],
+      "relations": [
+        {
+          "id": "1:4980224573278822024",
+          "name": "episodes",
+          "targetId": "3:6656632539774513118"
+        },
+        {
+          "id": "3:4891888090529785738",
+          "name": "genres",
+          "targetId": "4:2512408600587088348"
+        }
+      ]
+    },
+    {
+      "id": "6:1354055163820548906",
+      "lastPropertyId": "9:8585168417714076953",
+      "name": "SettingsMeta",
+      "properties": [
+        {
+          "id": "1:6154776199218437197",
+          "name": "id",
+          "type": 6,
+          "flags": 1
+        },
+        {
+          "id": "2:2283682253444200358",
+          "name": "key",
+          "type": 9
+        },
+        {
+          "id": "3:5304769098383301187",
+          "name": "stringValue",
+          "type": 9
+        },
+        {
+          "id": "4:1789304305618734398",
+          "name": "intValue",
+          "type": 5
+        },
+        {
+          "id": "5:7798642933967541507",
+          "name": "longValue",
+          "type": 6
+        },
+        {
+          "id": "6:2408491537699930847",
+          "name": "doubleValue",
+          "type": 8
+        },
+        {
+          "id": "7:8246225194250713080",
+          "name": "floatValue",
+          "type": 7
+        },
+        {
+          "id": "8:3468026801192798646",
+          "name": "booleanValue",
+          "type": 1
+        }
+      ],
+      "relations": []
+    },
+    {
+      "id": "7:4660152382686723985",
+      "lastPropertyId": "4:6989869500033884550",
+      "name": "SeriesHistory",
+      "properties": [
+        {
+          "id": "1:1978856473898568605",
+          "name": "website",
+          "type": 5
+        },
+        {
+          "id": "2:6358050628645437326",
+          "name": "seriesSlug",
+          "type": 9
+        },
+        {
+          "id": "3:7488214859907414744",
+          "name": "dateAdded",
+          "type": 6
+        },
+        {
+          "id": "4:6989869500033884550",
+          "name": "id",
+          "type": 6,
+          "flags": 1
+        }
+      ],
+      "relations": []
+    }
+  ],
+  "lastEntityId": "7:4660152382686723985",
+  "lastIndexId": "6:699691749525484072",
+  "lastRelationId": "3:4891888090529785738",
+  "lastSequenceId": "0:0",
+  "modelVersion": 5,
+  "modelVersionParserMinimum": 5,
+  "retiredEntityUids": [],
+  "retiredIndexUids": [
+    699691749525484072,
+    7393458624319541655,
+    2901954952392037890,
+    234854055294440833,
+    2161975242106389384,
+    3585014799066123500
+  ],
+  "retiredPropertyUids": [
+    8585168417714076953,
+    3624390813897061683,
+    2486022946717593083,
+    2602839991970596041,
+    4291018602021692725,
+    8277739743262883665,
+    247247974411639359,
+    7761476487419997233
+  ],
+  "retiredRelationUids": [
+    4391805912115043612
+  ],
+  "version": 1
+}

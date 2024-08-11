@@ -1,0 +1,9 @@
+[versions]
+objectboxGradlePluginVersion = "3.8.0"
+
+[libraries]
+objectbox-gradle-plugin = { module = "io.objectbox:objectbox-gradle-plugin", version.ref = "objectboxGradlePluginVersion" }
+
+[plugins]
+
+
