@@ -14,10 +14,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.CursorDropdownMenu
 import androidx.compose.material.Icon
 import androidx.compose.material.ripple.rememberRipple
-import androidx.compose.material3.Divider
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
+import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
@@ -58,6 +55,7 @@ class HistoryWindow {
     private var sort by mutableStateOf(Sort.DATE_DESC)
     private var checkForEpisodesButtonEnabled = mutableStateOf(true)
     private var clearHistoryEnabled = mutableStateOf(true)
+    private var loading by mutableStateOf(false)
 
     data class SeriesData(
         val slug: String,
@@ -180,10 +178,21 @@ class HistoryWindow {
                         }
                     }
                 }
-            ) { it ->
+            ) { padding ->
+                if (loading) {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(80.dp)
+                        )
+                    }
+                }
                 Column(
-                    modifier = Modifier.padding(bottom = it.calculateBottomPadding())
-                        .fillMaxSize()
+                    modifier = Modifier.padding(
+                        bottom = padding.calculateBottomPadding()
+                    ).fillMaxSize()
                 ) {
                     header()
                     LazyColumn(
@@ -215,9 +224,11 @@ class HistoryWindow {
             ApplicationState.addToastToWindow(this)
             val saveKey = rememberSaveable { true }
             LaunchedEffect(saveKey) {
+                loading = true
                 showToast("Loading series data...")
                 delay(2000)
                 loadHistoryData()
+                loading = false
             }
         }
     }

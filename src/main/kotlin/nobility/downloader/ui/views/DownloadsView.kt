@@ -497,9 +497,6 @@ class DownloadsView {
                 fontSize = MaterialTheme.typography.bodySmall.fontSize,
                 textAlign = TextAlign.Center
             )
-            LaunchedEffect(download.progress.value) {
-
-            }
         }
     }
 

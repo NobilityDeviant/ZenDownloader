@@ -28,11 +28,8 @@ import nobility.downloader.ui.components.tooltipIconButton
 import nobility.downloader.ui.views.downloaderUi
 import nobility.downloader.ui.windows.utils.AppWindowScope
 import nobility.downloader.ui.windows.utils.ApplicationState
-import nobility.downloader.utils.AppInfo
-import nobility.downloader.utils.Constants
+import nobility.downloader.utils.*
 import nobility.downloader.utils.Constants.mediumIconSize
-import nobility.downloader.utils.Tools
-import nobility.downloader.utils.keyGuide
 
 @Composable
 fun mainWindow(scope: AppWindowScope) {
@@ -166,13 +163,6 @@ private fun uiWrapper(
                                     )
                                 }
                                 defaultDropdownItem(
-                                    "Check For Updates",
-                                    EvaIcons.Fill.CloudDownload
-                                ) {
-                                    closeMenu()
-
-                                }
-                                defaultDropdownItem(
                                     "Open Download History",
                                     EvaIcons.Fill.Archive
                                 ) {
@@ -187,31 +177,27 @@ private fun uiWrapper(
                                     Core.openRecents()
                                 }
                                 defaultDropdownItem(
+                                    "Open Video Database",
+                                    EvaIcons.Fill.Video
+                                ) {
+                                    closeMenu()
+                                    Core.openWco()
+                                }
+                                defaultDropdownItem(
+                                    "Check For Updates",
+                                    EvaIcons.Fill.CloudDownload
+                                ) {
+                                    closeMenu()
+                                    Core.openUpdate()
+                                }
+                                defaultDropdownItem(
                                     "How To Use",
                                     EvaIcons.Fill.Book
                                 ) {
                                     closeMenu()
                                     DialogHelper.showMessage(
                                         "How To Use",
-                                        """
-                                            You need to visit: ${Core.wcoUrl}
-                                            and pick out your favorite anime, cartoon or movie.
-                                             
-                                            Once you find one that you want, you copy the link in the url bar and paste it into the programs Home page.
-                                            
-                                            After it's filled, you press the Start button or hit the Enter key on your keyboard.
-                                            There is also right click options in the url field to help you out.
-                                            
-                                            After the program scrapes the series details, it will open the Download Window where you can select the episodes you want to download.
-                                            
-                                            Once you have selected some episodes, press the Download (X) Episodes button and let the program do it's thing.
-                                            
-                                            You can view the download progress in the Downloads page by pressing the download icon in the home page or press CTRL + D.
-                                            
-                                            Don't forget to visit the Settings page and tweak your options.
-                                            
-                                            Settings can be viewed with pressing the Settings icon in the home page on the top left or by pressing CTRL + S.
-                                        """.trimIndent()
+                                        HowToUse.text
                                     )
                                 }
                                 defaultDropdownItem(

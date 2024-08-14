@@ -724,10 +724,10 @@ class VideoDownloader(
             Core.child.updateDownloadInDatabase(currentDownload, true)
             writeMessage(
                 """
-                        Failed to download $episodeName
-                        Error: ${e.localizedMessage}
-                        Reattempting the download...
-                    """.trimIndent()
+                   Failed to download $episodeName
+                   Error: ${e.localizedMessage}
+                   Reattempting the download...
+                """.trimIndent()
             )
             logError(
                 "Failed to download $episodeName",

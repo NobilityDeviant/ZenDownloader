@@ -1,8 +1,7 @@
 package nobility.downloader.ui.components.dialog.dialogs
 
 import androidx.compose.foundation.border
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -59,15 +58,20 @@ class OptionsDialog : DialogSetup() {
                                 dialogContent,
                                 supportLinks
                             )
-                            options.forEach {
-                                defaultButton(
-                                    it.title,
-                                    width = 100.dp,
-                                    height = 30.dp,
-                                    padding = 10.dp
-                                ) {
-                                    hide()
-                                    it.func()
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                                modifier = Modifier.padding(4.dp)
+                            ) {
+                                options.forEach {
+                                    defaultButton(
+                                        it.title,
+                                        width = 100.dp,
+                                        height = 35.dp
+                                    ) {
+                                        hide()
+                                        it.func()
+                                    }
                                 }
                             }
                         }

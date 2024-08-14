@@ -9,7 +9,6 @@ import nobility.downloader.core.BoxHelper.Companion.string
 import nobility.downloader.core.BoxHelper.Companion.update
 import nobility.downloader.core.scraper.data.ToDownload
 import nobility.downloader.core.settings.Defaults
-import nobility.downloader.core.updates.UpdateManager
 import nobility.downloader.ui.components.Console
 import nobility.downloader.ui.components.dialog.dialogs.ButtonDialog
 import nobility.downloader.ui.components.dialog.dialogs.MessageDialog
@@ -19,6 +18,7 @@ import nobility.downloader.ui.views.SettingsView
 import nobility.downloader.ui.windows.DownloadConfirmWindow
 import nobility.downloader.ui.windows.HistoryWindow
 import nobility.downloader.ui.windows.RecentWindow
+import nobility.downloader.ui.windows.UpdateWindow
 import nobility.downloader.utils.AppInfo
 import nobility.downloader.utils.FrogLog
 import java.io.PrintStream
@@ -34,7 +34,6 @@ class Core {
         val child = CoreChild()
         val console = Console()
         val errorConsole = Console(true)
-        val updateManager = UpdateManager()
         lateinit var settings: SettingsView
         lateinit var downloads: DownloadsView
         val messageDialog = MessageDialog()
@@ -76,6 +75,7 @@ class Core {
             currentUrl = Defaults.LAST_DOWNLOAD.string()
             currentUrlHint = exampleSeries
             darkMode.value = Defaults.DARK_MODE.boolean()
+            openUpdate(true)
         }
 
         fun openSettings() {
@@ -85,6 +85,12 @@ class Core {
 
         fun openWco() {
 
+        }
+
+        fun openUpdate(
+            justCheck: Boolean = false
+        ) {
+            UpdateWindow(justCheck)
         }
 
         fun openRecents() {

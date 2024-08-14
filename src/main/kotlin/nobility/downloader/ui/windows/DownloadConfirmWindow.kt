@@ -299,7 +299,6 @@ class DownloadConfirmWindow(
                                                         try {
                                                             downloader.run()
                                                         } catch (e: Exception) {
-                                                            e.printStackTrace()
                                                             downloader.killDriver()
                                                             val error = e.localizedMessage
                                                             if (error.contains("unknown error: cannot find")
@@ -397,7 +396,6 @@ class DownloadConfirmWindow(
                                                         try {
                                                             downloader.run()
                                                         } catch (e: Exception) {
-                                                            e.printStackTrace()
                                                             downloader.killDriver()
                                                             val error = e.localizedMessage
                                                             if (error.contains("unknown error: cannot find")

@@ -14,10 +14,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.CursorDropdownMenu
 import androidx.compose.material.Icon
 import androidx.compose.material.ripple.rememberRipple
-import androidx.compose.material3.Divider
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
+import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
@@ -53,9 +50,8 @@ import nobility.downloader.utils.linkToSlug
 class RecentWindow {
 
     private var sort by mutableStateOf(Sort.NAME)
-    //private var updateButtonEnabled = mutableStateOf(true)
-
     private val recentData = mutableStateListOf<RecentResult.Data>()
+    private var loading by mutableStateOf(false)
 
     private val sortedRecentData: List<RecentResult.Data>
         get() {
@@ -66,12 +62,14 @@ class RecentWindow {
         }
 
     private suspend fun loadRecentData() {
+        loading = true
         val recentScraper = RecentScraper()
         val result = recentScraper.run()
         val resultData = result.data
         if (resultData != null) {
             recentData.addAll(resultData.data)
         }
+        loading = false
     }
 
     fun open() {
@@ -107,9 +105,19 @@ class RecentWindow {
                         }
                     }
                 }*/
-            ) { it ->
+            ) { padding ->
+                if (loading) {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(80.dp)
+                        )
+                    }
+                }
                 Column(
-                    modifier = Modifier.padding(bottom = it.calculateBottomPadding())
+                    modifier = Modifier.padding(bottom = padding.calculateBottomPadding())
                         .fillMaxSize()
                 ) {
                     header()

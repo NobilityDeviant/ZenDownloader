@@ -10,9 +10,10 @@ object FrogLog {
 
     fun logError(
         message: String,
-        errorMessage: String? = null
+        errorMessage: String? = null,
+        important: Boolean = false
     ) {
-        if (!Defaults.SHOW_DEBUG_MESSAGES.boolean()) {
+        if (!important && !Defaults.SHOW_DEBUG_MESSAGES.boolean()) {
             return
         }
         println(
@@ -26,9 +27,10 @@ object FrogLog {
 
     fun logError(
         message: String,
-        exception: Throwable
+        exception: Throwable,
+        important: Boolean = false
     ) {
-        if (!Defaults.SHOW_DEBUG_MESSAGES.boolean()) {
+        if (!important && !Defaults.SHOW_DEBUG_MESSAGES.boolean()) {
             return
         }
         println(
@@ -38,6 +40,7 @@ object FrogLog {
                     else
                         "Error: Invalid exception error"
         )
+        writeMessage("Stacktrace for ${message.trimIndent()}", true)
         exception.printStackTrace()
     }
 

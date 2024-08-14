@@ -22,7 +22,7 @@ import java.util.regex.Pattern
 private const val URL_TAG = "URL"
 
 @Composable
-fun LinkifyText(
+fun linkifyText(
     text: String,
     textColor: Color = Color.Unspecified,
     textAlign: TextAlign? = null,

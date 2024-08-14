@@ -6,6 +6,7 @@ build/
 assets/
 update_log.txt
 debug/
+objectbox-jni-windows-x64.dll
 
 ### IntelliJ IDEA ###
 .idea/modules.xml

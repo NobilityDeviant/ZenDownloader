@@ -46,18 +46,13 @@ class ApplicationState {
         val shared = ApplicationState()
 
         private fun removeWindowWithId(id: String) {
-            var pos = -1
-            shared.windows.forEachIndexed { index, windowData ->
-                if (windowData.scope.windowId == id) {
-                    pos = index
-                    return@forEachIndexed
+            shared.windows.forEach {
+                if (it.scope.windowId == id) {
+                    it.scope.open.value = false
+                    it.scope.onClose?.invoke()
+                    shared.windows.remove(it)
+                    return@forEach
                 }
-            }
-            if (pos != -1) {
-                val window = shared.windows[pos]
-                window.scope.open.value = false
-                window.scope.onClose?.invoke()
-                shared.windows.removeAt(pos)
             }
         }
 

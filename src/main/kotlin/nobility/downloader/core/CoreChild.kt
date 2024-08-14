@@ -1,7 +1,9 @@
 package nobility.downloader.core
 
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -15,6 +17,7 @@ import nobility.downloader.core.entities.Episode
 import nobility.downloader.core.scraper.DownloadHandler
 import nobility.downloader.core.scraper.MovieHandler
 import nobility.downloader.core.settings.Defaults
+import nobility.downloader.core.updates.UrlUpdater
 import nobility.downloader.ui.components.dialog.DialogHelper
 import nobility.downloader.ui.components.dialog.DialogHelper.showError
 import nobility.downloader.utils.AppInfo
@@ -35,6 +38,7 @@ class CoreChild {
     val taskScope = CoroutineScope(Dispatchers.Default)
     var isRunning = false
         private set
+    var isUpdating by mutableStateOf(false)
     private var shutdownExecuted = false
     val runningDrivers: MutableList<WebDriver> = Collections.synchronizedList(mutableListOf())
     val currentEpisodes: MutableList<Episode> = Collections.synchronizedList(mutableListOf())
@@ -58,7 +62,7 @@ class CoreChild {
         movieHandler = MovieHandler()
         taskScope.launch(Dispatchers.IO) {
             launch {
-                Core.updateManager.updateWcoUrl()
+                UrlUpdater.updateWcoUrl()
             }
             movieHandler.loadMovies()
         }
@@ -160,6 +164,10 @@ class CoreChild {
     }
 
     private fun canStart(): Boolean {
+        if (isUpdating) {
+            showError("You can't download videos while the app is updating.")
+            return false
+        }
         if (isRunning) {
             showError("Failed to start the downloader because it's already running.")
             return false

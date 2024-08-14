@@ -176,60 +176,6 @@ fun defaultTextField(
     }
 }
 
-/*@Composable
-fun defaultSettingsTextField(
-    value: TextFieldValue,
-    onValueChanged: (TextFieldValue) -> Unit,
-    hint: String = "",
-    singleLine: Boolean = true,
-    enabled: MutableState<Boolean> = mutableStateOf(true),
-    numbersOnly: Boolean = false,
-    modifier: Modifier = Modifier.height(30.dp),
-    settingsDescription: String = "",
-    contextMenuItems: () -> List<ContextMenuItem> = { listOf() }
-) {
-    val stateEnabled by remember { enabled }
-    val contextMenuRepresentation = if (isSystemInDarkTheme()) {
-        DarkDefaultContextMenuRepresentation
-    } else {
-        LightDefaultContextMenuRepresentation
-    }
-    tooltip(
-        tooltipText = settingsDescription
-    ) {
-        CompositionLocalProvider(LocalContextMenuRepresentation provides contextMenuRepresentation) {
-            ContextMenuDataProvider(
-                items = contextMenuItems
-            ) {
-                FixedTextField(
-                    value,
-                    enabled = stateEnabled,
-                    onValueChange = onValueChanged,
-                    singleLine = singleLine,
-                    modifier = modifier,
-                    textStyle = MaterialTheme.typography.labelSmall,
-                    keyboardOptions = KeyboardOptions(
-                        keyboardType = if (numbersOnly)
-                            KeyboardType.Number
-                        else
-                            KeyboardType.Text
-                    ),
-                    placeholder = {
-                        if (hint.isNotEmpty()) {
-                            Text(
-                                hint,
-                                modifier = Modifier.alpha(0.3f)
-                            )
-                        }
-                    },
-                    colors = TextFieldDefaults.colors(),
-                    padding = PaddingValues(start = 4.dp, end = 4.dp)
-                )
-            }
-        }
-    }
-}*/
-
 @Composable
 fun defaultSettingsTextField(
     value: String,
