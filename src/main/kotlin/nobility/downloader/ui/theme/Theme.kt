@@ -72,7 +72,7 @@ private val DarkColors = darkColorScheme(
 )
 
 @Composable
-fun CoreTheme(
+fun coreTheme(
     useDarkTheme: Boolean = Core.darkMode.value,
     content: @Composable () -> Unit
 ) {

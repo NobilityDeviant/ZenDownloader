@@ -12,6 +12,7 @@ buildscript {
 plugins {
     kotlin("jvm")
     id("org.jetbrains.compose")
+    id("org.jetbrains.kotlin.plugin.compose") version "2.0.10"
 }
 
 kotlin {
@@ -48,7 +49,13 @@ dependencies {
     implementation("com.darkrockstudios:mpfilepicker:3.1.0")
     //for url updating.
     implementation("com.google.http-client:google-http-client:1.44.2")
+    //for undetected chrome
     implementation("com.alibaba:fastjson:2.0.51")
+    //ui
+    implementation("com.materialkolor:material-kolor:1.7.0")
+    //implementation("io.coil-kt.coil3:coil:3.0.0-alpha10")
+    implementation("io.coil-kt.coil3:coil-compose:3.0.0-alpha10")
+    implementation("io.coil-kt.coil3:coil-network-ktor:3.0.0-alpha06")
     //implementation("io.grpc:grpc-context:1.65.1")
     //implementation("org.jcodec:jcodec:0.2.5")
     //implementation("org.bytedeco:javacv-platform:1.5.10")
@@ -58,7 +65,7 @@ dependencies {
 apply(plugin = "io.objectbox")
 
 compose {
-    kotlinCompilerPlugin.set("1.5.8")
+    //kotlinCompilerPlugin.set("1.5.8")
 }
 
 compose.desktop {

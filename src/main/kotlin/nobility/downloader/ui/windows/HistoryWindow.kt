@@ -44,10 +44,7 @@ import nobility.downloader.ui.components.defaultDropdownItem
 import nobility.downloader.ui.components.dialog.DialogHelper
 import nobility.downloader.ui.windows.utils.AppWindowScope
 import nobility.downloader.ui.windows.utils.ApplicationState
-import nobility.downloader.utils.FrogLog
-import nobility.downloader.utils.ImageUtils
-import nobility.downloader.utils.Resource
-import nobility.downloader.utils.Tools
+import nobility.downloader.utils.*
 
 class HistoryWindow {
 
@@ -82,17 +79,17 @@ class HistoryWindow {
     private fun loadHistoryData() {
         BoxHelper.shared.wcoBoxStore.callInReadTx {
             BoxHelper.shared.historyBox.all.forEach {
-                val series = BoxHelper.wcoSeriesForSlug(it.seriesSlug)
+                val series = BoxHelper.seriesForSlug(it.seriesSlug)
                 if (series != null) {
                     downloadScope.launch {
-                        BoxHelper.downloadSeriesImage(series)
+                        ImageUtils.downloadSeriesImage(series)
                     }
                     historyData.add(
                         SeriesData(
                             series.slug,
                             series.name,
                             it.dateAdded,
-                            series.episodes.size,
+                            series.episodesSize,
                             series.imageLink
                         )
                     )
@@ -419,7 +416,7 @@ class HistoryWindow {
                 closeMenu()
                 val slug = seriesData.slug
                 if (slug.isNotEmpty()) {
-                    val series = BoxHelper.wcoSeriesForSlug(slug)
+                    val series = BoxHelper.seriesForSlug(slug)
                     if (series != null) {
                         Core.openDownloadConfirm(
                             ToDownload(series)
@@ -460,10 +457,13 @@ class HistoryWindow {
                 ) { showFileMenu = showFileMenu.not() }
                 .clickable(
                     interactionSource = remember { MutableInteractionSource() },
-                    indication = rememberRipple(color = MaterialTheme.colorScheme.primary)
+                    indication = rememberRipple(
+                        color = MaterialTheme.colorScheme
+                            .secondaryContainer.light()
+                    )
                 ) { showFileMenu = showFileMenu.not() }
                 .background(
-                    color = MaterialTheme.colorScheme.surfaceVariant,
+                    color = MaterialTheme.colorScheme.secondaryContainer,
                     shape = RoundedCornerShape(5.dp)
                 ).height(rowHeight).fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(4.dp)
@@ -526,7 +526,7 @@ class HistoryWindow {
     private fun divider(
         header: Boolean = false
     ) {
-        Divider(
+        VerticalDivider(
             modifier = Modifier.fillMaxHeight()
                 .width(1.dp)
                 .background(
@@ -549,12 +549,12 @@ class HistoryWindow {
     ): Resource<Int> = withContext(Dispatchers.IO) {
         clearHistoryEnabled.value = false
         checkForEpisodesButtonEnabled.value = false
-        val series = BoxHelper.wcoSeriesForSlug(seriesData.slug)
+        val series = BoxHelper.seriesForSlug(seriesData.slug)
             ?: return@withContext Resource.Error("Failed to find local series.")
         val result = SeriesUpdater.checkForNewEpisodes(series)
         if (result.data != null) {
             val updatedEpisodes = result.data.updatedEpisodes
-            val seriesWco = BoxHelper.wcoSeriesForSlug(series.slug)
+            val seriesWco = BoxHelper.seriesForSlug(series.slug)
             seriesWco?.updateEpisodes(updatedEpisodes)
             clearHistoryEnabled.value = true
             checkForEpisodesButtonEnabled.value = true
@@ -571,7 +571,7 @@ class HistoryWindow {
         checkForEpisodesButtonEnabled.value = false
         val seriesHistory = mutableListOf<Series>()
         BoxHelper.shared.historyBox.all.forEach {
-            val series = BoxHelper.wcoSeriesForSlug(it.seriesSlug)
+            val series = BoxHelper.seriesForSlug(it.seriesSlug)
             if (series != null) {
                 seriesHistory.add(series)
             }
@@ -587,7 +587,7 @@ class HistoryWindow {
                 seriesUpdated++
                 episodesUpdated += result.data.newEpisodes.size
                 val updatedEpisodes = result.data.updatedEpisodes
-                val seriesWco = BoxHelper.wcoSeriesForSlug(series.slug)
+                val seriesWco = BoxHelper.seriesForSlug(series.slug)
                 seriesWco?.updateEpisodes(updatedEpisodes)
             }
         }

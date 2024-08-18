@@ -2,6 +2,7 @@ package nobility.downloader.core.entities
 
 import io.objectbox.annotation.Entity
 import io.objectbox.annotation.Id
+import nobility.downloader.core.entities.data.Website
 
 @Entity
 open class Episode() {
@@ -12,6 +13,7 @@ open class Episode() {
     var seriesSlug: String = ""
     var lastUpdated: Long = 0
     var isMovie: Boolean = false
+    var website: String = Website.WCOFUN.name
 
     constructor(name: String, slug: String, seriesSlug: String) : this() {
         this.name = name

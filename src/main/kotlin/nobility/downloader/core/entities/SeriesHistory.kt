@@ -6,7 +6,7 @@ import nobility.downloader.core.entities.data.Website
 
 @Entity
 data class SeriesHistory(
-    var website: Int = Website.WCOFUN.id,
+    var website: String = Website.WCOFUN.name,
     var seriesSlug: String = "",
     var dateAdded: Long = 0,
     @Id var id: Long = 0

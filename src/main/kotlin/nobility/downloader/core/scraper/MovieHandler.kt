@@ -33,7 +33,7 @@ class MovieHandler {
             scrapeMovies()
             return
         }
-        val lastUpdated = Defaults.MOVIES_LAST_UPDATED.long()
+        val lastUpdated = Defaults.WCO_MOVIES_LAST_UPDATED.long()
         if (lastUpdated > 0) {
             val lastUpdatedCal = Calendar.getInstance()
             lastUpdatedCal.time = Date(lastUpdated)
@@ -106,7 +106,7 @@ class MovieHandler {
             bw.flush()
             bw.close()
             movieDriver.killDriver()
-            Defaults.MOVIES_LAST_UPDATED.update(Date().time)
+            Defaults.WCO_MOVIES_LAST_UPDATED.update(Date().time)
             FrogLog.writeMessage(
                 "Successfully downloaded ${movies.size} movie slugs."
             )

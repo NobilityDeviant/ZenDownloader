@@ -3,7 +3,10 @@ package nobility.downloader.core.scraper
 import kotlinx.coroutines.*
 import nobility.downloader.core.BoxHelper
 import nobility.downloader.core.BoxHelper.Companion.string
+import nobility.downloader.core.BoxMaker
 import nobility.downloader.core.Core
+import nobility.downloader.core.entities.Episode
+import nobility.downloader.core.entities.Series
 import nobility.downloader.core.scraper.data.ToDownload
 import nobility.downloader.core.settings.Defaults
 import nobility.downloader.ui.components.dialog.DialogHelper
@@ -32,13 +35,26 @@ class DownloadHandler {
             )
         }
 
-        val cachedSeries =  if (url.contains("/anime/"))
-            BoxHelper.wcoSeriesForSlug(slug)
-        else
-            BoxHelper.wcoSeriesForEpisodeSlug(slug)
+        var cachedSeries: Series? = null
+        var cachedEpisode: Episode? = null
 
+        if (url.contains("/anime/")) {
+            cachedSeries = BoxHelper.seriesForSlug(slug)
+        } else {
+            val pair = BoxHelper.seriesForEpisodeSlug(slug)
+            if (pair != null) {
+                cachedSeries = pair.first
+                cachedEpisode = pair.second
+            }
+        }
         if (cachedSeries != null && cachedSeries.episodes.isNotEmpty()) {
-            toDownload = ToDownload(series = cachedSeries)
+            toDownload = ToDownload(
+                series = cachedSeries,
+                episode = cachedEpisode
+            )
+            BoxMaker.makeHistory(
+                cachedSeries.slug
+            )
             return Resource.Success(true)
         }
 

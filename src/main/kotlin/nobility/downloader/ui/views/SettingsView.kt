@@ -33,6 +33,7 @@ import nobility.downloader.utils.Constants.minThreads
 import nobility.downloader.utils.Constants.minTimeout
 import nobility.downloader.utils.FrogLog
 import nobility.downloader.utils.fileExists
+import nobility.downloader.utils.tone
 import org.jsoup.Jsoup
 import java.util.regex.Matcher
 import java.util.regex.Pattern
@@ -83,6 +84,10 @@ class SettingsView {
         Defaults.SEPARATE_SEASONS.boolean()
     )
 
+    private var autoScrollConsoles = mutableStateOf(
+        Defaults.AUTO_SCROLL_CONSOLES.boolean()
+    )
+
     private var saveButtonEnabled = mutableStateOf(false)
     private lateinit var scope: AppWindowScope
 
@@ -106,6 +111,7 @@ class SettingsView {
                         ) {
                             DialogHelper.showConfirm(
                                 "Are you sure you want to reset your settings to the default ones?",
+                                "Reset Settings"
                             ) {
                                 BoxHelper.resetSettings()
                                 updateValues()
@@ -145,6 +151,7 @@ class SettingsView {
                     fieldCheckbox(Defaults.BYPASS_DISK_SPACE)
                     fieldCheckbox(Defaults.CONSOLE_ON_TOP)
                     fieldCheckbox(Defaults.HEADLESS_MODE)
+                    fieldCheckbox(Defaults.AUTO_SCROLL_CONSOLES)
                     fieldWcoDomain()
                     Text(
                         "Error Console",
@@ -157,16 +164,16 @@ class SettingsView {
                 }
                 VerticalScrollbar(
                     modifier = Modifier.align(Alignment.CenterEnd)
+                        .background(MaterialTheme.colorScheme.surface.tone(20.0))
                         .fillMaxHeight()
-                        .background(MaterialTheme.colorScheme.onSurfaceVariant)
                         .padding(top = 3.dp, bottom = 3.dp),
                     style = ScrollbarStyle(
                         minimalHeight = 16.dp,
                         thickness = 10.dp,
                         shape = RoundedCornerShape(10.dp),
                         hoverDurationMillis = 300,
-                        unhoverColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.70f),
-                        hoverColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.90f)
+                        unhoverColor = MaterialTheme.colorScheme.surface.tone(50.0).copy(alpha = 0.70f),
+                        hoverColor = MaterialTheme.colorScheme.surface.tone(50.0).copy(alpha = 0.90f)
                     ),
                     adapter = rememberScrollbarAdapter(
                         scrollState = scrollState
@@ -391,6 +398,7 @@ class SettingsView {
             Defaults.CONSOLE_ON_TOP -> "Popout Window Always On Top"
             Defaults.HEADLESS_MODE -> "Headless Mode"
             Defaults.SEPARATE_SEASONS -> "Separate Seasons Into Folders"
+            Defaults.AUTO_SCROLL_CONSOLES -> "Auto Scroll Consoles"
             else -> "Not Implemented"
         }
         Row(
@@ -467,6 +475,18 @@ class SettingsView {
                             modifier = Modifier.height(30.dp)
                         ) {
                             separateSeasons.value = it
+                            updateSaveButton()
+                        }
+                    }
+                }
+
+                Defaults.AUTO_SCROLL_CONSOLES -> {
+                    tooltip(setting.description) {
+                        defaultCheckbox(
+                            autoScrollConsoles,
+                            modifier = Modifier.height(30.dp)
+                        ) {
+                            autoScrollConsoles.value = it
                             updateSaveButton()
                         }
                     }
@@ -555,7 +575,9 @@ class SettingsView {
                 }
             } else if (type == FieldType.TIMEOUT) {
                 if (num < minTimeout) {
-                    mText = minTimeout.toString()
+                    if (mText.length > 1) {
+                        mText = minTimeout.toString()
+                    }
                 } else if (num > maxTimeout) {
                     mText = maxTimeout.toString()
                 }
@@ -625,6 +647,10 @@ class SettingsView {
 
                 Defaults.SEPARATE_SEASONS -> {
                     separateSeasons.value = it.boolean()
+                }
+
+                Defaults.AUTO_SCROLL_CONSOLES -> {
+                    autoScrollConsoles.value = it.boolean()
                 }
                 else -> {}
             }
@@ -743,6 +769,7 @@ class SettingsView {
         Defaults.CONSOLE_ON_TOP.update(consoleOnTop.value)
         Defaults.HEADLESS_MODE.update(headlessMode.value)
         Defaults.SEPARATE_SEASONS.update(separateSeasons.value)
+        Defaults.AUTO_SCROLL_CONSOLES.update(autoScrollConsoles.value)
         updateValues()
         scope.showToast("Settings successfully saved.")
         return true
@@ -763,6 +790,7 @@ class SettingsView {
                 || Defaults.CONSOLE_ON_TOP.boolean() != consoleOnTop.value
                 || Defaults.HEADLESS_MODE.boolean() != headlessMode.value
                 || Defaults.SEPARATE_SEASONS.boolean() != separateSeasons.value
+                || Defaults.AUTO_SCROLL_CONSOLES.boolean() != autoScrollConsoles.value
     }
 
 }

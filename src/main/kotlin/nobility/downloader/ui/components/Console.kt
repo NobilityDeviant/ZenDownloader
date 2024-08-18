@@ -9,6 +9,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.PointerButton
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
+import nobility.downloader.core.BoxHelper.Companion.boolean
+import nobility.downloader.core.settings.Defaults
+import nobility.downloader.utils.AppInfo
 import java.io.OutputStream
 import java.util.*
 
@@ -36,8 +39,10 @@ class Console(
 
     override fun write(b: Int) {
         clearIfSize(
-            if (errorMode) 2_000
-            else 400
+            if (AppInfo.DEBUG_MODE)
+                5_000
+            else if (errorMode) 3_000
+            else 1_000
         )
         if (b == '\r'.code) return
         if (b == '\n'.code) {
@@ -131,7 +136,9 @@ class Console(
                     )
                     //auto scroll
                     LaunchedEffect(size) {
-                        scrollState.animateScrollTo(scrollState.maxValue)
+                        if (Defaults.AUTO_SCROLL_CONSOLES.boolean()) {
+                            scrollState.animateScrollTo(scrollState.maxValue)
+                        }
                     }
                 }
             }

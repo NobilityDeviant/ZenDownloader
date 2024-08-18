@@ -54,19 +54,19 @@ object IdentityScraper {
         if (added > 0) {
             when (identity) {
                 SeriesIdentity.SUBBED -> {
-                    FrogLog.writeMessage("Successfully downloaded $added missing subbed links.")
+                    FrogLog.writeMessage("Successfully downloaded $added missing subbed link(s).")
                 }
 
                 SeriesIdentity.DUBBED -> {
-                    FrogLog.writeMessage("Successfully downloaded $added missing dubbed links.")
+                    FrogLog.writeMessage("Successfully downloaded $added missing dubbed link(s).")
                 }
 
                 SeriesIdentity.CARTOON -> {
-                    FrogLog.writeMessage("Successfully downloaded $added missing cartoon links.")
+                    FrogLog.writeMessage("Successfully downloaded $added missing cartoon link(s).")
                 }
 
                 SeriesIdentity.MOVIE -> {
-                    FrogLog.writeMessage("Successfully downloaded $added missing movie links.")
+                    FrogLog.writeMessage("Successfully downloaded $added missing movie link(s).")
                 }
 
                 else -> {}

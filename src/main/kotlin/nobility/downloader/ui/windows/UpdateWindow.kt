@@ -25,6 +25,7 @@ import nobility.downloader.core.BoxHelper.Companion.int
 import nobility.downloader.core.BoxHelper.Companion.string
 import nobility.downloader.core.BoxHelper.Companion.update
 import nobility.downloader.core.Core
+import nobility.downloader.core.driver.undetected_chrome.SysUtil
 import nobility.downloader.core.settings.Defaults
 import nobility.downloader.core.updates.Update
 import nobility.downloader.ui.components.defaultButton
@@ -33,7 +34,6 @@ import nobility.downloader.ui.components.linkifyText
 import nobility.downloader.ui.windows.utils.AppWindowScope
 import nobility.downloader.ui.windows.utils.ApplicationState
 import nobility.downloader.utils.*
-import org.apache.commons.lang3.SystemUtils
 import java.io.*
 import java.net.URI
 import java.security.SecureRandom
@@ -135,6 +135,7 @@ class UpdateWindow(
                                            Stopping the download now will delete the file which means you will have to restart the process.
                                            Would you like to cancel the update?
                                         """.trimIndent(),
+                                            "Cancel Download",
                                             onConfirmTitle = "Cancel Download",
                                             onDenyTitle = "Keep Downloading"
                                         ) {
@@ -232,10 +233,10 @@ class UpdateWindow(
                                     verticalArrangement = Arrangement.spacedBy(5.dp)
                                 ) {
                                     LinearProgressIndicator(
-                                        downloadProgress,
+                                        progress = { downloadProgress },
                                         modifier = Modifier.fillMaxWidth(0.9f)
                                             .height(25.dp).padding(top = 10.dp),
-                                        trackColor = MaterialTheme.colorScheme.background
+                                        trackColor = MaterialTheme.colorScheme.background,
                                     )
                                     Text(
                                         downloadProgressText,
@@ -250,16 +251,16 @@ class UpdateWindow(
                     }
                     VerticalScrollbar(
                         modifier = Modifier.align(Alignment.CenterEnd)
+                            .background(MaterialTheme.colorScheme.surface.tone(20.0))
                             .fillMaxHeight()
-                            .background(MaterialTheme.colorScheme.onSurfaceVariant)
                             .padding(top = 3.dp, bottom = 3.dp),
                         style = ScrollbarStyle(
                             minimalHeight = 16.dp,
                             thickness = 10.dp,
                             shape = RoundedCornerShape(10.dp),
                             hoverDurationMillis = 300,
-                            unhoverColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.70f),
-                            hoverColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.90f)
+                            unhoverColor = MaterialTheme.colorScheme.surface.tone(50.0).copy(alpha = 0.70f),
+                            hoverColor = MaterialTheme.colorScheme.surface.tone(50.0).copy(alpha = 0.90f)
                         ),
                         adapter = rememberScrollbarAdapter(
                             scrollState = columnScrollState
@@ -370,6 +371,7 @@ class UpdateWindow(
                         Press the "Finish" button to shutdown the app and open the folder.
                         You can also press "Continue" to close this window and keep the app running.
                     """.trimIndent(),
+                    "Download Complete",
                     onDeny = { close() },
                     onDenyTitle = "Continue",
                     onConfirmTitle = "Finish"
@@ -591,9 +593,9 @@ class UpdateWindow(
     }
 
     private fun myOs(): OS {
-        return if (SystemUtils.IS_OS_LINUX)
+        return if (SysUtil.isLinux)
             OS.LINUX
-        else if (SystemUtils.IS_OS_MAC)
+        else if (SysUtil.isMacOs)
             OS.MAC
         else
             OS.WINDOWS

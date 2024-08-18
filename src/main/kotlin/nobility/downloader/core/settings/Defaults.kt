@@ -1,5 +1,7 @@
 package nobility.downloader.core.settings
 
+import nobility.downloader.ui.windows.database.DatabaseType
+import nobility.downloader.ui.windows.database.DatabaseSort
 import nobility.downloader.utils.Constants
 
 /**
@@ -136,6 +138,14 @@ enum class Defaults(
             Default: On
         """.trimIndent()
     ),
+    AUTO_SCROLL_CONSOLES(
+        "auto_scroll_consoles",
+        true,
+        """
+            Stops all consoles from auto scrolling when a new text is added to it.
+            Default: On
+        """.trimIndent()
+    ),
     LAST_DOWNLOAD("last_dl", ""),
     DENIED_UPDATE("denied_update", false),
     UPDATE_VERSION("update_version", "1.0"),
@@ -145,5 +155,8 @@ enum class Defaults(
     ENABLE_PROXY("enable_proxy", false),
     FIRST_LAUNCH("1st-launch", false),
     DARK_MODE("dark_mode", true),
-    MOVIES_LAST_UPDATED("movies_last_updated", 0L)
+    WCO_MOVIES_LAST_UPDATED("wco_movies_last_updated", 0L),
+    WCO_GENRES_LAST_UPDATED("wco_genres_last_updated", 0L),
+    DB_LAST_TYPE_USED("db_last_type", DatabaseType.ANIME.id),
+    DB_LAST_SORT_USED("db_last_sort", DatabaseSort.NAME.id)
 }

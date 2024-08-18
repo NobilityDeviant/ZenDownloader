@@ -15,13 +15,17 @@ import nobility.downloader.utils.UserAgents
 import org.jsoup.Jsoup
 import java.io.File
 
-class RecentScraper: DriverBase() {
+object RecentScraper {
+
+    private class Scraper: DriverBase()
 
     suspend fun run(): Resource<RecentResult> = withContext(Dispatchers.IO) {
         val data = mutableListOf<RecentResult.Data>()
+        val scraper = Scraper()
         try {
-            driver.get(Core.wcoUrl)
-            val doc = Jsoup.parse(driver.pageSource)
+            scraper.driver.get(Core.wcoUrl)
+            val doc = Jsoup.parse(scraper.driver.pageSource)
+            scraper.killDriver()
             val recentEpisodeHolder = doc.getElementById("sidebar_right")
             if (recentEpisodeHolder != null) {
                 val ul = recentEpisodeHolder.select("ul")
@@ -101,10 +105,8 @@ class RecentScraper: DriverBase() {
                 }
             }
         } catch (e: Exception) {
-            killDriver()
             return@withContext Resource.Error(e)
         }
-        killDriver()
         return@withContext Resource.Success(RecentResult(data))
     }
 

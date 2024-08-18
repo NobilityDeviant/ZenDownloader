@@ -16,7 +16,6 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import nobility.downloader.ui.components.dialog.DialogHelper
-import nobility.downloader.utils.Option
 import java.util.regex.Pattern
 
 private const val URL_TAG = "URL"
@@ -66,22 +65,8 @@ fun linkifyText(
                     annotatedString.getStringAnnotations(position, position).firstOrNull()
                         ?.let { result ->
                             if (result.tag == URL_TAG) {
-                                DialogHelper.showOptions(
-                                    "Link Manager",
-                                    "Choose what would you like to do with the link: \n${result.item}",
-                                    false,
-                                    Option("Copy") {
-                                        DialogHelper.showCopyPrompt(
-                                            result.item,
-                                            prompt = false
-                                        )
-                                    },
-                                    Option("Open Link") {
-                                        DialogHelper.showLinkPrompt(
-                                            result.item
-                                        )
-                                    },
-                                    Option("Cancel")
+                                DialogHelper.showLinkPrompt(
+                                    result.item
                                 )
                             }
                         }
@@ -91,12 +76,14 @@ fun linkifyText(
     )
 }
 
-private val urlPattern: Pattern = Pattern.compile(
-    "(?:^|\\W)((ht|f)tp(s?)://|www\\.)"
-            + "(([\\w\\-]+\\.)+([\\w\\-.~]+/?)*"
-            + "[\\p{Alnum}.,%_=?&#\\-+()\\[\\]*$~@!:/{};']*)",
-    Pattern.CASE_INSENSITIVE or Pattern.MULTILINE or Pattern.DOTALL
-)
+
+private val urlPattern
+    get() = Pattern.compile(
+        "(?:^|\\W)((ht|f)tp(s?)://|www\\.)"
+                + "(([\\w\\-]+\\.)+([\\w\\-.~]+/?)*"
+                + "[\\p{Alnum}.,%_=?&#\\-+()\\[\\]*$~@!:/{};']*)",
+        Pattern.CASE_INSENSITIVE or Pattern.MULTILINE or Pattern.DOTALL
+    )
 
 fun extractUrls(text: String): List<LinkInfo> {
     val matcher = urlPattern.matcher(text)
@@ -109,8 +96,9 @@ fun extractUrls(text: String): List<LinkInfo> {
         matchEnd = matcher.end()
 
         var url = text.substring(matchStart, matchEnd)
-        if (!url.startsWith("http://") && !url.startsWith("https://"))
+        if (!url.startsWith("http://") && !url.startsWith("https://")) {
             url = "https://$url"
+        }
 
         links.add(LinkInfo(url, matchStart, matchEnd))
     }

@@ -6,7 +6,10 @@ import io.objectbox.annotation.Id
 import io.objectbox.annotation.Transient
 import io.objectbox.relation.ToMany
 import nobility.downloader.core.BoxHelper
+import nobility.downloader.core.entities.data.SeriesIdentity
+import nobility.downloader.core.entities.data.Website
 import nobility.downloader.utils.FrogLog
+import nobility.downloader.utils.Tools
 
 @Entity
 data class Series(
@@ -17,11 +20,20 @@ data class Series(
     var description: String = "",
     var lastUpdated: Long = 0,
     var identity: Int = 0,
+    var website: String = Website.WCOFUN.name,
     @Id var id: Long = 0
 ) {
 
-    var genres: ToMany<Genre> = ToMany(this, Series_.genres)
+    var genreNames = mutableListOf<String>()
     var episodes: ToMany<Episode> = ToMany(this, Series_.episodes)
+
+    val episodesSize: Int get() {
+        return try {
+            episodes.size
+        } catch (e: Exception) {
+            0
+        }
+    }
 
     fun update(series: Series) {
         slug = series.slug
@@ -36,14 +48,39 @@ data class Series(
         episodes: List<Episode>,
         updateDb: Boolean = true
     ) {
-        FrogLog.logDebug("Updating episodes for $name.")
-        FrogLog.logDebug("Old episodes: ${this.episodes.size} New episodes: ${episodes.size}")
+        val seriesIdentity = SeriesIdentity.idForType(identity)
+        FrogLog.logDebug(
+            "Updating episodes for $name."
+        )
+        FrogLog.logDebug(
+            "Old episodes: ${this.episodes.size} New episodes: ${episodes.size}"
+        )
         if (this.episodes.size < episodes.size) {
-            BoxHelper.shared.wcoSeriesBox.attach(this)
+            when (seriesIdentity) {
+                SeriesIdentity.DUBBED ->
+                    BoxHelper.shared.dubbedSeriesBox.attach(this)
+                SeriesIdentity.SUBBED ->
+                    BoxHelper.shared.subbedSeriesBox.attach(this)
+                SeriesIdentity.MOVIE ->
+                    BoxHelper.shared.moviesSeriesBox.attach(this)
+                SeriesIdentity.CARTOON ->
+                    BoxHelper.shared.cartoonSeriesBox.attach(this)
+                else -> BoxHelper.shared.miscSeriesBox.attach(this)
+            }
             this.episodes.clear()
             this.episodes.addAll(episodes)
             if (updateDb) {
-                BoxHelper.shared.episodesBox.put(episodes)
+                when (seriesIdentity) {
+                    SeriesIdentity.DUBBED ->
+                        BoxHelper.shared.dubbedEpisodeBox.put(episodes)
+                    SeriesIdentity.SUBBED ->
+                        BoxHelper.shared.subbedEpisodeBox.put(episodes)
+                    SeriesIdentity.MOVIE ->
+                        BoxHelper.shared.moviesEpisodeBox.put(episodes)
+                    SeriesIdentity.CARTOON ->
+                        BoxHelper.shared.cartoonEpisodeBox.put(episodes)
+                    else -> BoxHelper.shared.miscEpisodeBox.put(episodes)
+                }
                 this.episodes.applyChangesToDb()
             }
         }
@@ -52,11 +89,20 @@ data class Series(
     fun updateGenres(
         genres: List<Genre>
     ) {
-        BoxHelper.shared.wcoSeriesBox.attach(this)
-        this.genres.clear()
-        this.genres.addAll(genres)
-        BoxHelper.shared.genreBox.put(genres)
-        this.genres.applyChangesToDb()
+        this.genreNames.clear()
+        this.genreNames.addAll(genres.map { it.name })
+        val seriesIdentity = SeriesIdentity.idForType(identity)
+        when (seriesIdentity) {
+            SeriesIdentity.DUBBED ->
+                BoxHelper.shared.dubbedSeriesBox.put(this)
+            SeriesIdentity.SUBBED ->
+                BoxHelper.shared.subbedSeriesBox.put(this)
+            SeriesIdentity.MOVIE ->
+                BoxHelper.shared.moviesSeriesBox.put(this)
+            SeriesIdentity.CARTOON ->
+                BoxHelper.shared.cartoonSeriesBox.put(this)
+            else -> BoxHelper.shared.miscSeriesBox.put(this)
+        }
     }
 
     fun matches(series: Series): Boolean {
@@ -87,16 +133,14 @@ data class Series(
     private fun toReadable(): String {
         val d = ";"
         return (slug + d + name + d
-                + episodes.size + d
+                + episodesSize + d
                 + imageLink + d
                 + description + d
-                + genres.size + d
+                + genreNames.size + d
                 + identity)
     }
 
-    fun hasImageAndDescription(): Boolean {
-        return (imageLink.isNotEmpty() && description.isNotEmpty())
-    }
+    val imagePath get() = BoxHelper.seriesImagesPath + Tools.titleForImages(name)
 
     @JvmField
     @Transient

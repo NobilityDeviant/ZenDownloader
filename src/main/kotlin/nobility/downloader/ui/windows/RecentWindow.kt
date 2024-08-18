@@ -36,6 +36,8 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import nobility.downloader.core.BoxHelper
 import nobility.downloader.core.Core
+import nobility.downloader.core.entities.Episode
+import nobility.downloader.core.entities.Series
 import nobility.downloader.core.scraper.RecentScraper
 import nobility.downloader.core.scraper.data.RecentResult
 import nobility.downloader.core.scraper.data.ToDownload
@@ -45,6 +47,7 @@ import nobility.downloader.ui.windows.utils.AppWindowScope
 import nobility.downloader.ui.windows.utils.ApplicationState
 import nobility.downloader.utils.ImageUtils
 import nobility.downloader.utils.Tools
+import nobility.downloader.utils.light
 import nobility.downloader.utils.linkToSlug
 
 class RecentWindow {
@@ -63,8 +66,7 @@ class RecentWindow {
 
     private suspend fun loadRecentData() {
         loading = true
-        val recentScraper = RecentScraper()
-        val result = recentScraper.run()
+        val result = RecentScraper.run()
         val resultData = result.data
         if (resultData != null) {
             recentData.addAll(resultData.data)
@@ -246,13 +248,20 @@ class RecentWindow {
                 closeMenu()
                 val link = recentData.link
                 if (link.isNotEmpty()) {
-                    val series = if (recentData.isSeries)
-                        BoxHelper.wcoSeriesForSlug(link.linkToSlug())
-                    else
-                        BoxHelper.wcoSeriesForEpisodeSlug(link.linkToSlug())
+                    var series: Series? = null
+                    var episode: Episode? = null
+                    if (recentData.isSeries) {
+                        series = BoxHelper.seriesForSlug(link.linkToSlug())
+                    } else {
+                        val pair = BoxHelper.seriesForEpisodeSlug(link.linkToSlug())
+                        if (pair != null) {
+                            series = pair.first
+                            episode = pair.second
+                        }
+                    }
                     if (series != null) {
                         Core.openDownloadConfirm(
-                            ToDownload(series)
+                            ToDownload(series, episode)
                         )
                     } else {
                         if (!Core.child.isRunning) {
@@ -285,10 +294,13 @@ class RecentWindow {
                 ) { showFileMenu = showFileMenu.not() }
                 .clickable(
                     interactionSource = remember { MutableInteractionSource() },
-                    indication = rememberRipple(color = MaterialTheme.colorScheme.primary)
+                    indication = rememberRipple(
+                        color = MaterialTheme.colorScheme
+                            .secondaryContainer.light()
+                    )
                 ) { showFileMenu = showFileMenu.not() }
                 .background(
-                    color = MaterialTheme.colorScheme.surfaceVariant,
+                    color = MaterialTheme.colorScheme.secondaryContainer,
                     shape = RoundedCornerShape(5.dp)
                 ).height(rowHeight).fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(4.dp)
@@ -329,7 +341,7 @@ class RecentWindow {
     private fun divider(
         header: Boolean = false
     ) {
-        Divider(
+        VerticalDivider(
             modifier = Modifier.fillMaxHeight()
                 .width(1.dp)
                 .background(

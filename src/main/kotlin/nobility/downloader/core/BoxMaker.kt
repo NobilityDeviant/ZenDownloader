@@ -2,8 +2,10 @@ package nobility.downloader.core
 
 import io.objectbox.query.QueryBuilder
 import nobility.downloader.core.entities.*
+import nobility.downloader.core.entities.data.SeriesIdentity
 import nobility.downloader.core.entities.data.Website
 import nobility.downloader.utils.findUniqueOrNull
+import java.util.*
 
 object BoxMaker {
 
@@ -23,9 +25,13 @@ object BoxMaker {
         lastUpdated: Long = 0,
         identity: Int = 0,
         episodes: List<Episode>? = null,
-        genres: List<Genre>? = null
+        genres: List<Genre>? = null,
+        addToHistory: Boolean = true
     ): Series {
-        var series = BoxHelper.wcoSeriesForSlug(slug)
+        var series = BoxHelper.seriesForSlug(
+            slug,
+            SeriesIdentity.idForType(identity)
+        )
         val newSeries = Series(
             slug,
             name,
@@ -37,11 +43,17 @@ object BoxMaker {
         )
         if (series == null) {
             series = newSeries
-            BoxHelper.addSeries(series)
+            BoxHelper.addSeries(
+                series,
+                SeriesIdentity.idForType(identity)
+            )
         } else {
             if (!series.matches(newSeries)) {
                 series.update(newSeries)
-                BoxHelper.addSeries(series)
+                BoxHelper.addSeries(
+                    series,
+                    SeriesIdentity.idForType(identity)
+                )
             }
         }
         if (episodes != null) {
@@ -50,17 +62,18 @@ object BoxMaker {
         if (genres != null) {
             series.updateGenres(genres)
         }
-        makeHistory(
-            slug,
-            System.currentTimeMillis()
-        )
+        if (addToHistory) {
+            makeHistory(
+                slug
+            )
+        }
         return series
     }
 
-    private fun makeHistory(
+    fun makeHistory(
         seriesSlug: String = "",
-        dateAdded: Long = 0,
-        website: Int = Website.WCOFUN.id
+        dateAdded: Long = Date().time,
+        website: String = Website.WCOFUN.name
     ) {
         BoxHelper.shared.historyBox.query()
             .equal(
@@ -83,55 +96,24 @@ object BoxMaker {
             }
     }
 
-    private fun makeEpisodes(
-        seriesSlug: String,
-        episodes: List<Episode>
-    ) {
-        var cachedEpisodes: MutableList<Episode>
-        val finalEpisodes = mutableListOf<Episode>()
-        BoxHelper.shared.episodesBox.query()
-            .equal(
-                Episode_.seriesSlug,
-                seriesSlug,
-                QueryBuilder.StringOrder.CASE_SENSITIVE
-            ).build().use {
-                cachedEpisodes = it.find()
-            }
-        BoxHelper.shared.wcoBoxStore.callInTx {
-            episodes.forEach {
-                if (!cachedEpisodes.contains(it)) {
-                    finalEpisodes.add(it)
-                }
-            }
-        }
-        BoxHelper.shared.episodesBox.put(finalEpisodes)
-    }
-
-    private fun makeGenre(
+    fun makeGenre(
         name: String = "",
         slug: String = "",
+        website: String = Website.WCOFUN.name
     ) {
-        BoxHelper.shared.genreBox.query()
+        BoxHelper.shared.wcoGenreBox.query()
             .equal(Genre_.name, name, QueryBuilder.StringOrder.CASE_SENSITIVE)
             .equal(Genre_.slug, slug, QueryBuilder.StringOrder.CASE_SENSITIVE)
             .build().use {
                 if (it.findUniqueOrNull() == null) {
-                    BoxHelper.shared.genreBox.put(
+                    BoxHelper.shared.wcoGenreBox.put(
                         Genre(
                             name = name,
-                            slug = slug
+                            slug = slug,
+                            website = website
                         )
                     )
                 }
             }
     }
-
-    private fun makeGenres(genres: List<Genre>) {
-        BoxHelper.shared.wcoBoxStore.callInTx {
-            genres.forEach {
-                makeGenre(it.name, it.slug)
-            }
-        }
-    }
-
 }

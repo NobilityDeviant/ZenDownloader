@@ -1,17 +1,11 @@
 package nobility.downloader.ui.components.dialog
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
-import nobility.downloader.core.Core
 import nobility.downloader.ui.components.defaultButton
-import nobility.downloader.ui.theme.CoreTheme
 import nobility.downloader.ui.windows.utils.AppWindowScope
 import nobility.downloader.ui.windows.utils.ApplicationState
 import nobility.downloader.utils.Option
@@ -21,87 +15,6 @@ import java.net.URI
 import java.util.*
 
 object DialogHelper {
-
-    fun showError(
-        title: String,
-        message: String?,
-        e: Exception? = null,
-        size: DpSize = DpSize.Unspecified
-    ) {
-        Core.messageDialog.updateMessage(
-            title,
-            message + if (e != null) "\nError: ${e.localizedMessage}" else "",
-            size
-        )
-        Core.messageDialog.show()
-    }
-
-    fun showError(
-        message: String,
-        size: DpSize = DpSize.Unspecified
-    ) {
-        showError(
-            "Error",
-            message,
-            size = size
-        )
-    }
-
-    fun showError(
-        message: String,
-        e: Exception,
-        size: DpSize = DpSize.Unspecified
-    ) {
-        showError(
-            "Error",
-            message,
-            e,
-            size
-        )
-    }
-
-    fun showMessage(
-        title: String = "",
-        message: String,
-        size: DpSize = DpSize.Unspecified
-    ) {
-        Core.messageDialog.updateMessage(title, message, size)
-        Core.messageDialog.show()
-    }
-
-    fun showConfirm(
-        message: String,
-        size: DpSize = DpSize.Unspecified,
-        supportLinks: Boolean = true,
-        onDenyTitle: String = "",
-        onConfirmTitle: String = "",
-        onDeny: () -> Unit = {},
-        onConfirm: () -> Unit
-    ) {
-        Core.confirmDialog.updateMessage(message = message, size = size)
-        if (onConfirmTitle.isNotEmpty()) {
-            Core.confirmDialog.confirmTitle = onConfirmTitle
-        }
-        if (onDenyTitle.isNotEmpty()) {
-            Core.confirmDialog.denyTitle = onDenyTitle
-        }
-        Core.confirmDialog.onConfirm = onConfirm
-        Core.confirmDialog.onDeny = onDeny
-        Core.confirmDialog.supportLinks = supportLinks
-        Core.confirmDialog.show()
-    }
-
-    fun showOptions(
-        title: String = "",
-        message: String = "",
-        supportLinks: Boolean = true,
-        vararg options: Option
-    ) {
-        Core.optionDialog.updateMessage(title, message)
-        Core.optionDialog.options = options.toMutableList()
-        Core.optionDialog.supportLinks = supportLinks
-        Core.optionDialog.show()
-    }
 
     fun showLinkPrompt(
         link: String,
@@ -118,10 +31,10 @@ object DialogHelper {
         )
     }
 
-    private fun showLinkPrompt(
+    fun showLinkPrompt(
         link: String,
         message: String,
-        prompt: Boolean
+        prompt: Boolean = true
     ) {
         if (link.isEmpty()) {
             return
@@ -129,6 +42,7 @@ object DialogHelper {
         if (prompt) {
             showConfirm(
                 message,
+                "Link Manager",
                 supportLinks = false
             ) { openLink(link) }
         } else {
@@ -178,11 +92,13 @@ object DialogHelper {
         Tools.clipboardString = text
     }
 
-    //has potential. work on the colors and default size
-    @Suppress("unused")
-    fun showMessageExperimental(
-        title: String,
-        message: String
+    fun showOptions(
+        title: String = "",
+        message: String = "",
+        supportLinks: Boolean = true,
+        size: DpSize = DpSize(400.dp, 300.dp),
+        buttonWidth: Dp = 120.dp,
+        options: List<Option>
     ) {
         ApplicationState.newWindow(
             title,
@@ -190,34 +106,153 @@ object DialogHelper {
             resizable = false,
             transparent = true,
             alwaysOnTop = true,
-            size = DpSize.Unspecified
+            size = size
         ) {
-            CoreTheme {
-                Column(
-                    modifier = Modifier.background(
-                        color = MaterialTheme.colorScheme.surface,
-                        shape = RoundedCornerShape(4.dp)
-                    )
-                ) {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally
+            dialogWrapper(
+                title,
+                message,
+                supportLinks
+            ) {
+                options.forEach {
+                    defaultButton(
+                        it.title,
+                        width = buttonWidth,
+                        height = 35.dp
                     ) {
-                        dialogHeader(
-                            mutableStateOf(title),
-                            mutableStateOf(message)
-                        )
-                        defaultButton(
-                            "Close",
-                            height = 40.dp,
-                            width = 120.dp,
-                            padding = 10.dp
-                        ) {
-                            closeWindow()
-                        }
+                        closeWindow()
+                        it.func()
                     }
                 }
             }
         }
     }
 
+    fun showConfirm(
+        message: String,
+        title: String = "Confirm",
+        size: DpSize = DpSize(400.dp, 300.dp),
+        supportLinks: Boolean = true,
+        onDenyTitle: String = "Cancel",
+        onConfirmTitle: String = "Confirm",
+        onDeny: () -> Unit = {},
+        onConfirm: () -> Unit
+    ) {
+        ApplicationState.newWindow(
+            title,
+            undecorated = true,
+            resizable = false,
+            transparent = true,
+            alwaysOnTop = true,
+            size = size
+        ) {
+            dialogWrapper(
+                title,
+                message,
+                supportLinks
+            ) {
+                defaultButton(
+                    onDenyTitle,
+                    width = 120.dp,
+                    height = 40.dp
+                ) {
+                    closeWindow()
+                    onDeny()
+                }
+                defaultButton(
+                    onConfirmTitle,
+                    width = 120.dp,
+                    height = 40.dp
+                ) {
+                    closeWindow()
+                    onConfirm()
+                }
+            }
+        }
+    }
+
+    fun showMessage(
+        title: String,
+        message: String,
+        size: DpSize = DpSize(400.dp, 300.dp)
+    ) {
+        ApplicationState.newWindow(
+            title,
+            undecorated = true,
+            resizable = false,
+            transparent = true,
+            alwaysOnTop = true,
+            size = size
+        ) {
+            dialogWrapper(
+                title,
+                message
+            ) {
+                defaultButton(
+                    "Close",
+                    height = 40.dp,
+                    width = 120.dp
+                ) {
+                    closeWindow()
+                }
+            }
+        }
+    }
+
+    fun showError(
+        title: String,
+        message: String?,
+        e: Exception? = null,
+        size: DpSize = DpSize(400.dp, 300.dp)
+    ) {
+        ApplicationState.newWindow(
+            title,
+            undecorated = true,
+            resizable = false,
+            transparent = true,
+            alwaysOnTop = true,
+            size = size
+        ) {
+            dialogWrapper(
+                title,
+                message + if (e != null) "\nError: ${e.localizedMessage}" else "",
+                themeColor = MaterialTheme.colorScheme.error
+            ) {
+                defaultButton(
+                    "Close",
+                    height = 40.dp,
+                    width = 120.dp,
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.error,
+                        contentColor = MaterialTheme.colorScheme.onError
+                    )
+                ) {
+                    closeWindow()
+                }
+            }
+        }
+    }
+
+    fun showError(
+        message: String,
+        size: DpSize = DpSize(400.dp, 300.dp)
+    ) {
+        showError(
+            "Error",
+            message,
+            size = size
+        )
+    }
+
+    fun showError(
+        message: String,
+        e: Exception,
+        size: DpSize = DpSize(400.dp, 300.dp)
+    ) {
+        showError(
+            "Error",
+            message,
+            e,
+            size
+        )
+    }
 }

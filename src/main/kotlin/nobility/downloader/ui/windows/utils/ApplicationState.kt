@@ -14,7 +14,7 @@ import androidx.compose.ui.window.rememberWindowState
 import kotlinx.coroutines.launch
 import nobility.downloader.ui.components.toast.ToastHost
 import nobility.downloader.ui.components.toast.ToastHostState
-import nobility.downloader.ui.theme.CoreTheme
+import nobility.downloader.ui.theme.coreTheme
 import nobility.downloader.utils.AppInfo
 
 /**
@@ -150,24 +150,13 @@ class ApplicationState {
                         state = rememberWindowState(
                             position = WindowPosition.Aligned(alignment = windowAlignment),
                             size = size,
-                            placement = if (maximized) WindowPlacement.Maximized else WindowPlacement.Floating
+                            placement = if (maximized)
+                                WindowPlacement.Maximized
+                            else WindowPlacement.Floating
                         ),
                         onKeyEvent = keyEvents ?: { false },
                         content = {
-                            CoreTheme {
-                                val toastHostState = remember { ToastHostState() }
-                                val coScope = rememberCoroutineScope()
-                                ToastHost(
-                                    hostState = toastHostState
-                                )
-                                if (scope.toastContent.value.isNotEmpty()) {
-                                    coScope.launch {
-                                        toastHostState.showToast(
-                                            scope.toastContent.value
-                                        )
-                                        scope.toastContent.value = ""
-                                    }
-                                }
+                            coreTheme {
                                 scope.content()
                             }
                         }

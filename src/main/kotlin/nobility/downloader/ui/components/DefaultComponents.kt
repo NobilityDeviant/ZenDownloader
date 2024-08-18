@@ -12,6 +12,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
@@ -61,7 +62,7 @@ fun defaultDropdown(
         ) {
             Text(
                 label,
-                modifier = Modifier.padding(top = 8.dp, bottom = 8.dp, start = 5.dp)
+                modifier = Modifier.padding(top = 8.dp, bottom = 12.dp, start = 5.dp)
                     .weight(1f),
                 fontSize = 11.sp,
                 fontWeight = FontWeight.Bold,
@@ -141,6 +142,8 @@ fun defaultTextField(
     singleLine: Boolean = true,
     readOnly: Boolean = false,
     enabled: Boolean = true,
+    colors:  TextFieldColors = TextFieldDefaults.colors(),
+    textStyle: TextStyle = LocalTextStyle.current,
     keyboardOptions: KeyboardOptions = KeyboardOptions(),
     modifier: Modifier = Modifier,
     contextMenuItems: () -> List<ContextMenuItem> = { listOf() }
@@ -168,8 +171,9 @@ fun defaultTextField(
                         )
                     }
                 },
+                textStyle = textStyle,
                 modifier = modifier,
-                colors = TextFieldDefaults.colors(),
+                colors = colors,
                 keyboardOptions = keyboardOptions
             )
         }
@@ -186,6 +190,7 @@ fun defaultSettingsTextField(
     numbersOnly: Boolean = false,
     modifier: Modifier = Modifier.height(30.dp),
     settingsDescription: String = "",
+    textStyle: TextStyle = MaterialTheme.typography.labelSmall,
     contextMenuItems: () -> List<ContextMenuItem> = { listOf() }
 ) {
     val stateEnabled by remember { enabled }
@@ -207,7 +212,7 @@ fun defaultSettingsTextField(
                     onValueChange = onValueChanged,
                     singleLine = singleLine,
                     modifier = modifier,
-                    textStyle = MaterialTheme.typography.labelSmall,
+                    textStyle = textStyle,
                     keyboardOptions = KeyboardOptions(
                         keyboardType = if (numbersOnly)
                             KeyboardType.Number
@@ -234,7 +239,7 @@ fun defaultSettingsTextField(
 fun defaultButton(
     text: String,
     modifier: Modifier = Modifier,
-    enabled: MutableState<Boolean> = mutableStateOf(true),
+    enabled: MutableState<Boolean>,
     height: Dp = Dp.Unspecified,
     width: Dp = Dp.Unspecified,
     padding: Dp = 5.dp,
@@ -250,6 +255,43 @@ fun defaultButton(
         shape = RoundedCornerShape(4.dp),
         colors = ButtonDefaults.buttonColors(),
         enabled = stateEnabled,
+        contentPadding = PaddingValues(5.dp)
+    ) {
+        Column(
+            modifier = Modifier.align(Alignment.CenterVertically)
+        ) {
+            Text(
+                text,
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Bold,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.align(Alignment.CenterHorizontally),
+                overflow = TextOverflow.Ellipsis
+            )
+        }
+    }
+}
+
+@Composable
+fun defaultButton(
+    text: String,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    height: Dp = Dp.Unspecified,
+    width: Dp = Dp.Unspecified,
+    colors: ButtonColors = ButtonDefaults.buttonColors(),
+    padding: Dp = 5.dp,
+    onClick: () -> Unit
+) {
+    Button(
+        onClick = onClick,
+        modifier = Modifier.padding(padding)
+            .height(height)
+            .width(width)
+            .then(modifier),
+        shape = RoundedCornerShape(4.dp),
+        colors = colors,
+        enabled = enabled,
         contentPadding = PaddingValues(5.dp)
     ) {
         Column(

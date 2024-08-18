@@ -15,6 +15,7 @@ import nobility.downloader.core.BoxHelper.Companion.update
 import nobility.downloader.core.entities.Download
 import nobility.downloader.core.entities.Episode
 import nobility.downloader.core.scraper.DownloadHandler
+import nobility.downloader.core.scraper.GenresScraper
 import nobility.downloader.core.scraper.MovieHandler
 import nobility.downloader.core.settings.Defaults
 import nobility.downloader.core.updates.UrlUpdater
@@ -65,6 +66,10 @@ class CoreChild {
                 UrlUpdater.updateWcoUrl()
             }
             movieHandler.loadMovies()
+            GenresScraper.scrape()
+            //FrogLog.writeMessage("Launching db scraper in 5 seconds")
+            //delay(5_000)
+            //DatabaseScraper.updateWcoDb()
         }
     }
 
@@ -113,7 +118,7 @@ class CoreChild {
         Core.stopButtonEnabled.value = true
         isRunning = true
         downloadsFinishedForSession = 0
-        downloadsInProgress.value = 0
+        synchronizeDownloadsInProgress()
     }
 
     fun stop() {
@@ -124,6 +129,7 @@ class CoreChild {
         Core.stopButtonEnabled.value = false
         isRunning = false
         currentEpisodes.clear()
+        synchronizeDownloadsInProgress()
     }
 
     fun shutdown(force: Boolean = false) {
@@ -143,7 +149,8 @@ class CoreChild {
                     Shutting down will stop all downloads and possibly corrupt any incomplete video.
                     It's advised to press the Stop button beforehand.
                     Do you wish to continue?
-                """.trimIndent()
+                """.trimIndent(),
+                "Shutdown"
             ) {
                 shutdownExecuted = true
                 stop()

@@ -10,7 +10,7 @@ object AppInfo {
     const val GITHUB_URL = "https://github.com/NobilityDeviant/ZenDownloader"
     const val EXAMPLE_SERIES = "anime/negima"
     const val EXAMPLE_EPISODE = "strange-planet-episode-1-the-flying-machine"
-    const val DEBUG_MODE = false
+    const val DEBUG_MODE = true
     private const val IMAGE_PATH = "/images/"
     const val APP_ICON_PATH = IMAGE_PATH + "icon.png"
     const val NO_IMAGE_PATH = IMAGE_PATH + "no-image.png"

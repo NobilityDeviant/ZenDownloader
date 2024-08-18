@@ -17,4 +17,5 @@ object Constants {
     const val averageVideoSize = 100 //in megabytes
     const val daysToUpdateWcoUrl = 7
     const val daysToUpdateMovies = 14
+    const val daysToUpdateGenres = 30
 }

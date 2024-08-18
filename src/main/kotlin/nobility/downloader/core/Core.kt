@@ -10,15 +10,13 @@ import nobility.downloader.core.BoxHelper.Companion.update
 import nobility.downloader.core.scraper.data.ToDownload
 import nobility.downloader.core.settings.Defaults
 import nobility.downloader.ui.components.Console
-import nobility.downloader.ui.components.dialog.dialogs.ButtonDialog
-import nobility.downloader.ui.components.dialog.dialogs.MessageDialog
-import nobility.downloader.ui.components.dialog.dialogs.OptionsDialog
 import nobility.downloader.ui.views.DownloadsView
 import nobility.downloader.ui.views.SettingsView
 import nobility.downloader.ui.windows.DownloadConfirmWindow
 import nobility.downloader.ui.windows.HistoryWindow
 import nobility.downloader.ui.windows.RecentWindow
 import nobility.downloader.ui.windows.UpdateWindow
+import nobility.downloader.ui.windows.database.DatabaseWindow
 import nobility.downloader.utils.AppInfo
 import nobility.downloader.utils.FrogLog
 import java.io.PrintStream
@@ -36,9 +34,6 @@ class Core {
         val errorConsole = Console(true)
         lateinit var settings: SettingsView
         lateinit var downloads: DownloadsView
-        val messageDialog = MessageDialog()
-        val confirmDialog = ButtonDialog()
-        val optionDialog = OptionsDialog()
         var currentPage by mutableStateOf(Page.HOME)
         var currentUrl by mutableStateOf("")
         var currentUrlHint by mutableStateOf("")
@@ -84,7 +79,8 @@ class Core {
         }
 
         fun openWco() {
-
+            val databaseWindow = DatabaseWindow()
+            databaseWindow.open()
         }
 
         fun openUpdate(

@@ -4,21 +4,16 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 import nobility.downloader.core.BoxHelper.Companion.addSeries
-import nobility.downloader.core.BoxHelper.Companion.downloadSeriesImage
-import nobility.downloader.core.BoxHelper.Companion.wcoSeriesForSlug
+import nobility.downloader.core.BoxHelper.Companion.seriesForSlug
 import nobility.downloader.core.BoxMaker
 import nobility.downloader.core.Core
 import nobility.downloader.core.driver.DriverBase
-import nobility.downloader.core.entities.CategoryLink
 import nobility.downloader.core.entities.Episode
 import nobility.downloader.core.entities.Genre
 import nobility.downloader.core.entities.Series
 import nobility.downloader.core.entities.data.SeriesIdentity
 import nobility.downloader.core.scraper.data.ToDownload
-import nobility.downloader.utils.FrogLog
-import nobility.downloader.utils.Resource
-import nobility.downloader.utils.Tools
-import nobility.downloader.utils.slugToLink
+import nobility.downloader.utils.*
 import org.jsoup.Jsoup
 import java.util.*
 
@@ -91,7 +86,7 @@ class SlugHandler : DriverBase() {
     ): Resource<Boolean> = withContext(Dispatchers.IO) {
         val link = slug.slugToLink()
         try {
-            driver.get(link)
+            driver.navigate().to(link)
             val doc = Jsoup.parse(driver.pageSource)
             val existsCheck = doc.getElementsByClass("recent-release")
             if (existsCheck.text().lowercase().contains("page not found")) {
@@ -117,7 +112,7 @@ class SlugHandler : DriverBase() {
         val fullLink = seriesSlug.slugToLink()
         try {
             val episodes = mutableListOf<Episode>()
-            driver.get(fullLink)
+            driver.navigate().to(fullLink)
             var doc = Jsoup.parse(driver.pageSource)
             if (identity == SeriesIdentity.MOVIE) {
                 val category = doc.getElementsByClass("header-tag")
@@ -142,7 +137,7 @@ class SlugHandler : DriverBase() {
                     )
                     return@withContext Resource.Success(series)
                 } else {
-                    driver.get(categoryLink)
+                    driver.navigate().to(categoryLink)
                     doc = Jsoup.parse(driver.pageSource)
                 }
             }
@@ -200,9 +195,10 @@ class SlugHandler : DriverBase() {
                     episodes = episodes,
                     genres = genresList
                 )
-                downloadSeriesImage(series)
+                ImageUtils.downloadSeriesImage(series)
                 return@withContext Resource.Success(series)
             } else {
+                delay(5000)
                 throw Exception("No episodes were found.")
             }
         } catch (e: Exception) {
@@ -215,7 +211,7 @@ class SlugHandler : DriverBase() {
     ): Resource<ToDownload> = withContext(Dispatchers.IO) {
         val episodeLink = episodeSlug.slugToLink()
         try {
-            driver.get(episodeLink)
+            driver.navigate().to(episodeLink)
             val doc = Jsoup.parse(driver.pageSource)
             val episodeTitle = doc.getElementsByClass("video-title")
             val category = doc.getElementsByClass("header-tag") //category is the series
@@ -250,11 +246,17 @@ class SlugHandler : DriverBase() {
                         }
                     }
                     val identityResult = findIdentityForSlug(seriesSlug)
-                    val cachedSeries = wcoSeriesForSlug(seriesSlug)
+                    val cachedSeries = seriesForSlug(
+                        seriesSlug,
+                        identityResult.identity
+                    )
                     if (cachedSeries != null) {
                         if (identityResult.alreadyExists) {
                             cachedSeries.identity = identityResult.identity.type
-                            addSeries(cachedSeries)
+                            addSeries(
+                                cachedSeries,
+                                identityResult.identity
+                            )
                         }
                         /**
                          * If the movie does have a regular series then treat it as one,
@@ -292,7 +294,10 @@ class SlugHandler : DriverBase() {
                         if (resultData != null) {
                             val series = resultData.series
                             if (series != null) {
-                                val added = addSeries(series)
+                                val added = addSeries(
+                                    series,
+                                    identityResult.identity
+                                )
                                 if (added) {
                                     FrogLog.writeMessage("Added series found from episode link ($episodeLink) successfully.")
                                 }
@@ -359,32 +364,5 @@ class SlugHandler : DriverBase() {
                 true
             )
         }
-    }
-
-    @Suppress("UNUSED")
-    suspend fun handleSeriesSlugs(
-        categoryLinks: List<CategoryLink>,
-        id: Int
-    ) {
-        FrogLog.writeMessage("Scraping data for ${categoryLinks.size} series for id: $id.")
-        for ((i, cat) in categoryLinks.withIndex()) {
-            delay(500)
-            if (wcoSeriesForSlug(cat.slug) != null) {
-                FrogLog.writeMessage("Skipping cached series: ${cat.slug} for id: $id")
-                continue
-            }
-            FrogLog.writeMessage("Checking ${cat.slug} for index: $i out of ${categoryLinks.size}")
-            val series = scrapeSeriesWithSlug(cat.slug, cat.type)
-            if (series.data != null) {
-                val added = addSeries(series.data)
-                downloadSeriesImage(series.data)
-                if (added) {
-                    FrogLog.writeMessage("Successfully saved series: ${series.data.name} for id: $id")
-                }
-            } else if (series.message != null) {
-                FrogLog.writeMessage(series.message + " for id: $id")
-            }
-        }
-        killDriver()
     }
 }

@@ -5,8 +5,7 @@ enum class SeriesIdentity(val slug: String, val type: Int) {
     SUBBED("subbed-anime-list", 1),
     CARTOON("cartoon-list", 2),
     MOVIE("movie-list", 3),
-    NEW("404", 4),
-    NONE("404", 5);
+    NEW("404", 4);
 
     companion object {
         fun filteredValues(): List<SeriesIdentity> {
@@ -18,11 +17,11 @@ enum class SeriesIdentity(val slug: String, val type: Int) {
                     return id
                 }
             }
-            return NONE
+            return NEW
         }
 
         fun isEmpty(identity: SeriesIdentity): Boolean {
-            return identity == NONE || identity == NEW
+            return identity == NEW
         }
     }
 }

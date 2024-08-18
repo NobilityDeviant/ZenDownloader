@@ -11,7 +11,6 @@ import androidx.compose.ui.unit.dp
 import nobility.downloader.core.BoxHelper.Companion.boolean
 import nobility.downloader.core.Core
 import nobility.downloader.core.settings.Defaults
-import nobility.downloader.ui.theme.CoreTheme
 import nobility.downloader.ui.windows.utils.ApplicationState
 
 object ConsoleWindow {
@@ -34,16 +33,14 @@ object ConsoleWindow {
                 return@newWindow true
             }
         ) {
-            CoreTheme {
-                Column(
-                    verticalArrangement = Arrangement.spacedBy(4.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    modifier = Modifier.background(
-                        MaterialTheme.colorScheme.surface
-                    )
-                ) {
-                    Core.console.textField(true)
-                }
+            Column(
+                verticalArrangement = Arrangement.spacedBy(4.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier.background(
+                    MaterialTheme.colorScheme.surface
+                )
+            ) {
+                Core.console.textField(true)
             }
         }
     }

@@ -9,7 +9,10 @@ import nobility.downloader.core.entities.settings.SettingsMeta
 import nobility.downloader.core.entities.settings.SettingsMeta_
 import nobility.downloader.core.settings.Defaults
 import nobility.downloader.core.settings.Quality
-import nobility.downloader.utils.*
+import nobility.downloader.utils.FrogLog
+import nobility.downloader.utils.findUniqueOrFirst
+import nobility.downloader.utils.findUniqueOrNull
+import nobility.downloader.utils.fixedSlug
 import java.io.File
 
 class BoxHelper {
@@ -26,26 +29,59 @@ class BoxHelper {
 
     //cached website series links
     private var linksBoxStore: BoxStore = MyObjectBox.builder()
-        .directory(File(databasePath + "links"))
+        .directory(File(wcoPath + "links"))
         .build()
 
-    //wco series data
+    //for wco genres and misc data
     var wcoBoxStore: BoxStore = MyObjectBox.builder()
-        .directory(File(databasePath + "wco"))
+        .directory(File(wcoPath + "data"))
         .build()
-    var settingsBox: Box<SettingsMeta> = settingsBoxStore.boxFor(SettingsMeta::class.java)
-    var downloadBox: Box<Download> = dataBoxStore.boxFor(Download::class.java)
-    var historyBox: Box<SeriesHistory> = dataBoxStore.boxFor(SeriesHistory::class.java)
-    var linksBox: Box<CategoryLink> = linksBoxStore.boxFor(CategoryLink::class.java)
-    var wcoSeriesBox: Box<Series> = wcoBoxStore.boxFor(Series::class.java)
-    var episodesBox: Box<Episode> = wcoBoxStore.boxFor(Episode::class.java)
-    var genreBox: Box<Genre> = wcoBoxStore.boxFor(Genre::class.java)
+
+    private var dubbedBoxStore: BoxStore = MyObjectBox.builder()
+        .directory(File(seriesPath + "dubbed"))
+        .build()
+
+    private var subbedBoxStore: BoxStore = MyObjectBox.builder()
+        .directory(File(seriesPath + "subbed"))
+        .build()
+
+    private var movieBoxStore: BoxStore = MyObjectBox.builder()
+        .directory(File(seriesPath + "movies"))
+        .build()
+
+    private var cartoonBoxStore: BoxStore = MyObjectBox.builder()
+        .directory(File(seriesPath + "cartoon"))
+        .build()
+
+    //series not in any other category
+    private var miscBoxStore: BoxStore = MyObjectBox.builder()
+        .directory(File(seriesPath + "misc"))
+        .build()
+
+    val settingsBox: Box<SettingsMeta> = settingsBoxStore.boxFor(SettingsMeta::class.java)
+    val downloadBox: Box<Download> = dataBoxStore.boxFor(Download::class.java)
+    val historyBox: Box<SeriesHistory> = dataBoxStore.boxFor(SeriesHistory::class.java)
+    val dubbedSeriesBox: Box<Series> = dubbedBoxStore.boxFor(Series::class.java)
+    val dubbedEpisodeBox: Box<Episode> = dubbedBoxStore.boxFor(Episode::class.java)
+    val subbedSeriesBox: Box<Series> = subbedBoxStore.boxFor(Series::class.java)
+    val subbedEpisodeBox: Box<Episode> = subbedBoxStore.boxFor(Episode::class.java)
+    val cartoonSeriesBox: Box<Series> = cartoonBoxStore.boxFor(Series::class.java)
+    val cartoonEpisodeBox: Box<Episode> = cartoonBoxStore.boxFor(Episode::class.java)
+    val moviesSeriesBox: Box<Series> = movieBoxStore.boxFor(Series::class.java)
+    val moviesEpisodeBox: Box<Episode> = movieBoxStore.boxFor(Episode::class.java)
+    val miscSeriesBox: Box<Series> = miscBoxStore.boxFor(Series::class.java)
+    val miscEpisodeBox: Box<Episode> = miscBoxStore.boxFor(Episode::class.java)
+
+    val wcoLinksBox: Box<CategoryLink> = linksBoxStore.boxFor(CategoryLink::class.java)
+    val wcoGenreBox: Box<Genre> = wcoBoxStore.boxFor(Genre::class.java)
 
     companion object {
 
         val shared = BoxHelper()
 
         val databasePath get() = "${System.getProperty("user.home")}${File.separator}.zen_database${File.separator}"
+        val wcoPath get() = databasePath + File.separator + "wco" + File.separator
+        val seriesPath get() = databasePath + File.separator + "series" + File.separator
         val seriesImagesPath: String get() = databasePath + "series_images${File.separator}"
 
         fun init() {
@@ -199,54 +235,239 @@ class BoxHelper {
         }
 
         fun addSeries(
-            series: Series
+            series: Series,
+            identity: SeriesIdentity
         ): Boolean {
-            val added = wcoAddOrUpdateSeries(series)
-            return added
-        }
-
-        private fun wcoAddOrUpdateSeries(series: Series): Boolean {
             try {
-                shared.wcoSeriesBox.query()
-                    .equal(Series_.name, series.name, QueryBuilder.StringOrder.CASE_SENSITIVE).build().use { query ->
-                        val queried = query.find()
-                        if (queried.isNotEmpty()) {
-                            for (s in queried) {
-                                if (s.matches(series)) {
-                                    return false
+                when (identity) {
+                    SeriesIdentity.DUBBED -> {
+                        shared.dubbedSeriesBox.query()
+                            .equal(
+                                Series_.name,
+                                series.name,
+                                QueryBuilder.StringOrder.CASE_INSENSITIVE
+                            ).build().use { query ->
+                                val queried = query.find()
+                                if (queried.isNotEmpty()) {
+                                    for (s in queried) {
+                                        if (s.matches(series)) {
+                                            return false
+                                        }
+                                    }
+                                    shared.dubbedSeriesBox.remove(queried)
                                 }
+                                shared.dubbedSeriesBox.put(series)
+                                return true
                             }
-                            shared.wcoSeriesBox.remove(queried)
-                        }
-                        shared.wcoSeriesBox.put(series)
-                        return true
                     }
+                    SeriesIdentity.SUBBED -> {
+                        shared.subbedSeriesBox.query()
+                            .equal(
+                                Series_.name,
+                                series.name,
+                                QueryBuilder.StringOrder.CASE_INSENSITIVE
+                            ).build().use { query ->
+                                val queried = query.find()
+                                if (queried.isNotEmpty()) {
+                                    for (s in queried) {
+                                        if (s.matches(series)) {
+                                            return false
+                                        }
+                                    }
+                                    shared.subbedSeriesBox.remove(queried)
+                                }
+                                shared.subbedSeriesBox.put(series)
+                                return true
+                            }
+                    }
+                    SeriesIdentity.CARTOON -> {
+                        shared.cartoonSeriesBox.query()
+                            .equal(
+                                Series_.name,
+                                series.name,
+                                QueryBuilder.StringOrder.CASE_INSENSITIVE
+                            ).build().use { query ->
+                                val queried = query.find()
+                                if (queried.isNotEmpty()) {
+                                    for (s in queried) {
+                                        if (s.matches(series)) {
+                                            return false
+                                        }
+                                    }
+                                    shared.cartoonSeriesBox.remove(queried)
+                                }
+                                shared.cartoonSeriesBox.put(series)
+                                return true
+                            }
+                    }
+                    SeriesIdentity.MOVIE -> {
+                        shared.moviesSeriesBox.query()
+                            .equal(
+                                Series_.name,
+                                series.name,
+                                QueryBuilder.StringOrder.CASE_INSENSITIVE
+                            ).build().use { query ->
+                                val queried = query.find()
+                                if (queried.isNotEmpty()) {
+                                    for (s in queried) {
+                                        if (s.matches(series)) {
+                                            return false
+                                        }
+                                    }
+                                    shared.moviesSeriesBox.remove(queried)
+                                }
+                                shared.moviesSeriesBox.put(series)
+                                return true
+                            }
+                    }
+                    SeriesIdentity.NEW -> {
+                        shared.miscSeriesBox.query()
+                            .equal(
+                                Series_.name,
+                                series.name,
+                                QueryBuilder.StringOrder.CASE_INSENSITIVE
+                            ).build().use { query ->
+                                val queried = query.find()
+                                if (queried.isNotEmpty()) {
+                                    for (s in queried) {
+                                        if (s.matches(series)) {
+                                            return false
+                                        }
+                                    }
+                                    shared.miscSeriesBox.remove(queried)
+                                }
+                                shared.miscSeriesBox.put(series)
+                                return true
+                            }
+                    }
+                }
             } catch (e: Exception) {
-                e.printStackTrace()
+                FrogLog.logError(
+                    "Failed to add series: ${series.name} with identity: $identity.",
+                    e
+                )
             }
             return false
         }
 
-        fun wcoSeriesForSlug(slug: String): Series? {
-            shared.wcoSeriesBox.query()
-                .equal(Series_.slug, slug, QueryBuilder.StringOrder.CASE_SENSITIVE)
-                .build()
-                .use { query -> return query.findUniqueOrNull() }
+        fun seriesForSlug(
+            slug: String,
+            identity: SeriesIdentity
+        ): Series? {
+            when (identity) {
+                SeriesIdentity.DUBBED -> {
+                    shared.dubbedSeriesBox.query()
+                        .equal(Series_.slug, slug, QueryBuilder.StringOrder.CASE_SENSITIVE)
+                        .build()
+                        .use { query -> return query.findUniqueOrNull() }
+                }
+                SeriesIdentity.SUBBED -> {
+                    shared.subbedSeriesBox.query()
+                        .equal(Series_.slug, slug, QueryBuilder.StringOrder.CASE_SENSITIVE)
+                        .build()
+                        .use { query -> return query.findUniqueOrNull() }
+                }
+                SeriesIdentity.MOVIE -> {
+                    shared.moviesSeriesBox.query()
+                        .equal(Series_.slug, slug, QueryBuilder.StringOrder.CASE_SENSITIVE)
+                        .build()
+                        .use { query -> return query.findUniqueOrNull() }
+                }
+                SeriesIdentity.CARTOON -> {
+                    shared.cartoonSeriesBox.query()
+                        .equal(Series_.slug, slug, QueryBuilder.StringOrder.CASE_SENSITIVE)
+                        .build()
+                        .use { query -> return query.findUniqueOrNull() }
+                }
+                else -> {
+                    shared.miscSeriesBox.query()
+                        .equal(Series_.slug, slug, QueryBuilder.StringOrder.CASE_SENSITIVE)
+                        .build()
+                        .use { query -> return query.findUniqueOrNull() }
+                }
+            }
         }
 
-        fun wcoSeriesForEpisodeSlug(slug: String): Series? {
-            shared.episodesBox.query()
-                .equal(Episode_.slug, slug, QueryBuilder.StringOrder.CASE_INSENSITIVE)
+        fun seriesForSlug(
+            slug: String,
+            identity: Int
+        ): Series? {
+            return seriesForSlug(slug, SeriesIdentity.idForType(identity))
+        }
+
+        fun seriesForSlug(
+            slug: String
+        ): Series? {
+            SeriesIdentity.entries.forEach {
+                val series = seriesForSlug(slug, it)
+                if (series != null) {
+                    return series
+                }
+            }
+            return null
+        }
+
+        fun seriesForEpisodeSlug(
+            slug: String
+        ): Pair<Series?, Episode>? {
+            SeriesIdentity.entries.forEach { identity ->
+                val query: QueryBuilder<Episode> = when (identity) {
+                    SeriesIdentity.DUBBED ->
+                        shared.dubbedEpisodeBox.query()
+
+                    SeriesIdentity.SUBBED ->
+                        shared.subbedEpisodeBox.query()
+
+                    SeriesIdentity.MOVIE ->
+                        shared.moviesEpisodeBox.query()
+
+                    SeriesIdentity.CARTOON ->
+                        shared.cartoonEpisodeBox.query()
+
+                    else -> shared.miscEpisodeBox.query()
+                }
+                query.equal(Episode_.slug, slug, QueryBuilder.StringOrder.CASE_INSENSITIVE)
+                    .build().use {
+                        val episode = it.findUniqueOrNull()
+                        if (episode != null) {
+                            return Pair(seriesForSlug(episode.seriesSlug, identity), episode)
+                        }
+                    }
+            }
+            return null
+        }
+
+        @Suppress("UNUSED")
+        fun seriesForEpisodeSlug(
+            slug: String,
+            identity: SeriesIdentity
+        ): Series? {
+            val query: QueryBuilder<Episode> = when (identity) {
+                SeriesIdentity.DUBBED ->
+                    shared.dubbedEpisodeBox.query()
+
+                SeriesIdentity.SUBBED ->
+                    shared.subbedEpisodeBox.query()
+
+                SeriesIdentity.MOVIE ->
+                    shared.moviesEpisodeBox.query()
+
+                SeriesIdentity.CARTOON ->
+                    shared.cartoonEpisodeBox.query()
+
+                else -> shared.miscEpisodeBox.query()
+            }
+            query.equal(Episode_.slug, slug, QueryBuilder.StringOrder.CASE_INSENSITIVE)
                 .build().use {
                     val episode = it.findUniqueOrNull()
                     return if (episode != null) {
-                        wcoSeriesForSlug(episode.seriesSlug)
+                        seriesForSlug(episode.seriesSlug, identity)
                     } else null
                 }
         }
 
         fun areIdentityLinksComplete(identity: SeriesIdentity): Boolean {
-            shared.linksBox.query()
+            shared.wcoLinksBox.query()
                 .equal(CategoryLink_.type, identity.type.toLong())
                 .build().use {
                     return it.find().size >= 500
@@ -258,7 +479,7 @@ class BoxHelper {
             identity: SeriesIdentity
         ): Boolean {
             if (identityLinkForSeriesSlug(slug) == null) {
-                shared.linksBox.put(
+                shared.wcoLinksBox.put(
                     CategoryLink(
                         slug = slug,
                         type = identity.type
@@ -284,7 +505,7 @@ class BoxHelper {
 
         private fun identityLinkForSeriesSlug(slug: String): CategoryLink? {
             try {
-                shared.linksBox.query()
+                shared.wcoLinksBox.query()
                     .equal(
                         CategoryLink_.slug,
                         slug,
@@ -295,7 +516,7 @@ class BoxHelper {
                     }
             } catch (ignored: Exception) {
                 try {
-                    shared.linksBox.query()
+                    shared.wcoLinksBox.query()
                         .contains(
                             CategoryLink_.slug,
                             slug,
@@ -316,35 +537,20 @@ class BoxHelper {
             if (categoryLink != null) {
                 return categoryLink.identity
             }
-            return SeriesIdentity.NONE
+            return SeriesIdentity.NEW
         }
 
-        suspend fun downloadSeriesImage(series: Series) {
-            if (series.imageLink.isEmpty()) {
-                return
-            }
-            val saveFolder = File(seriesImagesPath)
-            if (!saveFolder.exists() && !saveFolder.mkdirs()) {
-                FrogLog.writeMessage("Unable to download series image: ${series.imageLink}. Save folder was unable to be created.")
-                return
-            }
-            val saveFile = File(
-                "${saveFolder.absolutePath}${File.separator}" +
-                        Tools.titleForImages(series.name)
-            )
-            if (!saveFile.exists()) {
-                try {
-                    Tools.downloadFile(
-                        series.imageLink,
-                        saveFile,
-                        integerSetting(Defaults.TIMEOUT) * 1000,
-                        UserAgents.random
-                    )
-                    FrogLog.writeMessage("Successfully downloaded image: ${series.imageLink}")
-                } catch (e: Exception) {
-                    FrogLog.writeMessage("Failed to download image for ${series.imageLink}. Error: ${e.localizedMessage}")
+        fun genreForName(name: String): Genre {
+            shared.wcoGenreBox.query()
+                .equal(Genre_.name, name, QueryBuilder.StringOrder.CASE_INSENSITIVE)
+                .build().use {
+                    val genre = it.findUniqueOrNull()
+                    if (genre != null) {
+                        return genre
+                    } else {
+                        return Genre("Null")
+                    }
                 }
-            }
         }
     }
 }

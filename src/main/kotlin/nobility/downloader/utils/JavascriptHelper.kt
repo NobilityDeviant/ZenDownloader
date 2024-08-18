@@ -11,7 +11,7 @@ object JavascriptHelper {
         functionChildLink: String,
         quality: Quality
     ): String {
-        return videoLoadingFunction
+        return X
             .replace(LINK_KEY, functionChildLink)
             .replace(RES_KEY, quality.htmlText)
     }
@@ -19,39 +19,37 @@ object JavascriptHelper {
     fun changeUrl(
         newUrl: String
     ): String {
-        return directUrlChanger.replace(RES_KEY, newUrl)
-    }
-
-    fun advancedChangeUrl(
-        newUrl: String
-    ): String {
-        return advancedDirectUrlChanger.replace(RES_KEY, newUrl)
+        return Y.replace(RES_KEY, newUrl)
     }
 
     /**
      * Get all video links using an edited version of a function found inside
      * the video frames source code.
-     * Queries the url and redirects to that url, so we can
-     * extract it with Selenium.
+     * Queries the url and redirects to that url so we can extract it with Selenium.
      */
-    private const val videoLoadingFunction = "\$.getJSON(\"$LINK_KEY\", function(response){\n" +
-            "        vsd     = response.enc;\n" +
-            "        vhd     = response.hd;\n" +
-            "        vfhd    = response.fhd;\n" +
-            "        cdn     = response.cdn;\n" +
-            "        server  = response.server;\n" +
-            "\t\tlocation.href = server + '/getvid?evid=' + $RES_KEY\n" +
-            "});"
+    private const val X = """
+                $.getJSON("$LINK_KEY", function(response) {
+                    vsd = response.enc;
+                    vhd = response.hd;
+                    vfhd = response.fhd;
+                    cdn = response.cdn;
+                    server = response.server;
+                    location.href = server + '/getvid?evid=' + $RES_KEY
+                });
+            """
 
-    private const val directUrlChanger = "location.href = '$RES_KEY'"
-
-    private const val advancedDirectUrlChanger = "window.goToThis = function(url) {\n" +
-            "    var link = document.createElement(\"a\");\n" +
-            "    link.setAttribute(\"href\", url);\n" +
-            "    link.style.display = \"none\";\n" +
-            "    document.body.appendChild(link);\n" +
-            "    link.click();\n" +
-            "}\n" +
-            "goToThis('$RES_KEY');"
+    /**
+     * Redirect to another link internally so certain blocking methods won't work.
+     */
+    private const val Y = """
+                window.goToThis = function(url) {
+                    var link = document.createElement("a");
+                    link.setAttribute("href", url);
+                    link.style.display = "none";
+                    document.body.appendChild(link);
+                    link.click();
+                }
+                goToThis('$RES_KEY');
+            """
 
 }

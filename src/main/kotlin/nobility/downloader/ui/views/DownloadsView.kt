@@ -14,9 +14,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.CursorDropdownMenu
 import androidx.compose.material.Icon
 import androidx.compose.material.ripple.rememberRipple
-import androidx.compose.material3.Divider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -29,7 +29,7 @@ import compose.icons.EvaIcons
 import compose.icons.evaicons.Fill
 import compose.icons.evaicons.fill.*
 import kotlinx.coroutines.launch
-import nobility.downloader.core.BoxHelper.Companion.wcoSeriesForSlug
+import nobility.downloader.core.BoxHelper.Companion.seriesForSlug
 import nobility.downloader.core.Core
 import nobility.downloader.core.entities.Download
 import nobility.downloader.core.scraper.data.ToDownload
@@ -37,7 +37,9 @@ import nobility.downloader.ui.components.defaultDropdownItem
 import nobility.downloader.ui.components.dialog.DialogHelper
 import nobility.downloader.ui.windows.utils.AppWindowScope
 import nobility.downloader.utils.Tools
+import nobility.downloader.utils.light
 import nobility.downloader.utils.slugToLink
+import nobility.downloader.utils.tone
 
 class DownloadsView {
 
@@ -47,7 +49,7 @@ class DownloadsView {
     @Composable
     fun downloadsUi(windowScope: AppWindowScope) {
         val scope = rememberCoroutineScope()
-        val listState = rememberLazyListState()
+        val scrollState = rememberLazyListState()
         Column(
             modifier = Modifier.fillMaxSize()
         ) {
@@ -65,39 +67,39 @@ class DownloadsView {
                         .draggable(
                             state = rememberDraggableState {
                                 scope.launch {
-                                    listState.scrollBy(-it)
+                                    scrollState.scrollBy(-it)
                                 }
                             },
                             orientation = Orientation.Vertical,
                         ),
-                    state = listState
+                    state = scrollState
                 ) {
-                    items(downloads, key = { it.name }) {
+                    items(downloads, key = { it.nameAndResolution() }) {
                         downloadRow(it, windowScope)
                     }
                 }
                 VerticalScrollbar(
                     modifier = Modifier.align(Alignment.CenterEnd)
+                        .background(MaterialTheme.colorScheme.surface.tone(20.0))
                         .fillMaxHeight()
-                        .background(MaterialTheme.colorScheme.onSurfaceVariant)
                         .padding(top = 3.dp, bottom = 3.dp),
                     style = ScrollbarStyle(
                         minimalHeight = 16.dp,
                         thickness = 10.dp,
                         shape = RoundedCornerShape(10.dp),
                         hoverDurationMillis = 300,
-                        unhoverColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.70f),
-                        hoverColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.90f)
+                        unhoverColor = MaterialTheme.colorScheme.surface.tone(50.0).copy(alpha = 0.70f),
+                        hoverColor = MaterialTheme.colorScheme.surface.tone(50.0).copy(alpha = 0.90f)
                     ),
                     adapter = rememberScrollbarAdapter(
-                        scrollState = listState
+                        scrollState = scrollState
                     )
                 )
             }
         }
         LaunchedEffect(downloads.size) {
             if (!deletedFile) {
-                listState.animateScrollToItem(0)
+                scrollState.animateScrollToItem(0)
             } else {
                 deletedFile = false
             }
@@ -312,14 +314,7 @@ class DownloadsView {
             )
         ) {
             if (!download.isComplete) {
-                if (download.downloading) {
-                    defaultDropdownItem(
-                        "Pause",
-                        EvaIcons.Fill.PauseCircle
-                    ) {
-                        closeMenu()
-                    }
-                } else {
+                if (!download.downloading) {
                     defaultDropdownItem(
                         "Resume",
                         EvaIcons.Fill.Download
@@ -333,11 +328,17 @@ class DownloadsView {
                         } else {
                             Core.currentUrl = download.slug.slugToLink()
                             Core.child.start()
-                            windowScope.showToast("Launched downloader for ${download.name}")
                         }
                         closeMenu()
                     }
-                }
+                } /*else {
+                    defaultDropdownItem(
+                        "Pause",
+                        EvaIcons.Fill.PauseCircle
+                    ) {
+                        closeMenu()
+                    }
+                }*/
             }
             defaultDropdownItem(
                 "Series Details",
@@ -346,7 +347,7 @@ class DownloadsView {
                 closeMenu()
                 val slug = download.seriesSlug
                 if (slug.isNotEmpty()) {
-                    val series = wcoSeriesForSlug(slug)
+                    val series = seriesForSlug(slug)
                     if (series != null) {
                         Core.openDownloadConfirm(
                             ToDownload(series)
@@ -418,6 +419,7 @@ class DownloadsView {
                                 Are you sure you want to delete the video:
                                 ${download.name}?
                             """.trimIndent(),
+                            "Delete File",
                             onConfirmTitle = "Delete File"
                         ) {
                             val file = download.downloadFile()
@@ -444,10 +446,13 @@ class DownloadsView {
                 ) { showFileMenu = showFileMenu.not() }
                 .clickable(
                     interactionSource = remember { MutableInteractionSource() },
-                    indication = rememberRipple(color = MaterialTheme.colorScheme.primary)
+                    indication = rememberRipple(
+                        color = MaterialTheme.colorScheme
+                            .secondaryContainer.light()
+                    )
                 ) { showFileMenu = showFileMenu.not() }
                 .background(
-                    color = MaterialTheme.colorScheme.surfaceVariant,
+                    color = MaterialTheme.colorScheme.secondaryContainer,
                     shape = RoundedCornerShape(5.dp)
                 ).height(rowHeight).fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(4.dp)
@@ -504,7 +509,7 @@ class DownloadsView {
     private fun divider(
         header: Boolean = false
     ) {
-        Divider(
+        VerticalDivider(
             modifier = Modifier.fillMaxHeight()
                 .width(1.dp)
                 .background(

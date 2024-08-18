@@ -29,7 +29,7 @@
     },
     {
       "id": "2:8562217795792003412",
-      "lastPropertyId": "10:5018330715711378470",
+      "lastPropertyId": "11:1979831508215526634",
       "name": "Download",
       "properties": [
         {
@@ -77,13 +77,18 @@
           "id": "10:5018330715711378470",
           "name": "resolution",
           "type": 5
+        },
+        {
+          "id": "11:1979831508215526634",
+          "name": "isMovie",
+          "type": 1
         }
       ],
       "relations": []
     },
     {
       "id": "3:6656632539774513118",
-      "lastPropertyId": "6:2291069378504970159",
+      "lastPropertyId": "7:4388323985734326759",
       "name": "Episode",
       "properties": [
         {
@@ -111,6 +116,11 @@
           "id": "6:2291069378504970159",
           "name": "lastUpdated",
           "type": 6
+        },
+        {
+          "id": "7:4388323985734326759",
+          "name": "isMovie",
+          "type": 1
         }
       ],
       "relations": []

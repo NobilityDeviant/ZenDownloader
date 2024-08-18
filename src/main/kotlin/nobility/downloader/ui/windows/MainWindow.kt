@@ -9,6 +9,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import compose.icons.EvaIcons
@@ -77,8 +78,7 @@ private fun uiWrapper(
                     tooltipIconButton(
                         tooltipText = mainIconText,
                         icon = if (Core.currentPage == Page.HOME)
-                            Icons.Filled.Settings else EvaIcons.Fill.ArrowBack,
-                        tooltipModifier = Modifier
+                            Icons.Filled.Settings else EvaIcons.Fill.ArrowBack
                     ) {
                         if (Core.currentPage == Page.HOME) {
                             Core.openSettings()
@@ -87,6 +87,7 @@ private fun uiWrapper(
                                 if (Core.settings.settingsChanged()) {
                                     DialogHelper.showConfirm(
                                         "You have unsaved settings. Would you like to save them?",
+                                        "Save Settings",
                                         onConfirmTitle = "Save",
                                         onDeny = {
                                             Core.currentPage = Page.HOME
@@ -137,6 +138,15 @@ private fun uiWrapper(
                                 }
                             }
                         }
+                    } else if (Core.currentPage == Page.DOWNLOADS) {
+                        tooltipIconButton(
+                            "Open Download Folder",
+                            icon = EvaIcons.Fill.Folder
+                        ) {
+                            Tools.openFolder(
+                                Defaults.SAVE_FOLDER.string()
+                            )
+                        }
                     }
                     if (Core.currentPage != Page.SETTINGS) {
                         tooltipIconButton(
@@ -154,19 +164,11 @@ private fun uiWrapper(
                         ) {
                             if (Core.currentPage == Page.HOME) {
                                 defaultDropdownItem(
-                                    "Open Download Folder",
-                                    EvaIcons.Fill.Folder
-                                ) {
-                                    closeMenu()
-                                    Tools.openFolder(
-                                        Defaults.SAVE_FOLDER.string()
-                                    )
-                                }
-                                defaultDropdownItem(
                                     "Open Download History",
                                     EvaIcons.Fill.Archive
                                 ) {
                                     closeMenu()
+                                    scope.showToast("HI")
                                     Core.openHistory()
                                 }
                                 defaultDropdownItem(
@@ -197,7 +199,8 @@ private fun uiWrapper(
                                     closeMenu()
                                     DialogHelper.showMessage(
                                         "How To Use",
-                                        HowToUse.text
+                                        HowToUse.text,
+                                        DpSize(400.dp, 400.dp)
                                     )
                                 }
                                 defaultDropdownItem(
@@ -205,7 +208,11 @@ private fun uiWrapper(
                                     EvaIcons.Fill.Keypad
                                 ) {
                                     closeMenu()
-                                    DialogHelper.showMessage("Key Combinations", keyGuide)
+                                    DialogHelper.showMessage(
+                                        "Key Combinations",
+                                        keyGuide,
+                                        DpSize(400.dp, 400.dp)
+                                    )
                                 }
                                 defaultDropdownItem(
                                     "About",
@@ -229,7 +236,8 @@ private fun uiWrapper(
                                             Github: 
                                             ${AppInfo.GITHUB_URL}
                                             
-                                        """.trimIndent()
+                                        """.trimIndent(),
+                                        size = DpSize(400.dp, 400.dp)
                                     )
                                 }
                             } else if (Core.currentPage == Page.DOWNLOADS) {
@@ -262,7 +270,8 @@ private fun uiWrapper(
                                                 Are you sure you want to clear all downloads?
                                                 This is just going to clear the downloaf list. No files will be deleted.
                                                 This action is irreversible unless you save a backup of the database folder.
-                                            """.trimIndent()
+                                            """.trimIndent(),
+                                            "Clear Downloads"
                                         ) {
                                             val size = Core.child.downloadList.size
                                             Core.child.downloadList.clear()
@@ -300,11 +309,6 @@ private fun uiWrapper(
                 modifier = Modifier.padding(top = it.calculateTopPadding())
             ) {
                 content(it)
-            }
-            Box {
-                Core.messageDialog.content()
-                Core.confirmDialog.content()
-                Core.optionDialog.content()
             }
             ApplicationState.addToastToWindow(scope)
         }

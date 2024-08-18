@@ -36,6 +36,7 @@ import nobility.downloader.core.BoxHelper
 import nobility.downloader.core.BoxHelper.Companion.boolean
 import nobility.downloader.core.BoxHelper.Companion.int
 import nobility.downloader.core.BoxHelper.Companion.string
+import nobility.downloader.core.BoxMaker
 import nobility.downloader.core.Core
 import nobility.downloader.core.entities.Episode
 import nobility.downloader.core.scraper.SeriesUpdater
@@ -51,6 +52,7 @@ import nobility.downloader.ui.components.dialog.DialogHelper
 import nobility.downloader.ui.windows.utils.AppWindowScope
 import nobility.downloader.ui.windows.utils.ApplicationState
 import nobility.downloader.utils.*
+import java.util.*
 
 class DownloadConfirmWindow(
     private val toDownload: ToDownload
@@ -105,7 +107,8 @@ class DownloadConfirmWindow(
                     fontWeight = FontWeight.Bold
                 )
                 Image(
-                    bitmap = ImageUtils.loadImageFromLink(
+                    bitmap = ImageUtils.loadImageFromFileWithBackup(
+                        series.imagePath,
                         series.imageLink
                     ),
                     contentDescription = "Series Image",
@@ -131,7 +134,7 @@ class DownloadConfirmWindow(
                         shape = RoundedCornerShape(5.dp)
                     )
             ) {
-                if (series.genres.isNotEmpty()) {
+                if (series.genreNames.isNotEmpty()) {
                     LazyRow(
                         horizontalArrangement = Arrangement.spacedBy(4.dp),
                         verticalAlignment = Alignment.CenterVertically,
@@ -148,7 +151,9 @@ class DownloadConfirmWindow(
                         state = genresListState
                     ) {
                         items(
-                            series.genres,
+                            series.genreNames.map {
+                                BoxHelper.genreForName(it)
+                            }.distinct(),
                             key = { it.id }
                         ) {
                             defaultButton(
@@ -230,7 +235,7 @@ class DownloadConfirmWindow(
                             if (!toDownload.isMovie) {
                                 defaultButton(
                                     "Check For New Episodes",
-                                    height = 40.dp,
+                                    height = 50.dp,
                                     width = 150.dp,
                                     padding = 0.dp,
                                     enabled = checkForEpisodesButtonEnabled,
@@ -255,11 +260,14 @@ class DownloadConfirmWindow(
                             if (toDownload.isMovie) {
                                 defaultButton(
                                     "Download Movie",
-                                    height = 40.dp,
+                                    height = 50.dp,
                                     width = 175.dp,
                                     padding = 0.dp,
                                     enabled = downloadButtonEnabled,
                                 ) {
+                                    BoxMaker.makeHistory(
+                                        series.slug
+                                    )
                                     if (Core.child.isRunning) {
                                         val added = Core.child.addEpisodesToQueue(
                                             if (singleEpisode)
@@ -345,7 +353,7 @@ class DownloadConfirmWindow(
                                         "Download ${selectedEpisodes.size} Episodes"
                                     else
                                         "Select Episodes",
-                                    height = 40.dp,
+                                    height = 50.dp,
                                     width = 175.dp,
                                     padding = 0.dp,
                                     enabled = downloadButtonEnabled,
@@ -358,6 +366,9 @@ class DownloadConfirmWindow(
                                         showToast("You must select at least 1 episode.")
                                         return@defaultButton
                                     }
+                                    BoxMaker.makeHistory(
+                                        series.slug
+                                    )
                                     if (Core.child.isRunning) {
                                         val added = Core.child.addEpisodesToQueue(
                                             if (singleEpisode)
@@ -453,7 +464,7 @@ class DownloadConfirmWindow(
                                     boxColor = MaterialTheme.colorScheme.primary,
                                     boxTextColor = MaterialTheme.colorScheme.onPrimary,
                                     boxWidth = 140.dp,
-                                    boxHeight = 40.dp,
+                                    boxHeight = 50.dp,
                                     centerBoxText = true,
                                     onTextClick = { openQuality = true },
                                 ) { openQuality = false }
@@ -722,7 +733,7 @@ class DownloadConfirmWindow(
         isExpanded: Boolean,
         onHeaderClick: () -> Unit
     ) {
-        item {
+        item(UUID.randomUUID().toString()) {
             seasonHeader(
                 seasonData = seasonData,
                 expanded = isExpanded,
@@ -730,7 +741,10 @@ class DownloadConfirmWindow(
             )
         }
         if (isExpanded) {
-            items(seasonData.episodes) {
+            items(
+                seasonData.episodes,
+                key = { UUID.randomUUID().toString() }
+            ) {
                 episodeRow(it)
             }
         }
@@ -762,7 +776,7 @@ class DownloadConfirmWindow(
                 }
             }
             val updatedEpisodes = result.data.updatedEpisodes
-            val seriesWco = BoxHelper.wcoSeriesForSlug(series.slug)
+            val seriesWco = BoxHelper.seriesForSlug(series.slug)
             seriesWco?.updateEpisodes(updatedEpisodes)
             series.updateEpisodes(updatedEpisodes)
             downloadButtonEnabled.value = true

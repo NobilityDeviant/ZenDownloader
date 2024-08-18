@@ -4,8 +4,8 @@ import kotlinx.coroutines.*
 import nobility.downloader.core.BoxHelper.Companion.boolean
 import nobility.downloader.core.BoxHelper.Companion.downloadForSlugAndQuality
 import nobility.downloader.core.BoxHelper.Companion.int
+import nobility.downloader.core.BoxHelper.Companion.seriesForSlug
 import nobility.downloader.core.BoxHelper.Companion.string
-import nobility.downloader.core.BoxHelper.Companion.wcoSeriesForSlug
 import nobility.downloader.core.Core
 import nobility.downloader.core.driver.DriverBase
 import nobility.downloader.core.entities.Download
@@ -139,7 +139,9 @@ class VideoDownloader(
                         }
                     }
                 }
-                val series = wcoSeriesForSlug(currentEpisode.seriesSlug)
+                val series = seriesForSlug(
+                    currentEpisode.seriesSlug
+                )
                 if (series == null) {
                     writeMessage(
                         "Failed to find series for episode: ${currentEpisode.name}. Unable to create save folder."
@@ -191,7 +193,7 @@ class VideoDownloader(
 
                 if (downloadLink.isEmpty()) {
                     val link = slug.slugToLink()
-                    driver.get(link)
+                    driver.navigate().to(link)
                     val wait = WebDriverWait(driver, Duration.ofSeconds(15))
                     val frameIds = listOf(
                         "anime-js-0",
@@ -290,7 +292,7 @@ class VideoDownloader(
                     } else {
                         logInfo("Using existing download for ${currentEpisode.name}")
                     }
-                    driver.get(downloadLink)
+                    driver.navigate().to(downloadLink)
                     val originalFileSize = fileSize(downloadLink)
                     if (originalFileSize <= 5000) {
                         writeMessage("Retrying... Failed to determine file size for: " + currentEpisode.name)
@@ -395,7 +397,7 @@ class VideoDownloader(
         val fullLink = slug.slugToLink()
         logInfo("Scraping resolution links from $fullLink")
         val qualities = mutableListOf<QualityAndDownload>()
-        driver.get(fullLink)
+        driver.navigate().to(fullLink)
         val wait = WebDriverWait(driver, Duration.ofSeconds(60))
         val frameIds = listOf(
             "anime-js-0",
@@ -423,7 +425,7 @@ class VideoDownloader(
                 if (!frameLink.isNullOrEmpty()) {
                     logInfo("Executing resolution javascript function.")
                     //must redirect like this or else we get forbidden
-                    executeJs(JavascriptHelper.advancedChangeUrl(frameLink))
+                    executeJs(JavascriptHelper.changeUrl(frameLink))
                     logInfo("Javascript executed. Waiting ${pageChangeWaitTime / 1000} seconds for page change.")
                     delay(pageChangeWaitTime)
                     if (driver.pageSource.contains("403 Forbidden")) {
@@ -620,7 +622,7 @@ class VideoDownloader(
             }
         }
         val link = MovieHandler.wcoMoviePlaylistLink + slug
-        driver.get(link)
+        driver.navigate().to(link)
         val wait = WebDriverWait(driver, Duration.ofSeconds(15))
         val downloadLink: String
         val videoLinkError: String
@@ -668,7 +670,7 @@ class VideoDownloader(
             } else {
                 logInfo("Using existing download for ${currentEpisode.name}")
             }
-            driver.get(downloadLink)
+            driver.navigate().to(downloadLink)
             val originalFileSize = fileSize(downloadLink)
             if (originalFileSize <= 5000) {
                 writeMessage("Retrying... Failed to determine file size for: " + currentEpisode.name)

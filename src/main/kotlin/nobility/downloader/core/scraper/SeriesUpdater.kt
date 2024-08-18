@@ -22,7 +22,7 @@ object SeriesUpdater {
         val result = scraper.getSeriesEpisodesWithSlug(series.slug)
         scraper.killDriver()
         if (result.data != null) {
-            if (result.data.size > series.episodes.size) {
+            if (result.data.size > series.episodesSize) {
                 return@withContext Resource.Success(
                     NewEpisodes(compareForNewEpisodes(series, result.data), result.data)
                 )

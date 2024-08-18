@@ -34,6 +34,7 @@ fun loadKeyEvents(): (KeyEvent) -> Boolean = {
             if (Core.settings.settingsChanged()) {
                 DialogHelper.showConfirm(
                     "You have unsaved settings. Would you like to save them?",
+                    "Save Settings",
                     onConfirmTitle = "Save",
                     onDeny = {
                         Core.currentPage = Page.HOME
