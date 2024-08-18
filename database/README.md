@@ -10,10 +10,10 @@ Example of path: `C:\Users\CuratedDev\.zen_database\series\dubbed\`
 
 # Download
 
-**Dubbed:** [Download]([dubbed.zip](https://github.com/NobilityDeviant/ZenDownloader/raw/master/database/dubbed.zip))
+**Dubbed:** [dubbed.zip](https://github.com/NobilityDeviant/ZenDownloader/raw/master/database/dubbed.zip)
 
-**Subbed:** [Download]([subbed.zip](https://github.com/NobilityDeviant/ZenDownloader/raw/master/database/subbed.zip))
+**Subbed:** [subbed.zip](https://github.com/NobilityDeviant/ZenDownloader/raw/master/database/subbed.zip)
 
 **Movies:** Will upload soon.
 
-**Cartoon:** [Download]([cartoon.zip](https://github.com/NobilityDeviant/ZenDownloader/raw/master/database/cartoon.zip))
+**Cartoon:** [cartoon.zip](https://github.com/NobilityDeviant/ZenDownloader/raw/master/database/cartoon.zip)
