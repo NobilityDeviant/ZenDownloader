@@ -6,14 +6,14 @@ They are all split by their types: Dubbed, Subbed, Movies and Cartoon.
 
 Each of these archives must be unzipped inside the database series folder which is inside your User folder.
 
-Example of path: **C:\Users\CuratedDev\.zen_database\series\dubbed\**
+Example of path: `C:\Users\CuratedDev\.zen_database\series\dubbed\`
 
 # Download
 
-# Dubbed: [Download](dubbed.zip)
+**Dubbed:** [Download](dubbed.zip)
 
-# Subbed: [Download](subbed.zip)
+**Subbed:** [Download](subbed.zip)
 
-# Movies: Will upload soon.
+**Movies:** Will upload soon.
 
-# Cartoon: [Download](cartoon.zip)
+**Cartoon:** [Download](cartoon.zip)
