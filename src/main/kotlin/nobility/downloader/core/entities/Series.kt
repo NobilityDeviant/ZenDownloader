@@ -89,19 +89,32 @@ data class Series(
     fun updateGenres(
         genres: List<Genre>
     ) {
+        updateGenresString(genres.map { it.name })
+    }
+
+    fun updateGenresString(
+        genres: List<String>,
+        updateDb: Boolean = true
+    ) {
         this.genreNames.clear()
-        this.genreNames.addAll(genres.map { it.name })
-        val seriesIdentity = SeriesIdentity.idForType(identity)
-        when (seriesIdentity) {
-            SeriesIdentity.DUBBED ->
-                BoxHelper.shared.dubbedSeriesBox.put(this)
-            SeriesIdentity.SUBBED ->
-                BoxHelper.shared.subbedSeriesBox.put(this)
-            SeriesIdentity.MOVIE ->
-                BoxHelper.shared.moviesSeriesBox.put(this)
-            SeriesIdentity.CARTOON ->
-                BoxHelper.shared.cartoonSeriesBox.put(this)
-            else -> BoxHelper.shared.miscSeriesBox.put(this)
+        this.genreNames.addAll(genres)
+        if (updateDb) {
+            val seriesIdentity = SeriesIdentity.idForType(identity)
+            when (seriesIdentity) {
+                SeriesIdentity.DUBBED ->
+                    BoxHelper.shared.dubbedSeriesBox.put(this)
+
+                SeriesIdentity.SUBBED ->
+                    BoxHelper.shared.subbedSeriesBox.put(this)
+
+                SeriesIdentity.MOVIE ->
+                    BoxHelper.shared.moviesSeriesBox.put(this)
+
+                SeriesIdentity.CARTOON ->
+                    BoxHelper.shared.cartoonSeriesBox.put(this)
+
+                else -> BoxHelper.shared.miscSeriesBox.put(this)
+            }
         }
     }
 
@@ -141,6 +154,14 @@ data class Series(
     }
 
     val imagePath get() = BoxHelper.seriesImagesPath + Tools.titleForImages(name)
+    val seriesIdentity get() = SeriesIdentity.idForType(identity)
+    val genreNamesString: String get() {
+        var s = ""
+        genreNames.forEachIndexed { index, genre ->
+            s += genre + if (index != genreNames.lastIndex) ", " else ""
+        }
+        return s
+    }
 
     @JvmField
     @Transient

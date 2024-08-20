@@ -8,7 +8,7 @@ interface AppWindowScope {
     var open: MutableState<Boolean>
 
     /**
-     * When a window is closed programatically, it doesn't actually clean anything.
+     * When a window is closed programmatically, it doesn't actually clean anything.
      * The open variable and this are needed to help.
      */
     var onClose: (() -> Boolean)?

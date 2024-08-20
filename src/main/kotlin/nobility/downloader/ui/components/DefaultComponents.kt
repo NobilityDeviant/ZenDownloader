@@ -206,7 +206,7 @@ fun defaultSettingsTextField(
             ContextMenuDataProvider(
                 items = contextMenuItems
             ) {
-                FixedTextField(
+                fixedTextField(
                     value,
                     enabled = stateEnabled,
                     onValueChange = onValueChanged,
@@ -277,8 +277,8 @@ fun defaultButton(
     text: String,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
-    height: Dp = Dp.Unspecified,
-    width: Dp = Dp.Unspecified,
+    height: Dp = 40.dp,
+    width: Dp = 120.dp,
     colors: ButtonColors = ButtonDefaults.buttonColors(),
     padding: Dp = 5.dp,
     onClick: () -> Unit
@@ -341,31 +341,6 @@ fun defaultIcon(
         tint = iconColor,
         modifier = iconModifier.size(iconSize)
     )
-}
-
-@Composable
-fun defaultFilledIconButton(
-    icon: ImageVector,
-    iconSize: Dp = Constants.mediumIconSize,
-    iconColor: Color = MaterialTheme.colorScheme.onPrimary,
-    iconButtonColors: IconButtonColors = IconButtonDefaults.filledIconButtonColors(),
-    buttonModifier: Modifier = Modifier,
-    iconModifier: Modifier = Modifier,
-    contentDescription: String = "",
-    onClick: () -> Unit
-) {
-    FilledIconButton(
-        onClick = onClick,
-        modifier = buttonModifier,
-        colors = iconButtonColors
-    ) {
-        Icon(
-            icon,
-            contentDescription,
-            tint = iconColor,
-            modifier = iconModifier.size(iconSize)
-        )
-    }
 }
 
 @Composable

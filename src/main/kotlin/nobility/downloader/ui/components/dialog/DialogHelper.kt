@@ -71,6 +71,7 @@ object DialogHelper {
         }
     }
 
+    @Suppress("UNUSED")
     fun showCopyPrompt(
         textToCopy: String,
         message: String = "Do you want to copy this to your clipboard?",

@@ -50,6 +50,8 @@ fun loadKeyEvents(): (KeyEvent) -> Boolean = {
         } else {
             if (Core.currentPage != Page.HOME) {
                 Core.currentPage = Page.HOME
+            } else {
+                Core.currentPage = Page.SETTINGS
             }
         }
         true
@@ -63,7 +65,7 @@ val keyGuide: String get() = """
     
     Anything with CTRL + means you must be holding down the Control Key.
     
-    ESC = Home/Downloader Page
+    ESC = Home Page/Settings Page
     CTRL + D = Downloads Page
     CTRL + S = Settings Page
     CTRL + W = Database Window

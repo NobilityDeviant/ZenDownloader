@@ -53,25 +53,14 @@ dependencies {
     implementation("com.alibaba:fastjson:2.0.51")
     //ui
     implementation("com.materialkolor:material-kolor:1.7.0")
-    //implementation("io.coil-kt.coil3:coil:3.0.0-alpha10")
-    implementation("io.coil-kt.coil3:coil-compose:3.0.0-alpha10")
-    implementation("io.coil-kt.coil3:coil-network-ktor:3.0.0-alpha06")
-    //implementation("io.grpc:grpc-context:1.65.1")
-    //implementation("org.jcodec:jcodec:0.2.5")
-    //implementation("org.bytedeco:javacv-platform:1.5.10")
-    //implementation("net.bramp.ffmpeg:ffmpeg:0.8.0")
 }
 
 apply(plugin = "io.objectbox")
 
-compose {
-    //kotlinCompilerPlugin.set("1.5.8")
-}
-
 compose.desktop {
     application {
         mainClass = "MainKt"
-        jvmArgs += listOf("-Xmx4G")
+        jvmArgs += listOf("-Xmx3G")
 
         nativeDistributions {
             //in order to distribute for mac, we need to use xcode to sign the app.

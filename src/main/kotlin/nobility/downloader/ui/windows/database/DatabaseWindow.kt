@@ -35,6 +35,7 @@ import compose.icons.EvaIcons
 import compose.icons.evaicons.Fill
 import compose.icons.evaicons.fill.ArrowIosDownward
 import compose.icons.evaicons.fill.ArrowIosUpward
+import compose.icons.evaicons.fill.Edit
 import compose.icons.evaicons.fill.Info
 import kotlinx.coroutines.launch
 import nobility.downloader.core.BoxHelper
@@ -42,10 +43,12 @@ import nobility.downloader.core.BoxHelper.Companion.int
 import nobility.downloader.core.BoxHelper.Companion.update
 import nobility.downloader.core.Core
 import nobility.downloader.core.entities.Series
+import nobility.downloader.core.entities.data.SeriesIdentity
 import nobility.downloader.core.scraper.data.ToDownload
 import nobility.downloader.core.settings.Defaults
 import nobility.downloader.ui.components.*
 import nobility.downloader.ui.components.dialog.DialogHelper
+import nobility.downloader.ui.windows.MovieEditor
 import nobility.downloader.ui.windows.utils.ApplicationState
 import nobility.downloader.utils.*
 import java.util.regex.Pattern
@@ -69,6 +72,7 @@ class DatabaseWindow {
     )
     private var searchText by mutableStateOf("")
     private var searchByGenre = mutableStateOf(true)
+    private var resultText by mutableStateOf("")
 
     private val sortedSeries: List<Series>
         get() {
@@ -78,6 +82,23 @@ class DatabaseWindow {
                 DatabaseSort.EPISODES -> databaseByType.sortedBy { it.episodesSize }
                 DatabaseSort.EPISODES_DESC -> databaseByType.sortedByDescending { it.episodesSize }
             }
+        }
+
+    private val filteredSeries: List<Series>
+        get() = sortedSeries.filter {
+            if (searchText.isNotEmpty()) {
+                var foundGenre = false
+                if (searchByGenre.value) {
+                    for (genre in it.genreNames) {
+                        if (genre.equals(searchText, true)) {
+                            foundGenre = true
+                            break
+                        }
+                    }
+                }
+                return@filter it.name.contains(searchText, true) || foundGenre
+            }
+            true
         }
 
     private val databaseByType: List<Series>
@@ -136,6 +157,11 @@ class DatabaseWindow {
                                 }.padding(top = 10.dp, bottom = 15.dp)
                             )
                         }
+                        Text(
+                            resultText,
+                            fontSize = 14.sp,
+                            modifier = Modifier.padding(10.dp)
+                        )
                         Row(
                             horizontalArrangement = Arrangement.spacedBy(5.dp),
                             verticalAlignment = Alignment.CenterVertically
@@ -188,21 +214,7 @@ class DatabaseWindow {
                             state = seasonsListState
                         ) {
                             items(
-                                sortedSeries.filter {
-                                    if (searchText.isNotEmpty()) {
-                                        var foundGenre = false
-                                        if (searchByGenre.value) {
-                                            for (genre in it.genreNames) {
-                                                if (genre.equals(searchText, true)) {
-                                                    foundGenre = true
-                                                    break
-                                                }
-                                            }
-                                        }
-                                        return@filter it.name.contains(searchText, true) || foundGenre
-                                    }
-                                    true
-                                },
+                                filteredSeries,
                                 key = { it.slug }
                             ) {
                                 seriesRow(it)
@@ -225,6 +237,9 @@ class DatabaseWindow {
                                 scrollState = seasonsListState
                             )
                         )
+                        LaunchedEffect(filteredSeries.size) {
+                            resultText = "Showing ${filteredSeries.size} series results"
+                        }
                     }
                 }
             }
@@ -394,6 +409,15 @@ class DatabaseWindow {
                 Core.openDownloadConfirm(
                     ToDownload(series)
                 )
+            }
+            if (series.seriesIdentity == SeriesIdentity.MOVIE) {
+                defaultDropdownItem(
+                    "Edit Movie",
+                    EvaIcons.Fill.Edit
+                ) {
+                    closeMenu()
+                    MovieEditor.open(series)
+                }
             }
         }
         Row(

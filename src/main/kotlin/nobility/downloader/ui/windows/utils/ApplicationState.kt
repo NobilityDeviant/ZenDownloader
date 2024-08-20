@@ -12,7 +12,7 @@ import androidx.compose.ui.window.WindowPlacement
 import androidx.compose.ui.window.WindowPosition
 import androidx.compose.ui.window.rememberWindowState
 import kotlinx.coroutines.launch
-import nobility.downloader.ui.components.toast.ToastHost
+import nobility.downloader.ui.components.toast.toastHost
 import nobility.downloader.ui.components.toast.ToastHostState
 import nobility.downloader.ui.theme.coreTheme
 import nobility.downloader.utils.AppInfo
@@ -89,7 +89,7 @@ class ApplicationState {
             Box(
                 contentAlignment = Alignment.Center
             ) {
-                ToastHost(
+                toastHost(
                     hostState = toastHostState
                 )
             }

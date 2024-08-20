@@ -32,6 +32,7 @@ object Tools {
     )
 
     //i tried, couldn't figure it out :(
+    @Suppress("UNUSED")
     fun addMetaDataToFile(
         file: File,
         metaData: FileMetaData
@@ -154,7 +155,7 @@ object Tools {
     }
 
     //used to fetch image from files for an episode
-    fun seriesNameFromEpisode(title: String): String {
+    private fun seriesNameFromEpisode(title: String): String {
         var mTitle = title
         val episodeKeyword = "Episode"
         if (mTitle.contains(episodeKeyword)) {
@@ -237,9 +238,9 @@ object Tools {
     }
 
     fun secondsToRemainingTime(totalSeconds: Int): String {
-        val hours = totalSeconds / 3600;
-        val minutes = (totalSeconds % 3600) / 60;
-        val seconds = totalSeconds % 60;
+        val hours = totalSeconds / 3600
+        val minutes = (totalSeconds % 3600) / 60
+        val seconds = totalSeconds % 60
         return String.format(
             "%02d:%02d:%02d",
             hours,
@@ -315,92 +316,6 @@ object Tools {
         return 0
     }
 
-    private val isSeriesComparator = Comparator { e1: Any, e2: Any ->
-        val key = "Season"
-        var first = ""
-        var second = ""
-        if (e1 is Episode && e2 is Episode) {
-            first = e1.name
-            second = e2.name
-        }
-        if (first.contains(key) && !second.contains(key)) {
-            return@Comparator -1
-        } else if (second.contains(key) && !first.contains(key)) {
-            return@Comparator 1
-        }
-        return@Comparator 0
-    }
-
-    private val episodesComparator = Comparator { e1: Any, e2: Any ->
-        var first = ""
-        var second = ""
-        if (e1 is Episode && e2 is Episode) {
-            first = e1.name
-            second = e2.name
-        }
-        try {
-            val episodeKey = "Episode"
-            val episodePattern = Pattern.compile("$episodeKey \\d{0,3}")
-            val e1Matcher = episodePattern.matcher(first)
-            val e2Matcher = episodePattern.matcher(second)
-            var e1Number = ""
-            var e2Number = ""
-            while (e1Matcher.find()) {
-                e1Number = e1Matcher.group(0)
-            }
-            while (e2Matcher.find()) {
-                e2Number = e2Matcher.group(0)
-            }
-            FrogLog.writeMessage("e1: $first e2: $second")
-            if (e1Number.isNotEmpty() && e2Number.isEmpty()) {
-                return@Comparator 1
-            } else if (e2Number.isNotEmpty() && e1Number.isEmpty()) {
-                return@Comparator -1
-            }
-            if (e1Number.isNotEmpty() && e2Number.isNotEmpty()) {
-                return@Comparator e1Number.filter { it.isDigit() }.toInt()
-                    .compareTo(e2Number.filter { it.isDigit() }.toInt())
-            }
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
-        return@Comparator first.compareTo(second)
-    }
-
-    val seriesComparator = Comparator { e1: Any, e2: Any ->
-        var first = ""
-        var second = ""
-        if (e1 is Episode && e2 is Episode) {
-            first = e1.name
-            second = e2.name
-        }
-        try {
-            val seasonKey = "Season"
-            val seasonPattern = Pattern.compile("$seasonKey \\d{0,3}")
-            val s1Matcher = seasonPattern.matcher(first)
-            val s2Matcher = seasonPattern.matcher(second)
-            var s1Number = ""
-            var s2Number = ""
-            while (s1Matcher.find()) {
-                s1Number = s1Matcher.group(0)
-            }
-            while (s2Matcher.find()) {
-                s2Number = s2Matcher.group(0)
-            }
-            if (s1Number.isNotEmpty() && s2Number.isEmpty()) {
-                return@Comparator 1
-            } else if (s2Number.isNotEmpty() && s1Number.isEmpty()) {
-                return@Comparator -1
-            }
-            if (s1Number.isNotEmpty() && s2Number.isNotEmpty()) {
-                return@Comparator s1Number.filter { it.isDigit() }.toInt()
-                    .compareTo(s2Number.filter { it.isDigit() }.toInt())
-            }
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
-        return@Comparator first.compareTo(second)
-    }
 
     suspend fun downloadFile(
         link: String,

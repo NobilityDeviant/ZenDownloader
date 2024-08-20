@@ -32,6 +32,7 @@ import nobility.downloader.utils.Constants.maxTimeout
 import nobility.downloader.utils.Constants.minThreads
 import nobility.downloader.utils.Constants.minTimeout
 import nobility.downloader.utils.FrogLog
+import nobility.downloader.utils.Tools
 import nobility.downloader.utils.fileExists
 import nobility.downloader.utils.tone
 import org.jsoup.Jsoup
@@ -153,6 +154,12 @@ class SettingsView {
                     fieldCheckbox(Defaults.HEADLESS_MODE)
                     fieldCheckbox(Defaults.AUTO_SCROLL_CONSOLES)
                     fieldWcoDomain()
+                    defaultButton(
+                        "Open Database Folder",
+                        width = 150.dp
+                    ) {
+                        Tools.openFolder(BoxHelper.databasePath)
+                    }
                     Text(
                         "Error Console",
                         modifier = Modifier.align(Alignment.CenterHorizontally)

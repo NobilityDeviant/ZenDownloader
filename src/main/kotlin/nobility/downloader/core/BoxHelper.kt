@@ -437,35 +437,6 @@ class BoxHelper {
             return null
         }
 
-        @Suppress("UNUSED")
-        fun seriesForEpisodeSlug(
-            slug: String,
-            identity: SeriesIdentity
-        ): Series? {
-            val query: QueryBuilder<Episode> = when (identity) {
-                SeriesIdentity.DUBBED ->
-                    shared.dubbedEpisodeBox.query()
-
-                SeriesIdentity.SUBBED ->
-                    shared.subbedEpisodeBox.query()
-
-                SeriesIdentity.MOVIE ->
-                    shared.moviesEpisodeBox.query()
-
-                SeriesIdentity.CARTOON ->
-                    shared.cartoonEpisodeBox.query()
-
-                else -> shared.miscEpisodeBox.query()
-            }
-            query.equal(Episode_.slug, slug, QueryBuilder.StringOrder.CASE_INSENSITIVE)
-                .build().use {
-                    val episode = it.findUniqueOrNull()
-                    return if (episode != null) {
-                        seriesForSlug(episode.seriesSlug, identity)
-                    } else null
-                }
-        }
-
         fun areIdentityLinksComplete(identity: SeriesIdentity): Boolean {
             shared.wcoLinksBox.query()
                 .equal(CategoryLink_.type, identity.type.toLong())

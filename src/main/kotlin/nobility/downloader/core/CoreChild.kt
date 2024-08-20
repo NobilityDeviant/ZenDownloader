@@ -67,9 +67,6 @@ class CoreChild {
             }
             movieHandler.loadMovies()
             GenresScraper.scrape()
-            //FrogLog.writeMessage("Launching db scraper in 5 seconds")
-            //delay(5_000)
-            //DatabaseScraper.updateWcoDb()
         }
     }
 

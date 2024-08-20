@@ -33,6 +33,7 @@ abstract class DriverBase(
         setupDriver()
     }
 
+    @Suppress("UNUSED")
     private fun WebDriverManager.clearDriverCacheClean(): WebDriverManager {
         val cacheFolder: File = this.config().cacheFolder
         FileUtils.cleanDirectory(cacheFolder)

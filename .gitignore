@@ -9,6 +9,7 @@ debug/
 objectbox-jni-windows-x64.dll
 ### No one should have this kind of power anymore ###
 /src/main/kotlin/nobility/downloader/core/scraper/DatabaseScraper.kt
+/src/main/kotlin/nobility/downloader/core/scraper/MovieUpdater.kt
 
 ### IntelliJ IDEA ###
 .idea/modules.xml

@@ -31,7 +31,7 @@ object ImageUtils {
     }
 
 
-    fun loadImageFromLink(link: String): ImageBitmap {
+    private fun loadImageFromLink(link: String): ImageBitmap {
         if (link.isEmpty()) {
             return useResource(AppInfo.NO_IMAGE_PATH) {
                 ImageIO.read(it).toComposeImageBitmap()
@@ -48,6 +48,7 @@ object ImageUtils {
         }
     }
 
+    @Suppress("UNUSED")
     fun loadImageFromFilePath(filePath: String): ImageBitmap {
         if (filePath.isEmpty()) {
             return useResource(AppInfo.NO_IMAGE_PATH) {
@@ -66,7 +67,7 @@ object ImageUtils {
     }
 
     suspend fun downloadSeriesImage(series: Series) {
-        if (series.imageLink.isEmpty()) {
+        if (series.imageLink.isEmpty() || series.imageLink == "N/A") {
             return
         }
         val saveFolder = File(BoxHelper.seriesImagesPath)
@@ -88,7 +89,11 @@ object ImageUtils {
                 )
                 FrogLog.writeMessage("Successfully downloaded image: ${series.imageLink}")
             } catch (e: Exception) {
-                FrogLog.writeMessage("Failed to download image for ${series.imageLink}. Error: ${e.localizedMessage}")
+                FrogLog.logError(
+                    "Failed to download image for ${series.imageLink}",
+                    e,
+                    true
+                )
             }
         }
     }

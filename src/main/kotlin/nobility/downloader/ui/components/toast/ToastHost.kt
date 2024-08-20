@@ -21,22 +21,22 @@ import kotlinx.coroutines.sync.withLock
 import kotlin.coroutines.resume
 
 /**
- * State of the [ToastHost], which controls the queue and the current [Toast] being shown
- * inside the [ToastHost].
+ * State of the [toastHost], which controls the queue and the current [toast] being shown
+ * inside the [toastHost].
  *
- * This state is usually [remember]ed and used to provide a [ToastHost] to a [Scaffold].
+ * This state is usually [remember]ed and used to provide a [toastHost] to a [Scaffold].
  */
 @Stable
 class ToastHostState {
 
     /**
-     * Only one [Toast] can be shown at a time. Since a suspending Mutex is a fair queue, this
+     * Only one [toast] can be shown at a time. Since a suspending Mutex is a fair queue, this
      * manages our message queue and we don't have to maintain one.
      */
     private val mutex = Mutex()
 
     /**
-     * The current [ToastData] being shown by the [ToastHost], or `null` if none.
+     * The current [ToastData] being shown by the [toastHost], or `null` if none.
      */
     var currentToastData by mutableStateOf<ToastData?>(null)
         private set
@@ -125,10 +125,10 @@ class ToastHostState {
 }
 
 @Composable
-fun ToastHost(
+fun toastHost(
     hostState: ToastHostState,
     modifier: Modifier = Modifier,
-    toast: @Composable (ToastData) -> Unit = { Toast(it) }
+    toastData: @Composable (ToastData) -> Unit = { toast(it) }
 ) {
     val currentToastData = hostState.currentToastData
     val accessibilityManager = LocalAccessibilityManager.current
@@ -142,15 +142,15 @@ fun ToastHost(
             currentToastData.dismiss()
         }
     }
-    FadeInFadeOutWithScale(
+    fadeInFadeOutWithScale(
         current = hostState.currentToastData,
         modifier = modifier,
-        content = toast
+        content = toastData
     )
 }
 
 /**
- * Interface to represent the visuals of one particular [Toast] as a piece of the [ToastData].
+ * Interface to represent the visuals of one particular [toast] as a piece of the [ToastData].
  *
  * @property message text to be shown in the Snackbar
  * @property actionLabel optional action label to show as button in the Snackbar
@@ -168,10 +168,10 @@ interface ToastVisuals {
 }
 
 /**
- * Interface to represent the data of one particular [Toast] as a piece of the
+ * Interface to represent the data of one particular [toast] as a piece of the
  * [ToastHostState].
  *
- * @property visuals Holds the visual representation for a particular [Toast].
+ * @property visuals Holds the visual representation for a particular [toast].
  */
 @Stable
 interface ToastData {
@@ -193,18 +193,18 @@ interface ToastData {
  */
 enum class ToastResult {
     /**
-     * [Toast] that is shown has been dismissed either by timeout of by user
+     * [toast] that is shown has been dismissed either by timeout of by user
      */
     Dismissed,
 
     /**
-     * Action on the [Toast] has been clicked before the time out passed
+     * Action on the [toast] has been clicked before the time out passed
      */
     ActionPerformed,
 }
 
 /**
- * Possible durations of the [Toast] in [ToastHost]
+ * Possible durations of the [toast] in [toastHost]
  */
 enum class ToastDuration {
     /**
@@ -243,9 +243,8 @@ internal fun ToastDuration.toMillis(
     )
 }
 
-// it's basically tweaked nullable version of Crossfade
 @Composable
-private fun FadeInFadeOutWithScale(
+private fun fadeInFadeOutWithScale(
     current: ToastData?,
     modifier: Modifier = Modifier,
     content: @Composable (ToastData) -> Unit

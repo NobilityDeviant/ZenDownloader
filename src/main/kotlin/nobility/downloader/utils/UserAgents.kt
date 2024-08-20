@@ -5,7 +5,7 @@ object UserAgents {
     val random get() = list.random()
 
     //https://www.useragents.me/#most-common-desktop-useragents-json-csv
-    //never use mobile user agents. they cab change the website
+    //never use mobile user agents. they can change the website,
     val list get() =
             """
                 Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.327.66

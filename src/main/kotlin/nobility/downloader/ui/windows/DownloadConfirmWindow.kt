@@ -39,6 +39,7 @@ import nobility.downloader.core.BoxHelper.Companion.string
 import nobility.downloader.core.BoxMaker
 import nobility.downloader.core.Core
 import nobility.downloader.core.entities.Episode
+import nobility.downloader.core.entities.data.SeriesIdentity
 import nobility.downloader.core.scraper.SeriesUpdater
 import nobility.downloader.core.scraper.VideoDownloader
 import nobility.downloader.core.scraper.data.ToDownload
@@ -60,6 +61,7 @@ class DownloadConfirmWindow(
 
     //series is never null
     private val series = toDownload.series!!
+    private val movieMode = toDownload.isMovie || series.identity == SeriesIdentity.MOVIE.type
     private val selectedEpisodes = mutableStateListOf<Episode>()
     private var allSelected = selectedEpisodes.isNotEmpty()
     private var selectText by mutableStateOf(if (allSelected) "Deselect All" else "Select All")
@@ -232,7 +234,7 @@ class DownloadConfirmWindow(
                             verticalAlignment = Alignment.CenterVertically,
                             modifier = Modifier.align(Alignment.CenterHorizontally)
                         ) {
-                            if (!toDownload.isMovie) {
+                            if (!movieMode) {
                                 defaultButton(
                                     "Check For New Episodes",
                                     height = 50.dp,
@@ -257,7 +259,7 @@ class DownloadConfirmWindow(
                                     }
                                 }
                             }
-                            if (toDownload.isMovie) {
+                            if (movieMode) {
                                 defaultButton(
                                     "Download Movie",
                                     height = 50.dp,
@@ -342,7 +344,7 @@ class DownloadConfirmWindow(
                                             FrogLog.logError("Download task failed with the error: " + e.localizedMessage)
                                         }
                                     }
-                                    FrogLog.writeMessage("Successfully launched video downloader for ${selectedEpisodes.size} episode(s).")
+                                    FrogLog.writeMessage("Successfully launched video downloader for movie.")
                                     closeWindow()
                                 }
                             } else {
@@ -447,7 +449,7 @@ class DownloadConfirmWindow(
                                 }
                             }
 
-                            if (!toDownload.isMovie) {
+                            if (!movieMode) {
                                 var openQuality by remember { mutableStateOf(false) }
                                 var qualityName by remember { mutableStateOf(temporaryQuality.tag) }
 
