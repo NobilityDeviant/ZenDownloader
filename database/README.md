@@ -37,3 +37,7 @@ Example of path: `C:\Users\CuratedDev\.zen_database\series_images\`
 # Download Series Images (Last Updated: 8/19/2024)
 
 [Download Images (300MB)](https://www.dropbox.com/scl/fi/26vrk7l9iytspo5f0ko3n/series_images.zip?rlkey=ueyb3r6sak9uqk9dtwyg3s9tn&st=onciud73&dl=1)
+
+You can also access the database folder with this button inside the Settings page.
+
+[Database Folder Button](images/database_folder.png)
