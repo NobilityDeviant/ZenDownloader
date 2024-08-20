@@ -1,7 +1,7 @@
 package nobility.downloader.core.settings
 
-import nobility.downloader.ui.windows.database.DatabaseType
 import nobility.downloader.ui.windows.database.DatabaseSort
+import nobility.downloader.ui.windows.database.DatabaseType
 import nobility.downloader.utils.Constants
 
 /**
@@ -142,7 +142,7 @@ enum class Defaults(
         "auto_scroll_consoles",
         true,
         """
-            Stops all consoles from auto scrolling when a new text is added to it.
+            Auto scrolls all consoles to the bottom when a new text is added to it.
             Default: On
         """.trimIndent()
     ),

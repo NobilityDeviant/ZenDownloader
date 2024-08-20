@@ -66,7 +66,12 @@ compose.desktop {
             //in order to distribute for mac, we need to use xcode to sign the app.
             //i dont have a mac and we can't make a jar afaik. :(
             //might use a 3rd party later if mac is in demand
-            targetFormats(TargetFormat.Exe, TargetFormat.AppImage)
+            targetFormats(
+                TargetFormat.Exe,
+                TargetFormat.Msi,
+                TargetFormat.Deb,
+                TargetFormat.Rpm
+            )
             packageName = "ZenDownloader"
             packageVersion = version.toString()
             description = "ZenDownloader"
