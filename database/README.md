@@ -40,4 +40,4 @@ Example of path: `C:\Users\CuratedDev\.zen_database\series_images\`
 
 You can also access the database folder with this button inside the Settings page.
 
-[Database Folder Button](images/database_folder.png)
+![Database Folder Button](images/database_folder.png)
