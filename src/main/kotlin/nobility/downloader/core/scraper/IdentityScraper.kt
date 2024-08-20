@@ -1,7 +1,6 @@
 package nobility.downloader.core.scraper
 
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
+import kotlinx.coroutines.*
 import nobility.downloader.core.BoxHelper
 import nobility.downloader.core.BoxHelper.Companion.addIdentityLinkWithSlug
 import nobility.downloader.core.BoxHelper.Companion.addIdentityLinksWithSlug
@@ -19,71 +18,90 @@ import org.jsoup.Jsoup
  */
 object IdentityScraper {
 
-    private class Scraper: DriverBase()
+    private class Scraper : DriverBase()
 
     private suspend fun scrapeLinksToSlugs(
         identity: SeriesIdentity
-    ) = withContext(Dispatchers.IO) {
+    ) = withContext(Dispatchers.Default) {
         val fullIdentityLink = identity.slug.slugToLink()
         val slugs = mutableListOf<String>()
         val scraper = Scraper()
-        scraper.driver.get(fullIdentityLink)
-        val doc = Jsoup.parse(scraper.driver.pageSource)
-        scraper.killDriver()
-        val list = doc.getElementsByClass("ddmcc")
-        val uls = list.select("ul")
-        for (ul in uls) {
-            val lis = ul.select("li")
-            for (li in lis) {
-                var s = li.select("a").attr("href")
-                if (s.contains("//")) {
-                    s = Tools.extractSlugFromLink(s)
+        try {
+            scraper.driver.navigate().to(fullIdentityLink)
+            val doc = Jsoup.parse(scraper.driver.pageSource)
+            //runs really slow on ubuntu for some reason
+            val list = doc.getElementsByClass("ddmcc")
+            val uls = list.select("ul")
+            for (ul in uls) {
+                val lis = ul.select("li")
+                for (li in lis) {
+                    var s = li.select("a").attr("href")
+                    if (s.contains("//")) {
+                        s = Tools.extractSlugFromLink(s)
+                    }
+                    if (s.startsWith("/")) {
+                        s = s.replaceFirst("/", "")
+                    }
+                    s = s.fixedSlug()
+                    slugs.add(s)
                 }
-                if (s.startsWith("/")) {
-                    s = s.replaceFirst("/", "")
-                }
-                s = s.fixedSlug()
-                slugs.add(s)
             }
-        }
-        if (slugs.isEmpty()) {
-            FrogLog.writeMessage("Failed to find link for $identity")
-            return@withContext
-        }
-        val added = addIdentityLinksWithSlug(slugs, identity)
-        if (added > 0) {
-            when (identity) {
-                SeriesIdentity.SUBBED -> {
-                    FrogLog.writeMessage("Successfully downloaded $added missing subbed link(s).")
-                }
-
-                SeriesIdentity.DUBBED -> {
-                    FrogLog.writeMessage("Successfully downloaded $added missing dubbed link(s).")
-                }
-
-                SeriesIdentity.CARTOON -> {
-                    FrogLog.writeMessage("Successfully downloaded $added missing cartoon link(s).")
-                }
-
-                SeriesIdentity.MOVIE -> {
-                    FrogLog.writeMessage("Successfully downloaded $added missing movie link(s).")
-                }
-
-                else -> {}
+            if (slugs.isEmpty()) {
+                FrogLog.writeMessage("Failed to find link for $identity")
+                return@withContext
             }
+            val added = addIdentityLinksWithSlug(slugs, identity)
+            if (added > 0) {
+                when (identity) {
+                    SeriesIdentity.SUBBED -> {
+                        FrogLog.writeMessage("Successfully downloaded $added missing subbed link(s).")
+                    }
+
+                    SeriesIdentity.DUBBED -> {
+                        FrogLog.writeMessage("Successfully downloaded $added missing dubbed link(s).")
+                    }
+
+                    SeriesIdentity.CARTOON -> {
+                        FrogLog.writeMessage("Successfully downloaded $added missing cartoon link(s).")
+                    }
+
+                    SeriesIdentity.MOVIE -> {
+                        FrogLog.writeMessage("Successfully downloaded $added missing movie link(s).")
+                    }
+
+                    else -> {}
+                }
+            }
+        } catch (e: Exception) {
+            FrogLog.logError(
+                "Failed to scrape identity links for: $identity",
+                e,
+                true
+            )
+        } finally {
+            scraper.killDriver()
         }
     }
 
     suspend fun findIdentityForSlugLocally(
         slug: String
-    ): SeriesIdentity {
+    ): SeriesIdentity = withContext(Dispatchers.Default) {
         SeriesIdentity.filteredValues().forEach {
             if (!BoxHelper.areIdentityLinksComplete(it)) {
                 FrogLog.writeMessage("Identity links for: $it aren't fully downloaded. Launching IdentityScraper now.")
-                scrapeLinksToSlugs(it)
+                try {
+                    scrapeLinksToSlugs(it)
+                } catch (e: Exception) {
+                    FrogLog.logError(
+                        "Failed to scrape identity links for: $it",
+                        e,
+                        true
+                    )
+                }
+
             }
         }
-        return BoxHelper.identityForSeriesSlug(slug)
+        return@withContext BoxHelper.identityForSeriesSlug(slug)
     }
 
     fun findIdentityForSlugOnline(
