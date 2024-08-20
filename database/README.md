@@ -23,6 +23,7 @@ Example of path: `C:\Users\CuratedDev\.zen_database\series\dubbed\`
 Note: The movies database is unfinished and some entries might be completely incorrect.
 
 I updated what I could for the movies. A lot of them didn't have any info or just are named incorrectly.
+
 I have added an "Edit Movie" option inside the Database Window if you wish to help complete the database.
 
 # Series Images
