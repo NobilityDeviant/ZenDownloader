@@ -92,16 +92,19 @@ compose.desktop {
                 shortcut = true
                 //never change this
                 upgradeUuid = "b30e4c5c-592d-436f-a564-5324af8addc9"
-                iconFile.set(project.file("/src/main/resources/images/icon.ico"))
+                iconFile.set(project.file("src/main/resources/images/icon.ico"))
             }
 
             macOS {
                 bundleID = "nobility.downloader"
-                iconFile.set(project.file("/src/main/resources/images/icon.icns"))
+                iconFile.set(project.file("src/main/resources/images/icon.icns"))
             }
 
             linux {
-                iconFile.set(project.file("/src/main/resources/images/icon.png"))
+                debMaintainer = "nobilitydev@protonmail.com"
+                menuGroup = "nobility-zendownloader"
+                appCategory = "NobilityDev"
+                iconFile.set(project.file("src/main/resources/images/icon.png"))
             }
         }
     }
