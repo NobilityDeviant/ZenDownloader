@@ -19,3 +19,5 @@ https://www.google.com/chrome/?platform=linux
 
 .rpm for Fedora/openSUSE
 
+The app also uses: https://wiki.gnome.org/action/show/Projects/GnomeKeyring?action=show&redirect=GnomeKeyring
+
