@@ -524,7 +524,7 @@ class UpdateWindow(
                                     )
                                 }
                             } else if (myOs == OS.LINUX) {
-                                if (url.lowercase(Locale.getDefault()).endsWith(".appimage")) {
+                                if (url.lowercase(Locale.getDefault()).endsWith(".deb")) {
                                     return Resource.Success(
                                         Update(
                                             version,
