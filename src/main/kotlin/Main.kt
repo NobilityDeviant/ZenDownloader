@@ -26,6 +26,7 @@ fun main() {
             ApplicationState.newWindow(
                 AppInfo.TITLE,
                 loadKeyEvents(),
+                maximized = true,
                 onClose = {
                     Core.child.shutdown(false)
                     false

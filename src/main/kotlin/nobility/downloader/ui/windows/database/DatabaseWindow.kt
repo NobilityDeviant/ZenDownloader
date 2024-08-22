@@ -117,8 +117,7 @@ class DatabaseWindow {
     @OptIn(ExperimentalFoundationApi::class)
     fun open() {
         ApplicationState.newWindow(
-            "Database",
-            maximized = true
+            "Database"
         ) {
             val scope = rememberCoroutineScope()
             val seasonsListState = rememberLazyListState()
