@@ -184,6 +184,7 @@ class AssetUpdateView {
         var fos: FileOutputStream? = null
         var bos: BufferedOutputStream? = null
         val assetFile = File(asset.path)
+        assetFile.mkdirs()
         try {
             val api = Jsoup.connect(asset.apiLink).ignoreContentType(true).get()
             val reader = JsonReader(StringReader(api.body().html()))
