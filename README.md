@@ -1,10 +1,16 @@
 # ZenDownloader
 
-A Kotlin & Jetpack Compose program used to download videos and series from: https://www.wcofun.net/
+A Kotlin & Jetpack Compose program used to download episoes, series and movies from: https://www.wcofun.net/
 
 If you check that website out, it's one of the best video sites for free cartoons and anime. It's also the most vulnerable.
 
 Many of the anime websites out there are locked down really hard which makes wco the perfect target.
+
+**You can now download all paywalled movies!**
+
+Don't pay for wco premium. I'll never support it and I don't recommend it.
+
+We're back for blood. >:(
 
 ![](https://github.com/NobilityDeviant/ZenDownloader/raw/master/images/illegal_anime_poster.png)
 
