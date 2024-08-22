@@ -6,7 +6,7 @@ If you check that website out, it's one of the best video sites for free cartoon
 
 Many of the anime websites out there are locked down really hard which makes wco the perfect target.
 
-![](https://github.com/NobilityDeviant/ZenDownloader/raw/master/images/illegal_anime_poster.png =250x250)
+![](https://github.com/NobilityDeviant/ZenDownloader/raw/master/images/illegal_anime_poster.png)
 
 # Donate
 
