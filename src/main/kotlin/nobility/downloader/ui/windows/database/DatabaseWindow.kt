@@ -497,13 +497,9 @@ class DatabaseWindow {
                 textAlign = TextAlign.Center
             )
             divider()
-            val bitmap = ImageUtils.loadImageFromFileWithBackup(
-                series.imagePath,
-                series.imageLink
-            )
             Image(
-                bitmap,
-                contentDescription = null,
+                ImageUtils.loadSeriesImageFromFileWithBackup(series),
+                contentDescription = "Image For ${series.name}",
                 contentScale = ContentScale.FillBounds,
                 modifier = Modifier.fillMaxSize()
                     .padding(10.dp)

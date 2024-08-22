@@ -109,10 +109,7 @@ class DownloadConfirmWindow(
                     fontWeight = FontWeight.Bold
                 )
                 Image(
-                    bitmap = ImageUtils.loadImageFromFileWithBackup(
-                        series.imagePath,
-                        series.imageLink
-                    ),
+                    bitmap = ImageUtils.loadSeriesImageFromFileWithBackup(series),
                     contentDescription = "Series Image",
                     contentScale = ContentScale.FillBounds,
                     modifier = Modifier.size(300.dp, 235.dp)

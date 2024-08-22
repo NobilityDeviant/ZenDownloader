@@ -39,7 +39,7 @@ import kotlin.system.exitProcess
  * Since we can't manage files in use, why not update them before?
  * Note that we can't access anything from the Core so it needs to be standalone.
  * Comes with a shutdown/fail feature to ensure incomplete downloads get handled.
- * All assets are very low in file size. We don't really need to worry about much besides available file space.
+ * All assets are very low in file size. We don't really need to worry about much besides available file space for unzipping.
  */
 class AssetUpdateView {
 
@@ -99,11 +99,11 @@ class AssetUpdateView {
                             }
                             if (!shuttingDown) {
                                 if (finished) {
-                                    downloadText = "All downloads have been finished."
+                                    downloadText = "All assets have been updated."
                                     scope.closeWindow()
                                 } else {
                                     retry = true
-                                    downloadText = "Failed to download all assets."
+                                    downloadText = "Failed to update all assets."
                                 }
                             }
                             downloading = false
@@ -117,6 +117,7 @@ class AssetUpdateView {
                         if (downloading) {
                             coroutineScope.launch(Dispatchers.Default) {
                                 shuttingDown = true
+                                //delay to ensure the streams are closed.
                                 delay(10_000)
                                 Asset.entries.forEach { asset ->
                                     val started = started[asset.fileName]
@@ -156,11 +157,11 @@ class AssetUpdateView {
                     }
                     if (!shuttingDown) {
                         if (finished) {
-                            downloadText = "All downloads have been finished."
+                            downloadText = "All assets have been updated."
                             scope.closeWindow()
                         } else {
                             retry = true
-                            downloadText = "Failed to download all assets."
+                            downloadText = "Failed to update all assets."
                         }
                     }
                     downloading = false
@@ -184,6 +185,7 @@ class AssetUpdateView {
         var fos: FileOutputStream? = null
         var bos: BufferedOutputStream? = null
         val assetFile = File(asset.path)
+        assetFile.mkdirs()
         try {
             val api = Jsoup.connect(asset.apiLink).ignoreContentType(true).get()
             val reader = JsonReader(StringReader(api.body().html()))

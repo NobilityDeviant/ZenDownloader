@@ -3,8 +3,10 @@ package nobility.downloader.utils
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.toComposeImageBitmap
 import androidx.compose.ui.res.useResource
+import kotlinx.coroutines.launch
 import nobility.downloader.core.BoxHelper
 import nobility.downloader.core.BoxHelper.Companion.int
+import nobility.downloader.core.Core
 import nobility.downloader.core.entities.Series
 import nobility.downloader.core.settings.Defaults
 import java.awt.image.BufferedImage
@@ -14,6 +16,45 @@ import java.net.URI
 import javax.imageio.ImageIO
 
 object ImageUtils {
+
+    fun loadSeriesImageFromFileWithBackup(
+        series: Series
+    ): ImageBitmap {
+        if (series.imagePath.isEmpty()) {
+            return useResource(AppInfo.NO_IMAGE_PATH) {
+                ImageIO.read(it).toComposeImageBitmap()
+            }
+        }
+        val bufferedImage: BufferedImage
+        try {
+            bufferedImage = ImageIO.read(File(series.imagePath))
+            return bufferedImage.toComposeImageBitmap()
+        } catch (e: IOException) {
+            return loadSeriesImageFromLink(series)
+        }
+    }
+
+    private fun loadSeriesImageFromLink(
+        series: Series
+    ): ImageBitmap {
+        if (series.imageLink.isEmpty()) {
+            return useResource(AppInfo.NO_IMAGE_PATH) {
+                ImageIO.read(it).toComposeImageBitmap()
+            }
+        }
+        Core.child.taskScope.launch {
+            downloadSeriesImage(series)
+        }
+        val bufferedImage: BufferedImage
+        try {
+            bufferedImage = ImageIO.read(URI(series.imageLink).toURL())
+            return bufferedImage.toComposeImageBitmap()
+        } catch (e: IOException) {
+            return useResource(AppInfo.NO_IMAGE_PATH) {
+                ImageIO.read(it).toComposeImageBitmap()
+            }
+        }
+    }
 
     fun loadImageFromFileWithBackup(filePath: String, urlBackup: String): ImageBitmap {
         if (filePath.isEmpty()) {
@@ -87,7 +128,6 @@ object ImageUtils {
                     Defaults.TIMEOUT.int() * 1000,
                     UserAgents.random
                 )
-                FrogLog.writeMessage("Successfully downloaded image: ${series.imageLink}")
             } catch (e: Exception) {
                 FrogLog.logError(
                     "Failed to download image for ${series.imageLink}",
