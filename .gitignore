@@ -7,6 +7,7 @@ assets/
 update_log.txt
 debug/
 objectbox-jni-windows-x64.dll
+libobjectbox-jni-linux-x64.so
 ### No one should have this kind of power anymore ###
 /src/main/kotlin/nobility/downloader/core/scraper/DatabaseScraper.kt
 /src/main/kotlin/nobility/downloader/core/scraper/MovieUpdater.kt

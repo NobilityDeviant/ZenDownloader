@@ -1,3 +1,12 @@
+# Auto Download
+
+There is now an auto asset downloader whenever you launch the app.
+This downloader will download all the series files and the links file.
+
+However the series images won't auto download at launch. You will still need to download them all if you want a smooth experience.
+
+[Download Images](https://github.com/NobilityDeviant/ZenDownloader/tree/master/database#series-images)
+
 # Database
 
 These are all the series database archives.
@@ -37,6 +46,8 @@ Example of path: `C:\Users\CuratedDev\.zen_database\series_images\`
 # Download Series Images (Last Updated: 8/19/2024)
 
 [Download Images (300MB)](https://www.dropbox.com/scl/fi/26vrk7l9iytspo5f0ko3n/series_images.zip?rlkey=ueyb3r6sak9uqk9dtwyg3s9tn&st=onciud73&dl=1)
+
+
 
 You can also access the database folder with this button inside the Settings page.
 You will have to close the program in order to edit in database files.
