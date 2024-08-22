@@ -53,6 +53,8 @@ dependencies {
     implementation("com.alibaba:fastjson:2.0.51")
     //ui
     implementation("com.materialkolor:material-kolor:1.7.0")
+    //for unzipping assets
+    implementation("net.lingala.zip4j:zip4j:2.11.5")
 }
 
 apply(plugin = "io.objectbox")

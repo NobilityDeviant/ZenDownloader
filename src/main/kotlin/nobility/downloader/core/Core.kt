@@ -29,6 +29,7 @@ class Core {
 
     companion object {
 
+        private var initialized = false
         val child = CoreChild()
         val console = Console()
         val errorConsole = Console(true)
@@ -55,6 +56,10 @@ class Core {
         val exampleSeries: String get() = "$wcoUrl${AppInfo.EXAMPLE_SERIES}"
 
         fun initialize() {
+            if (initialized) {
+                return
+            }
+            initialized = true
             System.setOut(PrintStream(console))
             System.setErr(PrintStream(errorConsole))
             if (!Defaults.FIRST_LAUNCH.boolean()) {

@@ -12,8 +12,8 @@ import androidx.compose.ui.window.WindowPlacement
 import androidx.compose.ui.window.WindowPosition
 import androidx.compose.ui.window.rememberWindowState
 import kotlinx.coroutines.launch
-import nobility.downloader.ui.components.toast.toastHost
 import nobility.downloader.ui.components.toast.ToastHostState
+import nobility.downloader.ui.components.toast.toastHost
 import nobility.downloader.ui.theme.coreTheme
 import nobility.downloader.utils.AppInfo
 
@@ -45,7 +45,7 @@ class ApplicationState {
 
         val shared = ApplicationState()
 
-        private fun removeWindowWithId(id: String) {
+        fun removeWindowWithId(id: String) {
             shared.windows.forEach {
                 if (it.scope.windowId == id) {
                     it.scope.open.value = false
@@ -53,22 +53,6 @@ class ApplicationState {
                     shared.windows.remove(it)
                     return@forEach
                 }
-            }
-        }
-
-        fun removeWindowWithTitle(title: String) {
-            var pos = -1
-            shared.windows.forEachIndexed { index, windowData ->
-                if (windowData.title == title) {
-                    pos = index
-                    return@forEachIndexed
-                }
-            }
-            if (pos != -1) {
-                val window = shared.windows[pos]
-                window.scope.open.value = false
-                window.scope.onClose?.invoke()
-                shared.windows.removeAt(pos)
             }
         }
 

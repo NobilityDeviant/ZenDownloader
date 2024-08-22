@@ -18,7 +18,7 @@ object ConsoleWindow {
     private const val TITLE = "Console"
 
     fun close() {
-        ApplicationState.removeWindowWithTitle(TITLE)
+        ApplicationState.removeWindowWithId(TITLE)
     }
 
     fun open() {
