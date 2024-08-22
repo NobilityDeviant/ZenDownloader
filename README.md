@@ -30,7 +30,7 @@ It has been tested on Windows 10, Windows 11 and Ubuntu 22.04.04
 
 You will also need to install Chrome. This version doesn't support any other browsers right now.
 
-# Download
+# Download & Install
 
 You won't need to download anything extra like the JRE because it comes pre-packaged.
 
