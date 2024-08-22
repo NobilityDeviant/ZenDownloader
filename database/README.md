@@ -1,3 +1,12 @@
+# Auto Download
+
+There is now an auto asset downloader whenever you launch the app.
+This downloader will download all the series files and the links file.
+
+However the series images won't auto download at launch. You will still need to download them all if you want a smooth experience.
+
+[Download Images](https://github.com/NobilityDeviant/ZenDownloader/tree/master/database#download-series-images-last-updated-8192024)
+
 # Database
 
 These are all the series database archives.
