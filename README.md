@@ -132,6 +132,8 @@ Once those are installed open *IntelliJ*.
 
 You will be greeted with the project window.
 
+![Project Window](guide/idea_project_window.png?raw=true "Project Window")
+
 Select *Get From VCS*
 
 Scroll up and get the git url:
