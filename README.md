@@ -24,7 +24,7 @@ I would greatly appreciate it. :)
 
 # Requirements
 
-ZenDownloader currently only supports Windows and Debian based Linux. x64 Only.
+**ZenDownloader** currently only supports Windows and Debian based Linux. x64 Only.
 
 It has been tested on Windows 10, Windows 11 and Ubuntu 22.04.04
 
@@ -48,7 +48,7 @@ For Windows it'll be the file with the `.exe` extension.
 
 Download Chrome Here: [Download](https://www.google.com/chrome/?platform=linux)
 
-Choose *64 bit .deb (For Debian/Ubuntu)*
+Choose **64 bit .deb (For Debian/Ubuntu)**
 
 Once downloaded, go to the folder it's been downloaded to, right click an empty space in the window an open the **Terminal** app.
 
@@ -75,6 +75,10 @@ Now inside the terminal you will type:
 Replacing `zendownloader.deb` with the file name.
 
 Input your password and you're done.
+
+If you wish to uninstall it then you can use the command:
+
+`sudo apt-get remove zendownloader`
 
 Once opened if you use a keyring, it will ask for the password.
 After denying it I have found no issues, so this isn't needed afaik.
