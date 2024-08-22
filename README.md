@@ -6,6 +6,8 @@ If you check that website out, it's one of the best video sites for free cartoon
 
 Many of the anime websites out there are locked down really hard which makes wco the perfect target.
 
+![](https://github.com/NobilityDeviant/ZenDownloader/raw/master/images/illegal_anime_poster.png =250x250)
+
 # Donate
 
 If you enjoy this project then please consider donating.
@@ -86,6 +88,15 @@ These all happen in the background and require Chrome so be sure that's installe
 If you want a better User Experience with the *Database Window* you should also download the images.
 
 A guide for that can be found here: [Download Images](https://github.com/NobilityDeviant/ZenDownloader/tree/master/database#series-images)
+
+# Cloudflare
+
+Wco is now using cloudflare. Most VPNs and public proxies won't work anymore!
+I will also have to keep track and update the useragents every now and then.
+
+If you encounter any cloudflare errors, just keep trying or report it.
+
+**ZenDownloader** comes equipped with a Kotlin version of Undetected ChromeDriver which bypasses all basic cloudflare blocking.
 
 # UI
 
