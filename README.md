@@ -1,6 +1,6 @@
 # ZenDownloader
 
-A Kotlin & Jetpack Compose program used to download episoes, series and movies from: https://www.wcofun.net/
+A Kotlin & Jetpack Compose program used to download episodes, series and movies from: https://www.wcofun.net/
 
 If you check that website out, it's one of the best video sites for free cartoons and anime. It's also the most vulnerable.
 
