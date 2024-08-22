@@ -164,6 +164,4 @@ Also if you want to make the `.deb` or the `.rpm` file you also need to install 
 
 `sudo apt-get install fakeroot`
 
-If you want more information then just create an issue and i'll help you. :)
-
 That's it! If you have any issues, please create an issue in Github and i'll get right on it.
