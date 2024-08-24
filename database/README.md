@@ -9,6 +9,8 @@ However the series images won't auto download at launch. You will still need to 
 
 # Database
 
+**Series**
+
 These are all the series database archives.
 
 You can create your own by downloading series, but if you want to use the new Database WIndow then you will need to download these.
@@ -18,6 +20,16 @@ They are all split by their types: Dubbed, Subbed, Movies and Cartoon.
 Each of these archives must be unzipped inside the database series folder which is inside your User folder.
 
 Example of path: `C:\Users\CuratedDev\.zen_database\series\dubbed\`
+
+**Wco Data**
+
+The files **links.zip** and **data.zip** are in a different folder.
+
+The are still database files and work the same way as series do.
+
+Example of path: `C:\Users\CuratedDev\.zen_database\wco\links\`
+
+Example of path: `C:\Users\CuratedDev\.zen_database\wco\data\`
 
 # Download Database (Last Updated: 8/19/2024)
 
