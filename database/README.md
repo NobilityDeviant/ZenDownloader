@@ -21,7 +21,7 @@ Each of these archives must be unzipped inside the database series folder which 
 
 Example of path: `C:\Users\CuratedDev\.zen_database\series\dubbed\`
 
-# Download Database (Last Updated: 8/19/2024)
+# Download Series (Last Updated: 8/19/2024)
 
 **Dubbed:** [dubbed.zip](https://github.com/NobilityDeviant/ZenDownloader/raw/master/database/dubbed.zip)
 
