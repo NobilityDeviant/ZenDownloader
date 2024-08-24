@@ -25,7 +25,9 @@ Example of path: `C:\Users\CuratedDev\.zen_database\series\dubbed\`
 
 The files **links.zip** and **data.zip** are in a different folder.
 
-The are still database files and work the same way as series do.
+They are still database files and work the same way as series do.
+
+If the **wco** folder doesn't exist then you must create it first.
 
 Example of path: `C:\Users\CuratedDev\.zen_database\wco\links\`
 
