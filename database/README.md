@@ -31,7 +31,13 @@ If the **wco** folder doesn't exist then you must create it first.
 
 Example of path: `C:\Users\CuratedDev\.zen_database\wco\links\`
 
+**Links:** [links.zip](https://github.com/NobilityDeviant/ZenDownloader/raw/master/database/links.zip)
+
 Example of path: `C:\Users\CuratedDev\.zen_database\wco\data\`
+
+**Data:** [data.zip](https://github.com/NobilityDeviant/ZenDownloader/raw/master/database/data.zip)
+
+The data is just the genres for now.
 
 # Download Database (Last Updated: 8/19/2024)
 
