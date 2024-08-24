@@ -9,6 +9,8 @@ However the series images won't auto download at launch. You will still need to 
 
 # Database
 
+**Series**
+
 These are all the series database archives.
 
 You can create your own by downloading series, but if you want to use the new Database WIndow then you will need to download these.
@@ -35,6 +37,24 @@ I updated what I could for the movies. A lot of them didn't have any info or jus
 
 I have added an "Edit Movie" option inside the Database Window if you wish to help complete the database.
 
+**Wco Data**
+
+The files **links.zip** and **data.zip** are in a different folder.
+
+They are still database files and work the same way as series do.
+
+If the **wco** folder doesn't exist then you must create it first.
+
+Example of path: `C:\Users\CuratedDev\.zen_database\wco\links\`
+
+**Links:** [links.zip](https://github.com/NobilityDeviant/ZenDownloader/raw/master/database/links.zip)
+
+Example of path: `C:\Users\CuratedDev\.zen_database\wco\data\`
+
+**Data:** [data.zip](https://github.com/NobilityDeviant/ZenDownloader/raw/master/database/data.zip)
+
+The data is just the genres for now.
+
 # Series Images
 
 Most series have an image associated with them. In order to have a better experience when using the Database Window, it's advised that you also download the images.
@@ -47,7 +67,7 @@ Example of path: `C:\Users\CuratedDev\.zen_database\series_images\`
 
 [Download Images (300MB)](https://www.dropbox.com/scl/fi/26vrk7l9iytspo5f0ko3n/series_images.zip?rlkey=ueyb3r6sak9uqk9dtwyg3s9tn&st=onciud73&dl=1)
 
-
+-------------------------------------------------------------------------------------
 
 You can also access the database folder with this button inside the Settings page.
 You will have to close the program in order to edit in database files.
