@@ -9,7 +9,7 @@ However the series images won't auto download at launch. You will still need to 
 
 # Database
 
-**Series**
+# Series
 
 These are all the series database archives.
 
@@ -37,7 +37,7 @@ I updated what I could for the movies. A lot of them didn't have any info or jus
 
 I have added an "Edit Movie" option inside the Database Window if you wish to help complete the database.
 
-**Wco Data**
+# Wco Data
 
 The files **links.zip** and **data.zip** are in a different folder.
 
