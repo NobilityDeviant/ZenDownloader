@@ -66,8 +66,9 @@ class VideoDownloader(
                 finishEpisode()
                 continue
             }
-            if (currentEpisode.isMovie || Core.child.movieHandler.movieForSlug(slug) != null) {
-                handleMovie()
+            val movie = Core.child.movieHandler.movieForSlug(slug)
+            if (movie != null) {
+                handleMovie(movie)
             } else {
                 var downloadLink = ""
                 var qualityOption = temporaryQuality ?: Quality.qualityForTag(
@@ -578,7 +579,7 @@ class VideoDownloader(
      * handled on a different website since they're blocked
      * by a paywall.
      */
-    private suspend fun handleMovie() = withContext(Dispatchers.IO) {
+    private suspend fun handleMovie(movie: MovieHandler.Movie) = withContext(Dispatchers.IO) {
         val downloadFolderPath = Defaults.SAVE_FOLDER.string()
         var saveFolder = File(
             downloadFolderPath + File.separator + "Movies"
@@ -590,17 +591,16 @@ class VideoDownloader(
             )
             saveFolder = File(downloadFolderPath + File.separator)
         }
-        val episodeName = currentEpisode.name.fixForFiles()
+        val episodeName = movie.name.fixForFiles()
         val saveFile = File(
             saveFolder.absolutePath + File.separator
                     + "$episodeName.mp4"
         )
-        val slug = currentEpisode.slug
         mCurrentDownload = downloadForSlugAndQuality(
-            slug,
+            movie.slug,
             Quality.LOW
         )
-        writeMessage("Detected movie for $slug. Using movie mode.")
+        writeMessage("Detected movie for ${movie.slug}. Using movie mode.")
         if (mCurrentDownload != null) {
             if (currentDownload.downloadPath.isEmpty()
                 || !File(currentDownload.downloadPath).exists()
@@ -610,7 +610,7 @@ class VideoDownloader(
             }
             Core.child.addDownload(currentDownload)
             if (currentDownload.isComplete) {
-                writeMessage("[DB] Skipping completed video: " + currentEpisode.name)
+                writeMessage("[DB] Skipping completed video: " + movie.name)
                 currentDownload.downloading = false
                 currentDownload.queued = false
                 Core.child.updateDownloadInDatabase(currentDownload, true)
@@ -621,7 +621,7 @@ class VideoDownloader(
                 Core.child.updateDownloadProgress(currentDownload)
             }
         }
-        val link = MovieHandler.wcoMoviePlaylistLink + slug
+        val link = MovieHandler.wcoMoviePlaylistLink + "${movie.tag}/${movie.slug}"
         driver.navigate().to(link)
         val wait = WebDriverWait(driver, Duration.ofSeconds(15))
         val downloadLink: String
@@ -648,7 +648,7 @@ class VideoDownloader(
                 logInfo("Empty link source: \n${videoLinkError.trim()}")
             }
             writeMessage(
-                "Failed to find video link for ${slug.slugToLink()}. Retrying..."
+                "Failed to find video link for ${movie.slug.slugToLink()}. Retrying..."
             )
             retries++
             return@withContext

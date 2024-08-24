@@ -5,10 +5,8 @@ import androidx.compose.ui.graphics.toComposeImageBitmap
 import androidx.compose.ui.res.useResource
 import kotlinx.coroutines.launch
 import nobility.downloader.core.BoxHelper
-import nobility.downloader.core.BoxHelper.Companion.int
 import nobility.downloader.core.Core
 import nobility.downloader.core.entities.Series
-import nobility.downloader.core.settings.Defaults
 import java.awt.image.BufferedImage
 import java.io.File
 import java.io.IOException
@@ -124,9 +122,7 @@ object ImageUtils {
             try {
                 Tools.downloadFile(
                     series.imageLink,
-                    saveFile,
-                    Defaults.TIMEOUT.int() * 1000,
-                    UserAgents.random
+                    saveFile
                 )
             } catch (e: Exception) {
                 FrogLog.logError(

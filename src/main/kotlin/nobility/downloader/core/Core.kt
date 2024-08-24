@@ -59,7 +59,6 @@ class Core {
             if (initialized) {
                 return
             }
-            initialized = true
             System.setOut(PrintStream(console))
             System.setErr(PrintStream(errorConsole))
             if (!Defaults.FIRST_LAUNCH.boolean()) {
@@ -75,6 +74,7 @@ class Core {
             currentUrl = Defaults.LAST_DOWNLOAD.string()
             currentUrlHint = exampleSeries
             darkMode.value = Defaults.DARK_MODE.boolean()
+            initialized = true
             openUpdate(true)
         }
 

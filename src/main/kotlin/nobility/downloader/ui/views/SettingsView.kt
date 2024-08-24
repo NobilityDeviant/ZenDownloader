@@ -156,7 +156,7 @@ class SettingsView {
                     fieldWcoDomain()
                     defaultButton(
                         "Open Database Folder",
-                        width = 125.dp,
+                        width = 150.dp,
                         height = 35.dp
                     ) {
                         Tools.openFolder(BoxHelper.databasePath)

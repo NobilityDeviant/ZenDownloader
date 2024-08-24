@@ -23,6 +23,7 @@ import kotlinx.coroutines.withContext
 import net.lingala.zip4j.ZipFile
 import nobility.downloader.ui.components.defaultButton
 import nobility.downloader.ui.windows.utils.AppWindowScope
+import nobility.downloader.utils.AppInfo
 import nobility.downloader.utils.Tools
 import nobility.downloader.utils.UserAgents
 import org.jsoup.Jsoup
@@ -216,7 +217,7 @@ class AssetUpdateView {
             }
             val localLastModified = assetFile.lastModified()
             val onlineLastModified = formattedDate.time
-            if (!assetFile.exists() || assetFile.listFiles()?.isEmpty() == true || onlineLastModified > localLastModified) {
+            if (!assetFile.exists() || (assetFile.isDirectory && assetFile.listFiles()?.isEmpty() == true) || onlineLastModified > localLastModified) {
                 println("Detected new update for: $asset. Online Last Modified: $onlineLastModified Compared to Local Last Modified: $localLastModified")
                 bis = BufferedInputStream(con.inputStream)
                 val buffer = ByteArray(8192)
@@ -252,11 +253,16 @@ class AssetUpdateView {
                 }
                 val finished = total >= completeFileSize
                 if (finished) {
-                    downloadText = "Finished downloading $asset Unzipping file..."
-                    println("Successfully downloaded: $asset Unzipping file...")
-                    val zipFile = ZipFile(downloadFile)
-                    zipFile.extractAll(File(asset.path).parent)
-                    downloadFile.delete()
+                    if (downloadFile.name.endsWith(".zip")) {
+                        downloadText = "Finished downloading $asset Unzipping file..."
+                        println("Successfully downloaded: $asset Unzipping file...")
+                        val zipFile = ZipFile(downloadFile)
+                        zipFile.extractAll(File(asset.path).parent)
+                        downloadFile.delete()
+                    } else {
+                        downloadText = "Finished downloading $asset"
+                        println("Successfully downloaded: $asset")
+                    }
                     completed[asset.fileName] = true
                 }
             } else {
@@ -320,12 +326,26 @@ class AssetUpdateView {
             "https://github.com/NobilityDeviant/ZenDownloader/raw/master/database/links.zip",
             linksPath,
             "links.zip"
+        ),
+        WCO_DATA(
+            "https://api.github.com/repos/NobilityDeviant/ZenDownloader/commits?path=database/data.zip&page=1&per_page=1",
+            "https://github.com/NobilityDeviant/ZenDownloader/raw/master/database/data.zip",
+            wcoDataPath,
+            "data.zip"
+        ),
+        MOVIE_LIST(
+            "https://api.github.com/repos/NobilityDeviant/ZenDownloader/commits?path=movies.txt&page=1&per_page=1",
+            AppInfo.WCO_MOVIE_LIST,
+            movieLinksPath,
+            "movies.txt"
         )
     }
 
     companion object {
         private val databasePath = "${System.getProperty("user.home")}${File.separator}.zen_database${File.separator}"
+        private val movieLinksPath = databasePath + "movies.txt"
         private val linksPath = databasePath + "wco" + File.separator + "links" + File.separator
+        private val wcoDataPath = databasePath + "wco" + File.separator + "data" + File.separator
         private val seriesPath = databasePath + "series" + File.separator
         private val dubbedPath = seriesPath + "dubbed" + File.separator
         private val subbedPath = seriesPath + "subbed" + File.separator

@@ -15,7 +15,6 @@ import nobility.downloader.core.BoxHelper.Companion.update
 import nobility.downloader.core.entities.Download
 import nobility.downloader.core.entities.Episode
 import nobility.downloader.core.scraper.DownloadHandler
-import nobility.downloader.core.scraper.GenresScraper
 import nobility.downloader.core.scraper.MovieHandler
 import nobility.downloader.core.settings.Defaults
 import nobility.downloader.core.updates.UrlUpdater
@@ -66,7 +65,6 @@ class CoreChild {
                 UrlUpdater.updateWcoUrl()
             }
             movieHandler.loadMovies()
-            GenresScraper.scrape()
         }
     }
 

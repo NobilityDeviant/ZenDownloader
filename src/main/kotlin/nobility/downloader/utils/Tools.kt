@@ -2,7 +2,9 @@ package nobility.downloader.utils
 
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import nobility.downloader.core.BoxHelper.Companion.int
 import nobility.downloader.core.entities.Episode
+import nobility.downloader.core.settings.Defaults
 import nobility.downloader.ui.components.dialog.DialogHelper
 import nobility.downloader.ui.windows.utils.AppWindowScope
 import java.awt.Desktop
@@ -320,8 +322,8 @@ object Tools {
     suspend fun downloadFile(
         link: String,
         output: File,
-        timeout: Int,
-        userAgent: String
+        timeout: Int = Defaults.TIMEOUT.int() * 1000,
+        userAgent: String = UserAgents.random
     ) = withContext(Dispatchers.IO) {
         var offset = 0L
         if (output.exists()) {
@@ -344,13 +346,13 @@ object Tools {
         con.readTimeout = timeout
         con.setRequestProperty("Range", "bytes=$offset-")
         con.addRequestProperty("User-Agent", userAgent)
-        val buffer = ByteArray(2048)
+        val buffer = ByteArray(8192)
         val bis = BufferedInputStream(con.inputStream)
         val fos = FileOutputStream(output, true)
         val bos = BufferedOutputStream(fos, buffer.size)
         var count: Int
         var total = offset
-        while (bis.read(buffer, 0, 2048).also { count = it } != -1) {
+        while (bis.read(buffer, 0, 8192).also { count = it } != -1) {
             total += count.toLong()
             bos.write(buffer, 0, count)
         }

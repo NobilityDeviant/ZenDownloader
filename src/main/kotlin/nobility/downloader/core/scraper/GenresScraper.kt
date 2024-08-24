@@ -15,6 +15,8 @@ import nobility.downloader.utils.linkToSlug
 import org.jsoup.Jsoup
 import java.util.*
 
+//out of use for now since I added it to the asset updater.
+//might still use as a backup
 object GenresScraper {
 
     private class Scraper: DriverBase()

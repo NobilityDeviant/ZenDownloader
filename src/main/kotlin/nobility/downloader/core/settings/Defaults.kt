@@ -155,7 +155,6 @@ enum class Defaults(
     ENABLE_PROXY("enable_proxy", false),
     FIRST_LAUNCH("1st-launch", false),
     DARK_MODE("dark_mode", true),
-    WCO_MOVIES_LAST_UPDATED("wco_movies_last_updated", 0L),
     WCO_GENRES_LAST_UPDATED("wco_genres_last_updated", 0L),
     DB_LAST_TYPE_USED("db_last_type", DatabaseType.ANIME.id),
     DB_LAST_SORT_USED("db_last_sort", DatabaseSort.NAME.id)
