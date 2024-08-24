@@ -21,6 +21,22 @@ Each of these archives must be unzipped inside the database series folder which 
 
 Example of path: `C:\Users\CuratedDev\.zen_database\series\dubbed\`
 
+# Download Database (Last Updated: 8/19/2024)
+
+**Dubbed:** [dubbed.zip](https://github.com/NobilityDeviant/ZenDownloader/raw/master/database/dubbed.zip)
+
+**Subbed:** [subbed.zip](https://github.com/NobilityDeviant/ZenDownloader/raw/master/database/subbed.zip)
+
+**Movies:** [movies.zip](https://github.com/NobilityDeviant/ZenDownloader/raw/master/database/movies.zip)
+
+**Cartoon:** [cartoon.zip](https://github.com/NobilityDeviant/ZenDownloader/raw/master/database/cartoon.zip)
+
+Note: The movies database is unfinished and some entries might be completely incorrect.
+
+I updated what I could for the movies. A lot of them didn't have any info or just are named incorrectly.
+
+I have added an "Edit Movie" option inside the Database Window if you wish to help complete the database.
+
 **Wco Data**
 
 The files **links.zip** and **data.zip** are in a different folder.
@@ -38,22 +54,6 @@ Example of path: `C:\Users\CuratedDev\.zen_database\wco\data\`
 **Data:** [data.zip](https://github.com/NobilityDeviant/ZenDownloader/raw/master/database/data.zip)
 
 The data is just the genres for now.
-
-# Download Database (Last Updated: 8/19/2024)
-
-**Dubbed:** [dubbed.zip](https://github.com/NobilityDeviant/ZenDownloader/raw/master/database/dubbed.zip)
-
-**Subbed:** [subbed.zip](https://github.com/NobilityDeviant/ZenDownloader/raw/master/database/subbed.zip)
-
-**Movies:** [movies.zip](https://github.com/NobilityDeviant/ZenDownloader/raw/master/database/movies.zip)
-
-**Cartoon:** [cartoon.zip](https://github.com/NobilityDeviant/ZenDownloader/raw/master/database/cartoon.zip)
-
-Note: The movies database is unfinished and some entries might be completely incorrect.
-
-I updated what I could for the movies. A lot of them didn't have any info or just are named incorrectly.
-
-I have added an "Edit Movie" option inside the Database Window if you wish to help complete the database.
 
 # Series Images
 
