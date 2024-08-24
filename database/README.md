@@ -45,6 +45,8 @@ They are still database files and work the same way as series do.
 
 If the **wco** folder doesn't exist then you must create it first.
 
+# Download WCO Data (Last Updated: 8/23/2024)
+
 Example of path: `C:\Users\CuratedDev\.zen_database\wco\links\`
 
 **Links:** [links.zip](https://github.com/NobilityDeviant/ZenDownloader/raw/master/database/links.zip)
