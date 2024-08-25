@@ -44,8 +44,6 @@ You won't need to download the JRE because it comes pre-packaged.
 
 For Windows it'll be the file with the `.exe` extension.
 
-**For Windows 7**
-
 You're also going to need to install: [Visual C++ Redistributable for Visual Studio 2015](https://www.microsoft.com/en-us/download/details.aspx?id=48145)
 
 # Linux (Debian)
