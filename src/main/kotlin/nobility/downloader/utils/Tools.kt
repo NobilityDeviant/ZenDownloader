@@ -334,8 +334,11 @@ object Tools {
             "Accept",
             "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9"
         )
-        con.addRequestProperty("Accept-Encoding", "gzip, deflate, br")
+        if (!output.name.endsWith(".txt")) {
+            con.addRequestProperty("Accept-Encoding", "gzip, deflate, br")
+        }
         con.addRequestProperty("Accept-Language", "en-US,en;q=0.9")
+        //not even sure if these are needed
         con.addRequestProperty("Connection", "keep-alive")
         con.addRequestProperty("Sec-Fetch-Dest", "document")
         con.addRequestProperty("Sec-Fetch-Mode", "navigate")

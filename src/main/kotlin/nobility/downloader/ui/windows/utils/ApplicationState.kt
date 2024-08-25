@@ -16,6 +16,7 @@ import nobility.downloader.ui.components.toast.ToastHostState
 import nobility.downloader.ui.components.toast.toastHost
 import nobility.downloader.ui.theme.coreTheme
 import nobility.downloader.utils.AppInfo
+import org.apache.commons.lang3.SystemUtils
 
 /**
  * My implementation of Jetpacks multi window example.
@@ -117,8 +118,9 @@ class ApplicationState {
                 if (open) {
                     Window(
                         icon = painterResource(AppInfo.APP_ICON_PATH),
-                        undecorated = undecorated,
-                        transparent = transparent,
+                        //undecorated windows don't work on windows 7
+                        undecorated = if (!SystemUtils.IS_OS_WINDOWS_7) undecorated else false,
+                        transparent = if (!SystemUtils.IS_OS_WINDOWS_7) transparent else false,
                         resizable = resizable,
                         alwaysOnTop = alwaysOnTop,
                         onCloseRequest = {

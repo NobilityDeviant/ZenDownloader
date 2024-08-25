@@ -6,6 +6,7 @@ import nobility.downloader.core.driver.undetected_chrome.SysUtil.isLinux
 import nobility.downloader.core.driver.undetected_chrome.SysUtil.isMacOs
 import nobility.downloader.core.driver.undetected_chrome.SysUtil.path
 import nobility.downloader.utils.FrogLog
+import nobility.downloader.utils.fileExists
 import org.openqa.selenium.chrome.ChromeDriver
 import org.openqa.selenium.chrome.ChromeOptions
 import java.io.*
@@ -250,7 +251,7 @@ class ChromeDriverBuilder {
         binaryLocation: String
     ): ChromeOptions {
         var mBinaryLocation = binaryLocation
-        if (mBinaryLocation.isEmpty()) {
+        if (mBinaryLocation.isEmpty() || !mBinaryLocation.fileExists()) {
             try {
                 mBinaryLocation = chromePath()
             } catch (e: Exception) {

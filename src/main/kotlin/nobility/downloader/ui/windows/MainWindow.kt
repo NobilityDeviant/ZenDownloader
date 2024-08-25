@@ -88,6 +88,7 @@ private fun uiWrapper(
                                     DialogHelper.showConfirm(
                                         "You have unsaved settings. Would you like to save them?",
                                         "Save Settings",
+                                        size = DpSize(300.dp, 200.dp),
                                         onConfirmTitle = "Save",
                                         onDeny = {
                                             Core.currentPage = Page.HOME

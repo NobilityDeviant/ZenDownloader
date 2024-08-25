@@ -72,7 +72,7 @@ class AssetUpdateView {
                 ).background(
                     Color(0xFF191C1B),
                     RoundedCornerShape(5.dp)
-                ).align(Alignment.CenterVertically).padding(10.dp)
+                ).align(Alignment.CenterVertically).padding(10.dp).fillMaxSize()
             ) {
                 LinearProgressIndicator(
                     progress = { downloadProgress },
@@ -109,6 +109,12 @@ class AssetUpdateView {
                             }
                             downloading = false
                         }
+                    }
+                    defaultButton(
+                        "Continue To App",
+                        width = 150.dp
+                    ) {
+                        scope.closeWindow()
                     }
                 } else if (!shuttingDown) {
                     defaultButton(
@@ -174,9 +180,8 @@ class AssetUpdateView {
     private suspend fun downloadAsset(
         asset: Asset
     ) = withContext(Dispatchers.IO) {
-        started[asset.fileName] = true
         if (shuttingDown) {
-            downloadText = "Shutting Down..."
+            downloadText = shuttingDownText
             return@withContext
         }
         downloadText = "Accessing $asset online"
@@ -186,9 +191,15 @@ class AssetUpdateView {
         var fos: FileOutputStream? = null
         var bos: BufferedOutputStream? = null
         val assetFile = File(asset.path)
-        assetFile.mkdirs()
+        if (assetFile.isDirectory) {
+            assetFile.mkdirs()
+        } else {
+            assetFile.parentFile.mkdirs()
+        }
         try {
-            val api = Jsoup.connect(asset.apiLink).ignoreContentType(true).get()
+            val api = Jsoup.connect(asset.apiLink)
+                .ignoreContentType(true)
+                .get()
             val reader = JsonReader(StringReader(api.body().html()))
             reader.isLenient = true
             val jsonArray = JsonParser.parseReader(reader).asJsonArray
@@ -204,9 +215,11 @@ class AssetUpdateView {
                 .openConnection() as HttpsURLConnection
             con.addRequestProperty(
                 "Accept",
-                "*/*"
+                "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7"
             )
-            con.addRequestProperty("Accept-Encoding", "gzip, deflate, br, zstd")
+            if (!asset.fileName.endsWith(".txt")) {
+                con.addRequestProperty("Accept-Encoding", "gzip, deflate, br")
+            }
             con.addRequestProperty("Accept-Language", "en-US,en;q=0.9")
             con.addRequestProperty("User-Agent", UserAgents.random)
             con.connectTimeout = 30_000
@@ -217,8 +230,12 @@ class AssetUpdateView {
             }
             val localLastModified = assetFile.lastModified()
             val onlineLastModified = formattedDate.time
-            if (!assetFile.exists() || (assetFile.isDirectory && assetFile.listFiles()?.isEmpty() == true) || onlineLastModified > localLastModified) {
-                println("Detected new update for: $asset. Online Last Modified: $onlineLastModified Compared to Local Last Modified: $localLastModified")
+            val modifiedDifference = onlineLastModified - localLastModified
+            if (!assetFile.exists()
+                || (assetFile.isDirectory && assetFile.listFiles()?.isEmpty() == true)
+                || modifiedDifference >= 14400000) { //4 hour difference
+                started[asset.fileName] = true
+                println("Detected new update for: $asset. Online Last Modified: $onlineLastModified Compared to Local Last Modified: $localLastModified Difference: $modifiedDifference")
                 bis = BufferedInputStream(con.inputStream)
                 val buffer = ByteArray(8192)
                 val downloadFile = File(
@@ -230,7 +247,7 @@ class AssetUpdateView {
                 var total = 0L
                 while (bis.read(buffer).also { count = it } != -1) {
                     if (shuttingDown) {
-                        downloadText = "Shutting Down..."
+                        downloadText = shuttingDownText
                         break
                     }
                     total += count.toLong()
@@ -269,7 +286,7 @@ class AssetUpdateView {
                 completed[asset.fileName] = true
                 downloadProgress = 1f
                 downloadText = "Asset $asset is already updated."
-                println("Asset $asset is already updated. Online Last Modified: $onlineLastModified Compared to Local Last Modified: $localLastModified")
+                println("Asset $asset is already updated. Online Last Modified: $onlineLastModified Compared to Local Last Modified: $localLastModified Difference: $modifiedDifference")
             }
         } catch (e: Exception) {
             System.err.println(
@@ -290,6 +307,11 @@ class AssetUpdateView {
             }
         }
     }
+
+    private val shuttingDownText get() = """
+        Shutting down.
+        Please delete any assets that didn't download fully.
+    """.trimIndent()
 
     private enum class Asset(
         val apiLink: String,
@@ -336,14 +358,14 @@ class AssetUpdateView {
         MOVIE_LIST(
             "https://api.github.com/repos/NobilityDeviant/ZenDownloader/commits?path=movies.txt&page=1&per_page=1",
             AppInfo.WCO_MOVIE_LIST,
-            movieLinksPath,
+            movieListPath,
             "movies.txt"
         )
     }
 
     companion object {
         private val databasePath = "${System.getProperty("user.home")}${File.separator}.zen_database${File.separator}"
-        private val movieLinksPath = databasePath + "movies.txt"
+        private val movieListPath = databasePath + "movies.txt"
         private val linksPath = databasePath + "wco" + File.separator + "links" + File.separator
         private val wcoDataPath = databasePath + "wco" + File.separator + "data" + File.separator
         private val seriesPath = databasePath + "series" + File.separator

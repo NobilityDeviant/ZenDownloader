@@ -1,6 +1,8 @@
 package nobility.downloader.utils
 
 import androidx.compose.ui.input.key.*
+import androidx.compose.ui.unit.DpSize
+import androidx.compose.ui.unit.dp
 import nobility.downloader.Page
 import nobility.downloader.core.BoxHelper.Companion.string
 import nobility.downloader.core.Core
@@ -35,6 +37,7 @@ fun loadKeyEvents(): (KeyEvent) -> Boolean = {
                 DialogHelper.showConfirm(
                     "You have unsaved settings. Would you like to save them?",
                     "Save Settings",
+                    size = DpSize(300.dp, 200.dp),
                     onConfirmTitle = "Save",
                     onDeny = {
                         Core.currentPage = Page.HOME
