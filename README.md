@@ -32,21 +32,29 @@ You will also need to install Chrome. This version doesn't support any other bro
 
 # Download & Install
 
-You won't need to download anything extra like the JRE because it comes pre-packaged.
+You won't need to download the JRE because it comes pre-packaged.
 
 # Windows
 
 **Download & Install Chrome:** [Download](https://www.google.com/chrome/?platform=windows)
 
+*If you already have Chrome installed, make sure it's version 108 or higher*
+
 **Download & Install The Latest Release:** [Releases](https://github.com/NobilityDeviant/ZenDownloader/releases)
 
 For Windows it'll be the file with the `.exe` extension.
+
+**For Windows 7**
+
+You're also going to need to install: [Visual C++ Redistributable for Visual Studio 2015](https://www.microsoft.com/en-us/download/details.aspx?id=48145)
 
 # Linux (Debian)
 
 **Download & Install Chrome:**
 
 Download Chrome Here: [Download](https://www.google.com/chrome/?platform=linux)
+
+*If you already have Chrome installed, make sure it's version 108 or higher*
 
 Choose **64 bit .deb (For Debian/Ubuntu)**
 
