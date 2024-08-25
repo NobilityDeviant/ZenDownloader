@@ -9,7 +9,7 @@ However the series images won't auto download at launch. You will still need to 
 
 # Database
 
-**Series**
+# Series
 
 These are all the series database archives.
 
@@ -21,7 +21,7 @@ Each of these archives must be unzipped inside the database series folder which 
 
 Example of path: `C:\Users\CuratedDev\.zen_database\series\dubbed\`
 
-# Download Database (Last Updated: 8/19/2024)
+# Download Series (Last Updated: 8/19/2024)
 
 **Dubbed:** [dubbed.zip](https://github.com/NobilityDeviant/ZenDownloader/raw/master/database/dubbed.zip)
 
@@ -37,13 +37,15 @@ I updated what I could for the movies. A lot of them didn't have any info or jus
 
 I have added an "Edit Movie" option inside the Database Window if you wish to help complete the database.
 
-**Wco Data**
+# Wco Data
 
 The files **links.zip** and **data.zip** are in a different folder.
 
 They are still database files and work the same way as series do.
 
 If the **wco** folder doesn't exist then you must create it first.
+
+# Download WCO Data (Last Updated: 8/23/2024)
 
 Example of path: `C:\Users\CuratedDev\.zen_database\wco\links\`
 

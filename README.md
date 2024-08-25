@@ -99,6 +99,12 @@ If you want a better User Experience with the *Database Window* you should also 
 
 A guide for that can be found here: [Download Images](https://github.com/NobilityDeviant/ZenDownloader/tree/master/database#series-images)
 
+# Asset Updater Not Working
+
+If the *Asset Updater* isn't working for you, then follow this guide to ensure you get all the updates: 
+
+**Database Guide:** [Guide](https://github.com/NobilityDeviant/ZenDownloader/tree/master/database)
+
 # Cloudflare
 
 Wco is now using cloudflare. Most VPNs and public proxies won't work anymore!
@@ -188,3 +194,5 @@ Also if you want to make the `.deb` or the `.rpm` file you also need to install 
 `sudo apt-get install fakeroot`
 
 That's it! If you have any issues, please create an issue in Github and i'll get right on it.
+
+BTW please excuse all the commits. I am a pretty indecisive person and it takes me awhile to fix the READMEs.
