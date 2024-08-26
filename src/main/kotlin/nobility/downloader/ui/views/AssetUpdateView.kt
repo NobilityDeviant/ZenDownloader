@@ -88,33 +88,38 @@ class AssetUpdateView {
                     modifier = Modifier.padding(5.dp)
                 )
                 if (retry) {
-                    defaultButton(
-                        "Retry",
-                        width = 150.dp
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        retry = false
-                        coroutineScope.launch {
-                            downloading = true
-                            Asset.entries.forEach { asset ->
-                                downloadAsset(asset)
-                            }
-                            if (!shuttingDown) {
-                                if (finished) {
-                                    downloadText = "All assets have been updated."
-                                    scope.closeWindow()
-                                } else {
-                                    retry = true
-                                    downloadText = "Failed to update all assets."
+                        defaultButton(
+                            "Retry",
+                            width = 150.dp
+                        ) {
+                            retry = false
+                            coroutineScope.launch {
+                                downloading = true
+                                Asset.entries.forEach { asset ->
+                                    downloadAsset(asset)
                                 }
+                                if (!shuttingDown) {
+                                    if (finished) {
+                                        downloadText = "All assets have been updated."
+                                        scope.closeWindow()
+                                    } else {
+                                        retry = true
+                                        downloadText = "Failed to update all assets."
+                                    }
+                                }
+                                downloading = false
                             }
-                            downloading = false
                         }
-                    }
-                    defaultButton(
-                        "Continue To App",
-                        width = 150.dp
-                    ) {
-                        scope.closeWindow()
+                        defaultButton(
+                            "Continue To App",
+                            width = 150.dp
+                        ) {
+                            scope.closeWindow()
+                        }
                     }
                 } else if (!shuttingDown) {
                     defaultButton(

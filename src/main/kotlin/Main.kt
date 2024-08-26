@@ -13,7 +13,7 @@ import nobility.downloader.utils.loadKeyEvents
 fun main() {
     ApplicationState.newWindow(
         "Asset Updater",
-        size = DpSize(450.dp, 200.dp),
+        size = DpSize(400.dp, 175.dp),
         transparent = true,
         undecorated = true,
         onClose = {

@@ -156,6 +156,19 @@ enum class Defaults(
     FIRST_LAUNCH("1st-launch", false),
     DARK_MODE("dark_mode", true),
     WCO_GENRES_LAST_UPDATED("wco_genres_last_updated", 0L),
+    DB_LAST_SCROLL_POS("db_last_scroll_pos", 0),
     DB_LAST_TYPE_USED("db_last_type", DatabaseType.ANIME.id),
-    DB_LAST_SORT_USED("db_last_sort", DatabaseSort.NAME.id)
+    DB_LAST_SORT_USED("db_last_sort", DatabaseSort.NAME.id);
+
+    companion object {
+        val checkBoxes get() = listOf(
+            SEPARATE_SEASONS,
+            SHOW_TOOLTIPS,
+            BYPASS_DISK_SPACE,
+            CONSOLE_ON_TOP,
+            AUTO_SCROLL_CONSOLES,
+            HEADLESS_MODE,
+            SHOW_DEBUG_MESSAGES,
+        )
+    }
 }

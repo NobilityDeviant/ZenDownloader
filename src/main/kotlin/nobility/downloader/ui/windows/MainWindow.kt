@@ -16,6 +16,7 @@ import compose.icons.EvaIcons
 import compose.icons.evaicons.Fill
 import compose.icons.evaicons.fill.*
 import nobility.downloader.Page
+import nobility.downloader.core.BoxHelper
 import nobility.downloader.core.BoxHelper.Companion.boolean
 import nobility.downloader.core.BoxHelper.Companion.string
 import nobility.downloader.core.BoxHelper.Companion.update
@@ -149,21 +150,21 @@ private fun uiWrapper(
                             )
                         }
                     }
-                    if (Core.currentPage != Page.SETTINGS) {
-                        tooltipIconButton(
-                            "Options",
-                            EvaIcons.Fill.MoreVertical,
-                            mediumIconSize - 2.dp,
-                            onClick = { showFileMenu = !showFileMenu },
-                            spacePosition = SpacePosition.START,
-                            space = 10.dp
-                        )
-                        val closeMenu = { showFileMenu = false }
-                        DropdownMenu(
-                            expanded = showFileMenu,
-                            onDismissRequest = { closeMenu() }
-                        ) {
-                            if (Core.currentPage == Page.HOME) {
+                    tooltipIconButton(
+                        "Options",
+                        EvaIcons.Fill.MoreVertical,
+                        mediumIconSize - 2.dp,
+                        onClick = { showFileMenu = !showFileMenu },
+                        spacePosition = SpacePosition.START,
+                        space = 10.dp
+                    )
+                    val closeMenu = { showFileMenu = false }
+                    DropdownMenu(
+                        expanded = showFileMenu,
+                        onDismissRequest = { closeMenu() }
+                    ) {
+                        when (Core.currentPage) {
+                            Page.HOME -> {
                                 defaultDropdownItem(
                                     "Open Download History",
                                     EvaIcons.Fill.Archive
@@ -223,25 +224,26 @@ private fun uiWrapper(
                                     DialogHelper.showMessage(
                                         "About",
                                         """
-                                            This is an improved version of my old WcoDownloader created entirely with Jetpack Compose.
-                                            
-                                            This free program is used to download videos from ${Core.wcoUrl}.
-                                            
-                                            That's all :)
-                                            
-                                            Other anime sites are locked down hard and are really tough to scrape from.
-                                            This program is designed for wcofun only, but it is possible to expand if other sites are vulnerable.
-                                            
-                                            Creator: NobilityDev
-                                            
-                                            Github: 
-                                            ${AppInfo.GITHUB_URL}
-                                            
+                                           This is an improved version of my old WcoDownloader created entirely with Jetpack Compose.
+                                                                
+                                           This free program is used to download videos from ${Core.wcoUrl}.
+                                                                
+                                           That's all :)
+                                                                
+                                           Other anime sites are locked down hard and are really tough to scrape from.
+                                           This program is designed for wcofun only, but it is possible to expand if other sites are vulnerable.
+                                                                
+                                           Creator: NobilityDev
+                                                                
+                                           Github: 
+                                           ${AppInfo.GITHUB_URL}
+                                                                
                                         """.trimIndent(),
                                         size = DpSize(400.dp, 400.dp)
                                     )
                                 }
-                            } else if (Core.currentPage == Page.DOWNLOADS) {
+                            }
+                            Page.DOWNLOADS -> {
                                 if (Core.child.isRunning) {
                                     defaultDropdownItem(
                                         "Stop Downloads",
@@ -268,10 +270,10 @@ private fun uiWrapper(
                                     if (!Core.child.isRunning) {
                                         DialogHelper.showConfirm(
                                             """
-                                                Are you sure you want to clear all downloads?
-                                                This is just going to clear the downloaf list. No files will be deleted.
-                                                This action is irreversible unless you save a backup of the database folder.
-                                            """.trimIndent(),
+                                                                    Are you sure you want to clear all downloads?
+                                                                    This is just going to clear the downloaf list. No files will be deleted.
+                                                                    This action is irreversible unless you save a backup of the database folder.
+                                                                """.trimIndent(),
                                             "Clear Downloads"
                                         ) {
                                             val size = Core.child.downloadList.size
@@ -283,8 +285,19 @@ private fun uiWrapper(
                                     }
                                 }
                             }
+                            Page.SETTINGS -> {
+                                defaultDropdownItem(
+                                    "Open Database Folder",
+                                    EvaIcons.Fill.Folder
+                                ) {
+                                    closeMenu()
+                                    Tools.openFolder(BoxHelper.databasePath)
+                                }
+                            }
                         }
-                    } else if (Core.currentPage == Page.SETTINGS) {
+                    }
+
+                    if (Core.currentPage == Page.SETTINGS) {
                         tooltipIconButton(
                             if (!Core.darkMode.value) "Dark Mode" else "Light Mode",
                             if (!Core.darkMode.value) EvaIcons.Fill.Moon else EvaIcons.Fill.Sun,

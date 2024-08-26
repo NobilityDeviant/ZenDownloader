@@ -13,6 +13,7 @@ import androidx.compose.material.Icon
 import androidx.compose.material.ripple.rememberRipple
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -238,6 +239,19 @@ class DatabaseWindow {
                         )
                         LaunchedEffect(filteredSeries.size) {
                             resultText = "Showing ${filteredSeries.size} series results"
+                        }
+                        DisposableEffect(Unit) {
+                            onDispose {
+                                Defaults.DB_LAST_SCROLL_POS.update(
+                                    seasonsListState.firstVisibleItemIndex
+                                )
+                            }
+                        }
+                        val saveKey = rememberSaveable { true }
+                        LaunchedEffect(saveKey) {
+                            seasonsListState.scrollToItem(
+                                Defaults.DB_LAST_SCROLL_POS.int()
+                            )
                         }
                     }
                 }
@@ -588,7 +602,7 @@ class DatabaseWindow {
                                     val genre = BoxHelper.genreForName(result.item.trim())
                                     DialogHelper.showOptions(
                                         "Genre Options",
-                                        "What would you like to do?",
+                                        "Genre: ${genre.name}\nWhat would you like to do?",
                                         size = DpSize(450.dp, 200.dp),
                                         buttonWidth = 110.dp,
                                         options = listOf(

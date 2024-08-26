@@ -101,7 +101,12 @@ class ChromeDriverBuilder {
             if (args.contains("--headless") || args.contains("--headless=new") || args.contains("--headless=chrome")) {
                 headless = true
             }
-        } catch (_: Exception) {}
+        } catch (e: Exception) {
+            FrogLog.logError(
+                "Failed to add headless to the driver.",
+                e
+            )
+        }
 
         var prefs: Map<String, Any>? = null
         try {
@@ -112,7 +117,12 @@ class ChromeDriverBuilder {
                 prefs = HashMap(args["prefs"] as Map<String, Any>)
                 args.remove("prefs")
             }
-        } catch (_: Exception) {}
+        } catch (e: Exception) {
+            FrogLog.logError(
+                "Failed to set preferences for the driver.",
+                e
+            )
+        }
 
         return build(
             options,

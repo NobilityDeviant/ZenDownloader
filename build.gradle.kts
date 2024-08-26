@@ -33,10 +33,11 @@ dependencies {
     implementation(compose.desktop.currentOs)
     //network
     implementation("org.jsoup:jsoup:1.16.2")
-    implementation("org.seleniumhq.selenium:selenium-java:4.17.0")
-    implementation("io.github.bonigarcia:webdrivermanager:5.7.0")
+    implementation("org.seleniumhq.selenium:selenium-java:4.23.1")
+    implementation("io.github.bonigarcia:webdrivermanager:5.9.2")
     implementation("org.slf4j:slf4j-api:2.0.4")
-    implementation("org.slf4j:slf4j-simple:2.0.4")
+    //implementation("org.slf4j:slf4j-simple:2.0.4")
+    implementation("ch.qos.logback:logback-classic:1.5.7")
     runtimeOnly("org.jetbrains.kotlinx:kotlinx-coroutines-swing:1.8.0-RC2")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.0-RC2")
     //database
@@ -93,6 +94,7 @@ compose.desktop {
                 dirChooser = true
                 perUserInstall = true
                 shortcut = true
+                //console = true
                 //never change this
                 upgradeUuid = "b30e4c5c-592d-436f-a564-5324af8addc9"
                 iconFile.set(project.file("src/main/resources/images/icon.ico"))

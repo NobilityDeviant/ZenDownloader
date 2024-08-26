@@ -92,6 +92,7 @@ class SettingsView {
     private var saveButtonEnabled = mutableStateOf(false)
     private lateinit var scope: AppWindowScope
 
+    @OptIn(ExperimentalLayoutApi::class)
     @Composable
     fun settingsUi(scope: AppWindowScope) {
         this.scope = scope
@@ -144,30 +145,44 @@ class SettingsView {
                     fieldRow(Defaults.DOWNLOAD_THREADS)
                     fieldRow(Defaults.TIMEOUT)
                     fieldRow(Defaults.SAVE_FOLDER)
+                    //fieldRow(Defaults.PROXY)
                     fieldDropdown(Defaults.QUALITY)
-                    fieldRow(Defaults.PROXY)
-                    fieldCheckbox(Defaults.SEPARATE_SEASONS)
+                    FlowRow(
+                        verticalArrangement = Arrangement.spacedBy(5.dp),
+                        horizontalArrangement = Arrangement.spacedBy(5.dp),
+                        maxItemsInEachRow = 4
+                    ) {
+                        Defaults.checkBoxes.forEach {
+                            fieldCheckbox(it)
+                        }
+                    }
+                    fieldWcoDomain()
+                    /*fieldCheckbox(Defaults.SEPARATE_SEASONS)
                     fieldCheckbox(Defaults.SHOW_TOOLTIPS)
                     fieldCheckbox(Defaults.SHOW_DEBUG_MESSAGES)
                     fieldCheckbox(Defaults.BYPASS_DISK_SPACE)
                     fieldCheckbox(Defaults.CONSOLE_ON_TOP)
                     fieldCheckbox(Defaults.HEADLESS_MODE)
-                    fieldCheckbox(Defaults.AUTO_SCROLL_CONSOLES)
-                    fieldWcoDomain()
-                    defaultButton(
-                        "Open Database Folder",
-                        width = 150.dp,
-                        height = 35.dp
+                    fieldCheckbox(Defaults.AUTO_SCROLL_CONSOLES)*/
+                    Box(
+                        modifier = Modifier.fillMaxWidth()
                     ) {
-                        Tools.openFolder(BoxHelper.databasePath)
+                        Text(
+                            "Error Console",
+                            modifier = Modifier.align(Alignment.Center)
+                                .padding(top = 5.dp, bottom = 5.dp),
+                            textAlign = TextAlign.Center,
+                            fontSize = 16.sp
+                        )
+                        defaultButton(
+                            "Copy Console Text",
+                            height = 35.dp,
+                            modifier = Modifier.align(Alignment.CenterEnd)
+                        ) {
+                            Tools.clipboardString = Core.errorConsole.text
+                            scope.showToast("Copied")
+                        }
                     }
-                    Text(
-                        "Error Console",
-                        modifier = Modifier.align(Alignment.CenterHorizontally)
-                            .padding(top = 5.dp, bottom = 5.dp),
-                        textAlign = TextAlign.Center,
-                        fontSize = 13.sp
-                    )
                     Core.errorConsole.textField()
                 }
                 VerticalScrollbar(
@@ -403,7 +418,7 @@ class SettingsView {
             Defaults.SHOW_DEBUG_MESSAGES -> "Show Debug Messages"
             Defaults.BYPASS_DISK_SPACE -> "Bypass Disk Space Check"
             Defaults.SHOW_TOOLTIPS -> "Show Tooltips"
-            Defaults.CONSOLE_ON_TOP -> "Popout Window Always On Top"
+            Defaults.CONSOLE_ON_TOP -> "Popout Console Window Always On Top"
             Defaults.HEADLESS_MODE -> "Headless Mode"
             Defaults.SEPARATE_SEASONS -> "Separate Seasons Into Folders"
             Defaults.AUTO_SCROLL_CONSOLES -> "Auto Scroll Consoles"
