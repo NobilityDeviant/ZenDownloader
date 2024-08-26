@@ -19,7 +19,7 @@ class Console(
     private val errorMode: Boolean = false
 ) : OutputStream() {
 
-    var consoleText = mutableStateOf("")
+    private var consoleText = mutableStateOf("")
     private val sb = StringBuilder()
 
     val text get() = consoleText.value

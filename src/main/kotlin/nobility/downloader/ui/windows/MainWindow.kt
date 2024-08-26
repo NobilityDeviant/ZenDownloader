@@ -270,10 +270,10 @@ private fun uiWrapper(
                                     if (!Core.child.isRunning) {
                                         DialogHelper.showConfirm(
                                             """
-                                                                    Are you sure you want to clear all downloads?
-                                                                    This is just going to clear the downloaf list. No files will be deleted.
-                                                                    This action is irreversible unless you save a backup of the database folder.
-                                                                """.trimIndent(),
+                                               Are you sure you want to clear all downloads?
+                                               This is just going to clear the downloaf list. No files will be deleted.
+                                               This action is irreversible unless you save a backup of the database folder.
+                                            """.trimIndent(),
                                             "Clear Downloads"
                                         ) {
                                             val size = Core.child.downloadList.size
