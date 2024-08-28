@@ -130,7 +130,7 @@ Delete all the older version folders if you have any.
 ![Settings](images/chrome_browser_path_windows.png?raw=true "Windows Chrome Browser Versions")
 
 Either copy the latest versions folder name or hover over the `chrome.exe`
-and use the version the tooptip provides.
+and use the version the tooltip provides.
 
 **Linux**
 
