@@ -158,7 +158,7 @@ and
 
 *Chrome Driver Path*
 
-Click the button `Set File` for each path respectively and choose your files.
+Click the button *Set File* for each path respectively and choose your files.
 
 The browser path will be the `chrome.exe` you were using earlier to check the version.
 
