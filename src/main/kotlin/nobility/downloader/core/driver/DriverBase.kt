@@ -49,43 +49,50 @@ abstract class DriverBase(
         if (isSetup) {
             return
         }
-        try {
-            //WebDriverManager.getInstance().clearDriverCacheClean()
-            WebDriverManager.getInstance().clearResolutionCache()
-        } catch (_: Exception) {
-        }
         if (userAgent.isEmpty()) {
             userAgent = UserAgents.random
         }
-        val proxySetting = Defaults.PROXY.string()
-        val proxyEnabled = Defaults.ENABLE_PROXY.boolean()
-        //must set up chrome driver first
-        WebDriverManager.chromedriver().setup()
         if (headless) {
             chromeOptions.addArguments("--headless=new")
         }
         chromeOptions.addArguments("--mute-audio")
         chromeOptions.addArguments("--user-agent=$userAgent")
-
-        if (proxySetting.isNotEmpty() && proxyEnabled) {
-            chromeOptions.addArguments(
-                "--proxy-server=$proxySetting"
+        val chromePath = Defaults.CHROME_BROWSER_PATH.string()
+        val chromeDriverPath = Defaults.CHROME_DRIVER_PATH.string()
+        if (chromePath.isNotEmpty() && chromeDriverPath.isNotEmpty()) {
+            //System.setProperty(
+              //  "webdriver.chrome.driver",
+                //chromeDriverPath
+            //)
+            FrogLog.logInfo(
+                """
+                    Using chrome browser from settings.
+                    Chrome Browser Path: $chromePath
+                    Chrome Driver Path: $chromeDriverPath
+                """.trimIndent()
             )
-        }
-        val binary = WebDriverManager.chromedriver().browserPath
-        val exportedChromeDriver = System.getProperty("webdriver.chrome.driver")
-        nDriver = if (binary.isPresent) {
-            ChromeDriverBuilder().build(
+            nDriver = ChromeDriverBuilder().build(
                 options = chromeOptions,
-                driverExecutablePath = exportedChromeDriver,
-                binaryLocation = binary.get().toString(),
+                driverExecutablePath = chromeDriverPath,
+                binaryLocation = chromePath
             )
         } else {
-            //if not found with WDM, it will look for it.
-            ChromeDriverBuilder().build(
-                options = chromeOptions,
-                driverExecutablePath = exportedChromeDriver,
-            )
+            WebDriverManager.chromedriver().setup()
+            val binary = WebDriverManager.chromedriver().browserPath
+            val exportedChromeDriver = System.getProperty("webdriver.chrome.driver")
+            nDriver = if (binary.isPresent) {
+                ChromeDriverBuilder().build(
+                    options = chromeOptions,
+                    driverExecutablePath = exportedChromeDriver,
+                    binaryLocation = binary.get().toString(),
+                )
+            } else {
+                //if not found with WDM, it will look for it.
+                ChromeDriverBuilder().build(
+                    options = chromeOptions,
+                    driverExecutablePath = exportedChromeDriver,
+                )
+            }
         }
 
         val timeout = Defaults.TIMEOUT.int().toLong()

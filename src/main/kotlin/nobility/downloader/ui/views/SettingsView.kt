@@ -13,6 +13,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.darkrockstudios.libraries.mpfilepicker.DirectoryPicker
+import com.darkrockstudios.libraries.mpfilepicker.FilePicker
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -60,7 +61,17 @@ class SettingsView {
         Defaults.WCO_EXTENSION.string()
     )
 
-    private var quality by mutableStateOf(Quality.LOW.tag)
+    private var chromePath by mutableStateOf(
+        Defaults.CHROME_BROWSER_PATH.string()
+    )
+
+    private var chromeDriverPath by mutableStateOf(
+        Defaults.CHROME_DRIVER_PATH.string()
+    )
+
+    private var quality by mutableStateOf(
+        Defaults.QUALITY.string()
+    )
 
     private var proxyEnabled = mutableStateOf(false)
     private var debugMessages = mutableStateOf(
@@ -145,6 +156,8 @@ class SettingsView {
                     fieldRow(Defaults.DOWNLOAD_THREADS)
                     fieldRow(Defaults.TIMEOUT)
                     fieldRow(Defaults.SAVE_FOLDER)
+                    fieldRow(Defaults.CHROME_BROWSER_PATH)
+                    fieldRow(Defaults.CHROME_DRIVER_PATH)
                     //fieldRow(Defaults.PROXY)
                     fieldDropdown(Defaults.QUALITY)
                     FlowRow(
@@ -157,13 +170,6 @@ class SettingsView {
                         }
                     }
                     fieldWcoDomain()
-                    /*fieldCheckbox(Defaults.SEPARATE_SEASONS)
-                    fieldCheckbox(Defaults.SHOW_TOOLTIPS)
-                    fieldCheckbox(Defaults.SHOW_DEBUG_MESSAGES)
-                    fieldCheckbox(Defaults.BYPASS_DISK_SPACE)
-                    fieldCheckbox(Defaults.CONSOLE_ON_TOP)
-                    fieldCheckbox(Defaults.HEADLESS_MODE)
-                    fieldCheckbox(Defaults.AUTO_SCROLL_CONSOLES)*/
                     Box(
                         modifier = Modifier.fillMaxWidth()
                     ) {
@@ -216,6 +222,8 @@ class SettingsView {
             Defaults.TIMEOUT -> "Network Timeout"
             Defaults.SAVE_FOLDER -> "Download Folder"
             Defaults.PROXY -> "Proxy"
+            Defaults.CHROME_BROWSER_PATH -> "Chrome Browser Path"
+            Defaults.CHROME_DRIVER_PATH -> "Chrome Driver Path"
             else -> ""
         }
         Row(
@@ -277,12 +285,13 @@ class SettingsView {
                                 }
                             }
                         },
-                        modifier = Modifier.height(30.dp).width(180.dp),
+                        modifier = Modifier.height(30.dp).width(300.dp),
                     )
                     var showFilePicker by remember { mutableStateOf(false) }
                     DirectoryPicker(
                         show = showFilePicker,
-                        initialDirectory = saveFolder
+                        initialDirectory = saveFolder,
+                        title = "Choose Save Folder"
                     ) {
                         if (it != null) {
                             saveFolder = it
@@ -292,6 +301,78 @@ class SettingsView {
                     }
                     defaultButton(
                         "Set Folder",
+                        height = 30.dp,
+                        width = 80.dp
+                    ) {
+                        showFilePicker = true
+                    }
+                }
+
+                Defaults.CHROME_BROWSER_PATH -> {
+                    defaultSettingsTextField(
+                        chromePath,
+                        { text ->
+                            if (text.isNotEmpty()) {
+                                chromePath = text
+                                updateSaveButton()
+                            } else {
+                                if (chromePath.isNotEmpty()) {
+                                    chromePath = ""
+                                }
+                            }
+                        },
+                        modifier = Modifier.height(30.dp).width(300.dp),
+                    )
+                    var showFilePicker by remember { mutableStateOf(false) }
+                    FilePicker(
+                        show = showFilePicker,
+                        initialDirectory = Defaults.SAVE_FOLDER.value.toString(),
+                        title = "Choose Chrome Browser File"
+                    ) {
+                        if (it != null) {
+                            chromePath = it.path
+                            updateSaveButton()
+                        }
+                        showFilePicker = false
+                    }
+                    defaultButton(
+                        "Set File",
+                        height = 30.dp,
+                        width = 80.dp
+                    ) {
+                        showFilePicker = true
+                    }
+                }
+
+                Defaults.CHROME_DRIVER_PATH -> {
+                    defaultSettingsTextField(
+                        chromeDriverPath,
+                        { text ->
+                            if (text.isNotEmpty()) {
+                                chromeDriverPath = text
+                                updateSaveButton()
+                            } else {
+                                if (chromeDriverPath.isNotEmpty()) {
+                                    chromeDriverPath = ""
+                                }
+                            }
+                        },
+                        modifier = Modifier.height(30.dp).width(300.dp),
+                    )
+                    var showFilePicker by remember { mutableStateOf(false) }
+                    FilePicker(
+                        show = showFilePicker,
+                        initialDirectory = Defaults.SAVE_FOLDER.value.toString(),
+                        title = "Choose Chrome Driver FIle"
+                    ) {
+                        if (it != null) {
+                            chromeDriverPath = it.path
+                            updateSaveButton()
+                        }
+                        showFilePicker = false
+                    }
+                    defaultButton(
+                        "Set File",
                         height = 30.dp,
                         width = 80.dp
                     ) {
@@ -628,6 +709,14 @@ class SettingsView {
                     saveFolder = it.string()
                 }
 
+                Defaults.CHROME_BROWSER_PATH -> {
+                    chromePath = it.string()
+                }
+
+                Defaults.CHROME_DRIVER_PATH -> {
+                    chromeDriverPath = it.string()
+                }
+
                 Defaults.PROXY -> {
                     proxy = it.string()
                 }
@@ -756,6 +845,26 @@ class SettingsView {
             scope.showToast("The download folder doesn't exist.")
             return false
         }
+        if (chromePath.isNotEmpty()) {
+            if (!chromePath.fileExists()) {
+                scope.showToast("The chrome path doesn't exist.")
+                return false
+            }
+        }
+        if (chromeDriverPath.isNotEmpty()) {
+            if (!chromeDriverPath.fileExists()) {
+                scope.showToast("The chrome driver path doesn't exist.")
+                return false
+            }
+        }
+        if (chromePath.isNotEmpty() && chromeDriverPath.isEmpty()) {
+            scope.showToast("Both Chrome Browser and Chrome Driver paths need to be set.")
+            return false
+        }
+        if (chromeDriverPath.isNotEmpty() && chromePath.isEmpty()) {
+            scope.showToast("Both Chrome Browser and Chrome Driver paths need to be set.")
+            return false
+        }
         val proxyEnabledValue = proxyEnabled.value
         if (proxy.isEmpty() && proxyEnabledValue) {
             proxyEnabled.value = false
@@ -780,6 +889,8 @@ class SettingsView {
         Defaults.DOWNLOAD_THREADS.update(threadsValue)
         Defaults.TIMEOUT.update(timeoutValue)
         Defaults.SAVE_FOLDER.update(saveFolder)
+        Defaults.CHROME_BROWSER_PATH.update(chromePath)
+        Defaults.CHROME_DRIVER_PATH.update(chromeDriverPath)
         Core.child.refreshDownloadsProgress()
         Defaults.PROXY.update(proxy)
         Defaults.ENABLE_PROXY.update(proxyEnabledValue)
@@ -802,6 +913,8 @@ class SettingsView {
         return Defaults.TIMEOUT.intString() != timeout
                 || Defaults.DOWNLOAD_THREADS.intString() != threads
                 || Defaults.SAVE_FOLDER.string() != saveFolder
+                || Defaults.CHROME_BROWSER_PATH.string() != chromePath
+                || Defaults.CHROME_DRIVER_PATH.string() != chromeDriverPath
                 || Defaults.PROXY.string() != proxy
                 || Defaults.ENABLE_PROXY.boolean() != proxyEnabled.value
                 || Defaults.QUALITY.string() != quality

@@ -94,7 +94,6 @@ compose.desktop {
                 dirChooser = true
                 perUserInstall = true
                 shortcut = true
-                //console = true
                 //never change this
                 upgradeUuid = "b30e4c5c-592d-436f-a564-5324af8addc9"
                 iconFile.set(project.file("src/main/resources/images/icon.ico"))

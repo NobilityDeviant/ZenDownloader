@@ -146,6 +146,30 @@ enum class Defaults(
             Default: On
         """.trimIndent()
     ),
+    CHROME_BROWSER_PATH(
+        "chrome_browser_path",
+        "",
+        """
+            The path to your Chrome browser's exe file.
+            You can adjust this if the app is failing to use your correct chrome version.
+            You don't need to use option as the program will find chrome for you.
+            Example: C:\Program Files\Google\Chrome\Application\chrome.exe
+            Default: Empty
+            Requires: Chrome Driver Path
+        """.trimIndent()
+    ),
+    CHROME_DRIVER_PATH(
+        "chrome_driver_path",
+        "",
+        """
+            The path to your ChromeDriver file.
+            You can adjust this if the app is failing to use your correct chrome version.
+            You don't need to use option as the program will get it for you.
+            Example: C:\Users\CuratedDev\Desktop\chromedriver-win64\chromedriver.exe
+            Default: Empty
+            Requires: Chrome Browser Path
+        """.trimIndent()
+    ),
     LAST_DOWNLOAD("last_dl", ""),
     DENIED_UPDATE("denied_update", false),
     UPDATE_VERSION("update_version", "1.0"),
