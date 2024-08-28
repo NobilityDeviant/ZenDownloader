@@ -123,7 +123,7 @@ Now when Chrome is installed you need to find the version of it.
 
 **Windows**
 
-In your Chrome folder there's going to be different folders with different verions if you have multiple ones.
+In your Chrome folder there's going to be different folders with different versions if you have multiple ones.
 
 Delete all the older version folders if you have any.
 
