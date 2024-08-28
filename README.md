@@ -146,7 +146,7 @@ and find the version closest to yours.
 
 If you can't find an exact match you can use the link it provides for your Operating System and replace the version with your own.
 
-For example: [128.0.6613.85](https://storage.googleapis.com/chrome-for-testing-public/128.0.6613.85/win64/chrome-win64.zip)
+For example: [128.0.6613.85](https://storage.googleapis.com/chrome-for-testing-public/128.0.6613.85/win64/chromedriver-win64.zip)
 
 **Settings**
 
