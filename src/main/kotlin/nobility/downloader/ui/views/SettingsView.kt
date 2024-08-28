@@ -847,7 +847,7 @@ class SettingsView {
         }
         if (chromePath.isNotEmpty()) {
             if (!chromePath.fileExists()) {
-                scope.showToast("The chrome path doesn't exist.")
+                scope.showToast("The chrome browser path doesn't exist.")
                 return false
             }
         }
