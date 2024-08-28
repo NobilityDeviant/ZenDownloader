@@ -26,7 +26,7 @@ I would greatly appreciate it. :)
 
 **ZenDownloader** currently only supports Windows and Debian based Linux. x64 Only.
 
-It has been tested on Windows 10, Windows 11 and Ubuntu 22.04.04
+It has been tested on Windows 7, Windows 10, Windows 11 and Ubuntu 22.04.04
 
 You will also need to install Chrome. This version doesn't support any other browsers right now.
 
