@@ -153,6 +153,9 @@ For example: [128.0.6613.85](https://storage.googleapis.com/chrome-for-testing-p
 Now inside `Settings` you will see 2 options:
 
 *Chrome Browser Path*
+
+and 
+
 *Chrome Driver Path*
 
 Click the button `Set File` for each path respectively and choose your files.
