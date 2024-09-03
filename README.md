@@ -26,7 +26,7 @@ I would greatly appreciate it. :)
 
 **ZenDownloader** currently only supports Windows and Debian based Linux. x64 Only.
 
-It has been tested on Windows 10, Windows 11 and Ubuntu 22.04.04
+It has been tested on Windows 7, Windows 10, Windows 11 and Ubuntu 22.04.04
 
 You will also need to install Chrome. This version doesn't support any other browsers right now.
 
@@ -110,6 +110,65 @@ A guide for that can be found here: [Download Images](https://github.com/Nobilit
 If the *Asset Updater* isn't working for you, then follow this guide to ensure you get all the updates: 
 
 **Database Guide:** [Guide](https://github.com/NobilityDeviant/ZenDownloader/tree/master/database)
+
+# Custom Chrome Browser & Driver
+
+There's now an option to add your own path to the Chrome Browser and ChromeDriver.
+This works on both WIndows & Linux.
+
+First you're going to want to install Chrome from the offical website.
+You can follow the [Download & Install](https://github.com/NobilityDeviant/ZenDownloader#download--install) for that.
+
+Now when Chrome is installed you need to find the version of it.
+
+**Windows**
+
+In your Chrome folder there's going to be different folders with different versions if you have multiple ones.
+
+Delete all the older version folders if you have any.
+
+![Settings](images/chrome_browser_path_windows.png?raw=true "Windows Chrome Browser Versions")
+
+Either copy the latest versions folder name or hover over the `chrome.exe`
+and use the version the tooltip provides.
+
+**Linux**
+
+You can find your Chrome verion with this command:
+
+`google-chrome --version`
+
+**Download Chrome Driver**
+
+Now visit: [Chrome Driver Releases](https://googlechromelabs.github.io/chrome-for-testing/#stable)
+
+and find the version closest to yours.
+
+If you can't find an exact match you can use the link it provides for your Operating System and replace the version with your own.
+
+For example: [128.0.6613.85](https://storage.googleapis.com/chrome-for-testing-public/128.0.6613.85/win64/chromedriver-win64.zip)
+
+**Settings**
+
+Now inside `Settings` you will see 2 options:
+
+*Chrome Browser Path*
+
+and 
+
+*Chrome Driver Path*
+
+Click the button *Set File* for each path respectively and choose your files.
+
+The browser path will be the `chrome.exe` you were using earlier to check the version.
+
+The driver path will be the `chromedriver.exe` you just downloaded.
+
+Linux will be a little bit different.
+
+Linux chromedrivers will not have an extension.
+
+The executable for Linux will be different as well. I have no clue where that would be, but I'll update this when I find out.
 
 # Cloudflare
 
