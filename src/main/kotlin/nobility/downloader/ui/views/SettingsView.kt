@@ -497,7 +497,7 @@ class SettingsView {
     ) {
         val title = when (setting) {
             Defaults.SHOW_DEBUG_MESSAGES -> "Show Debug Messages"
-            Defaults.BYPASS_DISK_SPACE -> "Bypass Disk Space Check"
+            Defaults.BYPASS_DISK_SPACE -> "Bypass Storage Space Check"
             Defaults.SHOW_TOOLTIPS -> "Show Tooltips"
             Defaults.CONSOLE_ON_TOP -> "Popout Console Window Always On Top"
             Defaults.HEADLESS_MODE -> "Headless Mode"

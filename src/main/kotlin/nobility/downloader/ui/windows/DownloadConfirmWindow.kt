@@ -21,6 +21,7 @@ import androidx.compose.runtime.snapshots.SnapshotStateMap
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.input.key.isShiftPressed
 import androidx.compose.ui.input.pointer.PointerIcon
 import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.layout.ContentScale
@@ -28,6 +29,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import compose.icons.EvaIcons
 import compose.icons.evaicons.Fill
 import compose.icons.evaicons.fill.ChevronDown
@@ -63,6 +65,7 @@ class DownloadConfirmWindow(
     private val series = toDownload.series!!
     private val movieMode = toDownload.isMovie || series.identity == SeriesIdentity.MOVIE.type
     private val selectedEpisodes = mutableStateListOf<Episode>()
+    private val highlightedEpisodes = mutableStateListOf<Int>()
     private var allSelected = selectedEpisodes.isNotEmpty()
     private var selectText by mutableStateOf(if (allSelected) "Deselect All" else "Select All")
     private var downloadButtonEnabled = mutableStateOf(true)
@@ -71,6 +74,7 @@ class DownloadConfirmWindow(
         Quality.qualityForTag(Defaults.QUALITY.string())
     )
     private var singleEpisode by mutableStateOf(false)
+    private var shiftHeld by mutableStateOf(false)
 
     init {
         if (toDownload.episode != null) {
@@ -216,266 +220,32 @@ class DownloadConfirmWindow(
     fun open() {
         ApplicationState.newWindow(
             "Download ${series.name}",
-            maximized = true
+            maximized = true,
+            keyEvents = {
+                if (it.isShiftPressed) {
+                    shiftHeld = true
+                    return@newWindow true
+                } else {
+                    if (shiftHeld) {
+                        shiftHeld = false
+                    }
+                }
+                false
+            }
         ) {
             val scope = rememberCoroutineScope()
             val episodesListState = rememberLazyListState()
             Scaffold(
                 modifier = Modifier.fillMaxSize(50f),
                 bottomBar = {
-                    Column(
-                        modifier = Modifier.fillMaxWidth().padding(15.dp),
-                    ) {
-                        Row(
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.align(Alignment.CenterHorizontally)
-                        ) {
-                            if (!movieMode) {
-                                defaultButton(
-                                    "Check For New Episodes",
-                                    height = 50.dp,
-                                    width = 150.dp,
-                                    padding = 0.dp,
-                                    enabled = checkForEpisodesButtonEnabled,
-                                ) {
-                                    showToast("Checking for new episodes...")
-                                    scope.launch {
-                                        val result = checkForNewEpisodes()
-                                        val data = result.data
-                                        if (data != null) {
-                                            showToast("Found ${result.data} new episode(s). They have been selected.")
-                                            singleEpisode = result.data > 1
-                                        } else {
-                                            showToast("No new episodes were found.")
-                                            FrogLog.logError(
-                                                "Failed to find new episodes for ${series.name}",
-                                                result.message
-                                            )
-                                        }
-                                    }
-                                }
-                            }
-                            if (movieMode) {
-                                defaultButton(
-                                    "Download Movie",
-                                    height = 50.dp,
-                                    width = 175.dp,
-                                    padding = 0.dp,
-                                    enabled = downloadButtonEnabled,
-                                ) {
-                                    BoxMaker.makeHistory(
-                                        series.slug
-                                    )
-                                    if (Core.child.isRunning) {
-                                        val added = Core.child.addEpisodesToQueue(
-                                            if (singleEpisode)
-                                                listOf(series.episodes.first())
-                                            else
-                                                selectedEpisodes
-                                        )
-                                        if (added > 0) {
-                                            showToast("Added $added movie(s) to current queue.")
-                                        } else {
-                                            showToast("No movies have been added to current queue. They have already been added before.")
-                                        }
-                                        return@defaultButton
-                                    }
-                                    Core.child.softStart()
-                                    //must use an outside scope because closing this window
-                                    //will cancel the local coroutine
-                                    Core.child.taskScope.launch(Dispatchers.IO) {
-                                        //sort in case the episodes are not in order
-                                        Core.child.addEpisodesToQueue(
-                                            if (singleEpisode)
-                                                listOf(series.episodes.first())
-                                            else
-                                                selectedEpisodes.sortedWith(Tools.baseEpisodesComparator)
-                                        )
-                                        try {
-                                            var threads = if (!Defaults.HEADLESS_MODE.boolean())
-                                                1 else Defaults.DOWNLOAD_THREADS.int()
-                                            if (Core.child.currentEpisodes.size < threads) {
-                                                threads = Core.child.currentEpisodes.size
-                                            }
-                                            val tasks = mutableListOf<Job>()
-                                            for (i in 1..threads) {
-                                                tasks.add(
-                                                    launch {
-                                                        val downloader = VideoDownloader(temporaryQuality)
-                                                        try {
-                                                            downloader.run()
-                                                        } catch (e: Exception) {
-                                                            downloader.killDriver()
-                                                            val error = e.localizedMessage
-                                                            if (error.contains("unknown error: cannot find")
-                                                                || error.contains("Unable to find driver executable")
-                                                                || error.contains("unable to find binary")
-                                                            ) {
-                                                                FrogLog.writeMessage(
-                                                                    "[$i] Failed to find Chrome. You must install Chrome before downloading videos."
-                                                                )
-                                                            } else {
-                                                                FrogLog.logError(
-                                                                    "[$i] VideoDownloader failed.",
-                                                                    e
-                                                                )
-                                                            }
-                                                        }
-                                                    }
-                                                )
-                                            }
-                                            tasks.joinAll()
-                                            if (Core.child.downloadsFinishedForSession > 0) {
-                                                FrogLog.writeMessage(
-                                                    "Gracefully finished downloading ${Core.child.downloadsFinishedForSession} video(s)."
-                                                )
-                                            } else {
-                                                FrogLog.writeMessage(
-                                                    "Gracefully finished. No downloads have been made."
-                                                )
-                                            }
-                                            Core.child.stop()
-                                        } catch (e: Exception) {
-                                            Core.child.stop()
-                                            FrogLog.logError("Download task failed with the error: " + e.localizedMessage)
-                                        }
-                                    }
-                                    FrogLog.writeMessage("Successfully launched video downloader for movie.")
-                                    closeWindow()
-                                }
-                            } else {
-                                defaultButton(
-                                    if (singleEpisode)
-                                        "Download Episode"
-                                    else if (selectedEpisodes.isNotEmpty())
-                                        "Download ${selectedEpisodes.size} Episodes"
-                                    else
-                                        "Select Episodes",
-                                    height = 50.dp,
-                                    width = 175.dp,
-                                    padding = 0.dp,
-                                    enabled = downloadButtonEnabled,
-                                ) {
-                                    if (series.episodes.isEmpty()) {
-                                        showToast("There's no episodes to download,")
-                                        return@defaultButton
-                                    }
-                                    if (!singleEpisode && selectedEpisodes.isEmpty()) {
-                                        showToast("You must select at least 1 episode.")
-                                        return@defaultButton
-                                    }
-                                    BoxMaker.makeHistory(
-                                        series.slug
-                                    )
-                                    if (Core.child.isRunning) {
-                                        val added = Core.child.addEpisodesToQueue(
-                                            if (singleEpisode)
-                                                listOf(series.episodes.first())
-                                            else
-                                                selectedEpisodes
-                                        )
-                                        if (added > 0) {
-                                            showToast("Added $added episode(s) to current queue.")
-                                        } else {
-                                            showToast(
-                                                "No episodes have been added to current queue. They have already been added before."
-                                            )
-                                        }
-                                        return@defaultButton
-                                    }
-                                    Core.child.softStart()
-                                    //must use an outside scope because closing this window
-                                    //will cancel the local coroutine
-                                    Core.child.taskScope.launch(Dispatchers.IO) {
-                                        //sort in case the episodes are not in order
-                                        Core.child.addEpisodesToQueue(
-                                            selectedEpisodes.sortedWith(Tools.baseEpisodesComparator)
-                                        )
-                                        try {
-                                            var threads = if (!Defaults.HEADLESS_MODE.boolean())
-                                                1 else Defaults.DOWNLOAD_THREADS.int()
-                                            if (Core.child.currentEpisodes.size < threads) {
-                                                threads = Core.child.currentEpisodes.size
-                                            }
-                                            val tasks = mutableListOf<Job>()
-                                            for (i in 1..threads) {
-                                                tasks.add(
-                                                    launch {
-                                                        val downloader = VideoDownloader(temporaryQuality)
-                                                        try {
-                                                            downloader.run()
-                                                        } catch (e: Exception) {
-                                                            downloader.killDriver()
-                                                            val error = e.localizedMessage
-                                                            if (error.contains("unknown error: cannot find")
-                                                                || error.contains("Unable to find driver executable")
-                                                                || error.contains("unable to find binary")
-                                                            ) {
-                                                                FrogLog.writeMessage(
-                                                                    "[$i] Failed to find Chrome. You must install Chrome before downloading videos."
-                                                                )
-                                                            } else {
-                                                                FrogLog.logError(
-                                                                    "[$i] VideoDownloader failed.",
-                                                                    e
-                                                                )
-                                                            }
-                                                        }
-                                                    }
-                                                )
-                                            }
-                                            tasks.joinAll()
-                                            if (Core.child.downloadsFinishedForSession > 0) {
-                                                FrogLog.writeMessage(
-                                                    "Gracefully finished downloading ${Core.child.downloadsFinishedForSession} video(s)."
-                                                )
-                                            } else {
-                                                FrogLog.writeMessage(
-                                                    "Gracefully finished. No downloads have been made."
-                                                )
-                                            }
-                                            Core.child.stop()
-                                        } catch (e: Exception) {
-                                            Core.child.stop()
-                                            FrogLog.logError("Download task failed with the error: " + e.localizedMessage)
-                                        }
-                                    }
-                                    FrogLog.writeMessage("Successfully launched video downloader for ${selectedEpisodes.size} episode(s).")
-                                    closeWindow()
-                                }
-                            }
-
-                            if (!movieMode) {
-                                var openQuality by remember { mutableStateOf(false) }
-                                var qualityName by remember { mutableStateOf(temporaryQuality.tag) }
-
-                                defaultDropdown(
-                                    "Quality: $qualityName",
-                                    openQuality,
-                                    Quality.entries.map {
-                                        DropdownOption(it.tag) {
-                                            temporaryQuality = it
-                                            qualityName = it.tag
-                                            openQuality = false
-                                        }
-                                    },
-                                    boxColor = MaterialTheme.colorScheme.primary,
-                                    boxTextColor = MaterialTheme.colorScheme.onPrimary,
-                                    boxWidth = 140.dp,
-                                    boxHeight = 50.dp,
-                                    centerBoxText = true,
-                                    onTextClick = { openQuality = true },
-                                ) { openQuality = false }
-                            }
-                        }
-                    }
+                    bottomBar(this, scope)
                 }
             ) { it ->
-                val scrollState = rememberScrollState()
+                //val scrollState = rememberScrollState()
                 Column(
                     modifier = Modifier.padding(bottom = it.calculateBottomPadding())
-                        .verticalScroll(scrollState)
+                        //.verticalScroll(scrollState)
+                        .fillMaxSize()
                 ) {
                     seriesInfoHeader(this@newWindow, scope)
                     if (!singleEpisode) {
@@ -484,7 +254,7 @@ class DownloadConfirmWindow(
                         ) {
                             defaultButton(
                                 selectText,
-                                height = 30.dp,
+                                height = 35.dp,
                                 width = 120.dp,
                                 padding = 10.dp,
                             ) {
@@ -501,42 +271,66 @@ class DownloadConfirmWindow(
                             }
                         }
                     }
-                    val seasonData = seasonData()
-                    val isExpandedMap = rememberSavableSnapshotStateMap {
-                        List(seasonData.size) { index: Int ->
-                            index to seasonData[index].expandOnStart
-                        }.toMutableStateMap()
-                    }
-                    LazyColumn(
-                        verticalArrangement = Arrangement.spacedBy(4.dp),
-                        modifier = Modifier.padding(5.dp)
-                            .height(300.dp).draggable(
-                                state = rememberDraggableState {
-                                    scope.launch {
-                                        episodesListState.scrollBy(-it)
-                                    }
-                                },
-                                orientation = Orientation.Vertical,
-                            ),
-                        state = episodesListState
+                    Box(
+                        modifier = Modifier.fillMaxSize()
                     ) {
-                        seasonData.onEachIndexed { index, seasonData ->
-                            section(
-                                seasonData = seasonData,
-                                isExpanded = isExpandedMap[index] ?: false,
-                                onHeaderClick = {
-                                    isExpandedMap[index] = !(isExpandedMap[index] ?: false)
-                                }
-                            )
+                        val seasonData = seasonData()
+                        val isExpandedMap = rememberSavableSnapshotStateMap {
+                            List(seasonData.size) { index: Int ->
+                                index to seasonData[index].expandOnStart
+                            }.toMutableStateMap()
                         }
-                    }
-                    if (toDownload.episode != null) {
-                        //used so the effect doesn't trigger again.
-                        val key = rememberSaveable { true }
-                        LaunchedEffect(key) {
-                            val index = indexOfEpisodeNew(toDownload.episode)
-                            if (index != -1) {
-                                episodesListState.animateScrollToItem(index)
+                        LazyColumn(
+                            verticalArrangement = Arrangement.spacedBy(1.dp),
+                            modifier = Modifier.padding(
+                                top = 5.dp,
+                                bottom = 5.dp,
+                                end = 12.dp
+                            ).fillMaxSize().draggable(
+                                    state = rememberDraggableState {
+                                        scope.launch {
+                                            episodesListState.scrollBy(-it)
+                                        }
+                                    },
+                                    orientation = Orientation.Vertical,
+                                ),
+                            state = episodesListState
+                        ) {
+                            seasonData.onEachIndexed { index, seasonData ->
+                                section(
+                                    seasonData = seasonData,
+                                    isExpanded = isExpandedMap[index] ?: false,
+                                    onHeaderClick = {
+                                        isExpandedMap[index] = !(isExpandedMap[index] ?: false)
+                                    }
+                                )
+                            }
+                        }
+                        VerticalScrollbar(
+                            modifier = Modifier.align(Alignment.CenterEnd)
+                                .background(MaterialTheme.colorScheme.surface.tone(20.0))
+                                .fillMaxHeight()
+                                .padding(top = 3.dp, bottom = 3.dp),
+                            style = ScrollbarStyle(
+                                minimalHeight = 16.dp,
+                                thickness = 10.dp,
+                                shape = RoundedCornerShape(10.dp),
+                                hoverDurationMillis = 300,
+                                unhoverColor = MaterialTheme.colorScheme.surface.tone(50.0).copy(alpha = 0.70f),
+                                hoverColor = MaterialTheme.colorScheme.surface.tone(50.0).copy(alpha = 0.90f)
+                            ),
+                            adapter = rememberScrollbarAdapter(
+                                scrollState = episodesListState
+                            )
+                        )
+                        if (toDownload.episode != null) {
+                            //used so the effect doesn't trigger again.
+                            val key = rememberSaveable { true }
+                            LaunchedEffect(key) {
+                                val index = indexForEpisode(toDownload.episode)
+                                if (index != -1) {
+                                    episodesListState.animateScrollToItem(index)
+                                }
                             }
                         }
                     }
@@ -584,22 +378,24 @@ class DownloadConfirmWindow(
         }
     }
 
-    @Suppress("UNUSED")
-    private fun indexOfEpisode(episode: Episode): Int {
-        episodes.forEachIndexed { index, e ->
-            if (e.matches(episode)) {
-                return index
-            }
-        }
-        return -1
-    }
-
-    private fun indexOfEpisodeNew(episode: Episode): Int {
+    private fun indexForEpisode(
+        episode: Episode,
+        forScroll: Boolean = true
+    ): Int {
         var index = -1
         val seasonData = seasonData()
         seasonData.forEach {
             index++
-            if (it.expandOnStart) {
+            if (forScroll) {
+                if (it.expandOnStart) {
+                    it.episodes.forEach { e ->
+                        index++
+                        if (e.matches(episode)) {
+                            return index
+                        }
+                    }
+                }
+            } else {
                 it.episodes.forEach { e ->
                     index++
                     if (e.matches(episode)) {
@@ -611,25 +407,82 @@ class DownloadConfirmWindow(
         return index
     }
 
+    private fun episodeForIndex(index: Int): Episode? {
+        var mIndex = -1
+        val seasonData = seasonData()
+        seasonData.forEach {
+            mIndex++
+            it.episodes.forEach { e ->
+                mIndex++
+                if (mIndex == index) {
+                    return e
+                }
+            }
+        }
+        return null
+    }
+
+    private fun addHighlightedEpisode(index: Int) {
+        if (!highlightedEpisodes.contains(index)) {
+            highlightedEpisodes.add(index)
+        }
+    }
+
     @Composable
     private fun episodeRow(episode: Episode) {
         var checked = selectedEpisodes.contains(episode)
+        val highlighted = highlightedEpisodes.contains(
+            indexForEpisode(episode, false)
+        )
         Row(
             modifier = Modifier.background(
-                color = MaterialTheme.colorScheme.surfaceVariant,
+                color = if (!highlighted)
+                    MaterialTheme.colorScheme.secondaryContainer
+                else
+                    MaterialTheme.colorScheme.primary
+                        .tone(40.0),
                 shape = RoundedCornerShape(5.dp)
             ).clickable(
                 interactionSource = remember { MutableInteractionSource() },
-                indication = rememberRipple(color = MaterialTheme.colorScheme.primary)
+                indication = rememberRipple(
+                    color = if (!highlighted)
+                        MaterialTheme.colorScheme.secondaryContainer.hover()
+                    else
+                        MaterialTheme.colorScheme.primary
+                            .tone(40.0)
+                            .hover()
+                )
             ) {
-                checked = if (!checked) {
-                    selectedEpisodes.add(episode)
-                    updateSelectedText()
-                    true
+                if (shiftHeld) {
+                    val index = indexForEpisode(episode, false)
+                    if (highlighted) {
+                        highlightedEpisodes.remove(index)
+                    } else {
+                        if (highlightedEpisodes.isEmpty()) {
+                            highlightedEpisodes.add(index)
+                        } else {
+                            val firstIndex = highlightedEpisodes.first()
+                            if (firstIndex > index) {
+                                for (i in firstIndex downTo index) {
+                                    addHighlightedEpisode(i)
+                                }
+                            } else {
+                                for (i in firstIndex..index) {
+                                    addHighlightedEpisode(i)
+                                }
+                            }
+                        }
+                    }
                 } else {
-                    selectedEpisodes.remove(episode)
-                    updateSelectedText()
-                    false
+                    checked = if (!checked) {
+                        selectedEpisodes.add(episode)
+                        updateSelectedText()
+                        true
+                    } else {
+                        selectedEpisodes.remove(episode)
+                        updateSelectedText()
+                        false
+                    }
                 }
             }.height(40.dp)
         ) {
@@ -639,7 +492,11 @@ class DownloadConfirmWindow(
                     .padding(4.dp)
                     .weight(1f, true)
                     .align(Alignment.CenterVertically),
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = if (!highlighted)
+                    MaterialTheme.colorScheme.onSurfaceVariant
+                else
+                    MaterialTheme.colorScheme.onSurfaceVariant
+                        .tone(80.0)
             )
             if (!singleEpisode) {
                 Checkbox(
@@ -788,8 +645,308 @@ class DownloadConfirmWindow(
         }
     }
 
+    @Composable
+    private fun bottomBar(
+        windowScope: AppWindowScope,
+        coroutineScope: CoroutineScope
+    ) {
+        Column(
+            modifier = Modifier.fillMaxWidth()
+                .wrapContentHeight(Alignment.CenterVertically),
+        ) {
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.align(Alignment.CenterHorizontally)
+                    .padding(10.dp)
+            ) {
+                if (shiftHeld) {
+                    Text(
+                        "Shift Mode",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.height(bottomBarButtonHeight)
+                    )
+                } else {
+                    if (highlightedEpisodes.isNotEmpty()) {
+                        defaultButton(
+                            "Clear Highlighted Episodes",
+                            height = bottomBarButtonHeight,
+                            width = 175.dp,
+                            padding = 0.dp
+                        ) {
+                            highlightedEpisodes.clear()
+                        }
+                        defaultButton(
+                            "Select ${highlightedEpisodes.size} Highlighted Episode(s)",
+                            height = bottomBarButtonHeight,
+                            width = 200.dp,
+                            padding = 0.dp,
+                        ) {
+                            highlightedEpisodes.forEach {
+                                val episode = episodeForIndex(it)
+                                if (episode != null) {
+                                    if (!selectedEpisodes.contains(episode)) {
+                                        selectedEpisodes.add(episode)
+                                    }
+                                }
+                            }
+                            highlightedEpisodes.clear()
+                            updateSelectedText()
+                        }
+                    } else {
+                        if (!movieMode) {
+                            defaultButton(
+                                "Check For New Episodes",
+                                height = bottomBarButtonHeight,
+                                width = 150.dp,
+                                padding = 0.dp,
+                                enabled = checkForEpisodesButtonEnabled,
+                            ) {
+                                windowScope.showToast("Checking for new episodes...")
+                                coroutineScope.launch {
+                                    val result = checkForNewEpisodes()
+                                    val data = result.data
+                                    if (data != null) {
+                                        windowScope.showToast(
+                                            "Found ${result.data} new episode(s). They have been selected."
+                                        )
+                                        singleEpisode = result.data > 1
+                                    } else {
+                                        windowScope.showToast("No new episodes were found.")
+                                        FrogLog.logError(
+                                            "Failed to find new episodes for ${series.name}",
+                                            result.message
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                        if (movieMode) {
+                            defaultButton(
+                                "Download Movie",
+                                height = bottomBarButtonHeight,
+                                width = 175.dp,
+                                padding = 0.dp,
+                                enabled = downloadButtonEnabled,
+                            ) {
+                                BoxMaker.makeHistory(
+                                    series.slug
+                                )
+                                if (Core.child.isRunning) {
+                                    val added = Core.child.addEpisodesToQueue(
+                                        if (singleEpisode)
+                                            listOf(series.episodes.first())
+                                        else
+                                            selectedEpisodes
+                                    )
+                                    if (added > 0) {
+                                        windowScope.showToast("Added $added movie(s) to current queue.")
+                                    } else {
+                                        windowScope.showToast(
+                                            "No movies have been added to current queue. They have already been added before."
+                                        )
+                                    }
+                                    return@defaultButton
+                                }
+                                Core.child.softStart()
+                                //must use an outside scope because closing this window
+                                //will cancel the local coroutine
+                                Core.child.taskScope.launch(Dispatchers.IO) {
+                                    //sort in case the episodes are not in order
+                                    Core.child.addEpisodesToQueue(
+                                        if (singleEpisode)
+                                            listOf(series.episodes.first())
+                                        else
+                                            selectedEpisodes.sortedWith(Tools.baseEpisodesComparator)
+                                    )
+                                    try {
+                                        var threads = if (!Defaults.HEADLESS_MODE.boolean())
+                                            1 else Defaults.DOWNLOAD_THREADS.int()
+                                        if (Core.child.currentEpisodes.size < threads) {
+                                            threads = Core.child.currentEpisodes.size
+                                        }
+                                        val tasks = mutableListOf<Job>()
+                                        for (i in 1..threads) {
+                                            tasks.add(
+                                                launch {
+                                                    val downloader = VideoDownloader(temporaryQuality)
+                                                    try {
+                                                        downloader.run()
+                                                    } catch (e: Exception) {
+                                                        downloader.killDriver()
+                                                        val error = e.localizedMessage
+                                                        if (error.contains("unknown error: cannot find")
+                                                            || error.contains("Unable to find driver executable")
+                                                            || error.contains("unable to find binary")
+                                                        ) {
+                                                            FrogLog.writeMessage(
+                                                                "[$i] Failed to find Chrome. You must install Chrome before downloading videos."
+                                                            )
+                                                        } else {
+                                                            FrogLog.logError(
+                                                                "[$i] VideoDownloader failed.",
+                                                                e
+                                                            )
+                                                        }
+                                                    }
+                                                }
+                                            )
+                                        }
+                                        tasks.joinAll()
+                                        if (Core.child.downloadsFinishedForSession > 0) {
+                                            FrogLog.writeMessage(
+                                                "Gracefully finished downloading ${Core.child.downloadsFinishedForSession} video(s)."
+                                            )
+                                        } else {
+                                            FrogLog.writeMessage(
+                                                "Gracefully finished. No downloads have been made."
+                                            )
+                                        }
+                                        Core.child.stop()
+                                    } catch (e: Exception) {
+                                        Core.child.stop()
+                                        FrogLog.logError("Download task failed with the error: " + e.localizedMessage)
+                                    }
+                                }
+                                FrogLog.writeMessage("Successfully launched video downloader for movie.")
+                                windowScope.closeWindow()
+                            }
+                        } else {
+                            defaultButton(
+                                if (singleEpisode)
+                                    "Download Episode"
+                                else if (selectedEpisodes.isNotEmpty())
+                                    "Download ${selectedEpisodes.size} Episodes"
+                                else
+                                    "Select Episodes",
+                                height = bottomBarButtonHeight,
+                                width = 200.dp,
+                                padding = 0.dp,
+                                enabled = downloadButtonEnabled,
+                            ) {
+                                if (series.episodes.isEmpty()) {
+                                    windowScope.showToast("There's no episodes to download,")
+                                    return@defaultButton
+                                }
+                                if (!singleEpisode && selectedEpisodes.isEmpty()) {
+                                    windowScope.showToast("You must select at least 1 episode.")
+                                    return@defaultButton
+                                }
+                                BoxMaker.makeHistory(
+                                    series.slug
+                                )
+                                if (Core.child.isRunning) {
+                                    val added = Core.child.addEpisodesToQueue(
+                                        if (singleEpisode)
+                                            listOf(series.episodes.first())
+                                        else
+                                            selectedEpisodes
+                                    )
+                                    if (added > 0) {
+                                        windowScope.showToast("Added $added episode(s) to current queue.")
+                                    } else {
+                                        windowScope.showToast(
+                                            "No episodes have been added to current queue. They have already been added before."
+                                        )
+                                    }
+                                    return@defaultButton
+                                }
+                                Core.child.softStart()
+                                //must use an outside scope because closing this window
+                                //will cancel the local coroutine
+                                Core.child.taskScope.launch(Dispatchers.IO) {
+                                    //sort in case the episodes are not in order
+                                    Core.child.addEpisodesToQueue(
+                                        selectedEpisodes.sortedWith(Tools.baseEpisodesComparator)
+                                    )
+                                    try {
+                                        var threads = if (!Defaults.HEADLESS_MODE.boolean())
+                                            1 else Defaults.DOWNLOAD_THREADS.int()
+                                        if (Core.child.currentEpisodes.size < threads) {
+                                            threads = Core.child.currentEpisodes.size
+                                        }
+                                        val tasks = mutableListOf<Job>()
+                                        for (i in 1..threads) {
+                                            tasks.add(
+                                                launch {
+                                                    val downloader = VideoDownloader(temporaryQuality)
+                                                    try {
+                                                        downloader.run()
+                                                    } catch (e: Exception) {
+                                                        downloader.killDriver()
+                                                        val error = e.localizedMessage
+                                                        if (error.contains("unknown error: cannot find")
+                                                            || error.contains("Unable to find driver executable")
+                                                            || error.contains("unable to find binary")
+                                                        ) {
+                                                            FrogLog.writeMessage(
+                                                                "[$i] Failed to find Chrome. You must install Chrome before downloading videos."
+                                                            )
+                                                        } else {
+                                                            FrogLog.logError(
+                                                                "[$i] VideoDownloader failed.",
+                                                                e
+                                                            )
+                                                        }
+                                                    }
+                                                }
+                                            )
+                                        }
+                                        tasks.joinAll()
+                                        if (Core.child.downloadsFinishedForSession > 0) {
+                                            FrogLog.writeMessage(
+                                                "Gracefully finished downloading ${Core.child.downloadsFinishedForSession} video(s)."
+                                            )
+                                        } else {
+                                            FrogLog.writeMessage(
+                                                "Gracefully finished. No downloads have been made."
+                                            )
+                                        }
+                                        Core.child.stop()
+                                    } catch (e: Exception) {
+                                        Core.child.stop()
+                                        FrogLog.logError("Download task failed with the error: " + e.localizedMessage)
+                                    }
+                                }
+                                FrogLog.writeMessage("Successfully launched video downloader for ${selectedEpisodes.size} episode(s).")
+                                windowScope.closeWindow()
+                            }
+                        }
+
+                        if (!movieMode) {
+                            var openQuality by remember { mutableStateOf(false) }
+                            var qualityName by remember { mutableStateOf(temporaryQuality.tag) }
+
+                            defaultDropdown(
+                                "Quality: $qualityName",
+                                openQuality,
+                                Quality.entries.map {
+                                    DropdownOption(it.tag) {
+                                        temporaryQuality = it
+                                        qualityName = it.tag
+                                        openQuality = false
+                                    }
+                                },
+                                boxColor = MaterialTheme.colorScheme.primary,
+                                boxTextColor = MaterialTheme.colorScheme.onPrimary,
+                                boxWidth = 140.dp,
+                                boxHeight = bottomBarButtonHeight,
+                                centerBoxText = true,
+                                onTextClick = { openQuality = true },
+                            ) { openQuality = false }
+                        }
+                    }
+                }
+            }
+        }
+
+    }
+
     companion object {
         private val seasonDataHeaderHeight = 45.dp
+        private val bottomBarButtonHeight = 45.dp
     }
 
 }

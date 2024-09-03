@@ -59,8 +59,10 @@ class Core {
             if (initialized) {
                 return
             }
-            System.setOut(PrintStream(console))
-            System.setErr(PrintStream(errorConsole))
+            if (!AppInfo.DEBUG_MODE) {
+                System.setOut(PrintStream(console))
+                System.setErr(PrintStream(errorConsole))
+            }
             if (!Defaults.FIRST_LAUNCH.boolean()) {
                 FrogLog.writeMessage("Welcome to ${AppInfo.TITLE}!")
                 Defaults.FIRST_LAUNCH.update(true)

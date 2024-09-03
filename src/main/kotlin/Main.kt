@@ -11,34 +11,54 @@ import nobility.downloader.utils.AppInfo
 import nobility.downloader.utils.loadKeyEvents
 
 fun main() {
-    ApplicationState.newWindow(
-        "Asset Updater",
-        size = DpSize(400.dp, 175.dp),
-        transparent = true,
-        undecorated = true,
-        onClose = {
-            //initialize the core singleton before anything besides the updater.
-            //this is the root of the app.
-            Core.initialize()
-            /**
-             * The main window is needed to keep the application running.
-             */
-            ApplicationState.newWindow(
-                AppInfo.TITLE,
-                loadKeyEvents(),
-                maximized = true,
-                onClose = {
-                    Core.child.shutdown(false)
-                    false
+    if (AppInfo.UPDATE_ASSETS_ON_LAUNCH) {
+        ApplicationState.newWindow(
+            "Asset Updater",
+            size = DpSize(400.dp, 175.dp),
+            transparent = true,
+            undecorated = true,
+            onClose = {
+                //initialize the core singleton before anything besides the updater.
+                //this is the root of the app.
+                Core.initialize()
+                /**
+                 * The main window is needed to keep the application running.
+                 */
+                ApplicationState.newWindow(
+                    AppInfo.TITLE,
+                    loadKeyEvents(),
+                    maximized = true,
+                    onClose = {
+                        Core.child.shutdown(false)
+                        false
+                    }
+                ) {
+                    mainWindow(this)
                 }
-            ) {
-                mainWindow(this)
+                true
             }
-            true
+        ) {
+            val assetUpdateView = AssetUpdateView()
+            assetUpdateView.assetUpdaterUi(this)
         }
-    ) {
-        val assetUpdateView = AssetUpdateView()
-        assetUpdateView.assetUpdaterUi(this)
+    } else {
+        //initialize the core singleton before anything besides the updater.
+        //this is the root of the app.
+        Core.initialize()
+        /**
+         * The main window is needed to keep the application running.
+         */
+        ApplicationState.newWindow(
+            AppInfo.TITLE,
+            loadKeyEvents(),
+            maximized = true,
+            onClose = {
+                Core.child.shutdown(false)
+                false
+            }
+        ) {
+            mainWindow(this)
+        }
     }
 
     application {

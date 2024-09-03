@@ -36,7 +36,6 @@ dependencies {
     implementation("org.seleniumhq.selenium:selenium-java:4.23.1")
     implementation("io.github.bonigarcia:webdrivermanager:5.9.2")
     implementation("org.slf4j:slf4j-api:2.0.4")
-    //implementation("org.slf4j:slf4j-simple:2.0.4")
     implementation("ch.qos.logback:logback-classic:1.5.7")
     runtimeOnly("org.jetbrains.kotlinx:kotlinx-coroutines-swing:1.8.0-RC2")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.0-RC2")

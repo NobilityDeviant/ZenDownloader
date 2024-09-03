@@ -20,10 +20,10 @@ enum class Defaults(
         "bypass_check",
         false,
         """
-            Bypassing the disk space checks can be needed sometimes.
-            Usually everything goes well, but if your disk has certain permission issues or anything else goes wrong,
+            Bypassing the storage space checks can be needed sometimes.
+            Usually everything goes well, but if your storage has certain permission issues or anything else goes wrong,
             the checks can fail even if you have enough space.
-            Disks must have at least 150MB to start downloading with this option off.
+            Storage must have at least 150MB to start downloading with this option off.
             Default: Off
         """.trimIndent()
     ),
@@ -67,7 +67,7 @@ enum class Defaults(
             If you want to download more than 1 file at a time, you can increase this.
             Each instance opens up the browser in the background and it consumes quite a bit of ram.
             Cloudflare can also block your IP if you use too many.
-            Lower = Slow PC | Higher = Fast PC
+            Lower = Slower PC | Higher = Faster PC
             Minimum: ${Constants.minThreads} | Maximum: ${Constants.maxThreads}
             Default: 1
         """.trimIndent()
@@ -112,7 +112,7 @@ enum class Defaults(
         "console_on_top",
         true,
         """
-            When popping out the console it will always stay on top of other windows.
+            When popping out the console, it will always stay on top of other windows.
             Default: On
         """.trimIndent()
     ),
@@ -120,8 +120,8 @@ enum class Defaults(
         "headless_mode",
         true,
         """
-            Headless mode is used to hide the browsers during download or scraping.
-            If you turn this off then all browser instances will show.
+            Headless mode is used to hide the browsers during downloading or scraping.
+            If you turn this off, then all browser instances will show.
             The only reason this option is here is for debugging or if you're curious to see the process.
             Note: With this option off, your download threads will be capped at 1 to prevent window spam.
             Default: On

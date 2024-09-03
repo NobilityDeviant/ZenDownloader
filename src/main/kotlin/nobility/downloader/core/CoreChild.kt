@@ -22,16 +22,14 @@ import nobility.downloader.core.settings.Defaults
 import nobility.downloader.core.updates.UrlUpdater
 import nobility.downloader.ui.components.dialog.DialogHelper
 import nobility.downloader.ui.components.dialog.DialogHelper.showError
-import nobility.downloader.utils.AppInfo
-import nobility.downloader.utils.Constants
-import nobility.downloader.utils.FrogLog
-import nobility.downloader.utils.Tools
+import nobility.downloader.utils.*
 import org.openqa.selenium.WebDriver
 import java.io.File
 import java.net.URI
 import java.util.*
 import java.util.logging.Level
 import java.util.logging.Logger
+import javax.net.ssl.HttpsURLConnection
 import kotlin.system.exitProcess
 
 
@@ -67,6 +65,31 @@ class CoreChild {
                 UrlUpdater.updateWcoUrl()
             }
             movieHandler.loadMovies()
+            //ok THIS is actually working.
+            //cloudflare isn't blocking it
+            //it shows the iframe too!
+            //we can use this to easily access now? and fallback to chrome as a backup??!!!!!!
+            val url = URI("https://www.wcofun.net/wistoria-wand-and-sword-episode-6-english-dubbed").toURL()
+            val con = url.openConnection() as HttpsURLConnection
+            con.addRequestProperty(
+                "Accept",
+                "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9"
+            )
+            con.addRequestProperty("Accept-Language", "en-US,en;q=0.9")
+            con.addRequestProperty("Connection", "keep-alive")
+            con.addRequestProperty("Referer", "https://www.wcofun.net/")
+            con.addRequestProperty("Sec-Fetch-Dest", "document")
+            con.addRequestProperty("Sec-Fetch-Mode", "navigate")
+            con.addRequestProperty("Sec-Fetch-Site", "cross-site")
+            con.addRequestProperty("Sec-Fetch-User", "?1")
+            con.addRequestProperty("Upgrade-Insecure-Requests", "1")
+            //the same user agent as the driver is needed.
+            con.addRequestProperty("User-Agent", UserAgents.random)
+            con.connectTimeout = Defaults.TIMEOUT.int() * 1000
+            con.readTimeout = Defaults.TIMEOUT.int() * 1000
+            con.inputStream.bufferedReader().readLines().forEach {
+                println(it)
+            }
         }
     }
 

@@ -14,6 +14,7 @@ open class Episode() {
     var lastUpdated: Long = 0
     var isMovie: Boolean = false
     var website: String = Website.WCOFUN.name
+    var fileSize: Long = 0
 
     constructor(name: String, slug: String, seriesSlug: String) : this() {
         this.name = name

@@ -5,9 +5,13 @@ import androidx.compose.ui.text.intl.Locale
 import androidx.compose.ui.text.toLowerCase
 import com.materialkolor.ktx.toColor
 import com.materialkolor.ktx.toHct
+import io.github.bonigarcia.wdm.WebDriverManager
 import io.objectbox.exception.NonUniqueResultException
 import io.objectbox.query.Query
+import nobility.downloader.core.BoxHelper.Companion.boolean
 import nobility.downloader.core.Core
+import nobility.downloader.core.settings.Defaults
+import org.apache.commons.io.FileUtils
 import org.apache.commons.lang3.StringUtils
 import java.io.File
 
@@ -17,9 +21,11 @@ fun Color.tone(tone: Double): Color {
         .toColor()
 }
 
-fun Color.light(): Color {
+fun Color.hover(): Color {
     return toHct()
-        .withTone(70.0)
+        .withTone(
+            if (Defaults.DARK_MODE.boolean()) 70.0 else 30.0
+        )
         .toColor()
 }
 
@@ -77,4 +83,10 @@ fun <T> Query<T>.findUniqueOrNull(): T? {
     } catch (e: NonUniqueResultException) {
         null
     }
+}
+
+fun WebDriverManager.clearDriverCacheClean(): WebDriverManager {
+    val cacheFolder: File = this.config().cacheFolder
+    FileUtils.cleanDirectory(cacheFolder)
+    return this
 }

@@ -459,7 +459,7 @@ class HistoryWindow {
                     interactionSource = remember { MutableInteractionSource() },
                     indication = rememberRipple(
                         color = MaterialTheme.colorScheme
-                            .secondaryContainer.light()
+                            .secondaryContainer.hover()
                     )
                 ) { showFileMenu = showFileMenu.not() }
                 .background(

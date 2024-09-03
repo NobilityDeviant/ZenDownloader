@@ -150,7 +150,7 @@ class AssetUpdateView {
                                         }
                                     }
                                 }
-                                Tools.openFolder(
+                                Tools.openFile(
                                     dubbedPath,
                                     true
                                 )

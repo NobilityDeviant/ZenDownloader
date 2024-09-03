@@ -13,7 +13,6 @@ import java.io.File
 data class Download(
     var downloadPath: String = "",
     var dateAdded: Long = 0,
-    var fileSize: Long = 0,
     var resolution: Int = 0
 ) : Episode() {
 

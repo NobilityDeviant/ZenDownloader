@@ -18,7 +18,7 @@ fun loadKeyEvents(): (KeyEvent) -> Boolean = {
         Core.openSettings()
         true
     } else if (it.isCtrlPressed && it.key == Key.O && up) {
-        Tools.openFolder(
+        Tools.openFile(
             Defaults.SAVE_FOLDER.string()
         )
         true

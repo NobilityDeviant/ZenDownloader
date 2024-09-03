@@ -245,7 +245,7 @@ class VideoDownloader(
                     var videoLinkError: String
                     try {
                         val videoPlayer = driver.findElement(By.id(videoJs))
-                        //this makes it wait, so it doesn't throw an error everytime
+                        //this makes it wait so it doesn't throw an error everytime
                         wait.pollingEvery(Duration.ofSeconds(1))
                             .withTimeout(Duration.ofSeconds(15))
                             .until(ExpectedConditions.attributeToBeNotEmpty(videoPlayer, "src"))
@@ -293,6 +293,7 @@ class VideoDownloader(
                     } else {
                         logInfo("Using existing download for ${currentEpisode.name}")
                     }
+                    //todo
                     driver.navigate().to(downloadLink)
                     val originalFileSize = fileSize(downloadLink)
                     if (originalFileSize <= 5000) {
@@ -567,6 +568,7 @@ class VideoDownloader(
         con.addRequestProperty("Sec-Fetch-Site", "cross-site")
         con.addRequestProperty("Sec-Fetch-User", "?1")
         con.addRequestProperty("Upgrade-Insecure-Requests", "1")
+        con.addRequestProperty("Referer", Core.wcoUrl)
         //the same user agent as the driver is needed.
         con.addRequestProperty("User-Agent", userAgent)
         con.connectTimeout = Defaults.TIMEOUT.int() * 1000
@@ -744,7 +746,7 @@ class VideoDownloader(
     }
 
     override fun killDriver() {
-        super.killDriver()
         taskScope.cancel()
+        super.killDriver()
     }
 }

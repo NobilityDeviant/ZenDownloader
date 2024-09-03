@@ -37,7 +37,7 @@ import nobility.downloader.ui.components.defaultDropdownItem
 import nobility.downloader.ui.components.dialog.DialogHelper
 import nobility.downloader.ui.windows.utils.AppWindowScope
 import nobility.downloader.utils.Tools
-import nobility.downloader.utils.light
+import nobility.downloader.utils.hover
 import nobility.downloader.utils.slugToLink
 import nobility.downloader.utils.tone
 
@@ -58,7 +58,7 @@ class DownloadsView {
                 modifier = Modifier.fillMaxSize()
             ) {
                 LazyColumn(
-                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                    verticalArrangement = Arrangement.spacedBy(1.dp),
                     modifier = Modifier.padding(
                         top = 5.dp,
                         bottom = 5.dp,
@@ -331,7 +331,9 @@ class DownloadsView {
                         }
                         closeMenu()
                     }
-                } /*else {
+                }
+                //todo would really love to figure out how to do this
+                /*else {
                     defaultDropdownItem(
                         "Pause",
                         EvaIcons.Fill.PauseCircle
@@ -379,7 +381,7 @@ class DownloadsView {
                 EvaIcons.Fill.Folder
             ) {
                 closeMenu()
-                Tools.openFolder(
+                Tools.openFile(
                     download.downloadPath,
                     true
                 )
@@ -390,7 +392,7 @@ class DownloadsView {
                     EvaIcons.Fill.Video
                 ) {
                     closeMenu()
-                    Tools.openFolder(download.downloadPath)
+                    Tools.openFile(download.downloadPath)
                 }
             }
             if (!download.downloading) {
@@ -448,7 +450,7 @@ class DownloadsView {
                     interactionSource = remember { MutableInteractionSource() },
                     indication = rememberRipple(
                         color = MaterialTheme.colorScheme
-                            .secondaryContainer.light()
+                            .secondaryContainer.hover()
                     )
                 ) { showFileMenu = showFileMenu.not() }
                 .background(

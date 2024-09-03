@@ -40,7 +40,7 @@ object FrogLog {
                     else
                         "Error: Invalid exception error"
         )
-        writeMessage("Stacktrace for ${message.trimIndent()}", true)
+        writeMessage("Stacktrace for ${message.trimIndent()}:", true)
         exception.printStackTrace()
     }
 

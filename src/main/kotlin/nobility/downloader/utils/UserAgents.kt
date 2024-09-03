@@ -4,9 +4,13 @@ object UserAgents {
 
     val random get() = list.random()
 
-    //https://www.useragents.me/#most-common-desktop-useragents-json-csv
-    //never use mobile user agents. they can change the website,
-    val list get() =
+    /**
+     * Scraped from https://www.useragents.me/#most-common-desktop-useragents-json-csv
+     * Old and mobile user agents should never be used.
+     * Cloudflare blocks old ones and mobile ones can change the website resulting
+     * in potentially important components being gone or named differently.
+     */
+    private val list get() =
             """
                 Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.327.66
                 Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.39.07

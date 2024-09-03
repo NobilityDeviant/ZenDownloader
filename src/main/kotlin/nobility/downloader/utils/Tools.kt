@@ -367,7 +367,7 @@ object Tools {
         con.disconnect()
     }
 
-    fun openFolder(
+    fun openFile(
         path: String,
         parent: Boolean = false,
         appWindowScope: AppWindowScope? = null

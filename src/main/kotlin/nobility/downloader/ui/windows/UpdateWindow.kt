@@ -376,7 +376,7 @@ class UpdateWindow(
                     onDenyTitle = "Continue",
                     onConfirmTitle = "Finish"
                 ) {
-                    Tools.openFolder(
+                    Tools.openFile(
                         downloadedUpdate.absolutePath,
                         true,
                         appWindowScope

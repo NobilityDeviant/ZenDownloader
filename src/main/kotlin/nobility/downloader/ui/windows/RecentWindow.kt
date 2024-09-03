@@ -47,7 +47,7 @@ import nobility.downloader.ui.windows.utils.AppWindowScope
 import nobility.downloader.ui.windows.utils.ApplicationState
 import nobility.downloader.utils.ImageUtils
 import nobility.downloader.utils.Tools
-import nobility.downloader.utils.light
+import nobility.downloader.utils.hover
 import nobility.downloader.utils.linkToSlug
 
 class RecentWindow {
@@ -296,7 +296,7 @@ class RecentWindow {
                     interactionSource = remember { MutableInteractionSource() },
                     indication = rememberRipple(
                         color = MaterialTheme.colorScheme
-                            .secondaryContainer.light()
+                            .secondaryContainer.hover()
                     )
                 ) { showFileMenu = showFileMenu.not() }
                 .background(

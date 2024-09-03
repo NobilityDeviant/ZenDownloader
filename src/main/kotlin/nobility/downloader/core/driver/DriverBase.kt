@@ -9,23 +9,21 @@ import nobility.downloader.core.driver.undetected_chrome.ChromeDriverBuilder
 import nobility.downloader.core.settings.Defaults
 import nobility.downloader.utils.FrogLog
 import nobility.downloader.utils.UserAgents
-import org.apache.commons.io.FileUtils
 import org.openqa.selenium.JavascriptExecutor
 import org.openqa.selenium.WebDriver
 import org.openqa.selenium.chrome.ChromeOptions
-import java.io.File
 import java.time.Duration
-
 
 abstract class DriverBase(
     userAgent: String = ""
 ) {
+
     private val chromeOptions = ChromeOptions()
     private var nDriver: WebDriver? = null
     val driver get() = nDriver!!
     private var isSetup = false
     protected var userAgent = ""
-    private var headless = Defaults.HEADLESS_MODE.boolean()
+    private val headless = Defaults.HEADLESS_MODE.boolean()
 
 
     init {
@@ -33,16 +31,8 @@ abstract class DriverBase(
         setupDriver()
     }
 
-    @Suppress("UNUSED")
-    private fun WebDriverManager.clearDriverCacheClean(): WebDriverManager {
-        val cacheFolder: File = this.config().cacheFolder
-        FileUtils.cleanDirectory(cacheFolder)
-        return this
-    }
-
     /**
      * Used to set up the web driver.
-     * It can be any of the browsers that the user can change in the settings.
      * This should only be called once unless you are debugging.
      */
     private fun setupDriver() {
@@ -60,10 +50,6 @@ abstract class DriverBase(
         val chromePath = Defaults.CHROME_BROWSER_PATH.string()
         val chromeDriverPath = Defaults.CHROME_DRIVER_PATH.string()
         if (chromePath.isNotEmpty() && chromeDriverPath.isNotEmpty()) {
-            //System.setProperty(
-              //  "webdriver.chrome.driver",
-                //chromeDriverPath
-            //)
             FrogLog.logInfo(
                 """
                     Using chrome browser from settings.

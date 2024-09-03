@@ -145,7 +145,7 @@ private fun uiWrapper(
                             "Open Download Folder",
                             icon = EvaIcons.Fill.Folder
                         ) {
-                            Tools.openFolder(
+                            Tools.openFile(
                                 Defaults.SAVE_FOLDER.string()
                             )
                         }
@@ -291,7 +291,7 @@ private fun uiWrapper(
                                     EvaIcons.Fill.Folder
                                 ) {
                                     closeMenu()
-                                    Tools.openFolder(BoxHelper.databasePath)
+                                    Tools.openFile(BoxHelper.databasePath)
                                 }
                             }
                         }

@@ -60,7 +60,7 @@ class MovieHandler {
             }
             if (movies.isNotEmpty()) {
                 FrogLog.writeMessage(
-                    "Successfully loaded ${movies.size} movie slugs."
+                    "Successfully downloaded ${movies.size} movie slugs."
                 )
             }
         } catch (e: Exception) {
