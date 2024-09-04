@@ -4,17 +4,22 @@ import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.text.LocalTextContextMenu
+import androidx.compose.foundation.text.TextContextMenu
 import androidx.compose.material.DropdownMenuItem
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
@@ -180,6 +185,66 @@ fun defaultTextField(
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
+object EmptyContextMenu: TextContextMenu {
+    @Composable
+    override fun Area(
+        textManager: TextContextMenu.TextManager,
+        state: ContextMenuState,
+        content:@Composable () -> Unit
+    ) {
+        ContextMenuArea({
+            emptyList()
+        }, state, content = content)
+    }
+}
+
+@Suppress("UNUSED")
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+fun defaultTextFieldWithoutActions(
+    value: String,
+    hint: String = "",
+    singleLine: Boolean = true,
+    readOnly: Boolean = false,
+    enabled: Boolean = true,
+    colors:  TextFieldColors = TextFieldDefaults.colors(),
+    textStyle: TextStyle = LocalTextStyle.current,
+    keyboardOptions: KeyboardOptions = KeyboardOptions(),
+    modifier: Modifier = Modifier
+) {
+    var textValue by remember { mutableStateOf(TextFieldValue(value)) }
+    CompositionLocalProvider(
+        LocalTextContextMenu provides EmptyContextMenu
+    ) {
+        TextField(
+            textValue,
+            onValueChange = {
+                textValue = if (it.selection.length > 0) {
+                    it.copy(selection = textValue.selection)
+                } else {
+                    it
+                }
+            },
+            singleLine = singleLine,
+            readOnly = readOnly,
+            enabled = enabled,
+            placeholder = {
+                if (hint.isNotEmpty()) {
+                    Text(
+                        hint,
+                        modifier = Modifier.alpha(0.3f)
+                    )
+                }
+            },
+            textStyle = textStyle,
+            modifier = modifier,
+            colors = colors,
+            keyboardOptions = keyboardOptions
+        )
+    }
+}
+
 @Composable
 fun defaultSettingsTextField(
     value: String,
@@ -191,8 +256,10 @@ fun defaultSettingsTextField(
     modifier: Modifier = Modifier.height(30.dp),
     settingsDescription: String = "",
     textStyle: TextStyle = MaterialTheme.typography.labelSmall,
+    requestFocus: Boolean = false,
     contextMenuItems: () -> List<ContextMenuItem> = { listOf() }
 ) {
+    val focusRequester = remember { FocusRequester() }
     val stateEnabled by remember { enabled }
     val contextMenuRepresentation = if (isSystemInDarkTheme()) {
         DarkDefaultContextMenuRepresentation
@@ -202,7 +269,9 @@ fun defaultSettingsTextField(
     tooltip(
         tooltipText = settingsDescription
     ) {
-        CompositionLocalProvider(LocalContextMenuRepresentation provides contextMenuRepresentation) {
+        CompositionLocalProvider(
+            LocalContextMenuRepresentation provides contextMenuRepresentation
+        ) {
             ContextMenuDataProvider(
                 items = contextMenuItems
             ) {
@@ -211,7 +280,9 @@ fun defaultSettingsTextField(
                     enabled = stateEnabled,
                     onValueChange = onValueChanged,
                     singleLine = singleLine,
-                    modifier = modifier,
+                    modifier = if (requestFocus)
+                        modifier.focusRequester(focusRequester)
+                    else modifier,
                     textStyle = textStyle,
                     keyboardOptions = KeyboardOptions(
                         keyboardType = if (numbersOnly)
@@ -231,6 +302,11 @@ fun defaultSettingsTextField(
                     padding = PaddingValues(start = 4.dp, end = 4.dp)
                 )
             }
+        }
+    }
+    if (requestFocus) {
+        LaunchedEffect(Unit) {
+            focusRequester.requestFocus()
         }
     }
 }

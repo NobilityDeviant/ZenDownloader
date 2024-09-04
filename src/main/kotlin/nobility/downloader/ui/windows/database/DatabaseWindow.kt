@@ -13,9 +13,9 @@ import androidx.compose.material.Icon
 import androidx.compose.material.ripple.rememberRipple
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.input.pointer.PointerButton
@@ -34,10 +34,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import compose.icons.EvaIcons
 import compose.icons.evaicons.Fill
-import compose.icons.evaicons.fill.ArrowIosDownward
-import compose.icons.evaicons.fill.ArrowIosUpward
-import compose.icons.evaicons.fill.Edit
-import compose.icons.evaicons.fill.Info
+import compose.icons.evaicons.fill.*
 import kotlinx.coroutines.launch
 import nobility.downloader.core.BoxHelper
 import nobility.downloader.core.BoxHelper.Companion.int
@@ -47,9 +44,13 @@ import nobility.downloader.core.entities.Series
 import nobility.downloader.core.entities.data.SeriesIdentity
 import nobility.downloader.core.scraper.data.ToDownload
 import nobility.downloader.core.settings.Defaults
-import nobility.downloader.ui.components.*
+import nobility.downloader.ui.components.defaultButton
+import nobility.downloader.ui.components.defaultCheckbox
+import nobility.downloader.ui.components.defaultDropdownItem
+import nobility.downloader.ui.components.defaultSettingsTextField
 import nobility.downloader.ui.components.dialog.DialogHelper
 import nobility.downloader.ui.windows.MovieEditor
+import nobility.downloader.ui.windows.utils.AppWindowScope
 import nobility.downloader.ui.windows.utils.ApplicationState
 import nobility.downloader.utils.*
 import java.util.regex.Pattern
@@ -141,7 +142,8 @@ class DatabaseWindow {
                                 hint = randomSearchHint,
                                 textStyle = MaterialTheme.typography.labelLarge,
                                 modifier = Modifier.fillMaxWidth(0.50f)
-                                    .padding(10.dp).height(40.dp)
+                                    .padding(10.dp).height(40.dp),
+                                requestFocus = true
                             )
                             defaultCheckbox(
                                 searchByGenre,
@@ -198,7 +200,7 @@ class DatabaseWindow {
                     header()
                     Box(modifier = Modifier.fillMaxSize()) {
                         LazyColumn(
-                            verticalArrangement = Arrangement.spacedBy(4.dp),
+                            verticalArrangement = Arrangement.spacedBy(1.dp),
                             modifier = Modifier.padding(
                                 top = 5.dp,
                                 bottom = 5.dp,
@@ -217,7 +219,7 @@ class DatabaseWindow {
                                 filteredSeries,
                                 key = { it.slug }
                             ) {
-                                seriesRow(it)
+                                seriesRow(it, this@newWindow)
                             }
                         }
                         VerticalScrollbar(
@@ -247,14 +249,15 @@ class DatabaseWindow {
                                 )
                             }
                         }
-                        val saveKey = rememberSaveable { true }
-                        LaunchedEffect(saveKey) {
+                        //val saveKey = rememberSaveable { true }
+                        LaunchedEffect(Unit) {
                             seasonsListState.scrollToItem(
                                 Defaults.DB_LAST_SCROLL_POS.int()
                             )
                         }
                     }
                 }
+                ApplicationState.addToastToWindow(this)
             }
         }
     }
@@ -401,7 +404,8 @@ class DatabaseWindow {
     @OptIn(ExperimentalFoundationApi::class)
     @Composable
     private fun seriesRow(
-        series: Series
+        series: Series,
+        windowScope: AppWindowScope
     ) {
         var showFileMenu by remember {
             mutableStateOf(false)
@@ -422,6 +426,24 @@ class DatabaseWindow {
                 Core.openDownloadConfirm(
                     ToDownload(series)
                 )
+            }
+            defaultDropdownItem(
+                "Copy Name",
+                EvaIcons.Fill.Copy
+            ) {
+                closeMenu()
+                Tools.clipboardString = series.name
+                windowScope.showToast("Copied Name")
+            }
+            if (series.description.isNotEmpty()) {
+                defaultDropdownItem(
+                    "Copy Description",
+                    EvaIcons.Fill.Copy
+                ) {
+                    closeMenu()
+                    Tools.clipboardString = series.description
+                    windowScope.showToast("Copied Description")
+                }
             }
             if (series.seriesIdentity == SeriesIdentity.MOVIE) {
                 defaultDropdownItem(
@@ -461,33 +483,46 @@ class DatabaseWindow {
                     .weight(NAME_WEIGHT)
             )
             divider()
-            if (series.description.length < 120) {
-                Text(
-                    text = series.description.ifEmpty { "No Description" },
-                    color = MaterialTheme.colorScheme.onSecondaryContainer,
-                    fontSize = MaterialTheme.typography.bodyMedium.fontSize,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier
-                        .padding(4.dp)
-                        .align(Alignment.CenterVertically)
-                        .weight(DESC_WEIGHT)
-                )
-            } else {
-                defaultTextField(
-                    series.description,
-                    onValueChanged = {},
-                    modifier = Modifier
-                        .align(Alignment.CenterVertically)
-                        .weight(DESC_WEIGHT).fillMaxSize(0.85f),
-                    textStyle = MaterialTheme.typography.bodyMedium,
-                    singleLine = false,
-                    readOnly = true,
-                    colors = TextFieldDefaults.colors(
-                        focusedContainerColor = MaterialTheme.colorScheme.secondaryContainer,
-                        unfocusedContainerColor = MaterialTheme.colorScheme.secondaryContainer
-                    )
-                )
-            }
+            Text(
+                text = series.description.ifEmpty { "No Description" },
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                fontSize = MaterialTheme.typography.bodyMedium.fontSize,
+                textAlign = TextAlign.Center,
+                modifier = Modifier
+                    .fillMaxSize(0.85f)
+                    .align(Alignment.CenterVertically)
+                    .weight(DESC_WEIGHT)
+                    .background(
+                        Color.Transparent
+                    ).border(
+                        1.dp,
+                        Brush.verticalGradient(
+                            colors = listOf(
+                                Color.Transparent,
+                                Color.Transparent,
+                                Color.Transparent,
+                                Color.Transparent,
+                                Color.Transparent,
+                                Color.Transparent,
+                                Color.Transparent,
+                                Color.Transparent,
+                                Color.Transparent,
+                                Color.Transparent,
+                                Color.Transparent,
+                                Color.Transparent,
+                                Color.Transparent,
+                                Color.Transparent,
+                                MaterialTheme.colorScheme.primary
+                            )
+                        ),
+                        RoundedCornerShape(2.dp)
+                    ).verticalScroll(rememberScrollState(0))
+                    .onClick(
+                        matcher = PointerMatcher.mouse(PointerButton.Secondary)
+                    ) {
+                        showFileMenu = showFileMenu.not()
+                    }
+            )
             divider()
             linkifyGenres(
                 series.genreNames.distinct(),
@@ -537,10 +572,11 @@ class DatabaseWindow {
             modifier = Modifier.fillMaxHeight()
                 .width(1.dp)
                 .background(
-                    if (header)
-                        MaterialTheme.colorScheme.onPrimaryContainer
-                    else
-                        MaterialTheme.colorScheme.onSurfaceVariant
+                    MaterialTheme.colorScheme.onPrimaryContainer
+                    //if (header)
+                      //  MaterialTheme.colorScheme.onPrimaryContainer
+                    //else
+                      //  MaterialTheme.colorScheme.onSurfaceVariant
                 ),
             color = Color.Transparent
         )

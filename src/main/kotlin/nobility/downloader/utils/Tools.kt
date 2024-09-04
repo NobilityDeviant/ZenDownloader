@@ -228,11 +228,31 @@ object Tools {
     val baseEpisodesComparator = Comparator { e1: Episode, e2: Episode ->
         val seasonKey = "Season"
         val ovaKey = "OVA"
+        val movieKey = "Movie"
+        val filmKey = "Film"
         val first = e1.name
         val second = e2.name
+        if (first.contains(filmKey, true) && !second.contains(filmKey, true)) {
+            return@Comparator -1
+        }
+        if (!first.contains(filmKey, true) && second.contains(filmKey, true)) {
+            return@Comparator 1
+        }
+        if (first.contains(movieKey, true) && !second.contains(movieKey, true)) {
+            return@Comparator -1
+        }
+        if (!first.contains(movieKey, true) && second.contains(movieKey, true)) {
+            return@Comparator 1
+        }
+        if (first.contains(ovaKey, true) && !second.contains(ovaKey, true)) {
+            return@Comparator -1
+        }
+        if (!first.contains(ovaKey, true) && second.contains(ovaKey, true)) {
+            return@Comparator 1
+        }
         if (
-            !first.contains(seasonKey) && !second.contains(seasonKey)
-            && !first.contains(ovaKey) && !second.contains(ovaKey)
+            !first.contains(seasonKey, true)
+            && !second.contains(seasonKey, true)
         ) {
             return@Comparator episodeCompare(first, second)
         }
@@ -257,7 +277,7 @@ object Tools {
     ): Int {
         try {
             val seasonKey = "Season"
-            val seasonPattern = Pattern.compile("$seasonKey \\d{0,3}")
+            val seasonPattern = Pattern.compile("(?i)$seasonKey \\d{0,3}")
             val s1Matcher = seasonPattern.matcher(first)
             val s2Matcher = seasonPattern.matcher(second)
             var s1Number = ""
@@ -289,7 +309,7 @@ object Tools {
     ): Int {
         try {
             val episodeKey = "Episode"
-            val episodePattern = Pattern.compile("$episodeKey \\d{0,3}")
+            val episodePattern = Pattern.compile("(?i)$episodeKey \\d{0,4}")
             val e1Matcher = episodePattern.matcher(first)
             val e2Matcher = episodePattern.matcher(second)
             var e1Number = ""

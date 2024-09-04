@@ -25,8 +25,7 @@ fun Color.hover(): Color {
     return toHct()
         .withTone(
             if (Defaults.DARK_MODE.boolean()) 70.0 else 30.0
-        )
-        .toColor()
+        ).toColor()
 }
 
 

@@ -47,10 +47,7 @@ import nobility.downloader.core.scraper.VideoDownloader
 import nobility.downloader.core.scraper.data.ToDownload
 import nobility.downloader.core.settings.Defaults
 import nobility.downloader.core.settings.Quality
-import nobility.downloader.ui.components.DropdownOption
-import nobility.downloader.ui.components.defaultButton
-import nobility.downloader.ui.components.defaultDropdown
-import nobility.downloader.ui.components.defaultIcon
+import nobility.downloader.ui.components.*
 import nobility.downloader.ui.components.dialog.DialogHelper
 import nobility.downloader.ui.windows.utils.AppWindowScope
 import nobility.downloader.ui.windows.utils.ApplicationState
@@ -75,6 +72,7 @@ class DownloadConfirmWindow(
     )
     private var singleEpisode by mutableStateOf(false)
     private var shiftHeld by mutableStateOf(false)
+    private var searchText by mutableStateOf("")
 
     init {
         if (toDownload.episode != null) {
@@ -241,10 +239,8 @@ class DownloadConfirmWindow(
                     bottomBar(this, scope)
                 }
             ) { it ->
-                //val scrollState = rememberScrollState()
                 Column(
                     modifier = Modifier.padding(bottom = it.calculateBottomPadding())
-                        //.verticalScroll(scrollState)
                         .fillMaxSize()
                 ) {
                     seriesInfoHeader(this@newWindow, scope)
@@ -252,6 +248,17 @@ class DownloadConfirmWindow(
                         Row(
                             modifier = Modifier.align(Alignment.End).padding(end = 5.dp)
                         ) {
+                            defaultSettingsTextField(
+                                searchText,
+                                onValueChanged = {
+                                    searchText = it
+                                },
+                                hint = "Search By Name",
+                                textStyle = MaterialTheme.typography.labelLarge,
+                                modifier = Modifier.fillMaxWidth(0.50f)
+                                    .padding(10.dp).height(40.dp),
+                                requestFocus = true
+                            )
                             defaultButton(
                                 selectText,
                                 height = 35.dp,
@@ -274,7 +281,7 @@ class DownloadConfirmWindow(
                     Box(
                         modifier = Modifier.fillMaxSize()
                     ) {
-                        val seasonData = seasonData()
+                        val seasonData = filteredEpisodes
                         val isExpandedMap = rememberSavableSnapshotStateMap {
                             List(seasonData.size) { index: Int ->
                                 index to seasonData[index].expandOnStart
@@ -287,13 +294,13 @@ class DownloadConfirmWindow(
                                 bottom = 5.dp,
                                 end = 12.dp
                             ).fillMaxSize().draggable(
-                                    state = rememberDraggableState {
-                                        scope.launch {
-                                            episodesListState.scrollBy(-it)
-                                        }
-                                    },
-                                    orientation = Orientation.Vertical,
-                                ),
+                                state = rememberDraggableState {
+                                    scope.launch {
+                                        episodesListState.scrollBy(-it)
+                                    }
+                                },
+                                orientation = Orientation.Vertical,
+                            ),
                             state = episodesListState
                         ) {
                             seasonData.onEachIndexed { index, seasonData ->
@@ -324,9 +331,7 @@ class DownloadConfirmWindow(
                             )
                         )
                         if (toDownload.episode != null) {
-                            //used so the effect doesn't trigger again.
-                            val key = rememberSaveable { true }
-                            LaunchedEffect(key) {
+                            LaunchedEffect(Unit) {
                                 val index = indexForEpisode(toDownload.episode)
                                 if (index != -1) {
                                     episodesListState.animateScrollToItem(index)
@@ -343,12 +348,75 @@ class DownloadConfirmWindow(
     private val episodes: List<Episode>
         get() = series.episodes.sortedWith(Tools.baseEpisodesComparator)
 
+    private val filteredEpisodes: List<SeasonData>
+        get() {
+            return if (searchText.isNotEmpty()) {
+                val data = filteredSeasonData
+                return data.map {
+                    SeasonData(
+                        "Search: $searchText",
+                        it.episodes.filter { episode ->
+                            episode.name.contains(searchText, true)
+                        },
+                        true,
+                        searchMode = true
+                    )
+                }
+            } else {
+                seasonData()
+            }
+        }
+
+    private val filteredSeasonData: List<SeasonData>
+        get() = seasonData().filter {
+            return@filter it.containsEpisodeName(searchText)
+                    || it.seasonTitle.contains(searchText, true)
+        }
+
     private fun seasonData(): List<SeasonData> {
         if (episodes.isEmpty()) {
             return emptyList()
         }
         singleEpisode = episodes.size == 1
-        val hasSeasons = episodes.any { it.name.contains("Season") }
+        val seasonDataList = mutableListOf<SeasonData>()
+        val episodes = episodes.toMutableList()
+        if (!movieMode) {
+            val movies = episodes.filter {
+                it.name.contains("Movie", true) || it.name.contains("Film", true)
+            }
+            if (movies.isNotEmpty()) {
+                seasonDataList.add(
+                    SeasonData(
+                        "${series.name} Movies (${movies.size})",
+                        movies,
+                        false
+                    )
+                )
+                episodes.removeAll(movies)
+            }
+            val ovas = episodes.filter {
+                it.name.contains("OVA", true)
+            }
+            if (ovas.isNotEmpty()) {
+                seasonDataList.add(
+                    SeasonData(
+                        "${series.name} OVA (${ovas.size})",
+                        ovas,
+                        false
+                    )
+                )
+                episodes.removeAll(ovas)
+            }
+        } else {
+            return listOf(
+                SeasonData(
+                    "Movies (${episodes.size})",
+                    episodes,
+                    true
+                )
+            )
+        }
+        val hasSeasons = episodes.any { it.name.contains("Season", true) }
         if (hasSeasons) {
             val subLists = episodes.groupBy {
                 val match = Regex("Season(?:\\s|\\s?[:/]\\s?)\\d+").find(it.name)
@@ -359,22 +427,23 @@ class DownloadConfirmWindow(
                     1
                 }
             }.mapValues { map -> map.value.distinctBy { episode -> episode.name } }
-            return subLists.map {
+            return seasonDataList.plus(subLists.map {
                 val seasonNumber = it.key.toString().toInt()
                 SeasonData(
                     "${series.name} Season $seasonNumber (${it.value.size})",
                     it.value,
                     it.value.contains(toDownload.episode)
                 )
-            }
+            })
         } else {
-            return listOf(
+            seasonDataList.add(
                 SeasonData(
                     "${series.name} Season 1 (${episodes.size})",
                     episodes,
                     true
                 )
             )
+            return seasonDataList
         }
     }
 
@@ -520,8 +589,14 @@ class DownloadConfirmWindow(
     data class SeasonData(
         val seasonTitle: String,
         val episodes: List<Episode>,
-        val expandOnStart: Boolean
-    )
+        val expandOnStart: Boolean,
+        val searchMode: Boolean = false
+    ) {
+        fun containsEpisodeName(search: String): Boolean {
+            return episodes.map { it.name }.toString()
+                .contains(search, true)
+        }
+    }
 
     @Composable
     fun seasonHeader(
@@ -589,14 +664,23 @@ class DownloadConfirmWindow(
         isExpanded: Boolean,
         onHeaderClick: () -> Unit
     ) {
-        item(UUID.randomUUID().toString()) {
-            seasonHeader(
-                seasonData = seasonData,
-                expanded = isExpanded,
-                onHeaderClicked = onHeaderClick
-            )
-        }
-        if (isExpanded) {
+        if (!seasonData.searchMode) {
+            item(UUID.randomUUID().toString()) {
+                seasonHeader(
+                    seasonData = seasonData,
+                    expanded = isExpanded,
+                    onHeaderClicked = onHeaderClick
+                )
+            }
+            if (isExpanded) {
+                items(
+                    seasonData.episodes,
+                    key = { UUID.randomUUID().toString() }
+                ) {
+                    episodeRow(it)
+                }
+            }
+        } else {
             items(
                 seasonData.episodes,
                 key = { UUID.randomUUID().toString() }
@@ -941,7 +1025,6 @@ class DownloadConfirmWindow(
                 }
             }
         }
-
     }
 
     companion object {
