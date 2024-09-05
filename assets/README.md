@@ -6,7 +6,9 @@ I have realized that certain errors would occur due to the user agents I have ha
 
 Since they are ever changing, I have deicded to add them to the Asset Updater.
 
-Users can now freely modify them, but if there's an update, it will overwrite them.
+Users can now freely modify them. If there's an update, it will overwrite what you have.
+
+If you want to disable the auto update read here: [DIsable Asset Updating](https://github.com/NobilityDeviant/ZenDownloader/tree/master/assets#disable-asset-updating)
 
 # Wco Urls
 
