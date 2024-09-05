@@ -15,6 +15,7 @@ object AppInfo {
     private const val IMAGE_PATH = "/images/"
     const val APP_ICON_PATH = IMAGE_PATH + "icon.png"
     const val NO_IMAGE_PATH = IMAGE_PATH + "no-image.png"
-    const val WCOFUN_WEBSITE_URLS_LINK = "https://raw.githubusercontent.com/NobilityDeviant/ZenDownloader/master/wcourls.txt"
-    const val WCO_MOVIE_LIST = "https://raw.githubusercontent.com/NobilityDeviant/ZenDownloader/master/movies.txt"
+    const val WCOFUN_WEBSITE_URLS_LINK = "https://raw.githubusercontent.com/NobilityDeviant/ZenDownloader/master/assets/wco_urls.txt"
+    const val WCO_MOVIE_LIST_LINK = "https://raw.githubusercontent.com/NobilityDeviant/ZenDownloader/master/assets/movies.txt"
+    const val USER_AGENTS_LINK = "https://raw.githubusercontent.com/NobilityDeviant/ZenDownloader/master/assets/user_agents.txt"
 }

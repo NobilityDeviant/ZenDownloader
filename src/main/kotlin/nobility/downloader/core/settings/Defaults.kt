@@ -170,6 +170,78 @@ enum class Defaults(
             Requires: Chrome Browser Path
         """.trimIndent()
     ),
+    DISABLE_USER_AGENTS_UPDATE(
+        "disable_ua_update",
+        false,
+        """
+            Used to disable user_agents.txt from updating at launch.
+            This option can be useful if you're updating them on your own.
+            Default: Off
+        """.trimIndent()
+    ),
+    DISABLE_WCO_URLS_UPDATE(
+        "disable_wco_urls_update",
+        false,
+        """
+            Used to disable wco_urls.txt from updating at launch.
+            This option can be useful if you're updating them on your own.
+            Default: Off
+        """.trimIndent()
+    ),
+    DISABLE_DUBBED_UPDATE(
+        "disable_dubbed_update",
+        false,
+        """
+            Used to disable the dubbed database from updating at launch.
+            This option can be useful if you're updating them on your own.
+            Default: Off
+        """.trimIndent()
+    ),
+    DISABLE_SUBBED_UPDATE(
+        "disable_subbed_update",
+        false,
+        """
+            Used to disable the subbed database from updating at launch.
+            This option can be useful if you're updating them on your own.
+            Default: Off
+        """.trimIndent()
+    ),
+    DISABLE_CARTOON_UPDATE(
+        "disable_cartoon_update",
+        false,
+        """
+            Used to disable the cartoon database from updating at launch.
+            This option can be useful if you're updating them on your own.
+            Default: Off
+        """.trimIndent()
+    ),
+    DISABLE_MOVIES_UPDATE(
+        "disable_movies_update",
+        false,
+        """
+            Used to disable the movies database from updating at launch.
+            This option can be useful if you're updating them on your own.
+            Default: Off
+        """.trimIndent()
+    ),
+    DISABLE_WCO_SERIES_LINKS_UPDATE(
+        "disable_wco_series_links_update",
+        false,
+        """
+            Used to disable the links database from updating at launch.
+            This option can be useful if you're updating them on your own.
+            Default: Off
+        """.trimIndent()
+    ),
+    DISABLE_WCO_DATA_UPDATE(
+        "disable_wco_data_update",
+        false,
+        """
+            Used to disable the wcodata database from updating at launch.
+            This option can be useful if you're updating them on your own.
+            Default: Off
+        """.trimIndent()
+    ),
     LAST_DOWNLOAD("last_dl", ""),
     DENIED_UPDATE("denied_update", false),
     UPDATE_VERSION("update_version", "1.0"),
@@ -192,7 +264,18 @@ enum class Defaults(
             CONSOLE_ON_TOP,
             AUTO_SCROLL_CONSOLES,
             HEADLESS_MODE,
-            SHOW_DEBUG_MESSAGES,
+            SHOW_DEBUG_MESSAGES
+        )
+
+        val updateCheckBoxes get() = listOf(
+            DISABLE_USER_AGENTS_UPDATE,
+            DISABLE_WCO_URLS_UPDATE,
+            DISABLE_DUBBED_UPDATE,
+            DISABLE_SUBBED_UPDATE,
+            DISABLE_MOVIES_UPDATE,
+            DISABLE_CARTOON_UPDATE,
+            DISABLE_WCO_SERIES_LINKS_UPDATE,
+            DISABLE_WCO_DATA_UPDATE
         )
     }
 }

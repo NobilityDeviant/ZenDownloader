@@ -52,6 +52,15 @@ class Core {
                         "/"
             }
 
+        val wcoUrlWww: String
+            get() {
+                return "https://www." +
+                        Defaults.WCO_DOMAIN.string() +
+                        "." +
+                        Defaults.WCO_EXTENSION.string() +
+                        "/"
+            }
+
         val exampleEpisode: String get() = "$wcoUrl${AppInfo.EXAMPLE_EPISODE}"
         val exampleSeries: String get() = "$wcoUrl${AppInfo.EXAMPLE_SERIES}"
 

@@ -47,7 +47,7 @@ class MovieHandler {
         try {
             val moviesFile = File(BoxHelper.databasePath + "movies.txt")
             Tools.downloadFile(
-                AppInfo.WCO_MOVIE_LIST,
+                AppInfo.WCO_MOVIE_LIST_LINK,
                 moviesFile
             )
             moviesFile.readLines().forEach {

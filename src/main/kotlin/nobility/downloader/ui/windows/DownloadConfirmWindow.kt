@@ -42,8 +42,8 @@ import nobility.downloader.core.BoxMaker
 import nobility.downloader.core.Core
 import nobility.downloader.core.entities.Episode
 import nobility.downloader.core.entities.data.SeriesIdentity
+import nobility.downloader.core.scraper.SimpleVideoDownloader
 import nobility.downloader.core.scraper.SeriesUpdater
-import nobility.downloader.core.scraper.VideoDownloader
 import nobility.downloader.core.scraper.data.ToDownload
 import nobility.downloader.core.settings.Defaults
 import nobility.downloader.core.settings.Quality
@@ -504,7 +504,8 @@ class DownloadConfirmWindow(
             indexForEpisode(episode, false)
         )
         Row(
-            modifier = Modifier.background(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.height(55.dp).background(
                 color = if (!highlighted)
                     MaterialTheme.colorScheme.secondaryContainer
                 else
@@ -855,7 +856,7 @@ class DownloadConfirmWindow(
                                         for (i in 1..threads) {
                                             tasks.add(
                                                 launch {
-                                                    val downloader = VideoDownloader(temporaryQuality)
+                                                    val downloader = SimpleVideoDownloader(temporaryQuality)
                                                     try {
                                                         downloader.run()
                                                     } catch (e: Exception) {
@@ -955,7 +956,7 @@ class DownloadConfirmWindow(
                                         for (i in 1..threads) {
                                             tasks.add(
                                                 launch {
-                                                    val downloader = VideoDownloader(temporaryQuality)
+                                                    val downloader = SimpleVideoDownloader(temporaryQuality)
                                                     try {
                                                         downloader.run()
                                                     } catch (e: Exception) {

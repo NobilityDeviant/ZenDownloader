@@ -24,6 +24,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.input.pointer.PointerButton
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import compose.icons.EvaIcons
 import compose.icons.evaicons.Fill
@@ -422,7 +423,8 @@ class DownloadsView {
                                 ${download.name}?
                             """.trimIndent(),
                             "Delete File",
-                            onConfirmTitle = "Delete File"
+                            onConfirmTitle = "Delete File",
+                            size = DpSize(325.dp, 210.dp)
                         ) {
                             val file = download.downloadFile()
                             if (file != null) {

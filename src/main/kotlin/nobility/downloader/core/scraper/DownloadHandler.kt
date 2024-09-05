@@ -105,7 +105,7 @@ class DownloadHandler {
                     kill()
                 }
             } else {
-                val downloader = VideoDownloader()
+                val downloader = SimpleVideoDownloader()
                 try {
                     if (toDownload.episode != null) {
                         Core.child.addEpisodeToQueue(toDownload.episode)

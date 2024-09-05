@@ -44,6 +44,7 @@ import javax.net.ssl.SSLContext
 import javax.net.ssl.TrustManager
 import javax.net.ssl.X509TrustManager
 
+//todo launch the exe after download
 class UpdateWindow(
     private val justCheck: Boolean = false
 ) {

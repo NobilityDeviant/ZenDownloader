@@ -1,4 +1,4 @@
-package nobility.downloader.ui.views
+package nobility.downloader.ui.windows
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -12,16 +12,21 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import com.google.gson.JsonParser
+import com.google.gson.Strictness
 import com.google.gson.stream.JsonReader
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import net.lingala.zip4j.ZipFile
+import nobility.downloader.core.AssetBoxHelper
+import nobility.downloader.core.settings.Defaults
 import nobility.downloader.ui.components.defaultButton
 import nobility.downloader.ui.windows.utils.AppWindowScope
+import nobility.downloader.ui.windows.utils.ApplicationState
 import nobility.downloader.utils.AppInfo
 import nobility.downloader.utils.Tools
 import nobility.downloader.utils.UserAgents
@@ -39,10 +44,11 @@ import kotlin.system.exitProcess
  * Since we can't manage files in use, why not update them before?
  * Note that we can't access anything from the Core so it needs to be standalone.
  * Comes with a shutdown/fail feature to ensure incomplete downloads get handled.
- * All assets are very low in file size. We don't really need to worry about much besides available file space for unzipping.
+ * All assets are very low in download size. We don't really need to worry about much besides available file space for unzipping.
  */
-class AssetUpdateView {
+class AssetUpdateWindow {
 
+    private val assetBoxHelper = AssetBoxHelper()
     private var downloadProgress by mutableStateOf(0f)
     private var downloadText by mutableStateOf("0/0")
     private var downloading by mutableStateOf(false)
@@ -52,6 +58,18 @@ class AssetUpdateView {
     private var retry by mutableStateOf(false)
 
     private val finished get() = completed.entries.map { it.value }.size == Asset.entries.size
+
+    fun open(onClose: (() -> Boolean)) {
+        ApplicationState.newWindow(
+            "Asset Updater",
+            size = DpSize(400.dp, 175.dp),
+            transparent = true,
+            undecorated = true,
+            onClose = onClose
+        ) {
+            assetUpdaterUi(this)
+        }
+    }
 
     @Composable
     fun assetUpdaterUi(
@@ -99,11 +117,20 @@ class AssetUpdateView {
                             coroutineScope.launch {
                                 downloading = true
                                 Asset.entries.forEach { asset ->
-                                    downloadAsset(asset)
+                                    if (!assetBoxHelper.booleanSetting(
+                                            AssetDisable.disableForAsset(asset).setting
+                                        )
+                                    ) {
+                                        downloadAsset(asset)
+                                    } else {
+                                        started[asset.fileName] = true
+                                        completed[asset.fileName] = true
+                                    }
                                 }
                                 if (!shuttingDown) {
                                     if (finished) {
                                         downloadText = "All assets have been updated."
+                                        assetBoxHelper.close()
                                         scope.closeWindow()
                                     } else {
                                         retry = true
@@ -117,6 +144,7 @@ class AssetUpdateView {
                             "Continue To App",
                             width = 150.dp
                         ) {
+                            assetBoxHelper.close()
                             scope.closeWindow()
                         }
                     }
@@ -153,9 +181,11 @@ class AssetUpdateView {
                                     dubbedPath,
                                     true
                                 )
+                                assetBoxHelper.close()
                                 exitProcess(0)
                             }
                         } else {
+                            assetBoxHelper.close()
                             scope.closeWindow()
                         }
                     }
@@ -163,11 +193,20 @@ class AssetUpdateView {
                 LaunchedEffect(Unit) {
                     downloading = true
                     Asset.entries.forEach { asset ->
-                        downloadAsset(asset)
+                        if (!assetBoxHelper.booleanSetting(
+                                AssetDisable.disableForAsset(asset).setting
+                            )
+                        ) {
+                            downloadAsset(asset)
+                        } else {
+                            started[asset.fileName] = true
+                            completed[asset.fileName] = true
+                        }
                     }
                     if (!shuttingDown) {
                         if (finished) {
                             downloadText = "All assets have been updated."
+                            assetBoxHelper.close()
                             scope.closeWindow()
                         } else {
                             retry = true
@@ -204,7 +243,7 @@ class AssetUpdateView {
                 .ignoreContentType(true)
                 .get()
             val reader = JsonReader(StringReader(api.body().html()))
-            reader.isLenient = true
+            reader.strictness = Strictness.LENIENT
             val jsonArray = JsonParser.parseReader(reader).asJsonArray
             val first = jsonArray.get(0).asJsonObject
             val commitDate = first.get("commit").asJsonObject
@@ -236,7 +275,8 @@ class AssetUpdateView {
             val modifiedDifference = onlineLastModified - localLastModified
             if (!assetFile.exists()
                 || (assetFile.isDirectory && assetFile.listFiles()?.isEmpty() == true)
-                || modifiedDifference >= 14400000) { //4 hour difference
+                || modifiedDifference >= 14400000
+            ) { //4 hour difference
                 started[asset.fileName] = true
                 println("Detected new update for: $asset. Online Last Modified: $onlineLastModified Compared to Local Last Modified: $localLastModified Difference: $modifiedDifference")
                 bis = BufferedInputStream(con.inputStream)
@@ -311,10 +351,52 @@ class AssetUpdateView {
         }
     }
 
-    private val shuttingDownText get() = """
+    private val shuttingDownText
+        get() = """
         Shutting down.
         Please delete any assets that didn't download fully.
     """.trimIndent()
+
+    private enum class AssetDisable(
+        val setting: Defaults
+    ) {
+        USER_AGENTS_DISABLE(
+            Defaults.DISABLE_USER_AGENTS_UPDATE
+        ),
+        DUBBED_DISABLE(
+            Defaults.DISABLE_DUBBED_UPDATE
+        ),
+        SUBBED_DISABLE(
+            Defaults.DISABLE_SUBBED_UPDATE
+        ),
+        CARTOON_DISABLE(
+            Defaults.DISABLE_CARTOON_UPDATE
+        ),
+        MOVIES_DISABLE(
+            Defaults.DISABLE_MOVIES_UPDATE
+        ),
+        WCO_DATA_DISABLE(
+            Defaults.DISABLE_WCO_DATA_UPDATE
+        ),
+        WCO_SERIES_LINKS_DISABLE(
+            Defaults.DISABLE_WCO_SERIES_LINKS_UPDATE
+        );
+
+        companion object {
+            fun disableForAsset(asset: Asset): AssetDisable {
+                return when (asset) {
+                    Asset.USER_AGENTS -> USER_AGENTS_DISABLE
+                    Asset.DUBBED -> DUBBED_DISABLE
+                    Asset.SUBBED -> SUBBED_DISABLE
+                    Asset.CARTOON -> CARTOON_DISABLE
+                    Asset.MOVIES -> MOVIES_DISABLE
+                    Asset.LINKS -> WCO_SERIES_LINKS_DISABLE
+                    Asset.WCO_DATA -> WCO_DATA_DISABLE
+                    else -> USER_AGENTS_DISABLE
+                }
+            }
+        }
+    }
 
     private enum class Asset(
         val apiLink: String,
@@ -359,16 +441,23 @@ class AssetUpdateView {
             "data.zip"
         ),
         MOVIE_LIST(
-            "https://api.github.com/repos/NobilityDeviant/ZenDownloader/commits?path=movies.txt&page=1&per_page=1",
-            AppInfo.WCO_MOVIE_LIST,
+            "https://api.github.com/repos/NobilityDeviant/ZenDownloader/commits?path=assets/movies.txt&page=1&per_page=1",
+            AppInfo.WCO_MOVIE_LIST_LINK,
             movieListPath,
             "movies.txt"
+        ),
+        USER_AGENTS(
+            "https://api.github.com/repos/NobilityDeviant/ZenDownloader/commits?path=assets/user_agents.txt&page=1&per_page=1",
+            AppInfo.USER_AGENTS_LINK,
+            userAgentsPath,
+            "user_agents.txt"
         )
     }
 
     companion object {
         private val databasePath = "${System.getProperty("user.home")}${File.separator}.zen_database${File.separator}"
         private val movieListPath = databasePath + "movies.txt"
+        val userAgentsPath = databasePath + "user_agents.txt"
         private val linksPath = databasePath + "wco" + File.separator + "links" + File.separator
         private val wcoDataPath = databasePath + "wco" + File.separator + "data" + File.separator
         private val seriesPath = databasePath + "series" + File.separator

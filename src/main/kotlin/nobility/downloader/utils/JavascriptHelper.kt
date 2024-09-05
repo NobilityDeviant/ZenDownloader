@@ -38,6 +38,23 @@ object JavascriptHelper {
                 });
             """
 
+    @Suppress("UNUSED")
+    private const val xx = """
+                fetch("$LINK_KEY")
+                    .then(res => res.json())
+                    .then(function (response) {
+                        vsd = response.enc;
+                        vhd = response.hd;
+                        vfhd = response.fhd;
+                        cdn = response.cdn;
+                        server = response.server;
+                        location.href = server + '/getvid?evid=' + $RES_KEY
+                    })
+                    .catch(function() {
+                        
+                    });
+            """
+
     /**
      * Redirect to another link internally so certain blocking methods won't work.
      */

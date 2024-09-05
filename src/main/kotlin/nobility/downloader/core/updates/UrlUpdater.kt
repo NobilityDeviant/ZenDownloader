@@ -4,6 +4,7 @@ import com.google.api.client.http.GenericUrl
 import com.google.api.client.http.javanet.NetHttpTransport
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import nobility.downloader.core.BoxHelper.Companion.boolean
 import nobility.downloader.core.BoxHelper.Companion.long
 import nobility.downloader.core.BoxHelper.Companion.string
 import nobility.downloader.core.BoxHelper.Companion.update
@@ -30,6 +31,9 @@ object UrlUpdater {
      * the website changes drastically.
      */
     suspend fun updateWcoUrl() = withContext(Dispatchers.IO) {
+        if (Defaults.DISABLE_WCO_URLS_UPDATE.boolean()) {
+            return@withContext
+        }
         val lastUpdated = Defaults.WCO_LAST_UPDATED.long()
         if (lastUpdated > 0) {
             val lastUpdatedCal = Calendar.getInstance()

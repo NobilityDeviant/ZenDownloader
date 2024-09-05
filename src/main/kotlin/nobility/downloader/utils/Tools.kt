@@ -230,6 +230,7 @@ object Tools {
         val ovaKey = "OVA"
         val movieKey = "Movie"
         val filmKey = "Film"
+        val specialKey = "Special"
         val first = e1.name
         val second = e2.name
         if (first.contains(filmKey, true) && !second.contains(filmKey, true)) {
@@ -248,6 +249,12 @@ object Tools {
             return@Comparator -1
         }
         if (!first.contains(ovaKey, true) && second.contains(ovaKey, true)) {
+            return@Comparator 1
+        }
+        if (first.contains(specialKey, true) && !second.contains(specialKey, true)) {
+            return@Comparator -1
+        }
+        if (!first.contains(specialKey, true) && second.contains(specialKey, true)) {
             return@Comparator 1
         }
         if (

@@ -100,13 +100,45 @@ class SettingsView {
         Defaults.AUTO_SCROLL_CONSOLES.boolean()
     )
 
+    private var disableUserAgentsUpdate = mutableStateOf(
+        Defaults.DISABLE_USER_AGENTS_UPDATE.boolean()
+    )
+
+    private var disableWcoUrlsUpdate = mutableStateOf(
+        Defaults.DISABLE_WCO_URLS_UPDATE.boolean()
+    )
+
+    private var disableDubbedUpdate = mutableStateOf(
+        Defaults.DISABLE_DUBBED_UPDATE.boolean()
+    )
+
+    private var disableSubbedUpdate = mutableStateOf(
+        Defaults.DISABLE_SUBBED_UPDATE.boolean()
+    )
+
+    private var disableCartoonUpdate = mutableStateOf(
+        Defaults.DISABLE_CARTOON_UPDATE.boolean()
+    )
+
+    private var disableMoviesUpdate = mutableStateOf(
+        Defaults.DISABLE_MOVIES_UPDATE.boolean()
+    )
+
+    private var disableWcoSeriesLinksUpdate = mutableStateOf(
+        Defaults.DISABLE_WCO_SERIES_LINKS_UPDATE.boolean()
+    )
+
+    private var disableWcoDataUpdate = mutableStateOf(
+        Defaults.DISABLE_WCO_DATA_UPDATE.boolean()
+    )
+
     private var saveButtonEnabled = mutableStateOf(false)
-    private lateinit var scope: AppWindowScope
+    private lateinit var windowScope: AppWindowScope
 
     @OptIn(ExperimentalLayoutApi::class)
     @Composable
-    fun settingsUi(scope: AppWindowScope) {
-        this.scope = scope
+    fun settingsUi(windowScope: AppWindowScope) {
+        this.windowScope = windowScope
         Scaffold(
             bottomBar = {
                 Column(
@@ -117,6 +149,48 @@ class SettingsView {
                         horizontalArrangement = Arrangement.spacedBy(4.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
+                        if (
+                            disableUserAgentsUpdate.value
+                            || disableWcoUrlsUpdate.value
+                            || disableWcoDataUpdate.value
+                            || disableWcoSeriesLinksUpdate.value
+                            || disableDubbedUpdate.value
+                            || disableSubbedUpdate.value
+                            || disableMoviesUpdate.value
+                            || disableCartoonUpdate.value
+                        ) {
+                            defaultButton(
+                                "Enable All Updates",
+                                width = 150.dp,
+                                height = 40.dp
+                            ) {
+                                disableUserAgentsUpdate.value = false
+                                disableWcoUrlsUpdate.value = false
+                                disableWcoDataUpdate.value = false
+                                disableWcoSeriesLinksUpdate.value = false
+                                disableDubbedUpdate.value = false
+                                disableSubbedUpdate.value = false
+                                disableMoviesUpdate.value = false
+                                disableCartoonUpdate.value = false
+                                updateSaveButton()
+                            }
+                        } else {
+                            defaultButton(
+                                "Disable All Updates",
+                                width = 150.dp,
+                                height = 40.dp
+                            ) {
+                                disableUserAgentsUpdate.value = true
+                                disableWcoUrlsUpdate.value = true
+                                disableWcoDataUpdate.value = true
+                                disableWcoSeriesLinksUpdate.value = true
+                                disableDubbedUpdate.value = true
+                                disableSubbedUpdate.value = true
+                                disableMoviesUpdate.value = true
+                                disableCartoonUpdate.value = true
+                                updateSaveButton()
+                            }
+                        }
                         defaultButton(
                             "Reset Settings",
                             width = 150.dp,
@@ -128,7 +202,7 @@ class SettingsView {
                             ) {
                                 BoxHelper.resetSettings()
                                 updateValues()
-                                scope.showToast("Settings have been reset.")
+                                windowScope.showToast("Settings have been reset.")
                             }
                         }
                         defaultButton(
@@ -169,6 +243,15 @@ class SettingsView {
                             fieldCheckbox(it)
                         }
                     }
+                    FlowRow(
+                        verticalArrangement = Arrangement.spacedBy(5.dp),
+                        horizontalArrangement = Arrangement.spacedBy(5.dp),
+                        maxItemsInEachRow = 5
+                    ) {
+                        Defaults.updateCheckBoxes.forEach {
+                            fieldCheckbox(it)
+                        }
+                    }
                     fieldWcoDomain()
                     Box(
                         modifier = Modifier.fillMaxWidth()
@@ -186,7 +269,7 @@ class SettingsView {
                             modifier = Modifier.align(Alignment.CenterEnd)
                         ) {
                             Tools.clipboardString = Core.errorConsole.text
-                            scope.showToast("Copied")
+                            windowScope.showToast("Copied")
                         }
                     }
                     Core.errorConsole.textField()
@@ -405,7 +488,7 @@ class SettingsView {
                             return@defaultButton
                         }
                         val timeout = this@SettingsView.timeout.toInt()
-                        scope.showToast("Testing proxy with timeout: $timeout")
+                        windowScope.showToast("Testing proxy with timeout: $timeout")
                         Core.child.taskScope.launch(Dispatchers.IO) {
                             val website = "https://google.com"
                             try {
@@ -417,9 +500,9 @@ class SettingsView {
                                     .execute()
                                 withContext(Dispatchers.Main) {
                                     if (response.statusCode() == 200) {
-                                        scope.showToast("Proxy successfully connected to $website")
+                                        windowScope.showToast("Proxy successfully connected to $website")
                                     } else {
-                                        scope.showToast("Proxy failed to connect with status code: ${response.statusCode()}")
+                                        windowScope.showToast("Proxy failed to connect with status code: ${response.statusCode()}")
                                     }
                                 }
                             } catch (e: Exception) {
@@ -451,6 +534,7 @@ class SettingsView {
         }
     }
 
+    @Suppress("warnings")
     @Composable
     private fun fieldDropdown(
         setting: Defaults
@@ -491,6 +575,7 @@ class SettingsView {
         }
     }
 
+    @OptIn(ExperimentalFoundationApi::class)
     @Composable
     private fun fieldCheckbox(
         setting: Defaults
@@ -503,6 +588,14 @@ class SettingsView {
             Defaults.HEADLESS_MODE -> "Headless Mode"
             Defaults.SEPARATE_SEASONS -> "Separate Seasons Into Folders"
             Defaults.AUTO_SCROLL_CONSOLES -> "Auto Scroll Consoles"
+            Defaults.DISABLE_USER_AGENTS_UPDATE -> "Disable User Agents Updates"
+            Defaults.DISABLE_WCO_URLS_UPDATE -> "Disable WcoUrls Updates"
+            Defaults.DISABLE_DUBBED_UPDATE -> "Disable Dubbed Updates"
+            Defaults.DISABLE_SUBBED_UPDATE -> "Disable Subbed Updates"
+            Defaults.DISABLE_CARTOON_UPDATE -> "Disable Cartoon Updates"
+            Defaults.DISABLE_MOVIES_UPDATE -> "Disable Movies Updates"
+            Defaults.DISABLE_WCO_DATA_UPDATE -> "Disable WcoData Updates"
+            Defaults.DISABLE_WCO_SERIES_LINKS_UPDATE -> "Disable Wco Series Links Updates"
             else -> "Not Implemented"
         }
         Row(
@@ -513,7 +606,71 @@ class SettingsView {
             tooltip(setting.description) {
                 Text(
                     "$title:",
-                    style = MaterialTheme.typography.labelMedium
+                    style = MaterialTheme.typography.labelMedium,
+                    modifier = Modifier.onClick {
+                        when (setting) {
+                            Defaults.SHOW_DEBUG_MESSAGES -> {
+                                debugMessages.value = debugMessages.value.not()
+                            }
+                            Defaults.BYPASS_DISK_SPACE -> {
+                                bypassDiskSpace.value = bypassDiskSpace.value.not()
+                            }
+
+                            Defaults.SHOW_TOOLTIPS -> {
+                                showTooltips.value = showTooltips.value.not()
+                            }
+
+                            Defaults.CONSOLE_ON_TOP -> {
+                                consoleOnTop.value = consoleOnTop.value.not()
+                            }
+
+                            Defaults.HEADLESS_MODE -> {
+                                headlessMode.value = headlessMode.value.not()
+                            }
+
+                            Defaults.SEPARATE_SEASONS -> {
+                                separateSeasons.value = separateSeasons.value.not()
+                            }
+
+                            Defaults.AUTO_SCROLL_CONSOLES -> {
+                                autoScrollConsoles.value = autoScrollConsoles.value.not()
+                            }
+
+                            Defaults.DISABLE_USER_AGENTS_UPDATE -> {
+                                disableUserAgentsUpdate.value = disableUserAgentsUpdate.value.not()
+                            }
+
+                            Defaults.DISABLE_WCO_URLS_UPDATE -> {
+                                disableWcoUrlsUpdate.value = disableWcoUrlsUpdate.value.not()
+                            }
+
+                            Defaults.DISABLE_DUBBED_UPDATE -> {
+                                disableDubbedUpdate.value = disableDubbedUpdate.value.not()
+                            }
+
+                            Defaults.DISABLE_SUBBED_UPDATE -> {
+                                disableSubbedUpdate.value = disableSubbedUpdate.value.not()
+                            }
+
+                            Defaults.DISABLE_CARTOON_UPDATE -> {
+                                disableCartoonUpdate.value = disableCartoonUpdate.value.not()
+                            }
+
+                            Defaults.DISABLE_MOVIES_UPDATE -> {
+                                disableMoviesUpdate.value = disableMoviesUpdate.value.not()
+                            }
+
+                            Defaults.DISABLE_WCO_DATA_UPDATE -> {
+                                disableWcoDataUpdate.value = disableWcoDataUpdate.value.not()
+                            }
+
+                            Defaults.DISABLE_WCO_SERIES_LINKS_UPDATE -> {
+                                disableWcoSeriesLinksUpdate.value = disableWcoSeriesLinksUpdate.value.not()
+                            }
+
+                            else -> {}
+                        }
+                    }
                 )
             }
             when (setting) {
@@ -528,6 +685,7 @@ class SettingsView {
                         }
                     }
                 }
+
                 Defaults.BYPASS_DISK_SPACE -> {
                     tooltip(setting.description) {
                         defaultCheckbox(
@@ -539,6 +697,7 @@ class SettingsView {
                         }
                     }
                 }
+
                 Defaults.SHOW_TOOLTIPS -> {
                     tooltip(setting.description) {
                         defaultCheckbox(
@@ -550,6 +709,7 @@ class SettingsView {
                         }
                     }
                 }
+
                 Defaults.CONSOLE_ON_TOP -> {
                     tooltip(setting.description) {
                         defaultCheckbox(
@@ -561,6 +721,7 @@ class SettingsView {
                         }
                     }
                 }
+
                 Defaults.HEADLESS_MODE -> {
                     tooltip(setting.description) {
                         defaultCheckbox(
@@ -572,6 +733,7 @@ class SettingsView {
                         }
                     }
                 }
+
                 Defaults.SEPARATE_SEASONS -> {
                     tooltip(setting.description) {
                         defaultCheckbox(
@@ -595,6 +757,103 @@ class SettingsView {
                         }
                     }
                 }
+
+                Defaults.DISABLE_USER_AGENTS_UPDATE -> {
+                    tooltip(setting.description) {
+                        defaultCheckbox(
+                            disableUserAgentsUpdate,
+                            modifier = Modifier.height(30.dp)
+                        ) {
+                            disableUserAgentsUpdate.value = it
+                            updateSaveButton()
+                        }
+                    }
+                }
+
+                Defaults.DISABLE_WCO_URLS_UPDATE -> {
+                    tooltip(setting.description) {
+                        defaultCheckbox(
+                            disableWcoUrlsUpdate,
+                            modifier = Modifier.height(30.dp)
+                        ) {
+                            disableWcoUrlsUpdate.value = it
+                            updateSaveButton()
+                        }
+                    }
+                }
+
+                Defaults.DISABLE_DUBBED_UPDATE -> {
+                    tooltip(setting.description) {
+                        defaultCheckbox(
+                            disableDubbedUpdate,
+                            modifier = Modifier.height(30.dp)
+                        ) {
+                            disableDubbedUpdate.value = it
+                            updateSaveButton()
+                        }
+                    }
+                }
+
+                Defaults.DISABLE_SUBBED_UPDATE -> {
+                    tooltip(setting.description) {
+                        defaultCheckbox(
+                            disableSubbedUpdate,
+                            modifier = Modifier.height(30.dp)
+                        ) {
+                            disableSubbedUpdate.value = it
+                            updateSaveButton()
+                        }
+                    }
+                }
+
+                Defaults.DISABLE_CARTOON_UPDATE -> {
+                    tooltip(setting.description) {
+                        defaultCheckbox(
+                            disableCartoonUpdate,
+                            modifier = Modifier.height(30.dp)
+                        ) {
+                            disableCartoonUpdate.value = it
+                            updateSaveButton()
+                        }
+                    }
+                }
+
+                Defaults.DISABLE_MOVIES_UPDATE -> {
+                    tooltip(setting.description) {
+                        defaultCheckbox(
+                            disableMoviesUpdate,
+                            modifier = Modifier.height(30.dp)
+                        ) {
+                            disableMoviesUpdate.value = it
+                            updateSaveButton()
+                        }
+                    }
+                }
+
+                Defaults.DISABLE_WCO_DATA_UPDATE -> {
+                    tooltip(setting.description) {
+                        defaultCheckbox(
+                            disableWcoDataUpdate,
+                            modifier = Modifier.height(30.dp)
+                        ) {
+                            disableWcoDataUpdate.value = it
+                            updateSaveButton()
+                        }
+                    }
+                }
+
+                Defaults.DISABLE_WCO_SERIES_LINKS_UPDATE -> {
+                    tooltip(setting.description) {
+                        defaultCheckbox(
+                            disableWcoSeriesLinksUpdate,
+                            modifier = Modifier.height(30.dp)
+                        ) {
+                            disableWcoSeriesLinksUpdate.value = it
+                            updateSaveButton()
+                        }
+                    }
+                }
+
                 else -> {}
             }
         }
@@ -645,16 +904,18 @@ class SettingsView {
                 },
                 modifier = Modifier.width(40.dp).height(30.dp)
             )
-            tooltip("""
+            tooltip(
+                """
                 Executes the auto update function that happens everytime the app starts.
                 The auto update function checks the links found in the text file and follows them to the latest redirect.
-            """.trimIndent()) {
+            """.trimIndent()
+            ) {
                 defaultButton(
                     "Auto Update",
                     height = 30.dp,
                     width = 80.dp
                 ) {
-                    scope.showToast("[TODO]")
+                    windowScope.showToast("[TODO]")
                 }
             }
         }
@@ -764,6 +1025,39 @@ class SettingsView {
                 Defaults.AUTO_SCROLL_CONSOLES -> {
                     autoScrollConsoles.value = it.boolean()
                 }
+
+                Defaults.DISABLE_USER_AGENTS_UPDATE -> {
+                    disableUserAgentsUpdate.value = it.boolean()
+                }
+
+                Defaults.DISABLE_WCO_URLS_UPDATE -> {
+                    disableWcoUrlsUpdate.value = it.boolean()
+                }
+
+                Defaults.DISABLE_DUBBED_UPDATE -> {
+                    disableDubbedUpdate.value = it.boolean()
+                }
+
+                Defaults.DISABLE_SUBBED_UPDATE -> {
+                    disableSubbedUpdate.value = it.boolean()
+                }
+
+                Defaults.DISABLE_CARTOON_UPDATE -> {
+                    disableCartoonUpdate.value = it.boolean()
+                }
+
+                Defaults.DISABLE_MOVIES_UPDATE -> {
+                    disableMoviesUpdate.value = it.boolean()
+                }
+
+                Defaults.DISABLE_WCO_DATA_UPDATE -> {
+                    disableWcoDataUpdate.value = it.boolean()
+                }
+
+                Defaults.DISABLE_WCO_SERIES_LINKS_UPDATE -> {
+                    disableWcoSeriesLinksUpdate.value = it.boolean()
+                }
+
                 else -> {}
             }
         }
@@ -772,23 +1066,23 @@ class SettingsView {
 
     private fun isValidProxy(): Boolean {
         if (proxy.isEmpty()) {
-            scope.showToast("Please enter a proxy first.")
+            windowScope.showToast("Please enter a proxy first.")
             return false
         }
         val split = try {
             proxy.split(":".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
         } catch (e: Exception) {
-            scope.showToast("Failed to parse proxy.")
+            windowScope.showToast("Failed to parse proxy.")
             return false
         }
         val ip: String
         val port: Int?
         try {
             if (split.size > 2) {
-                scope.showToast("Kotlin doesn't support Username & Password Authentication.")
+                windowScope.showToast("Kotlin doesn't support Username & Password Authentication.")
                 return false
             } else if (split.size < 2) {
-                scope.showToast("Please enter a valid proxy.")
+                windowScope.showToast("Please enter a valid proxy.")
                 return false
             }
             ip = split[0]
@@ -796,21 +1090,21 @@ class SettingsView {
             val pattern: Pattern = Pattern.compile(regex)
             val matcher: Matcher = pattern.matcher(ip)
             if (!matcher.matches()) {
-                scope.showToast("The proxy ip isn't valid.")
+                windowScope.showToast("The proxy ip isn't valid.")
                 return false
             }
             port = split[1].toIntOrNull()
             if (port != null) {
                 if (port < 1 || port > 65535) {
-                    scope.showToast("The proxy port can only be 1-65535.")
+                    windowScope.showToast("The proxy port can only be 1-65535.")
                     return false
                 }
             } else {
-                scope.showToast("The proxy port needs to be numbers only.")
+                windowScope.showToast("The proxy port needs to be numbers only.")
                 return false
             }
         } catch (e: Exception) {
-            scope.showToast("Something wen't wrong checking the proxy format. Look at the console for more info.")
+            windowScope.showToast("Something wen't wrong checking the proxy format. Look at the console for more info.")
             FrogLog.logError(
                 "Failed to check the proxy in settings." +
                         "\nGo to Settings and scroll to the bottom for the entire exception.",
@@ -827,7 +1121,7 @@ class SettingsView {
         }
         val threadsValue = threads.toIntOrNull()
         if (threadsValue == null || threadsValue < minThreads || threadsValue > maxThreads) {
-            scope.showToast("You must enter a Download Threads value of $minThreads-$maxThreads.")
+            windowScope.showToast("You must enter a Download Threads value of $minThreads-$maxThreads.")
             return false
         }
         if (timeout.isEmpty()) {
@@ -835,34 +1129,34 @@ class SettingsView {
         }
         val timeoutValue = timeout.toIntOrNull()
         if (timeoutValue == null || timeoutValue < minTimeout || timeoutValue > maxTimeout) {
-            scope.showToast("You must enter a Network Timeout value of $minTimeout-$maxTimeout.")
+            windowScope.showToast("You must enter a Network Timeout value of $minTimeout-$maxTimeout.")
             return false
         }
         if (saveFolder.isEmpty()) {
             saveFolder = Defaults.SAVE_FOLDER.string()
         }
         if (!saveFolder.fileExists()) {
-            scope.showToast("The download folder doesn't exist.")
+            windowScope.showToast("The download folder doesn't exist.")
             return false
         }
         if (chromePath.isNotEmpty()) {
             if (!chromePath.fileExists()) {
-                scope.showToast("The chrome browser path doesn't exist.")
+                windowScope.showToast("The chrome browser path doesn't exist.")
                 return false
             }
         }
         if (chromeDriverPath.isNotEmpty()) {
             if (!chromeDriverPath.fileExists()) {
-                scope.showToast("The chrome driver path doesn't exist.")
+                windowScope.showToast("The chrome driver path doesn't exist.")
                 return false
             }
         }
         if (chromePath.isNotEmpty() && chromeDriverPath.isEmpty()) {
-            scope.showToast("Both Chrome Browser and Chrome Driver paths need to be set.")
+            windowScope.showToast("Both Chrome Browser and Chrome Driver paths need to be set.")
             return false
         }
         if (chromeDriverPath.isNotEmpty() && chromePath.isEmpty()) {
-            scope.showToast("Both Chrome Browser and Chrome Driver paths need to be set.")
+            windowScope.showToast("Both Chrome Browser and Chrome Driver paths need to be set.")
             return false
         }
         val proxyEnabledValue = proxyEnabled.value
@@ -904,8 +1198,16 @@ class SettingsView {
         Defaults.HEADLESS_MODE.update(headlessMode.value)
         Defaults.SEPARATE_SEASONS.update(separateSeasons.value)
         Defaults.AUTO_SCROLL_CONSOLES.update(autoScrollConsoles.value)
+        Defaults.DISABLE_USER_AGENTS_UPDATE.update(disableUserAgentsUpdate.value)
+        Defaults.DISABLE_WCO_URLS_UPDATE.update(disableWcoUrlsUpdate.value)
+        Defaults.DISABLE_DUBBED_UPDATE.update(disableDubbedUpdate.value)
+        Defaults.DISABLE_SUBBED_UPDATE.update(disableSubbedUpdate.value)
+        Defaults.DISABLE_CARTOON_UPDATE.update(disableCartoonUpdate.value)
+        Defaults.DISABLE_MOVIES_UPDATE.update(disableMoviesUpdate.value)
+        Defaults.DISABLE_WCO_DATA_UPDATE.update(disableWcoDataUpdate.value)
+        Defaults.DISABLE_WCO_SERIES_LINKS_UPDATE.update(disableWcoSeriesLinksUpdate.value)
         updateValues()
-        scope.showToast("Settings successfully saved.")
+        windowScope.showToast("Settings successfully saved.")
         return true
     }
 
@@ -927,6 +1229,14 @@ class SettingsView {
                 || Defaults.HEADLESS_MODE.boolean() != headlessMode.value
                 || Defaults.SEPARATE_SEASONS.boolean() != separateSeasons.value
                 || Defaults.AUTO_SCROLL_CONSOLES.boolean() != autoScrollConsoles.value
+                || Defaults.DISABLE_USER_AGENTS_UPDATE.boolean() != disableUserAgentsUpdate.value
+                || Defaults.DISABLE_WCO_URLS_UPDATE.boolean() != disableWcoUrlsUpdate.value
+                || Defaults.DISABLE_DUBBED_UPDATE.boolean() != disableDubbedUpdate.value
+                || Defaults.DISABLE_SUBBED_UPDATE.boolean() != disableSubbedUpdate.value
+                || Defaults.DISABLE_CARTOON_UPDATE.boolean() != disableCartoonUpdate.value
+                || Defaults.DISABLE_MOVIES_UPDATE.boolean() != disableMoviesUpdate.value
+                || Defaults.DISABLE_WCO_DATA_UPDATE.boolean() != disableWcoDataUpdate.value
+                || Defaults.DISABLE_WCO_SERIES_LINKS_UPDATE.boolean() != disableWcoSeriesLinksUpdate.value
     }
 
 }

@@ -318,7 +318,7 @@ class DatabaseWindow {
                     }
                 }
             }
-            divider(true)
+            divider()
             Text(
                 text = "Description",
                 modifier = Modifier
@@ -329,7 +329,7 @@ class DatabaseWindow {
                 fontSize = MaterialTheme.typography.bodySmall.fontSize,
                 textAlign = TextAlign.Center
             )
-            divider(true)
+            divider()
             Text(
                 text = "Genres",
                 modifier = Modifier
@@ -340,7 +340,7 @@ class DatabaseWindow {
                 fontSize = MaterialTheme.typography.bodySmall.fontSize,
                 textAlign = TextAlign.Center
             )
-            divider(true)
+            divider()
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 modifier = Modifier.weight(EPISODES_WEIGHT)
@@ -387,7 +387,7 @@ class DatabaseWindow {
                     }
                 }
             }
-            divider(true)
+            divider()
             Text(
                 text = "Image",
                 modifier = Modifier
@@ -565,18 +565,12 @@ class DatabaseWindow {
     }
 
     @Composable
-    private fun divider(
-        header: Boolean = false
-    ) {
+    private fun divider() {
         VerticalDivider(
             modifier = Modifier.fillMaxHeight()
                 .width(1.dp)
                 .background(
                     MaterialTheme.colorScheme.onPrimaryContainer
-                    //if (header)
-                      //  MaterialTheme.colorScheme.onPrimaryContainer
-                    //else
-                      //  MaterialTheme.colorScheme.onSurfaceVariant
                 ),
             color = Color.Transparent
         )
