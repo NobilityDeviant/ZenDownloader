@@ -100,18 +100,39 @@ object Tools {
      * This is used to fix strings in order to be used as files.
      * Files can't contain certain characters.
      */
-    fun fixTitle(title: String, replaceDotAtStart: Boolean = false): String {
+    fun fixTitle(
+        title: String,
+        replaceDotAtStart: Boolean = false,
+        fixNumbers: Boolean = true
+    ): String {
         var mTitle = title
         if (replaceDotAtStart) {
             if (mTitle.startsWith(".")) {
                 mTitle = mTitle.substring(1)
             }
         }
-        //add a 0 before single numbers for roku media player sorting.
-        val digit = mTitle.filter { it.isDigit() }.toIntOrNull()
-        if (digit != null) {
-            if (digit < 10) {
-                mTitle = mTitle.replace("$digit", "0$digit")
+        if (fixNumbers) {
+            val matchSeason = Regex("Season(?:\\s|\\s?[:/]\\s?)\\d+").find(title)
+            if (matchSeason != null) {
+                val original = matchSeason.value
+                val digit = original.filter { it.isDigit() }.toIntOrNull()
+                if (digit != null) {
+                    if (digit < 10 && !digit.toString().contains("0")) {
+                        //add a 0 before single numbers for roku media player sorting.
+                        mTitle = mTitle.replace(original, original.replace("$digit", "0$digit"))
+                    }
+                }
+            }
+            val matchEpisode = Regex("Episode(?:\\s|\\s?[:/]\\s?)\\d+").find(title)
+            if (matchEpisode != null) {
+                val original = matchEpisode.value
+                val digit = original.filter { it.isDigit() }.toIntOrNull()
+                if (digit != null) {
+                    if (digit < 10 && !digit.toString().contains("0")) {
+                        //add a 0 before single numbers for roku media player sorting.
+                        mTitle = mTitle.replace(original, original.replace("$digit", "0$digit"))
+                    }
+                }
             }
         }
         return mTitle.trim { it <= ' ' }
@@ -138,13 +159,12 @@ object Tools {
         if (hasSeason) {
             val match = Regex("Season(?:\\s|\\s?[:/]\\s?)\\d+").find(title)
             if (match != null) {
-                val digit = title.filter { it.isDigit() }.toIntOrNull()
+                val original = match.value
+                val digit = original.filter { it.isDigit() }.toIntOrNull()
                 if (digit != null) {
-                    if (digit < 10) {
+                    if (digit < 10 && !digit.toString().contains("0")) {
                         //add a 0 before single numbers for roku media player sorting.
-                        return title.substring(
-                            match.range
-                        ).replace("$digit", "0$digit")
+                        return original.replace("$digit", "0$digit")
                     }
                 }
                 return title.substring(match.range)
@@ -171,7 +191,8 @@ object Tools {
             stripExtraFromTitle(
                 fixTitle(
                     title,
-                    true
+                    true,
+                    fixNumbers = false
                 )
             )
         ).trim() + ".jpg"
@@ -415,7 +436,7 @@ object Tools {
         try {
             Desktop.getDesktop().open(file)
         } catch (e: IOException) {
-            DialogHelper.showError("Failed to open folder.", e)
+            DialogHelper.showError("Failed to open file.", e)
         }
     }
 }

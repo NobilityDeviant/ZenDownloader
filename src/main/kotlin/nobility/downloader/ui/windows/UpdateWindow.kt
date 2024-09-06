@@ -104,7 +104,8 @@ class UpdateWindow(
                                         "Deny Update",
                                         height = 40.dp,
                                         width = 150.dp,
-                                        padding = 5.dp
+                                        padding = 5.dp,
+                                        enabled = !update.isLatest
                                     ) {
                                         Defaults.DENIED_UPDATE.update(true)
                                         FrogLog.writeMessage(
@@ -302,11 +303,6 @@ class UpdateWindow(
                 con.addRequestProperty("Accept-Encoding", "gzip, deflate, br")
                 con.addRequestProperty("Accept-Language", "en-US,en;q=0.9")
                 con.addRequestProperty("Connection", "keep-alive")
-                //con.addRequestProperty("Sec-Fetch-Dest", "document")
-                //con.addRequestProperty("Sec-Fetch-Mode", "navigate")
-                //con.addRequestProperty("Sec-Fetch-Site", "cross-site")
-                //con.addRequestProperty("Sec-Fetch-User", "?1")
-                //con.addRequestProperty("Upgrade-Insecure-Requests", "1")
                 con.addRequestProperty("User-Agent", UserAgents.random)
                 con.connectTimeout = Defaults.TIMEOUT.int() * 1000
                 con.readTimeout = Defaults.TIMEOUT.int() * 1000
@@ -377,11 +373,18 @@ class UpdateWindow(
                     onDenyTitle = "Continue",
                     onConfirmTitle = "Finish"
                 ) {
-                    Tools.openFile(
-                        downloadedUpdate.absolutePath,
-                        true,
-                        appWindowScope
-                    )
+                    if (downloadedUpdate.name.endsWith(".exe")) {
+                        Tools.openFile(
+                            downloadedUpdate.absolutePath,
+                            appWindowScope = appWindowScope
+                        )
+                    } else {
+                        Tools.openFile(
+                            downloadedUpdate.absolutePath,
+                            true,
+                            appWindowScope
+                        )
+                    }
                     Core.child.shutdown(true)
                 }
             } else {

@@ -89,6 +89,20 @@ class SimpleVideoDownloader(
                 finishEpisode()
                 continue
             }
+            if (temporaryQuality != null) {
+                val tempDownload = downloadForSlugAndQuality(slug, temporaryQuality)
+                if (tempDownload != null && tempDownload.isComplete) {
+                    writeMessage("[DB] Skipping completed video: " + currentEpisode.name)
+                    tempDownload.downloading = false
+                    tempDownload.queued = false
+                    Core.child.updateDownloadInDatabase(
+                        tempDownload,
+                        true
+                    )
+                    finishEpisode()
+                    continue
+                }
+            }
             val movie = Core.child.movieHandler.movieForSlug(slug)
             if (movie != null) {
                 handleMovie(movie)
@@ -320,8 +334,7 @@ class SimpleVideoDownloader(
                     } else {
                         logInfo("Using existing download for ${currentEpisode.name}")
                     }
-                    //todo
-                    driver.navigate().to(downloadLink)
+                    //driver.navigate().to(downloadLink)
                     val originalFileSize = fileSize(downloadLink)
                     if (originalFileSize <= 5000) {
                         writeMessage("Retrying... Failed to determine file size for: " + currentEpisode.name)

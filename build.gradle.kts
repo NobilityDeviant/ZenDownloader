@@ -20,7 +20,7 @@ kotlin {
 }
 
 group = "nobility.downloader"
-version = "1.0.3"
+version = "1.0.4"
 
 repositories {
     mavenCentral()
@@ -40,7 +40,7 @@ dependencies {
     //implementation("ch.qos.logback:logback-classic:1.5.7")
     runtimeOnly("org.jetbrains.kotlinx:kotlinx-coroutines-swing:1.8.0-RC2")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.0-RC2")
-    implementation("org.mozilla:rhino:1.7.15")
+    //implementation("org.mozilla:rhino:1.7.15")
     //database
     val objectBox = "3.8.0"
     implementation("io.objectbox:objectbox-linux:$objectBox")

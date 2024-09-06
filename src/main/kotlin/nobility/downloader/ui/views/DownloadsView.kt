@@ -420,11 +420,12 @@ class DownloadsView {
                         DialogHelper.showConfirm(
                             """
                                 Are you sure you want to delete the video:
+                                
                                 ${download.name}?
                             """.trimIndent(),
-                            "Delete File",
+                            "Delete File And Remove",
                             onConfirmTitle = "Delete File",
-                            size = DpSize(325.dp, 210.dp)
+                            size = DpSize(340.dp, 250.dp)
                         ) {
                             val file = download.downloadFile()
                             if (file != null) {
@@ -436,6 +437,8 @@ class DownloadsView {
                                     windowScope.showToast("Failed to delete file.")
                                 }
                             } else {
+                                deletedFile = true
+                                Core.child.removeDownload(download)
                                 windowScope.showToast("This file doesn't exist.")
                             }
                         }

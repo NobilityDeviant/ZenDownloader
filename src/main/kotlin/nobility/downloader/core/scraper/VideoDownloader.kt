@@ -294,8 +294,6 @@ class VideoDownloader(
                     } else {
                         logInfo("Using existing download for ${currentEpisode.name}")
                     }
-                    //todo
-                    driver.navigate().to(downloadLink)
                     val originalFileSize = fileSize(downloadLink)
                     if (originalFileSize <= 5000) {
                         writeMessage("Retrying... Failed to determine file size for: " + currentEpisode.name)
