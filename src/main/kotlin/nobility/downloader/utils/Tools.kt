@@ -154,25 +154,18 @@ object Tools {
         return mTitle.trim()
     }
 
+    //should only be used after fixing the title for files.
     fun findSeasonFromEpisode(title: String): String {
         val hasSeason = title.contains("Season")
-        if (hasSeason) {
+        return if (hasSeason) {
             val match = Regex("Season(?:\\s|\\s?[:/]\\s?)\\d+").find(title)
             if (match != null) {
-                val original = match.value
-                val digit = original.filter { it.isDigit() }.toIntOrNull()
-                if (digit != null) {
-                    if (digit < 10 && !digit.toString().contains("0")) {
-                        //add a 0 before single numbers for roku media player sorting.
-                        return original.replace("$digit", "0$digit")
-                    }
-                }
-                return title.substring(match.range)
+                title.substring(match.range)
             } else {
-                return "Season 01"
+                "Season 01"
             }
         } else {
-            return "Season 01"
+            "Season 01"
         }
     }
 
