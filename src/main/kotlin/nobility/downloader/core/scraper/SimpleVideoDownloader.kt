@@ -66,7 +66,6 @@ class SimpleVideoDownloader(
                 simpleRetries = 0
                 if (mCurrentEpisode != null) {
                     writeMessage("Reached max simple mode retries for ${currentEpisode.name} Turning it off.")
-                    break
                 }
                 continue
             }
@@ -147,7 +146,7 @@ class SimpleVideoDownloader(
                                 writeMessage("This browser doesn't support JavascriptExecutor.")
                             } else if (errorCode == ErrorCode.SIMPLE_MODE_FAILED) {
                                 simpleRetries++
-                                writeMessage("Failed in simple mode. Retrying with ${simpleRetries}/${Constants.maxSimpleRetries} left.")
+                                logError("Failed in simple mode. Retrying with ${simpleRetries}/${Constants.maxSimpleRetries} left.")
                                 continue
                             }
                         }
