@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <!--<include resource="logback-include.xml"/>-->
+    <!--    <logger name="nobility.downloader.core.scraper.video_download.m3u8_downloader.http.pool" level="DEBUG"/>-->
+    <!--    <logger name="org.apache.hc.client5.http.headers" level="DEBUG"/>-->
+    <!--    <logger name="org.apache.hc.client5.http.impl.async.H2AsyncMainClientExec" level="DEBUG"/>-->
+    <!--    <logger name="org.apache.hc.client5.http.impl.async.HttpAsyncMainClientExec" level="DEBUG"/>-->
+</configuration>

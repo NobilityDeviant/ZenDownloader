@@ -49,7 +49,7 @@ import nobility.downloader.ui.components.defaultCheckbox
 import nobility.downloader.ui.components.defaultDropdownItem
 import nobility.downloader.ui.components.defaultSettingsTextField
 import nobility.downloader.ui.components.dialog.DialogHelper
-import nobility.downloader.ui.windows.MovieEditor
+import nobility.downloader.ui.windows.MovieEditorWindow
 import nobility.downloader.ui.windows.utils.AppWindowScope
 import nobility.downloader.ui.windows.utils.ApplicationState
 import nobility.downloader.utils.*
@@ -451,7 +451,7 @@ class DatabaseWindow {
                     EvaIcons.Fill.Edit
                 ) {
                     closeMenu()
-                    MovieEditor.open(series)
+                    MovieEditorWindow.open(series)
                 }
             }
         }
@@ -703,11 +703,7 @@ class DatabaseWindow {
 
     private val randomSearchHint
         get() =
-            listOf(
-                "To Love Ru",
-                "Chobits",
-                "Girls Bravo"
-            ).plus(
+            BoxHelper.allSeries.map { it.name }.plus(
                 BoxHelper.shared.wcoGenreBox.all.map { it.name }
             ).random()
 
@@ -716,8 +712,8 @@ class DatabaseWindow {
         private val spaceBetweenNameAndIcon = 1.dp
         private val rowHeight = 150.dp
         private const val NAME_WEIGHT = 3f
-        private const val DESC_WEIGHT = 3f
-        private const val EPISODES_WEIGHT = 0.5f
+        private const val DESC_WEIGHT = 2.5f
+        private const val EPISODES_WEIGHT = 1.3f
         private const val GENRES_WEIGHT = 2f
         private const val IMAGE_WEIGHT = 2.5f
     }

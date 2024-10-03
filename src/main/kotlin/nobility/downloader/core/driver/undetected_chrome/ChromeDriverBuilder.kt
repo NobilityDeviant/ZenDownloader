@@ -312,9 +312,10 @@ class ChromeDriverBuilder {
         headless: Boolean
     ): ChromeOptions {
         if (headless) {
-            if (!args.contains("--headless=new") || !args.contains("--headless=chrome")) {
+            if (!args.contains("--headless=new") || !args.contains("--headless=chrome") || !args.contains("--headless=old")) {
                 //we consider that the chromedriver version is greater than 108.x.x.x
                 chromeOptions.addArguments("--headless=new")
+                //chromeOptions.addArguments("--headless=old")
             }
             var hasWindowSize = false
             for (arg in args) {

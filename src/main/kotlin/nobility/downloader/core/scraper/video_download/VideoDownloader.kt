@@ -1,4 +1,4 @@
-package nobility.downloader.core.scraper
+package nobility.downloader.core.scraper.video_download
 
 import kotlinx.coroutines.*
 import nobility.downloader.core.BoxHelper.Companion.boolean
@@ -10,13 +10,13 @@ import nobility.downloader.core.Core
 import nobility.downloader.core.driver.DriverBase
 import nobility.downloader.core.entities.Download
 import nobility.downloader.core.entities.Episode
+import nobility.downloader.core.scraper.MovieHandler
 import nobility.downloader.core.settings.Defaults
 import nobility.downloader.core.settings.Quality
 import nobility.downloader.utils.*
 import nobility.downloader.utils.FrogLog.logError
 import nobility.downloader.utils.FrogLog.logInfo
 import nobility.downloader.utils.FrogLog.writeMessage
-import org.jsoup.Jsoup
 import org.openqa.selenium.By
 import org.openqa.selenium.JavascriptExecutor
 import org.openqa.selenium.support.ui.ExpectedConditions
@@ -26,7 +26,9 @@ import java.net.URI
 import java.time.Duration
 import javax.net.ssl.HttpsURLConnection
 
-class SimpleVideoDownloader(
+//obsolete but keeping it for now just in case .
+@Suppress("UNUSED")
+class VideoDownloader(
     private val temporaryQuality: Quality? = null
 ) : DriverBase() {
 
@@ -40,12 +42,6 @@ class SimpleVideoDownloader(
     private val qualityAndDownloads = mutableListOf<QualityAndDownload>()
     private val taskScope = CoroutineScope(Dispatchers.Default)
 
-    /**
-     * An experimental mode to scrape with little use of selenium.
-     */
-    private var simpleMode = true
-    private var simpleRetries = 0
-
     suspend fun run() = withContext(Dispatchers.IO) {
         while (Core.child.isRunning) {
             if (retries >= Constants.maxRetries) {
@@ -55,18 +51,6 @@ class SimpleVideoDownloader(
                 finishEpisode()
                 resRetries = 0
                 retries = 0
-                if (simpleRetries < Constants.maxSimpleRetries) {
-                    simpleRetries = 0
-                    simpleMode = true
-                }
-                continue
-            }
-            if (simpleRetries >= Constants.maxSimpleRetries) {
-                simpleMode = false
-                simpleRetries = 0
-                if (mCurrentEpisode != null) {
-                    writeMessage("Reached max simple mode retries for ${currentEpisode.name} Turning it off.")
-                }
                 continue
             }
             if (mCurrentEpisode == null) {
@@ -77,30 +61,12 @@ class SimpleVideoDownloader(
                 }
                 resRetries = 0
                 retries = 0
-                if (simpleRetries < Constants.maxSimpleRetries) {
-                    simpleRetries = 0
-                    simpleMode = true
-                }
             }
             val slug = currentEpisode.slug
             if (slug.isEmpty()) {
                 writeMessage("Skipping video: (${currentEpisode.name}) with no slug.")
                 finishEpisode()
                 continue
-            }
-            if (temporaryQuality != null) {
-                val tempDownload = downloadForSlugAndQuality(slug, temporaryQuality)
-                if (tempDownload != null && tempDownload.isComplete) {
-                    writeMessage("[DB] Skipping completed video: " + currentEpisode.name)
-                    tempDownload.downloading = false
-                    tempDownload.queued = false
-                    Core.child.updateDownloadInDatabase(
-                        tempDownload,
-                        true
-                    )
-                    finishEpisode()
-                    continue
-                }
             }
             val movie = Core.child.movieHandler.movieForSlug(slug)
             if (movie != null) {
@@ -144,10 +110,6 @@ class SimpleVideoDownloader(
                             } else if (errorCode == ErrorCode.NO_JS) {
                                 resRetries = 3
                                 writeMessage("This browser doesn't support JavascriptExecutor.")
-                            } else if (errorCode == ErrorCode.SIMPLE_MODE_FAILED) {
-                                simpleRetries++
-                                logError("Failed in simple mode. Retrying with ${simpleRetries}/${Constants.maxSimpleRetries} left.")
-                                continue
                             }
                         }
                         if (result.data != null) {
@@ -333,7 +295,6 @@ class SimpleVideoDownloader(
                     } else {
                         logInfo("Using existing download for ${currentEpisode.name}")
                     }
-                    //driver.navigate().to(downloadLink)
                     val originalFileSize = fileSize(downloadLink)
                     if (originalFileSize <= 5000) {
                         writeMessage("Retrying... Failed to determine file size for: " + currentEpisode.name)
@@ -404,31 +365,6 @@ class SimpleVideoDownloader(
         killDriver()
     }
 
-    private data class QualityAndDownload(val quality: Quality, val downloadLink: String)
-
-    private enum class ErrorCode(val code: Int) {
-        NO_FRAME(0),
-        IFRAME_FORBIDDEN(1),
-        FAILED_EXTRACT_RES(2),
-        NO_JS(3),
-        CLOUDFLARE_FUCK(4),
-        SIMPLE_MODE_FAILED(5);
-
-        companion object {
-            fun errorCodeForCode(code: Int?): ErrorCode? {
-                if (code == null) {
-                    return null
-                }
-                entries.forEach {
-                    if (code == it.code) {
-                        return it
-                    }
-                }
-                return null
-            }
-        }
-    }
-
     private suspend fun detectAvailableResolutions(
         slug: String,
         priorityQuality: Quality
@@ -443,134 +379,6 @@ class SimpleVideoDownloader(
         )
         val fullLink = slug.slugToLink()
         val qualities = mutableListOf<QualityAndDownload>()
-        if (simpleMode) {
-            logInfo("Scraping resolution links from $fullLink in simple mode.")
-            logInfo("Using UserAgent: $userAgent")
-            var con: HttpsURLConnection? = null
-            var reader: BufferedReader? = null
-            try {
-                con = wcoConnection(fullLink, false)
-                reader = con.inputStream.bufferedReader()
-                val sb = StringBuilder()
-                reader.readLines().forEach {
-                    sb.append(it).append("\n")
-                }
-                reader.close()
-                con.disconnect()
-                var frameLink = ""
-                val doc = Jsoup.parse(sb.toString())
-                for (id in frameIds) {
-                    val iframe = doc.getElementById(id)
-                    if (iframe != null) {
-                        frameLink = iframe.attr("src")
-                        break
-                    }
-                }
-                if (frameLink.isEmpty()) {
-                    return@withContext Resource.ErrorCode(
-                        ErrorCode.SIMPLE_MODE_FAILED.code
-                    )
-                }
-                //logInfo("Found simple mode frame link: $frameLink")
-                val sbFrame = StringBuilder()
-                for (i in 1..5) {
-                    var frameCon: HttpsURLConnection? = null
-                    var frameReader: BufferedReader? = null
-                    try {
-                        frameCon = wcoConnection(
-                            frameLink,
-                            supportEncoding = false,
-                            addReferer = true
-                        )
-                        frameReader = frameCon.inputStream.bufferedReader()
-                        frameReader.readLines().forEach {
-                            sbFrame.append(it).append("\n")
-                        }
-                        frameReader.close()
-                    } catch (e: Exception) {
-                        try {
-                            frameCon?.disconnect()
-                            frameReader?.close()
-                        } catch (_: Exception) {}
-                    }
-                    if (sbFrame.isNotEmpty()) {
-                        break
-                    }
-                }
-                if (sbFrame.isEmpty()) {
-                    logError("Failed to visit frame url: $frameLink in simple mode.")
-                    return@withContext Resource.ErrorCode(
-                        ErrorCode.SIMPLE_MODE_FAILED.code
-                    )
-                }
-                val src = sbFrame.toString()
-                val linkKey1 = "\$.getJSON(\""
-                val linkKey2 = "\", function(response){"
-                val linkIndex1 = src.indexOf(linkKey1)
-                val linkIndex2 = src.indexOf(linkKey2)
-                val functionLink = src.substring(
-                    linkIndex1 + linkKey1.length, linkIndex2
-                )
-                //idk how to execute the js, so we still have to use selenium.
-                driver.navigate().to(fullLink)
-                val has720 = src.contains("obj720")
-                val has1080 = src.contains("obj1080")
-                for (quality in Quality.qualityList(has720, has1080)) {
-                    try {
-                        executeJs(
-                            JavascriptHelper.changeUrlToVideoFunction(
-                                functionLink,
-                                quality
-                            )
-                        )
-                        delay(pageChangeWaitTime)
-                        if (src.contains("404 Not Found")) {
-                            logInfo(
-                                "Failed to find $quality quality link for $slug in simple mode."
-                            )
-                            continue
-                        }
-                        val videoLink = driver.currentUrl
-                        if (videoLink.isNotEmpty()) {
-                            qualities.add(
-                                QualityAndDownload(quality, videoLink)
-                            )
-                            logInfo(
-                                "Found $quality link for $slug in simple mode."
-                            )
-                            if (quality == priorityQuality) {
-                                break
-                            }
-                        }
-                        driver.navigate().back()
-                        delay(2000)
-                    } catch (e: Exception) {
-                        logError(
-                            "An exception was thrown when looking for resolution links in simple mode.",
-                            e
-                        )
-                        continue
-                    }
-                }
-                if (qualities.isEmpty()) {
-                    return@withContext Resource.ErrorCode(
-                        ErrorCode.SIMPLE_MODE_FAILED.code
-                    )
-                } else {
-                    logInfo("Found qualities with simple mode!")
-                    return@withContext Resource.Success(qualities)
-                }
-            } catch (e: Exception) {
-                try {
-                    con?.disconnect()
-                    reader?.close()
-                } catch (_: Exception) {}
-                e.printStackTrace()
-                return@withContext Resource.ErrorCode(
-                    ErrorCode.SIMPLE_MODE_FAILED.code
-                )
-            }
-        }
         logInfo("Scraping resolution links from $fullLink")
         driver.navigate().to(fullLink)
         val wait = WebDriverWait(driver, Duration.ofSeconds(60))
@@ -617,7 +425,6 @@ class SimpleVideoDownloader(
         if (!foundVideoFrame) {
             return@withContext Resource.ErrorCode(ErrorCode.NO_FRAME.code)
         }
-
         val has720 = driver.pageSource.contains("obj720")
         val has1080 = driver.pageSource.contains("obj1080")
         for (quality in Quality.qualityList(has720, has1080)) {
@@ -723,19 +530,13 @@ class SimpleVideoDownloader(
         con.disconnect()
     }
 
-    private fun wcoConnection(
-        url: String,
-        supportEncoding: Boolean = true,
-        addReferer: Boolean = false
-    ): HttpsURLConnection {
+    private fun wcoConnection(url: String): HttpsURLConnection {
         val con = URI(url).toURL().openConnection() as HttpsURLConnection
         con.addRequestProperty(
             "Accept",
             "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9"
         )
-        if (supportEncoding) {
-            con.addRequestProperty("Accept-Encoding", "gzip, deflate, br")
-        }
+        con.addRequestProperty("Accept-Encoding", "gzip, deflate, br")
         con.addRequestProperty("Accept-Language", "en-US,en;q=0.9")
         con.addRequestProperty("Connection", "keep-alive")
         con.addRequestProperty("Sec-Fetch-Dest", "document")
@@ -743,9 +544,7 @@ class SimpleVideoDownloader(
         con.addRequestProperty("Sec-Fetch-Site", "cross-site")
         con.addRequestProperty("Sec-Fetch-User", "?1")
         con.addRequestProperty("Upgrade-Insecure-Requests", "1")
-        if (addReferer) {
-            con.addRequestProperty("Referer", Core.wcoUrlWww)
-        }
+        con.addRequestProperty("Referer", Core.wcoUrl)
         //the same user agent as the driver is needed.
         con.addRequestProperty("User-Agent", userAgent)
         con.connectTimeout = Defaults.TIMEOUT.int() * 1000

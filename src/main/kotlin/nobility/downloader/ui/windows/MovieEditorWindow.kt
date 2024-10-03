@@ -19,7 +19,7 @@ import nobility.downloader.ui.components.defaultTextField
 import nobility.downloader.ui.windows.utils.ApplicationState
 import nobility.downloader.utils.ImageUtils
 
-object MovieEditor {
+object MovieEditorWindow {
     fun open(movie: Series) {
         ApplicationState.newWindow(
             "Update Movie: ${movie.name}"

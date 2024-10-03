@@ -1,12 +1,14 @@
 package nobility.downloader.core
 
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import nobility.downloader.Page
 import nobility.downloader.core.BoxHelper.Companion.boolean
 import nobility.downloader.core.BoxHelper.Companion.string
 import nobility.downloader.core.BoxHelper.Companion.update
+import nobility.downloader.core.entities.Series
 import nobility.downloader.core.scraper.data.ToDownload
 import nobility.downloader.core.settings.Defaults
 import nobility.downloader.ui.components.Console
@@ -19,6 +21,7 @@ import nobility.downloader.ui.windows.UpdateWindow
 import nobility.downloader.ui.windows.database.DatabaseWindow
 import nobility.downloader.utils.AppInfo
 import nobility.downloader.utils.FrogLog
+import nobility.downloader.utils.fileExists
 import java.io.PrintStream
 
 /**
@@ -40,8 +43,11 @@ class Core {
         var currentUrlHint by mutableStateOf("")
         var startButtonEnabled = mutableStateOf(true)
         var stopButtonEnabled = mutableStateOf(false)
+        var currentUrlFocused = false
         var darkMode = mutableStateOf(false)
         var consolePoppedOut by mutableStateOf(false)
+        val randomSeries = mutableStateListOf<Series>()
+        val randomSeries2 = mutableStateListOf<Series>()
 
         val wcoUrl: String
             get() {
@@ -85,6 +91,26 @@ class Core {
             currentUrl = Defaults.LAST_DOWNLOAD.string()
             currentUrlHint = exampleSeries
             darkMode.value = Defaults.DARK_MODE.boolean()
+            try {
+                var tries = 0
+                val series = BoxHelper.allSeriesNoMovies
+                if (series.size >= 50) {
+                    val randoms = mutableListOf<Series>()
+                    while (randoms.size < 51) {
+                        val random = series.random()
+                        if (!randoms.contains(random) && random.imagePath.fileExists()) {
+                            randoms.add(random)
+                        }
+                        if (tries >= 150) {
+                            break
+                        }
+                        tries++
+                    }
+                    randomSeries.addAll(randoms.subList(0, 25))
+                    randomSeries2.addAll(randoms.subList(25, 50))
+                }
+            } catch (_: Exception) {
+            }
             initialized = true
             openUpdate(true)
         }

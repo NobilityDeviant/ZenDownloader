@@ -8,6 +8,7 @@ import nobility.downloader.ui.windows.utils.ApplicationState
 import nobility.downloader.utils.AppInfo
 import nobility.downloader.utils.loadKeyEvents
 
+
 fun main() {
     if (AppInfo.UPDATE_ASSETS_ON_LAUNCH) {
         val assetUpdateWindow = AssetUpdateWindow()

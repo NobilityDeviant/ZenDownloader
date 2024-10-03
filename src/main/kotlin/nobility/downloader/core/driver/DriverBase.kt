@@ -44,6 +44,8 @@ abstract class DriverBase(
         }
         if (headless) {
             chromeOptions.addArguments("--headless=new")
+            chromeOptions.addArguments("--window-position=-2400,-2400")
+            //chromeOptions.addArguments("--headless=old")
         }
         chromeOptions.addArguments("--mute-audio")
         chromeOptions.addArguments("--user-agent=$userAgent")

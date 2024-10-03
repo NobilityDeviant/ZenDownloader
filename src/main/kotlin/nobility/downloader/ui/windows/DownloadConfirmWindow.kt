@@ -42,7 +42,7 @@ import nobility.downloader.core.BoxMaker
 import nobility.downloader.core.Core
 import nobility.downloader.core.entities.Episode
 import nobility.downloader.core.entities.data.SeriesIdentity
-import nobility.downloader.core.scraper.SimpleVideoDownloader
+import nobility.downloader.core.scraper.video_download.SimpleVideoDownloader
 import nobility.downloader.core.scraper.SeriesUpdater
 import nobility.downloader.core.scraper.data.ToDownload
 import nobility.downloader.core.settings.Defaults

@@ -29,7 +29,7 @@
     },
     {
       "id": "2:8562217795792003412",
-      "lastPropertyId": "12:4119962247454317172",
+      "lastPropertyId": "13:128703970530115912",
       "name": "Download",
       "properties": [
         {
@@ -87,6 +87,11 @@
           "id": "12:4119962247454317172",
           "name": "website",
           "type": 9
+        },
+        {
+          "id": "13:128703970530115912",
+          "name": "manualProgress",
+          "type": 1
         }
       ],
       "relations": []

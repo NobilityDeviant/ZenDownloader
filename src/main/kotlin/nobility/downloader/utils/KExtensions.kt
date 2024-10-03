@@ -28,7 +28,6 @@ fun Color.hover(): Color {
         ).toColor()
 }
 
-
 fun <T> List<T>.containsOne(other: List<T>): Boolean {
     for (e in other) {
         if (contains(e)) {

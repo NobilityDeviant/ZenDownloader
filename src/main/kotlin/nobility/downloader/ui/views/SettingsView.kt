@@ -3,6 +3,7 @@ package nobility.downloader.ui.views
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -10,6 +11,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.darkrockstudios.libraries.mpfilepicker.DirectoryPicker
@@ -28,6 +30,7 @@ import nobility.downloader.core.settings.Quality
 import nobility.downloader.ui.components.*
 import nobility.downloader.ui.components.dialog.DialogHelper
 import nobility.downloader.ui.windows.utils.AppWindowScope
+import nobility.downloader.ui.windows.utils.ApplicationState
 import nobility.downloader.utils.Constants.maxThreads
 import nobility.downloader.utils.Constants.maxTimeout
 import nobility.downloader.utils.Constants.minThreads
@@ -100,6 +103,10 @@ class SettingsView {
         Defaults.AUTO_SCROLL_CONSOLES.boolean()
     )
 
+    private var ctrlForHotKeys = mutableStateOf(
+        Defaults.CTRL_FOR_HOTKEYS.boolean()
+    )
+
     private var disableUserAgentsUpdate = mutableStateOf(
         Defaults.DISABLE_USER_AGENTS_UPDATE.boolean()
     )
@@ -133,6 +140,7 @@ class SettingsView {
     )
 
     private var saveButtonEnabled = mutableStateOf(false)
+
     private lateinit var windowScope: AppWindowScope
 
     @OptIn(ExperimentalLayoutApi::class)
@@ -142,54 +150,21 @@ class SettingsView {
         Scaffold(
             bottomBar = {
                 Column(
-                    modifier = Modifier.fillMaxWidth().padding(15.dp)
+                    modifier = Modifier.fillMaxWidth()
                 ) {
+                    HorizontalDivider()
                     Row(
-                        modifier = Modifier.align(Alignment.CenterHorizontally),
+                        modifier = Modifier.align(Alignment.CenterHorizontally)
+                            .padding(10.dp),
                         horizontalArrangement = Arrangement.spacedBy(4.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        if (
-                            disableUserAgentsUpdate.value
-                            || disableWcoUrlsUpdate.value
-                            || disableWcoDataUpdate.value
-                            || disableWcoSeriesLinksUpdate.value
-                            || disableDubbedUpdate.value
-                            || disableSubbedUpdate.value
-                            || disableMoviesUpdate.value
-                            || disableCartoonUpdate.value
+                        defaultButton(
+                            "Update Options",
+                            width = 150.dp,
+                            height = 40.dp
                         ) {
-                            defaultButton(
-                                "Enable All Updates",
-                                width = 150.dp,
-                                height = 40.dp
-                            ) {
-                                disableUserAgentsUpdate.value = false
-                                disableWcoUrlsUpdate.value = false
-                                disableWcoDataUpdate.value = false
-                                disableWcoSeriesLinksUpdate.value = false
-                                disableDubbedUpdate.value = false
-                                disableSubbedUpdate.value = false
-                                disableMoviesUpdate.value = false
-                                disableCartoonUpdate.value = false
-                                updateSaveButton()
-                            }
-                        } else {
-                            defaultButton(
-                                "Disable All Updates",
-                                width = 150.dp,
-                                height = 40.dp
-                            ) {
-                                disableUserAgentsUpdate.value = true
-                                disableWcoUrlsUpdate.value = true
-                                disableWcoDataUpdate.value = true
-                                disableWcoSeriesLinksUpdate.value = true
-                                disableDubbedUpdate.value = true
-                                disableSubbedUpdate.value = true
-                                disableMoviesUpdate.value = true
-                                disableCartoonUpdate.value = true
-                                updateSaveButton()
-                            }
+                            openCheckBoxWindow()
                         }
                         defaultButton(
                             "Reset Settings",
@@ -243,15 +218,6 @@ class SettingsView {
                             fieldCheckbox(it)
                         }
                     }
-                    FlowRow(
-                        verticalArrangement = Arrangement.spacedBy(5.dp),
-                        horizontalArrangement = Arrangement.spacedBy(5.dp),
-                        maxItemsInEachRow = 5
-                    ) {
-                        Defaults.updateCheckBoxes.forEach {
-                            fieldCheckbox(it)
-                        }
-                    }
                     fieldWcoDomain()
                     Box(
                         modifier = Modifier.fillMaxWidth()
@@ -291,6 +257,97 @@ class SettingsView {
                         scrollState = scrollState
                     )
                 )
+            }
+        }
+    }
+
+    @OptIn(ExperimentalLayoutApi::class)
+    private fun openCheckBoxWindow() {
+        ApplicationState.newWindow(
+            "Update Options",
+            undecorated = true,
+            transparent = true,
+            alwaysOnTop = true,
+            size = DpSize(500.dp, 300.dp)
+        ) {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(5.dp),
+                modifier = Modifier.fillMaxSize()
+                    .padding(10.dp)
+                    .background(
+                        color = MaterialTheme.colorScheme.background,
+                        shape = RoundedCornerShape(10.dp)
+                    ).border(
+                        1.dp,
+                        color = MaterialTheme.colorScheme.primary,
+                        shape = RoundedCornerShape(10.dp)
+                    )
+            ) {
+                FlowRow(
+                    verticalArrangement = Arrangement.spacedBy(5.dp),
+                    horizontalArrangement = Arrangement.spacedBy(5.dp),
+                    maxItemsInEachRow = 3
+                ) {
+                    Defaults.updateCheckBoxes.forEach {
+                        fieldCheckbox(it)
+                    }
+                }
+                Row(
+                    modifier = Modifier.align(Alignment.CenterHorizontally),
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    if (
+                        disableUserAgentsUpdate.value
+                        || disableWcoUrlsUpdate.value
+                        || disableWcoDataUpdate.value
+                        || disableWcoSeriesLinksUpdate.value
+                        || disableDubbedUpdate.value
+                        || disableSubbedUpdate.value
+                        || disableMoviesUpdate.value
+                        || disableCartoonUpdate.value
+                    ) {
+                        defaultButton(
+                            "Enable All Updates",
+                            width = 150.dp,
+                            height = 35.dp
+                        ) {
+                            disableUserAgentsUpdate.value = false
+                            disableWcoUrlsUpdate.value = false
+                            disableWcoDataUpdate.value = false
+                            disableWcoSeriesLinksUpdate.value = false
+                            disableDubbedUpdate.value = false
+                            disableSubbedUpdate.value = false
+                            disableMoviesUpdate.value = false
+                            disableCartoonUpdate.value = false
+                            updateSaveButton()
+                        }
+                    } else {
+                        defaultButton(
+                            "Disable All Updates",
+                            width = 150.dp,
+                            height = 35.dp
+                        ) {
+                            disableUserAgentsUpdate.value = true
+                            disableWcoUrlsUpdate.value = true
+                            disableWcoDataUpdate.value = true
+                            disableWcoSeriesLinksUpdate.value = true
+                            disableDubbedUpdate.value = true
+                            disableSubbedUpdate.value = true
+                            disableMoviesUpdate.value = true
+                            disableCartoonUpdate.value = true
+                            updateSaveButton()
+                        }
+                    }
+                    defaultButton(
+                        "Close",
+                        width = 150.dp,
+                        height = 35.dp
+                    ) {
+                        closeWindow()
+                    }
+                }
             }
         }
     }
@@ -596,6 +653,7 @@ class SettingsView {
             Defaults.DISABLE_MOVIES_UPDATE -> "Disable Movies Updates"
             Defaults.DISABLE_WCO_DATA_UPDATE -> "Disable WcoData Updates"
             Defaults.DISABLE_WCO_SERIES_LINKS_UPDATE -> "Disable Wco Series Links Updates"
+            Defaults.CTRL_FOR_HOTKEYS -> "CTRL For Hotkeys"
             else -> "Not Implemented"
         }
         Row(
@@ -607,11 +665,13 @@ class SettingsView {
                 Text(
                     "$title:",
                     style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.onClick {
                         when (setting) {
                             Defaults.SHOW_DEBUG_MESSAGES -> {
                                 debugMessages.value = debugMessages.value.not()
                             }
+
                             Defaults.BYPASS_DISK_SPACE -> {
                                 bypassDiskSpace.value = bypassDiskSpace.value.not()
                             }
@@ -753,6 +813,18 @@ class SettingsView {
                             modifier = Modifier.height(30.dp)
                         ) {
                             autoScrollConsoles.value = it
+                            updateSaveButton()
+                        }
+                    }
+                }
+
+                Defaults.CTRL_FOR_HOTKEYS -> {
+                    tooltip(setting.description) {
+                        defaultCheckbox(
+                            ctrlForHotKeys,
+                            modifier = Modifier.height(30.dp)
+                        ) {
+                            ctrlForHotKeys.value = it
                             updateSaveButton()
                         }
                     }
@@ -1026,6 +1098,10 @@ class SettingsView {
                     autoScrollConsoles.value = it.boolean()
                 }
 
+                Defaults.CTRL_FOR_HOTKEYS -> {
+                    ctrlForHotKeys.value = it.boolean()
+                }
+
                 Defaults.DISABLE_USER_AGENTS_UPDATE -> {
                     disableUserAgentsUpdate.value = it.boolean()
                 }
@@ -1198,6 +1274,7 @@ class SettingsView {
         Defaults.HEADLESS_MODE.update(headlessMode.value)
         Defaults.SEPARATE_SEASONS.update(separateSeasons.value)
         Defaults.AUTO_SCROLL_CONSOLES.update(autoScrollConsoles.value)
+        Defaults.CTRL_FOR_HOTKEYS.update(ctrlForHotKeys.value)
         Defaults.DISABLE_USER_AGENTS_UPDATE.update(disableUserAgentsUpdate.value)
         Defaults.DISABLE_WCO_URLS_UPDATE.update(disableWcoUrlsUpdate.value)
         Defaults.DISABLE_DUBBED_UPDATE.update(disableDubbedUpdate.value)
@@ -1229,6 +1306,7 @@ class SettingsView {
                 || Defaults.HEADLESS_MODE.boolean() != headlessMode.value
                 || Defaults.SEPARATE_SEASONS.boolean() != separateSeasons.value
                 || Defaults.AUTO_SCROLL_CONSOLES.boolean() != autoScrollConsoles.value
+                || Defaults.CTRL_FOR_HOTKEYS.boolean() != ctrlForHotKeys.value
                 || Defaults.DISABLE_USER_AGENTS_UPDATE.boolean() != disableUserAgentsUpdate.value
                 || Defaults.DISABLE_WCO_URLS_UPDATE.boolean() != disableWcoUrlsUpdate.value
                 || Defaults.DISABLE_DUBBED_UPDATE.boolean() != disableDubbedUpdate.value

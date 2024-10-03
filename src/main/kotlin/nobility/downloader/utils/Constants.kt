@@ -7,6 +7,7 @@ object Constants {
     val topbarHeight = 45.dp
     val mediumIconSize = 30.dp
     val largeIconSize = 45.dp
+    val randomSeriesRowHeight = 110.dp
     const val minTimeout = 5
     const val maxTimeout = 240
     const val minThreads = 1
@@ -14,6 +15,7 @@ object Constants {
     const val maxRetries = 10
     const val maxResRetries = 3
     const val maxSimpleRetries = 5
+    const val maxM3U8Retries = 3
     const val minSpaceNeeded = 150 //in megabytes
     const val averageVideoSize = 100 //in megabytes
     const val daysToUpdateWcoUrl = 7

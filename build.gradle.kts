@@ -37,7 +37,7 @@ dependencies {
     implementation("io.github.bonigarcia:webdrivermanager:5.9.2")
     //implementation("org.slf4j:slf4j-nop:2.1.0-alpha1")
     //implementation("org.slf4j:slf4j-api:2.0.4")
-    //implementation("ch.qos.logback:logback-classic:1.5.7")
+    implementation("ch.qos.logback:logback-classic:1.5.7")
     runtimeOnly("org.jetbrains.kotlinx:kotlinx-coroutines-swing:1.8.0-RC2")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.0-RC2")
     //implementation("org.mozilla:rhino:1.7.15")
@@ -59,6 +59,22 @@ dependencies {
     implementation("br.com.devsrsouza.compose.icons:eva-icons:1.1.0")
     //for unzipping assets
     implementation("net.lingala.zip4j:zip4j:2.11.5")
+    //m3u8 downloading
+    //implementation("io.github.kanglong1023:m3u8-catcher:1.0.0") {
+      //  exclude("org.bytedeco", "ffmpeg-platform")
+    //}
+    implementation("org.bytedeco:ffmpeg:5.0-1.5.7")
+    implementation("org.bytedeco:ffmpeg:5.0-1.5.7:windows-x86_64")
+    implementation("org.bytedeco:ffmpeg:1.5.7:linux-x86_64")
+    implementation("org.bytedeco:javacpp:1.5.7:windows-x86_64")
+    implementation("org.bytedeco:javacpp:1.5.7:linux-x86_64")
+    
+    implementation("org.apache.commons:commons-lang3:3.6")
+    implementation("org.apache.commons:commons-collections4:4.3")
+    implementation("org.bouncycastle:bcprov-jdk18on:1.74")
+    implementation("org.apache.httpcomponents.client5:httpclient5:5.2.1")
+    implementation("io.netty:netty-common:4.1.113.Final")
+    implementation("org.jctools:jctools-core:4.0.3")
 }
 
 apply(plugin = "io.objectbox")

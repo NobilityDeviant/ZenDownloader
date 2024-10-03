@@ -48,9 +48,7 @@ object ImageUtils {
             bufferedImage = ImageIO.read(URI(series.imageLink).toURL())
             return bufferedImage.toComposeImageBitmap()
         } catch (e: IOException) {
-            return useResource(AppInfo.NO_IMAGE_PATH) {
-                ImageIO.read(it).toComposeImageBitmap()
-            }
+            return noImage
         }
     }
 
@@ -81,13 +79,10 @@ object ImageUtils {
             bufferedImage = ImageIO.read(URI(link).toURL())
             return bufferedImage.toComposeImageBitmap()
         } catch (e: IOException) {
-            return useResource(AppInfo.NO_IMAGE_PATH) {
-                ImageIO.read(it).toComposeImageBitmap()
-            }
+            return noImage
         }
     }
 
-    @Suppress("UNUSED")
     fun loadImageFromFilePath(filePath: String): ImageBitmap {
         if (filePath.isEmpty()) {
             return useResource(AppInfo.NO_IMAGE_PATH) {
@@ -99,9 +94,7 @@ object ImageUtils {
             bufferedImage = ImageIO.read(File(filePath))
             return bufferedImage.toComposeImageBitmap()
         } catch (e: IOException) {
-            return useResource(AppInfo.NO_IMAGE_PATH) {
-                ImageIO.read(it).toComposeImageBitmap()
-            }
+            return noImage
         }
     }
 
@@ -132,5 +125,9 @@ object ImageUtils {
                 )
             }
         }
+    }
+
+    val noImage get() = useResource(AppInfo.NO_IMAGE_PATH) {
+        ImageIO.read(it).toComposeImageBitmap()
     }
 }

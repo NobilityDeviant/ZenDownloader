@@ -22,7 +22,7 @@ class MovieHandler {
         val moviesFile = File(BoxHelper.databasePath + "movies.txt")
         if (!moviesFile.exists()) {
             FrogLog.writeMessage(
-                "Movie slugs list not found. Downloading movie list..."
+                "movies.txt not found. Downloading movie list..."
             )
             downloadMovieList()
             return
@@ -31,13 +31,20 @@ class MovieHandler {
             if (it.isNotEmpty()) {
                 val split = it.split(DELIMITER)
                 if (split.size == 3) {
-                    movies.add(Movie(split[0], split[1], split[2].toInt()))
+                    try {
+                        movies.add(Movie(split[0], split[1], split[2].toInt()))
+                    } catch (e: Exception) {
+                        FrogLog.logError(
+                            "Failed to load movie line: $it",
+                            e
+                        )
+                    }
                 }
             }
         }
         if (movies.isNotEmpty()) {
             FrogLog.writeMessage(
-                "Successfully loaded ${movies.size} movie slugs."
+                "Successfully loaded ${movies.size} movie details."
             )
         }
     }
@@ -54,13 +61,20 @@ class MovieHandler {
                 if (it.isNotEmpty()) {
                     val split = it.split(DELIMITER)
                     if (split.size == 3) {
-                        movies.add(Movie(split[0], split[1], split[2].toInt()))
+                        try {
+                            movies.add(Movie(split[0], split[1], split[2].toInt()))
+                        } catch (e: Exception) {
+                            FrogLog.logError(
+                                "Failed to load movie line: $it",
+                                e
+                            )
+                        }
                     }
                 }
             }
             if (movies.isNotEmpty()) {
                 FrogLog.writeMessage(
-                    "Successfully downloaded ${movies.size} movie slugs."
+                    "Successfully downloaded ${movies.size} movie details."
                 )
             }
         } catch (e: Exception) {
@@ -76,8 +90,7 @@ class MovieHandler {
         if (movies.isEmpty()) {
             FrogLog.writeMessage(
                 """
-                    Failed to check if slug is a movie.
-                    This means the movies list is empty.
+                    Failed to check if slug is a movie because the movies.txt file is empty.
                     Please reload the program before downloading movies.
                 """.trimIndent()
             )

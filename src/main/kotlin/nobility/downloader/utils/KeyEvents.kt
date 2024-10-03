@@ -4,6 +4,7 @@ import androidx.compose.ui.input.key.*
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import nobility.downloader.Page
+import nobility.downloader.core.BoxHelper.Companion.boolean
 import nobility.downloader.core.BoxHelper.Companion.string
 import nobility.downloader.core.Core
 import nobility.downloader.core.settings.Defaults
@@ -11,24 +12,26 @@ import nobility.downloader.ui.components.dialog.DialogHelper
 
 fun loadKeyEvents(): (KeyEvent) -> Boolean = {
     val up = it.type == KeyEventType.KeyUp
-    if (it.isCtrlPressed && it.key == Key.D && up) {
+    val ctrl = if (Defaults.CTRL_FOR_HOTKEYS.boolean())
+        it.isCtrlPressed else !Core.currentUrlFocused
+    if (ctrl && it.key == Key.D && up) {
         Core.currentPage = Page.DOWNLOADS
         true
-    } else if (it.isCtrlPressed && it.key == Key.S && up) {
+    } else if (ctrl && it.key == Key.S && up) {
         Core.openSettings()
         true
-    } else if (it.isCtrlPressed && it.key == Key.O && up) {
+    } else if (ctrl && it.key == Key.O && up) {
         Tools.openFile(
             Defaults.SAVE_FOLDER.string()
         )
         true
-    } else if (it.isCtrlPressed && it.key == Key.R && up) {
+    } else if (ctrl && it.key == Key.R && up) {
         Core.openRecents()
         true
-    } else if (it.isCtrlPressed && it.key == Key.W && up) {
+    } else if (ctrl && it.key == Key.W && up) {
         Core.openWco()
         true
-    } else if (it.isCtrlPressed && it.key == Key.H && up) {
+    } else if (ctrl && it.key == Key.H && up) {
         Core.openHistory()
         true
     } else if (it.key == Key.Escape && up) {
@@ -67,6 +70,8 @@ val keyGuide: String get() = """
     These are all the key combinations for this program.  
     
     Anything with CTRL + means you must be holding down the Control Key.
+    
+    CTRL is now optional in the settings. It's on by default.
     
     ESC = Home Page/Settings Page
     CTRL + D = Downloads Page

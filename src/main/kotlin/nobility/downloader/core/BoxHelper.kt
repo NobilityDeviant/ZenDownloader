@@ -95,6 +95,16 @@ class BoxHelper {
         val seriesPath get() = databasePath + File.separator + "series" + File.separator
         val seriesImagesPath: String get() = databasePath + "series_images${File.separator}"
 
+        val allSeries get() = shared.dubbedSeriesBox.all
+            .plus(shared.subbedSeriesBox.all)
+            .plus(shared.cartoonSeriesBox.all)
+            .plus(shared.moviesSeriesBox.all)
+            .plus(shared.miscSeriesBox.all)
+
+        val allSeriesNoMovies get() = shared.dubbedSeriesBox.all
+            .plus(shared.subbedSeriesBox.all)
+            .plus(shared.cartoonSeriesBox.all)
+
         fun init() {
             loadSettings()
         }

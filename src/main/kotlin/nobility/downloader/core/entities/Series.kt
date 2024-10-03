@@ -8,6 +8,7 @@ import io.objectbox.relation.ToMany
 import nobility.downloader.core.BoxHelper
 import nobility.downloader.core.entities.data.SeriesIdentity
 import nobility.downloader.core.entities.data.Website
+import nobility.downloader.core.scraper.data.ToDownload
 import nobility.downloader.utils.FrogLog
 import nobility.downloader.utils.Tools
 
@@ -162,6 +163,8 @@ data class Series(
         }
         return s
     }
+
+    val asToDownload get() = ToDownload(series = this)
 
     @JvmField
     @Transient

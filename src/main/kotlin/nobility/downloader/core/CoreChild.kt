@@ -55,8 +55,6 @@ class CoreChild {
     fun init() {
         System.setProperty("webdriver.chrome.silentOutput", "true")
         Logger.getLogger("org.openqa.selenium").level = Level.OFF
-        Logger.getLogger("org.openqa.selenium.remote").level = Level.OFF
-        Logger.getLogger("org.openqa.selenium.devtools").level = Level.OFF
         BoxHelper.shared.downloadBox.all.forEach {
             addDownload(it)
         }

@@ -52,7 +52,7 @@ enum class Defaults(
     ),
     SAVE_FOLDER(
         "save_folder",
-        System.getProperty("user.home"),
+        System.getProperty("user.home") + "/zen_videos/",
         """
             The folder where all your downloads get saved.
             Default: ${System.getProperty("user.home")}
@@ -143,6 +143,16 @@ enum class Defaults(
         true,
         """
             Auto scrolls all consoles to the bottom when a new text is added to it.
+            Default: On
+        """.trimIndent()
+    ),
+    CTRL_FOR_HOTKEYS(
+      "ctrl_for_hotkeys",
+        true,
+        """
+            Toggles the use of CTRL when using hotkeys.
+            If turned on, you will have to hold CTRL + the key.
+            If turned off, you just use the key if the url field isn't focused.
             Default: On
         """.trimIndent()
     ),
@@ -261,6 +271,7 @@ enum class Defaults(
             SEPARATE_SEASONS,
             SHOW_TOOLTIPS,
             BYPASS_DISK_SPACE,
+            CTRL_FOR_HOTKEYS,
             CONSOLE_ON_TOP,
             AUTO_SCROLL_CONSOLES,
             HEADLESS_MODE,

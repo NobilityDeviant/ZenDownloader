@@ -9,16 +9,24 @@ sealed class Resource<T>(
 
     class Success<T>(data: T, dataCode: Int = -1) : Resource<T>(data, dataCode)
     class Error<T>(message: String?) : Resource<T>(message = message) {
-        constructor(message: String?, exception: Exception? = null): this(
+        constructor(message: String?, exception: Throwable? = null): this(
             "$message | Error: " + if (exception != null)
                 exception.localizedMessage else "No error found."
         )
-        constructor(exception: Exception? = null) : this("Error: " + if (exception != null)
+        constructor(exception: Throwable? = null) : this("Error: " + if (exception != null)
             exception.localizedMessage else "No error found.")
     }
 
-    class ErrorCode<T>(message: String, errorCode: Int?) : Resource<T>(message = message, errorCode = errorCode) {
-        constructor(errorCode: Int?): this("", errorCode)
+    class ErrorCode<T>(
+        message: String?,
+        errorCode: Int
+    ) : Resource<T>(message = message, errorCode = errorCode) {
+        constructor(errorCode: Int): this("", errorCode)
+        constructor(e: Exception, errorCode: Int): this(
+            if (!e.localizedMessage.isNullOrEmpty())
+                e.localizedMessage else "No error found.",
+            errorCode
+        )
     }
 
     val isFailed: Boolean get() = !message.isNullOrEmpty()

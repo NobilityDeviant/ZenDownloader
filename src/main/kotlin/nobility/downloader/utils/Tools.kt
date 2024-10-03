@@ -86,6 +86,7 @@ object Tools {
     /**
      * Extracts the domain name without the www. (because it's never needed)
      * and without the extension.
+     * Doesn't support subdomains.
      */
     fun extractDomainFromLink(link: String): String {
         val mLink = link.replace("www.", "")
@@ -93,6 +94,16 @@ object Tools {
         return mLink.substring(
             mLink.indexOf(key1) + key1.length,
             mLink.indexOf(".")
+        )
+    }
+
+    /**
+     * Extract the full domain including the subdomain, www & https://
+     */
+    fun extractFullDomainFromLink(link: String): String {
+        return link.substring(
+            0,
+            link.ordinalIndexOf("/", 3)
         )
     }
 
@@ -388,7 +399,7 @@ object Tools {
         con.addRequestProperty("Upgrade-Insecure-Requests", "1")
         con.connectTimeout = timeout
         con.readTimeout = timeout
-        con.setRequestProperty("Range", "bytes=$offset-")
+        con.addRequestProperty("Range", "bytes=$offset-")
         con.addRequestProperty("User-Agent", userAgent)
         val buffer = ByteArray(8192)
         val bis = BufferedInputStream(con.inputStream)

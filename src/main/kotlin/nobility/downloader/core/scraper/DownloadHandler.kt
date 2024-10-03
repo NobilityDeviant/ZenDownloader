@@ -8,6 +8,7 @@ import nobility.downloader.core.Core
 import nobility.downloader.core.entities.Episode
 import nobility.downloader.core.entities.Series
 import nobility.downloader.core.scraper.data.ToDownload
+import nobility.downloader.core.scraper.video_download.SimpleVideoDownloader
 import nobility.downloader.core.settings.Defaults
 import nobility.downloader.ui.components.dialog.DialogHelper
 import nobility.downloader.utils.FrogLog

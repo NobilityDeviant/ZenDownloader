@@ -16,18 +16,18 @@ data class Download(
     var resolution: Int = 0
 ) : Episode() {
 
+    var manualProgress = false
+
     @Transient
     var downloading = false
-
+    @Transient
+    var merging = false
     @Transient
     var paused = false
-
     @Transient
     var queued = false
-
     @Transient
     var progress = mutableStateOf("0%")
-
     @Transient
     var remainingDownloadSeconds = mutableStateOf(0)
 
@@ -58,17 +58,27 @@ data class Download(
         } else if (paused) {
             setProgressValue("Paused")
             return
+        } else if (merging) {
+            setProgressValue("Merging")
+            return
+        }
+        if (manualProgress && downloading) {
+            return
         }
         val video = downloadFile()
         if (video != null && video.exists()) {
-            val ratio = video.length() / fileSize.toDouble()
-            setProgressValue(Tools.percentFormat.format(ratio))
+            if (manualProgress) {
+                setProgressValue("100%")
+            } else {
+                val ratio = video.length() / fileSize.toDouble()
+                setProgressValue(Tools.percentFormat.format(ratio))
+            }
         } else {
             setProgressValue("File Not Found")
         }
     }
 
-    private fun setProgressValue(value: String) {
+    fun setProgressValue(value: String) {
         if (progress.value != value) {
             progress.value = value
         }
