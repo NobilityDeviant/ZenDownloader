@@ -8,6 +8,8 @@ Many of the anime websites out there are locked down really hard which makes wco
 
 **You can now download all paywalled movies!**
 
+**Now also supports M3U8 Videos & Episodes with 2 videos**
+
 Don't pay for wco premium. I'll never support it and I don't recommend it.
 
 We're back for blood. >:(
@@ -96,10 +98,6 @@ Learn more about the keyring here: https://wiki.gnome.org/action/show/Projects/G
 For your first run you will be greeted with the *Asset Updater*
 
 This will download all the files (besides images) from the [Database Folder](https://github.com/NobilityDeviant/ZenDownloader/tree/master/database)
-
-Once that's complete it will run additional checks for genres, movies and urls.
-
-These all happen in the background and require Chrome so be sure that's installed first.
 
 If you want a better User Experience with the *Database Window* you should also download the images.
 
