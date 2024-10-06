@@ -15,9 +15,6 @@ enum class Quality(
             chosenQuality: Quality,
             qualities: List<Quality>
         ): Quality {
-            if (chosenQuality == LOW) {
-                return LOW
-            }
             if (chosenQuality == HIGH) {
                 return if (qualities.contains(HIGH)) {
                     HIGH
@@ -31,6 +28,10 @@ enum class Quality(
                     MED
                 } else {
                     LOW
+                }
+            } else if (chosenQuality == LOW) {
+                if (!qualities.contains(LOW)) {
+                    return MED
                 }
             }
             return LOW

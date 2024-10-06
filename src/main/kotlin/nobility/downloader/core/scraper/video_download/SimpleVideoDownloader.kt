@@ -179,7 +179,7 @@ class SimpleVideoDownloader(
                         }
                         if (result.data != null) {
                             qualityAndDownloads.addAll(result.data)
-                            val firstQualities = qualityAndDownloads.filter { !it.secondFrame }
+                            val firstQualities = result.data.filter { !it.secondFrame }
                             qualityOption = Quality.bestQuality(
                                 qualityOption,
                                 firstQualities.map { it.quality }
