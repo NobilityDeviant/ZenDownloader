@@ -27,7 +27,7 @@ class Slot<T>(var value: T?) {
         r?.recycle(this)
     }
 
-    val isRecycled: Boolean
+    private val isRecycled: Boolean
         get() = null == recycler
 
     // ----------------- internal method -------------------- //

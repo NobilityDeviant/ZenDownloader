@@ -26,6 +26,7 @@ class ByteBufferPool(
     private abstract class ByteBufferPoolFactory : PooledObjFactory<ByteBuffer> {
         override fun newInstance(size: Int): List<ByteBuffer> {
             val byteBuffers: MutableList<ByteBuffer> = CollUtil.newArrayListWithCapacity(size)
+            @Suppress("UNUSED")
             for (i in 0 until size) {
                 byteBuffers.add(newInstance())
             }
@@ -81,7 +82,7 @@ class ByteBufferPool(
                 }
             }
 
-            val poolMetric = PoolMetric(poolConfig)
+            val poolMetric = PoolMetric()
             return ByteBufferPool(poolIdentity, poolConfig, poolMetric, pooledObjFactory)
         }
 
@@ -99,7 +100,7 @@ class ByteBufferPool(
                 }
             }
 
-            val poolMetric = PoolMetric(poolConfig)
+            val poolMetric = PoolMetric()
             return ByteBufferPool(
                 poolIdentity,
                 poolConfig,

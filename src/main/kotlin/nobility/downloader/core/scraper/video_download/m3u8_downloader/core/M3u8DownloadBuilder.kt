@@ -189,7 +189,7 @@ class M3u8DownloadBuilder internal constructor() {
         return this
     }
 
-    fun addHttpHeader(
+    private fun addHttpHeader(
         requestType: M3u8HttpRequestType,
         requestHeaderMap: Map<String, Any>
     ): M3u8DownloadBuilder {

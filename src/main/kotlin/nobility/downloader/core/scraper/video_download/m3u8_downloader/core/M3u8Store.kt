@@ -12,8 +12,8 @@ class M3u8Store(
     val m3u8Uri: URI?,
     val finalM3u8Uri: URI?,
     val masterM3u8Uri: URI?,
-    val finalM3u8Content: String?,
-    val masterM3u8Content: String?
+    private val finalM3u8Content: String?,
+    private val masterM3u8Content: String?
 ) {
     @Throws(IOException::class)
     fun store(m3u8StorePath: Path) {

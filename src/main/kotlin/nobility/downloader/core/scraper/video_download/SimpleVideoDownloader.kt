@@ -2,6 +2,7 @@ package nobility.downloader.core.scraper.video_download
 
 import kotlinx.coroutines.*
 import nobility.downloader.core.BoxHelper.Companion.boolean
+import nobility.downloader.core.BoxHelper.Companion.downloadForNameAndQuality
 import nobility.downloader.core.BoxHelper.Companion.downloadForSlugAndQuality
 import nobility.downloader.core.BoxHelper.Companion.int
 import nobility.downloader.core.BoxHelper.Companion.seriesForSlug
@@ -33,7 +34,8 @@ import javax.net.ssl.HttpsURLConnection
  * of selenium as much as possible.
  * Unlike the regular VideoDownloader, this one is a lot faster.
  * If this fails, the run function will return a boolean and if false,
- * it starts the normal VideoDownloader.
+ * it starts the normal VideoDownloader (not implemented atm).
+ * I will fallback to normal mode when I see simple failing a ton.
  */
 class SimpleVideoDownloader(
     private val temporaryQuality: Quality? = null
@@ -55,8 +57,8 @@ class SimpleVideoDownloader(
         while (Core.child.isRunning) {
             if (retries >= Constants.maxRetries) {
                 if (mCurrentEpisode != null) {
-                    writeMessage("Reached max retries of ${Constants.maxRetries}. Switching to normal mode.")
-                    //todo
+                    writeMessage("Reached max retries of ${Constants.maxRetries}.")
+                    //todo normal mode
                 }
                 finishEpisode()
                 resRetries = 0
@@ -70,8 +72,8 @@ class SimpleVideoDownloader(
             if (simpleRetries >= Constants.maxSimpleRetries) {
                 simpleRetries = 0
                 if (mCurrentEpisode != null) {
-                    writeMessage("Reached max simple mode retries. Switching to normal mode.")
-                    //todo
+                    writeMessage("Reached max simple mode retries.")
+                    //todo normal mode
                 }
                 continue
             }
@@ -177,28 +179,30 @@ class SimpleVideoDownloader(
                         }
                         if (result.data != null) {
                             qualityAndDownloads.addAll(result.data)
+                            val firstQualities = qualityAndDownloads.filter { !it.secondFrame }
                             qualityOption = Quality.bestQuality(
                                 qualityOption,
-                                result.data.map { it.quality }
+                                firstQualities.map { it.quality }
                             )
-                            result.data.forEach {
+                            firstQualities.forEach {
                                 if (it.quality == qualityOption) {
                                     downloadLink = it.downloadLink
                                 }
                             }
                         } else {
                             logInfo(
-                                "Failed to find resolution download links. Defaulting to ${Quality.LOW.tag} quality."
+                                "Failed to find quality download links. Defaulting to ${Quality.LOW.tag} quality."
                             )
                             qualityOption = Quality.LOW
                         }
                     }
                 } else {
+                    val firstQualities = qualityAndDownloads.filter { !it.secondFrame }
                     qualityOption = Quality.bestQuality(
                         qualityOption,
-                        qualityAndDownloads.map { it.quality }
+                        firstQualities.map { it.quality }
                     )
-                    qualityAndDownloads.forEach {
+                    firstQualities.forEach {
                         if (it.quality == qualityOption) {
                             downloadLink = it.downloadLink
                         }
@@ -267,6 +271,7 @@ class SimpleVideoDownloader(
                         currentDownload.dateAdded = System.currentTimeMillis()
                         currentDownload.fileSize = 0
                         currentDownload.queued = true
+                        //todo might have to move this for actual success
                         Core.child.addDownload(currentDownload)
                         logInfo("Created new download.")
                     } else {
@@ -301,7 +306,7 @@ class SimpleVideoDownloader(
                             .addHttpHeader("Accept", "*/*")
                             .addHttpHeader("Cache-Control", "no-cache")
                             //.addHttpHeader("User-Agent", userAgent)
-                            .addListener(object: M3u8DownloadListener {
+                            .addListener(object : M3u8DownloadListener {
                                 override fun downloadStarted(m3u8Download: M3u8Download) {
                                     writeMessage("Starting m3u8 download with ${qualityOption.tag} quality.")
                                     currentDownload.queued = false
@@ -394,14 +399,21 @@ class SimpleVideoDownloader(
                             continue
                         }
                     } else {
-                        val originalFileSize = fileSize(downloadLink)
+                        var originalFileSize = fileSize(downloadLink)
                         if (originalFileSize <= 5000) {
-                            writeMessage("Failed to determine file size. Retrying...")
-                            retries++
-                            continue
+                            if (retries < 2) {
+                                writeMessage("Failed to determine file size. Retrying...")
+                                retries++
+                                continue
+                            } else if (retries in 2..Constants.maxRetries - 1) {
+                                writeMessage("Failed to determine file size. Retrying with a different quality...")
+                                qualityAndDownloads.remove(qualityAndDownloads.first { it.downloadLink == downloadLink })
+                                retries++
+                                continue
+                            }
                         }
                         if (saveFile.exists()) {
-                            if (saveFile.length() >= originalFileSize) {
+                            if (originalFileSize > 0 && saveFile.length() >= originalFileSize) {
                                 writeMessage("(IO) Skipping completed video.")
                                 currentDownload.downloadPath = saveFile.absolutePath
                                 currentDownload.fileSize = originalFileSize
@@ -438,12 +450,14 @@ class SimpleVideoDownloader(
                         Core.child.updateDownloadInDatabase(currentDownload, true)
                         driver.navigate().back()
                         downloadVideo(downloadLink, saveFile)
+                        //originalFileSize = saveFile.length()
                         currentDownload.downloading = false
                         //second time to ensure ui update
                         Core.child.updateDownloadInDatabase(currentDownload, true)
                         if (saveFile.exists() && saveFile.length() >= originalFileSize) {
                             Core.child.incrementDownloadsFinished()
                             writeMessage("Successfully downloaded with ${qualityOption.tag} quality.")
+                            handleSecondVideo()
                             finishEpisode()
                         }
                     }
@@ -455,14 +469,190 @@ class SimpleVideoDownloader(
                         true
                     )
                     logError(
-                        "Failed to download. Retrying...",
+                        "Failed to download video. Retrying...",
                         e,
                         true
                     )
+                    retries++
                 }
             }
         }
         killDriver()
+    }
+
+    private suspend fun handleSecondVideo(
+    ) = withContext(Dispatchers.IO) {
+        val qualities = qualityAndDownloads.filter { it.secondFrame }.toMutableList()
+        if (qualities.isEmpty()) {
+            return@withContext
+        }
+        writeMessage("First video download is complete. Now downloading the second video.")
+        var retries = 0
+        var downloadLink = ""
+        var qualityOption = temporaryQuality ?: Quality.qualityForTag(
+            Defaults.QUALITY.string()
+        )
+        val series = seriesForSlug(
+            currentEpisode.seriesSlug
+        )
+        val episodeName = currentEpisode.name.fixForFiles() + "-01"
+        val downloadFolderPath = Defaults.SAVE_FOLDER.string()
+        val seasonFolder = if (Defaults.SEPARATE_SEASONS.boolean())
+            Tools.findSeasonFromEpisode(episodeName) else null
+        var saveFolder = File(
+            downloadFolderPath + File.separator
+                    + (series?.name?.fixForFiles() ?: "NoSeries")
+                    + if (seasonFolder != null) (File.separator + seasonFolder + File.separator) else ""
+        )
+        if (!saveFolder.exists() && !saveFolder.mkdirs()) {
+            writeMessage(
+                "Unable to create series save folder: ${saveFolder.absolutePath} " +
+                        "Defaulting to $downloadFolderPath/NoSeries"
+            )
+            saveFolder = File(downloadFolderPath + File.separator + "NoSeries")
+        }
+        val extraQualityName = if (qualityOption != Quality.LOW)
+            " (${qualityOption.tag})" else ""
+        val saveFile = File(
+            saveFolder.absolutePath + File.separator
+                    + "$episodeName$extraQualityName.mp4"
+        )
+        var currentDownload = downloadForNameAndQuality(
+            episodeName,
+            qualityOption
+        )
+        while (Core.child.isRunning) {
+            try {
+                if (retries > Constants.maxRetries) {
+                    saveFile.delete()
+                    writeMessage("Reached max retries of ${Constants.maxRetries}. Skipping 2nd video download.")
+                    break
+                }
+                if (qualities.isNotEmpty()) {
+                    qualities.forEach {
+                        if (it.quality == qualityOption) {
+                            downloadLink = it.downloadLink
+                        }
+                    }
+                }
+                if (downloadLink.isNotEmpty()) {
+                    var originalFileSize = fileSize(downloadLink)
+                    if (originalFileSize <= 5000) {
+                        if (retries < 2) {
+                            writeMessage("(2nd) Failed to determine file size. Retrying...")
+                            retries++
+                            continue
+                        } else if (retries in 2..4) {
+                            writeMessage("(2nd) Failed to determine file size. Retrying with a different quality...")
+                            qualities.remove(
+                                qualities.first { it.downloadLink == downloadLink }
+                            )
+                            retries++
+                            continue
+                        }
+                    }
+                    if (currentDownload != null) {
+                        if (currentDownload.downloadPath.isEmpty()
+                            || !File(currentDownload.downloadPath).exists()
+                            || currentDownload.downloadPath != saveFile.absolutePath
+                        ) {
+                            currentDownload.downloadPath = saveFile.absolutePath
+                        }
+                        Core.child.addDownload(currentDownload)
+                        if (currentDownload.isComplete) {
+                            writeMessage("(DB) (2nd) Skipping completed video.")
+                            currentDownload.downloading = false
+                            currentDownload.queued = false
+                            Core.child.updateDownloadInDatabase(currentDownload, true)
+                            break
+                        } else {
+                            currentDownload.queued = true
+                            Core.child.updateDownloadProgress(currentDownload)
+                        }
+                    }
+                    logInfo("(2nd) Successfully found video link with $retries retries.")
+                    if (currentDownload == null) {
+                        currentDownload = Download()
+                        currentDownload.downloadPath = saveFile.absolutePath
+                        currentDownload.name = episodeName
+                        currentDownload.slug = currentEpisode.slug
+                        currentDownload.seriesSlug = currentEpisode.seriesSlug
+                        currentDownload.resolution = qualityOption.resolution
+                        currentDownload.dateAdded = System.currentTimeMillis()
+                        currentDownload.fileSize = 0
+                        currentDownload.queued = true
+                        //todo might have to move this for actual success
+                        Core.child.addDownload(currentDownload)
+                        logInfo("(2nd) Created new download.")
+                    } else {
+                        logInfo("(2nd) Using existing download.")
+                    }
+                    if (saveFile.exists()) {
+                        if (originalFileSize > 0 && saveFile.length() >= originalFileSize) {
+                            writeMessage("(IO) (2nd) Skipping completed video.")
+                            currentDownload.downloadPath = saveFile.absolutePath
+                            currentDownload.fileSize = originalFileSize
+                            currentDownload.downloading = false
+                            currentDownload.queued = false
+                            Core.child.updateDownloadInDatabase(
+                                currentDownload,
+                                true
+                            )
+                            break
+                        }
+                    } else {
+                        try {
+                            val created = saveFile.createNewFile()
+                            if (!created) {
+                                throw Exception("No error thrown.")
+                            }
+                        } catch (e: Exception) {
+                            logError(
+                                "(2nd) Failed to create second video file. Retrying...",
+                                e,
+                                true
+                            )
+                            retries++
+                            continue
+                        }
+                    }
+                    writeMessage("(2nd) Starting download with ${qualityOption.tag} quality.")
+                    currentDownload.queued = false
+                    currentDownload.downloading = true
+                    currentDownload.fileSize = originalFileSize
+                    Core.child.addDownload(currentDownload)
+                    Core.child.updateDownloadInDatabase(currentDownload, true)
+                    downloadVideo(downloadLink, saveFile, currentDownload)
+                    originalFileSize = saveFile.length()
+                    currentDownload.downloading = false
+                    //second time to ensure ui update
+                    Core.child.updateDownloadInDatabase(currentDownload, true)
+                    if (saveFile.exists() && saveFile.length() >= originalFileSize) {
+                        Core.child.incrementDownloadsFinished()
+                        writeMessage("(2nd) Successfully downloaded with ${qualityOption.tag} quality.")
+                        break
+                    }
+                } else {
+                    writeMessage("(2nd) Download link is empty. Retrying...")
+                    retries++
+                }
+            } catch (e: Exception) {
+                if (currentDownload != null) {
+                    currentDownload.queued = true
+                    currentDownload.downloading = false
+                    Core.child.updateDownloadInDatabase(
+                        currentDownload,
+                        true
+                    )
+                }
+                logError(
+                    "(2nd) Failed to download video. Retrying...",
+                    e,
+                    true
+                )
+                retries++
+            }
+        }
     }
 
     private suspend fun detectAvailableResolutions(
@@ -475,9 +665,10 @@ class SimpleVideoDownloader(
         val frameIds = listOf(
             "anime-js-0",
             "cizgi-js-0",
-            "cizgi-video-js-0",
+            //"cizgi-video-js-0", pretty sure this is just the div wrapper
             "anime-js-1"
         )
+        val secondFrameId = "cizgi-js-1"
         var m3u8Mode = false
         val fullLink = slug.slugToLink()
         val qualities = mutableListOf<QualityAndDownload>()
@@ -493,6 +684,7 @@ class SimpleVideoDownloader(
                 )
             }
             var frameLink = ""
+            var secondFrameLink = ""
             val doc = Jsoup.parse(source.data.toString())
             for (id in frameIds) {
                 val iframe = doc.getElementById(id)
@@ -501,7 +693,15 @@ class SimpleVideoDownloader(
                     if (id == "anime-js-1") {
                         m3u8Mode = true
                     }
+                    logInfo("Found frame with id: $id")
                     break
+                }
+            }
+            if (!m3u8Mode) {
+                val iframe = doc.getElementById(secondFrameId)
+                if (iframe != null) {
+                    secondFrameLink = iframe.attr("src")
+                    logInfo("Found second frame with id: $secondFrameId")
                 }
             }
             if (frameLink.isEmpty()) {
@@ -510,6 +710,7 @@ class SimpleVideoDownloader(
                 )
             }
             var sbFrame = StringBuilder()
+            @Suppress("UNUSED")
             for (i in 1..5) {
                 val frameSource = readUrlLines(frameLink)
                 if (frameSource.data != null) {
@@ -517,6 +718,19 @@ class SimpleVideoDownloader(
                 }
                 if (sbFrame.isNotEmpty()) {
                     break
+                }
+            }
+            var sbFrame2 = StringBuilder()
+            if (secondFrameLink.isNotEmpty()) {
+                @Suppress("UNUSED")
+                for (i in 1..5) {
+                    val frameSource = readUrlLines(secondFrameLink)
+                    if (frameSource.data != null) {
+                        sbFrame2 = frameSource.data
+                    }
+                    if (sbFrame2.isNotEmpty()) {
+                        break
+                    }
                 }
             }
             if (sbFrame.isEmpty()) {
@@ -528,19 +742,13 @@ class SimpleVideoDownloader(
             if (m3u8Mode) {
                 var hslLink = ""
                 var domain = ""
-                logInfo("Detected m3u8 frame.")
+                //logInfo("Detected m3u8 frame.")
                 val linkKey = "\"src\": \"ht"
                 for (line in sbFrame.lines()) {
                     if (line.contains(linkKey)) {
                         hslLink = line.substringAfter("\"src\": \"")
                             .substringBeforeLast("\"")
                         domain = hslLink.substringBeforeLast("/")
-                        /*if (hslLink.isNotEmpty() && domain.isNotEmpty()) {
-                            logInfo(
-                                "Found m3u8 link: $hslLink" +
-                                        "\nWith the domain: $domain"
-                            )
-                        }*/
                         break
                     }
                 }
@@ -590,41 +798,96 @@ class SimpleVideoDownloader(
             driver.navigate().to(fullLink)
             val has720 = src.contains("obj720")
             val has1080 = src.contains("obj1080")
-            for (quality in Quality.qualityList(has720, has1080)) {
-                try {
-                    executeJs(
-                        JavascriptHelper.changeUrlToVideoFunction(
-                            functionLink,
-                            quality
+            //timeout just in case it hangs for too long.
+            withTimeout((Defaults.TIMEOUT.int() * 1000).toLong() * 3) {
+                for (quality in Quality.qualityList(has720, has1080)) {
+                    try {
+                        executeJs(
+                            JavascriptHelper.changeUrlToVideoFunction(
+                                functionLink,
+                                quality
+                            )
                         )
-                    )
-                    delay(pageChangeWaitTime)
-                    if (src.contains("404 Not Found")) {
-                        logInfo(
-                            "Failed to find $quality quality link for $slug"
+                        delay(pageChangeWaitTime)
+                        if (src.contains("404 Not Found")) {
+                            logInfo(
+                                "Failed to find $quality quality link for $slug"
+                            )
+                            continue
+                        }
+                        val videoLink = driver.currentUrl
+                        if (videoLink.isNotEmpty()) {
+                            qualities.add(
+                                QualityAndDownload(quality, videoLink)
+                            )
+                            logInfo(
+                                "Found $quality link for $slug"
+                            )
+                            if (quality == priorityQuality) {
+                                break
+                            }
+                        }
+                        driver.navigate().back()
+                        delay(2000)
+                    } catch (e: Exception) {
+                        logError(
+                            "An exception was thrown when looking for quality links.",
+                            e
                         )
                         continue
                     }
-                    val videoLink = driver.currentUrl
-                    if (videoLink.isNotEmpty()) {
-                        qualities.add(
-                            QualityAndDownload(quality, videoLink)
-                        )
-                        logInfo(
-                            "Found $quality link for $slug"
-                        )
-                        if (quality == priorityQuality) {
-                            break
+                }
+            }
+            if (sbFrame2.isNotEmpty()) {
+                val src2 = sbFrame2.toString()
+                val secondLinkIndex1 = src2.indexOf(linkKey1)
+                val secondLinkIndex2 = src2.indexOf(linkKey2)
+                val secondFunctionLink = src2.substring(
+                    secondLinkIndex1 + linkKey1.length, secondLinkIndex2
+                )
+                //idk how to execute the js, so we still have to use selenium.
+                driver.navigate().to(fullLink)
+                val secondHas720 = src2.contains("obj720")
+                val secondHas1080 = src2.contains("obj1080")
+                //timeout just in case it hangs for too long.
+                withTimeout((Defaults.TIMEOUT.int() * 1000).toLong() * 3) {
+                    for (quality in Quality.qualityList(secondHas720, secondHas1080)) {
+                        try {
+                            executeJs(
+                                JavascriptHelper.changeUrlToVideoFunction(
+                                    secondFunctionLink,
+                                    quality
+                                )
+                            )
+                            delay(pageChangeWaitTime)
+                            if (src.contains("404 Not Found")) {
+                                logInfo(
+                                    "(2nd) Failed to find $quality quality link for $slug"
+                                )
+                                continue
+                            }
+                            val videoLink = driver.currentUrl
+                            if (videoLink.isNotEmpty()) {
+                                qualities.add(
+                                    QualityAndDownload(quality, videoLink, true)
+                                )
+                                logInfo(
+                                    "(2nd) Found $quality link for $slug"
+                                )
+                                if (quality == priorityQuality) {
+                                    break
+                                }
+                            }
+                            driver.navigate().back()
+                            delay(2000)
+                        } catch (e: Exception) {
+                            logError(
+                                "(2nd) An exception was thrown when looking for quality links.",
+                                e
+                            )
+                            continue
                         }
                     }
-                    driver.navigate().back()
-                    delay(2000)
-                } catch (e: Exception) {
-                    logError(
-                        "An exception was thrown when looking for quality links.",
-                        e
-                    )
-                    continue
                 }
             }
             if (qualities.isEmpty()) {
@@ -644,63 +907,16 @@ class SimpleVideoDownloader(
         }
     }
 
-    private fun fileSize(link: String): Long {
-        val con = wcoConnection(link)
-        con.requestMethod = "HEAD"
-        con.useCaches = false
-        return con.contentLengthLong
-    }
-
-    private fun downloadVideo(url: String, output: File) {
-        var offset = 0L
-        if (output.exists()) {
-            offset = output.length()
-        }
-        val con = wcoConnection(url)
-        con.setRequestProperty("Range", "bytes=$offset-")
-        val completeFileSize = con.contentLength + offset
-        val buffer = ByteArray(8192)
-        val bis = BufferedInputStream(con.inputStream)
-        val fos = FileOutputStream(output, true)
-        val bos = BufferedOutputStream(fos, buffer.size)
-        var count: Int
-        var total = offset
-        val updater = DownloadUpdater(currentDownload)
-        taskScope.launch { updater.run() }
-        val startTime = System.nanoTime()
-        while (bis.read(buffer).also { count = it } != -1) {
-            if (!Core.child.isRunning) {
-                writeMessage(
-                    "Stopping video download at ${Tools.bytesToString(total)}/${
-                        Tools.bytesToString(
-                            completeFileSize
-                        )
-                    } for: ${currentDownload.name}"
-                )
-                break
-            }
-            total += count.toLong()
-            bos.write(buffer, 0, count)
-            val elapsedTime = System.nanoTime() - startTime
-            val totalTime = (elapsedTime * currentDownload.fileSize) / total
-            val remainingTime = (totalTime - elapsedTime) / 1_000_000_000
-            updater.remainingSeconds = remainingTime.toInt()
-        }
-        updater.running = false
-        bos.flush()
-        bos.close()
-        fos.flush()
-        fos.close()
-        bis.close()
-        con.disconnect()
-    }
-
     /**
      * Movies don't have quality options and are
      * handled on a different website since they're blocked
      * by a paywall.
+     * Simple mode doesn't work since the video player is
+     * loaded with javascript.
      */
-    private suspend fun handleMovie(movie: MovieHandler.Movie) = withContext(Dispatchers.IO) {
+    private suspend fun handleMovie(
+        movie: MovieHandler.Movie
+    ) = withContext(Dispatchers.IO) {
         val downloadFolderPath = Defaults.SAVE_FOLDER.string()
         var saveFolder = File(
             downloadFolderPath + File.separator + "Movies"
@@ -748,13 +964,14 @@ class SimpleVideoDownloader(
         val downloadLink: String
         val videoLinkError: String
         try {
+
             val videoPlayer = driver.findElement(By.xpath("//*[@id=\"my-video\"]/div[2]/video"))
             wait.pollingEvery(Duration.ofSeconds(1))
                 .withTimeout(Duration.ofSeconds(15))
                 .until(ExpectedConditions.attributeToBeNotEmpty(videoPlayer, "src"))
             downloadLink = videoPlayer.getAttribute("src")
             videoLinkError = videoPlayer.getAttribute("innerHTML")
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             writeMessage(
                 """
                     Failed to find video player for movie: $link
@@ -766,15 +983,15 @@ class SimpleVideoDownloader(
         }
         if (downloadLink.isEmpty()) {
             if (videoLinkError.isNotEmpty()) {
-                logInfo("Empty link source: \n${videoLinkError.trim()}")
+                logInfo("Movie mode empty link source: \n${videoLinkError.trim()}")
             }
             writeMessage(
-                "Failed to find video link for ${movie.slug.slugToLink()}. Retrying..."
+                "Failed to find video link for movie: ${movie.slug.slugToLink()}. Retrying..."
             )
             retries++
             return@withContext
         }
-        logInfo("Successfully found video link with $retries retries.")
+        logInfo("Successfully found movie video link with $retries retries.")
         try {
             if (mCurrentDownload == null) {
                 mCurrentDownload = Download()
@@ -794,13 +1011,13 @@ class SimpleVideoDownloader(
             driver.navigate().to(downloadLink)
             val originalFileSize = fileSize(downloadLink)
             if (originalFileSize <= 5000) {
-                writeMessage("Retrying. Failed to determine file size.")
+                writeMessage("Failed to determine movie file size. Retrying...")
                 retries++
                 return@withContext
             }
             if (saveFile.exists()) {
                 if (saveFile.length() >= originalFileSize) {
-                    writeMessage("[IO Skipping completed video.")
+                    writeMessage("[IO Skipping completed movie.")
                     currentDownload.downloadPath = saveFile.absolutePath
                     currentDownload.fileSize = originalFileSize
                     currentDownload.downloading = false
@@ -817,10 +1034,10 @@ class SimpleVideoDownloader(
                     }
                 } catch (e: Exception) {
                     logError(
-                        "Unable to create video file for ${currentEpisode.name}",
+                        "Unable to create video file for the movie ${currentEpisode.name}",
                         e
                     )
-                    writeMessage("Failed to create new video file for ${currentEpisode.name} Retrying...")
+                    writeMessage("Failed to create new video file for the movie ${currentEpisode.name} Retrying...")
                     retries++
                     return@withContext
                 }
@@ -838,7 +1055,7 @@ class SimpleVideoDownloader(
             Core.child.updateDownloadInDatabase(currentDownload, true)
             if (saveFile.exists() && saveFile.length() >= originalFileSize) {
                 Core.child.incrementDownloadsFinished()
-                writeMessage("Successfully downloaded: $episodeName")
+                writeMessage("Successfully downloaded movie: $episodeName")
                 finishEpisode()
             }
         } catch (e: IOException) {
@@ -847,13 +1064,13 @@ class SimpleVideoDownloader(
             Core.child.updateDownloadInDatabase(currentDownload, true)
             writeMessage(
                 """
-                   Failed to download $episodeName
+                   Failed to download the movie $episodeName
                    Error: ${e.localizedMessage}
                    Reattempting the download...
                 """.trimIndent()
             )
             logError(
-                "Failed to download $episodeName",
+                "Failed to download the movie $episodeName",
                 e
             )
         }
@@ -863,24 +1080,30 @@ class SimpleVideoDownloader(
         url: String,
         addReferer: Boolean = true
     ): Resource<StringBuilder> = withContext(Dispatchers.IO) {
-        var con: HttpsURLConnection? = null
-        var reader: BufferedReader? = null
-        val sb = StringBuilder()
         try {
-            con = wcoConnection(url, false, addReferer)
-            reader = con.inputStream.bufferedReader()
-            reader.readLines().forEach {
-                sb.append(it).append("\n")
+            withTimeout((Defaults.TIMEOUT.int() * 1000).toLong()) {
+                var con: HttpsURLConnection? = null
+                var reader: BufferedReader? = null
+                val sb = StringBuilder()
+                try {
+                    con = wcoConnection(url, false, addReferer)
+                    reader = con.inputStream.bufferedReader()
+                    reader.readLines().forEach {
+                        sb.append(it).append("\n")
+                    }
+                    return@withTimeout Resource.Success(sb)
+                } catch (e: Exception) {
+                    return@withTimeout Resource.Error(e)
+                } finally {
+                    try {
+                        con?.disconnect()
+                        reader?.close()
+                    } catch (_: Exception) {
+                    }
+                }
             }
-            return@withContext Resource.Success(sb)
-        } catch (e: Exception) {
-            return@withContext Resource.Error(e)
-        } finally {
-            try {
-                con?.disconnect()
-                reader?.close()
-            } catch (_: Exception) {
-            }
+        } catch (_: TimeoutCancellationException) {
+            return@withContext Resource.Error("Timed out.")
         }
     }
 
@@ -912,6 +1135,61 @@ class SimpleVideoDownloader(
         con.connectTimeout = Defaults.TIMEOUT.int() * 1000
         con.readTimeout = Defaults.TIMEOUT.int() * 1000
         return con
+    }
+
+    private fun fileSize(link: String): Long {
+        val con = wcoConnection(link)
+        con.requestMethod = "HEAD"
+        con.useCaches = false
+        return con.contentLengthLong
+    }
+
+    private fun downloadVideo(
+        url: String,
+        output: File,
+        download: Download = currentDownload
+    ) {
+        var offset = 0L
+        if (output.exists()) {
+            offset = output.length()
+        }
+        val con = wcoConnection(url)
+        con.setRequestProperty("Range", "bytes=$offset-")
+        val completeFileSize = con.contentLength + offset
+        val buffer = ByteArray(8192)
+        val bis = BufferedInputStream(con.inputStream)
+        val fos = FileOutputStream(output, true)
+        val bos = BufferedOutputStream(fos, buffer.size)
+        var count: Int
+        var total = offset
+        val updater = DownloadUpdater(download)
+        taskScope.launch { updater.run() }
+        val startTime = System.nanoTime()
+        while (bis.read(buffer).also { count = it } != -1) {
+            if (!Core.child.isRunning) {
+                writeMessage(
+                    "Stopping video download at ${Tools.bytesToString(total)}/${
+                        Tools.bytesToString(
+                            completeFileSize
+                        )
+                    } for: ${download.name}"
+                )
+                break
+            }
+            total += count.toLong()
+            bos.write(buffer, 0, count)
+            val elapsedTime = System.nanoTime() - startTime
+            val totalTime = (elapsedTime * download.fileSize) / total
+            val remainingTime = (totalTime - elapsedTime) / 1_000_000_000
+            updater.remainingSeconds = remainingTime.toInt()
+        }
+        updater.running = false
+        bos.flush()
+        bos.close()
+        fos.flush()
+        fos.close()
+        bis.close()
+        con.disconnect()
     }
 
     private val tag get() = if (mCurrentEpisode != null) "[S] [${currentEpisode.name}]" else "[S] [No Episode]"

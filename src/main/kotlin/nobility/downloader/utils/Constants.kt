@@ -12,7 +12,7 @@ object Constants {
     const val maxTimeout = 240
     const val minThreads = 1
     const val maxThreads = 10
-    const val maxRetries = 10
+    const val maxRetries = 5
     const val maxResRetries = 3
     const val maxSimpleRetries = 5
     const val maxM3U8Retries = 3

@@ -7,22 +7,15 @@ import java.util.concurrent.ThreadFactory
 import java.util.concurrent.atomic.AtomicLong
 
 class NamedThreadFactory(
-    daemon: Boolean,
-    group: ThreadGroup?,
-    namePrefix: String,
+    private val daemon: Boolean,
+    private val group: ThreadGroup?,
+    private val namePrefix: String,
     uncaughtExceptionHandler: Thread.UncaughtExceptionHandler?
 ) : ThreadFactory {
-    private val daemon: Boolean
 
-    private val count: AtomicLong
-
-    private val group: ThreadGroup?
-
-    private val namePrefix: String
+    private val count = AtomicLong()
 
     private val uncaughtExceptionHandler: Thread.UncaughtExceptionHandler
-
-    constructor(namePrefix: String) : this(false, namePrefix)
 
     @JvmOverloads
     constructor(
@@ -32,10 +25,6 @@ class NamedThreadFactory(
     ) : this(daemon, null, namePrefix, uncaughtExceptionHandler)
 
     init {
-        this.group = group
-        this.daemon = daemon
-        this.namePrefix = namePrefix
-        this.count = AtomicLong()
         this.uncaughtExceptionHandler = uncaughtExceptionHandler ?: DefaultUncaughtExceptionHandler.INSTANCE
     }
 
@@ -54,7 +43,7 @@ class NamedThreadFactory(
         }
 
         companion object {
-            internal val INSTANCE: DefaultUncaughtExceptionHandler = DefaultUncaughtExceptionHandler()
+            val INSTANCE: DefaultUncaughtExceptionHandler = DefaultUncaughtExceptionHandler()
         }
     }
 

@@ -24,8 +24,11 @@ open class ObjectPool<T>(
             "globalPoolCount is not a power of 2: %d", globalPoolCount
         )
 
-        val pools: Array<GlobalPool<T>> =
-            java.lang.reflect.Array.newInstance(GlobalPool::class.java, globalPoolCount) as Array<GlobalPool<T>>
+        @Suppress("UNCHECKED_CAST")
+        val pools: Array<GlobalPool<T>> = java.lang.reflect.Array.newInstance(
+            GlobalPool::class.java,
+            globalPoolCount
+        ) as Array<GlobalPool<T>>
         for (i in 0 until globalPoolCount) {
             val identity = type.simpleName + "-GlobalPool-" + i
             val scopedIdentity = ScopedIdentity(identity, objectPoolIdentity)
@@ -49,7 +52,7 @@ open class ObjectPool<T>(
         // lock op
         val blocks: List<Block<T>> = globalPool.allocateBlock(poolConfig.blocksOfInitialLocalPool())
 
-        return LocalPool<T>(
+        return LocalPool(
             ScopedIdentity(identity, globalPool.scopedIdentity), globalPool,
             blocksPerReallocate, slotsPerLink, slotsOfInitialCoterie, pooledObjFactory, blocks, poolMetric
         )

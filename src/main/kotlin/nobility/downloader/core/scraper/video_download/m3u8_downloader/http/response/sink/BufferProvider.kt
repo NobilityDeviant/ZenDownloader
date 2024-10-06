@@ -34,7 +34,6 @@ interface BufferProvider : SinkLifeCycle {
     }
 
     class CoteriePoolBufferProvider internal constructor(
-        private val identity: String,
         private val coteriePoolSupplier: Supplier<CoteriePool<ByteBuffer>>
     ) : BufferProvider {
 
@@ -86,9 +85,7 @@ interface BufferProvider : SinkLifeCycle {
             identity: ScopedIdentity
         ): BufferProvider {
             Preconditions.checkNotNull(identity)
-            return CoteriePoolBufferProvider(
-                identity.fullIdentity
-            ) { bufferPool.allocateCoterie(identity) }
+            return CoteriePoolBufferProvider { bufferPool.allocateCoterie(identity) }
         }
 
         fun localPoolBuffer(bufferPool: ByteBufferPool): BufferProvider {

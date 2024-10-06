@@ -11,7 +11,7 @@ import java.nio.charset.StandardCharsets
 
 class M3u8Resolver(
     val m3u8Uri: URI,
-    val requestConfigStrategy: M3u8HttpRequestConfigStrategy,
+    private val requestConfigStrategy: M3u8HttpRequestConfigStrategy,
     val bytesResponseGetter: (URI, HttpRequestConfig?) -> ByteBuffer
 ) {
     // ----------- result ------------ //
@@ -47,8 +47,7 @@ class M3u8Resolver(
                 val keyFormat = key.keyFormat
                 val keyMethod = "AES-128"
                 val keyBytes = ByteArray(16)
-                val requestConfig = if (keyUri != null)
-                    getConfig(M3u8HttpRequestType.REQ_FOR_KEY, keyUri) else null
+                val requestConfig = getConfig(M3u8HttpRequestType.REQ_FOR_KEY, keyUri)
 
                 val byteBuffer = bytesResponseGetter(keyUri, requestConfig)
                 if (byteBuffer.remaining() >= 16) {
@@ -83,7 +82,7 @@ class M3u8Resolver(
         return result
     }
 
-    fun sequenceToBytes(sequence: Int): ByteArray {
+    private fun sequenceToBytes(sequence: Int): ByteArray {
         Preconditions.checkArgument(sequence >= 0)
         return ByteArray(16)
     }
@@ -189,7 +188,7 @@ class M3u8Resolver(
             // sequence
             if (mLine.startsWith("#EXT-X-MEDIA-SEQUENCE")) {
                 val strAry = mLine.split(":".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
-                if (strAry.size == 2 && strAry[1].length > 0) {
+                if (strAry.size == 2 && strAry[1].isNotEmpty()) {
                     sequenceNumber = strAry[1].trim { it <= ' ' }.toInt()
                 }
                 continue
@@ -219,11 +218,11 @@ class M3u8Resolver(
                         && variantStreamInf.substring(index + 1).also { attrString = it }.isNotEmpty()
                     ) {
                         val attrAry = attrString.split(",".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
-                        if (attrAry.size > 0) {
+                        if (attrAry.isNotEmpty()) {
                             for (i in attrAry.indices) {
                                 attrAry[i] = attrAry[i].trim { it <= ' ' }
                                 val attr = attrAry[i].split("=".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
-                                if (attr.size == 2 && attr[1].length > 0) {
+                                if (attr.size == 2 && attr[1].isNotEmpty()) {
                                     attrMap[attr[0].trim { it <= ' ' }] = removeQuotes(attr[1])
                                 }
                             }
@@ -246,7 +245,7 @@ class M3u8Resolver(
                         && extInf.substring(index + 1).also { attrString = it }.isNotEmpty()
                     ) {
                         val attrAry = attrString.split(",".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
-                        if (attrAry.size > 0) {
+                        if (attrAry.isNotEmpty()) {
                             durationInSeconds = attrAry[0].trim { it <= ' ' }.toDouble()
                         }
                     }
@@ -341,7 +340,7 @@ class M3u8Resolver(
                 for (i in attrAry.indices) {
                     attrAry[i] = attrAry[i].trim { it <= ' ' }
                     val attr = attrAry[i].split("=".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
-                    if (attr.size == 2 && attr[1].length > 0) {
+                    if (attr.size == 2 && attr[1].isNotEmpty()) {
                         val attrName = attr[0].trim { it <= ' ' }
                         val remove = removeQuotes(attr[1])
                         if (attrName.startsWith("METHOD")) {

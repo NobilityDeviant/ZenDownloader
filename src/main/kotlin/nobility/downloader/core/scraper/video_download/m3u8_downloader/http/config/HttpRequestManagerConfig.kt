@@ -123,7 +123,7 @@ class HttpRequestManagerConfig private constructor(
             return this
         }
 
-        fun setTimeoutMillis(timeout: Long): Builder {
+        private fun setTimeoutMillis(timeout: Long): Builder {
             Preconditions.checkPositive(timeout, "timeoutMillis")
             this.socketTimeoutMills = timeout
             this.connectTimeoutMills = timeout

@@ -44,7 +44,6 @@ import javax.net.ssl.SSLContext
 import javax.net.ssl.TrustManager
 import javax.net.ssl.X509TrustManager
 
-//todo launch the exe after download
 class UpdateWindow(
     private val justCheck: Boolean = false
 ) {
@@ -365,7 +364,7 @@ class UpdateWindow(
                         
                         ${downloadedUpdate.absolutePath}
                          
-                        Press the "Finish" button to shutdown the app and open the folder.
+                        Press the "Finish" button to shutdown the app and open the file or folder.
                         You can also press "Continue" to close this window and keep the app running.
                     """.trimIndent(),
                     "Download Complete",
@@ -436,7 +435,7 @@ class UpdateWindow(
                 val message = result.message
                 FrogLog.logError(
                     "Failed to check for updates. " +
-                            if (!message.isNullOrEmpty()) "$message" else ""
+                            if (!message.isNullOrEmpty()) message else ""
                 )
                 return@withContext
             }
@@ -592,7 +591,7 @@ class UpdateWindow(
             val sc = SSLContext.getInstance("TLS")
             sc.init(null, trustAllCerts, SecureRandom())
             HttpsURLConnection.setDefaultSSLSocketFactory(sc.socketFactory)
-        } catch (ignored: Exception) {
+        } catch (_: Exception) {
         }
     }
 

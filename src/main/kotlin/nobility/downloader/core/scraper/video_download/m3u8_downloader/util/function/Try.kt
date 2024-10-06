@@ -76,7 +76,11 @@ interface Try<T> : Serializable {
         return this
     }
 
-    fun <X : Throwable?> onFailure(exceptionType: Class<X>, action: Consumer<in X>): Try<T>? {
+    @Suppress("UNCHECKED_CAST")
+    fun <X : Throwable?> onFailure(
+        exceptionType: Class<X>,
+        action: Consumer<in X>
+    ): Try<T>? {
         Objects.requireNonNull(exceptionType, "exceptionType is null")
         Objects.requireNonNull(action, "action is null")
         if (isFailure && exceptionType.isAssignableFrom(cause.javaClass)) {
@@ -93,10 +97,12 @@ interface Try<T> : Serializable {
         return this
     }
 
+    @Suppress("UNCHECKED_CAST")
     fun orElse(other: Try<out T>): Try<T> {
         return if (isSuccess) this else other as Try<T>
     }
 
+    @Suppress("UNCHECKED_CAST")
     fun orElse(supplier: Supplier<out Try<out T>>): Try<T> {
         return if (isSuccess) this else supplier.get() as Try<T>
     }
@@ -141,6 +147,7 @@ interface Try<T> : Serializable {
         return this
     }
 
+    @Suppress("UNCHECKED_CAST")
     fun <X : Throwable?> recover(
         exceptionType: Class<X>,
         f: Function<in X, out T>
@@ -171,6 +178,7 @@ interface Try<T> : Serializable {
         }
     }
 
+    @Suppress("UNCHECKED_CAST")
     fun <X : Throwable> recoverWith(exceptionType: Class<X>, f: Function<in X, Try<out T>>): Try<T> {
         Objects.requireNonNull(exceptionType, "exceptionType is null")
         Objects.requireNonNull(f, "f is null")
@@ -196,6 +204,7 @@ interface Try<T> : Serializable {
         else this
     }
 
+    @Suppress("UNCHECKED_CAST")
     fun recoverWith(
         f: Function<in Throwable, out Try<out T>>): Try<T> {
         Objects.requireNonNull(f, "f is null")
@@ -248,7 +257,7 @@ interface Try<T> : Serializable {
             return Objects.hashCode(value)
         }
 
-        fun stringPrefix(): String {
+        private fun stringPrefix(): String {
             return "Success"
         }
 
@@ -257,6 +266,7 @@ interface Try<T> : Serializable {
         }
 
         companion object {
+            @Suppress("warnings")
             private const val serialVersionUID = 1L
         }
     }
@@ -299,6 +309,7 @@ interface Try<T> : Serializable {
         }
 
         companion object {
+            @Suppress("warnings")
             private const val serialVersionUID = 1L
         }
     }
@@ -346,6 +357,7 @@ interface Try<T> : Serializable {
             return Failure(exception)
         }
 
+        @Suppress("UNCHECKED_CAST")
         fun <T> narrow(t: Try<out T>): Try<T> {
             return t as Try<T>
         }
@@ -357,10 +369,12 @@ interface Try<T> : Serializable {
                     || throwable is VirtualMachineError)
         }
 
+        @Suppress("UNCHECKED_CAST")
         fun <T : Throwable, R> sneakyThrow(t: Throwable): R {
             throw t as T
         }
 
+        @Suppress("warnings")
         const val serialVersionUID: Long = 1L
     }
 }

@@ -8,23 +8,21 @@ import java.util.function.IntUnaryOperator
 
 class CoteriePool<T>(
     val identity: ScopedIdentity,
-    val localPool: LocalPool<T>,
-    val claimPlaner: IntUnaryOperator,
-    val pooledObjFactory: PooledObjFactory<T>,
+    private val localPool: LocalPool<T>,
+    private val claimPlaner: IntUnaryOperator,
+    private val pooledObjFactory: PooledObjFactory<T>,
     slots: Collection<Slot<T>?>,
-    val poolMetric: PoolMetric
+    private val poolMetric: PoolMetric
 ) {
     private var claimCount = 0
     private val recycler: Recycler<T>
     private val freeList: ConcurrentLinkedDeque<Slot<T>>
 
     init {
-
-        val freeSlots: ConcurrentLinkedDeque<Slot<T>>
-        if (slots.isEmpty()) {
-            freeSlots = ConcurrentLinkedDeque<Slot<T>>()
+        val freeSlots = if (slots.isEmpty()) {
+            ConcurrentLinkedDeque<Slot<T>>()
         } else {
-            freeSlots = ConcurrentLinkedDeque<Slot<T>>(slots)
+            ConcurrentLinkedDeque<Slot<T>>(slots)
         }
         this.freeList = freeSlots
         this.recycler = Recycler { slot: Slot<T> -> this.deallocate(slot) }
@@ -55,7 +53,7 @@ class CoteriePool<T>(
               //  log.debug("claim slots from localPool, expect={}, actual={}: {}", expect, actual, getIdentity())
             //}
 
-            poolMetric.recordClaimFromLocalPool(identity, execClaim, expect, actual)
+            poolMetric.recordClaimFromLocalPool(identity)
             slot = slots.removeAt(actual - 1)
             freeList.addAll(slots)
         }
@@ -69,7 +67,7 @@ class CoteriePool<T>(
         return slot
     }
 
-    fun deallocate(slot: Slot<T>) {
+    private fun deallocate(slot: Slot<T>) {
         val internalGet = slot.internalGet()
         if (internalGet != null) {
             pooledObjFactory.passivate(internalGet)

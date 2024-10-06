@@ -4,6 +4,8 @@ import nobility.downloader.core.scraper.video_download.m3u8_downloader.util.Coll
 import nobility.downloader.core.scraper.video_download.m3u8_downloader.util.Preconditions
 import org.apache.commons.collections4.CollectionUtils
 import org.jctools.queues.SpscUnboundedArrayQueue
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 import java.io.IOException
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.atomic.AtomicReference
@@ -11,7 +13,7 @@ import java.util.function.Consumer
 
 class AsyncSink(
     val identity: String,
-    val executor: Consumer<Runnable>
+    private val executor: Consumer<Runnable>
 ) : SinkLifeCycle {
 
     private val sinkEventRunner = SinkEventRunner()
@@ -28,11 +30,11 @@ class AsyncSink(
     @Throws(IOException::class)
     fun submitAsyncSinkTask(sinkTask: SinkTask?) {
         checkAsyncIOException()
-        //val size = sinkEventRunner.submitSinkTask(sinkTask)
-        //if (size >= 100) {
-            // maybe there's something wrong, log for clues
-            //log.warn("too much pending event, size={}, identity={}", size, identity)
-        //}
+        val size = sinkEventRunner.submitSinkTask(sinkTask)
+        if (size >= 100) {
+            //maybe there's something wrong, log for clues
+            log.warn("too much pending event, size={}, identity={}", size, identity)
+        }
         if (sinkEventRunner.tryReady()) {
             executor.accept(this.sinkEventRunner)
         }
@@ -51,9 +53,9 @@ class AsyncSink(
     @Throws(IOException::class)
     private fun checkAsyncIOException() {
         if (CollectionUtils.isNotEmpty(this.asyncExceptions)) {
-            val ioException: IOException = IOException(String.format("async write catch IOException: %s", identity))
+            val ioException = IOException(String.format("async write catch IOException: %s", identity))
             val exceptions: List<Throwable?> = CollUtil.newArrayList<Throwable>(this.asyncExceptions)
-            asyncExceptions.removeAll(exceptions)
+            asyncExceptions.removeAll(exceptions.toSet())
             exceptions.forEach(Consumer { exception: Throwable? -> ioException.addSuppressed(exception) })
             throw ioException
         }
@@ -71,21 +73,17 @@ class AsyncSink(
     private inner class SinkEventRunner : Runnable {
         private val status = AtomicReference(State.IDLE)
 
-        private val sinkTaskQueue: SpscUnboundedArrayQueue<SinkTask>
-
-        init {
-            this.sinkTaskQueue = SpscUnboundedArrayQueue<SinkTask>(1 shl 4)
-        }
+        private val sinkTaskQueue = SpscUnboundedArrayQueue<SinkTask>(1 shl 4)
 
         override fun run() {
             try {
                 if (!status.compareAndSet(State.READY, State.RUNNING)) {
-                    //log.warn("withdraw execute, update stata failed")
+                    log.warn("withdraw execute, update stata failed")
                     return
                 }
                 doSink()
             } catch (th: Throwable) {
-                //log.error(th.message, th)
+                log.error(th.message, th)
             } finally {
                 status.set(State.IDLE)
             }
@@ -127,11 +125,15 @@ class AsyncSink(
         }
 
         fun havePendingTasks(): Boolean {
-            return !sinkTaskQueue.isEmpty()
+            return !sinkTaskQueue.isEmpty
         }
     }
 
     enum class State {
         IDLE, READY, RUNNING
+    }
+
+    companion object {
+        val log: Logger = LoggerFactory.getLogger(AsyncSink::class.java)
     }
 }

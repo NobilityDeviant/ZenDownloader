@@ -21,6 +21,7 @@ fun interface CheckedConsumer<T> {
         }
     }
 
+    @Suppress("UNUSED")
     fun andThen(after: CheckedConsumer<in T>): CheckedConsumer<T>? {
         Objects.requireNonNull(after, "after is null")
         return CheckedConsumer { t: T ->
@@ -34,6 +35,7 @@ fun interface CheckedConsumer<T> {
             return methodReference
         }
 
+        @Suppress("UNCHECKED_CAST")
         fun <T : Throwable, R> sneakyThrow(t: Throwable): R {
             throw t as T
         }

@@ -32,11 +32,14 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import nobility.downloader.core.Core
+import nobility.downloader.core.Core.Companion.randomSeries
+import nobility.downloader.core.Core.Companion.randomSeries2
 import nobility.downloader.core.entities.data.SeriesIdentity
 import nobility.downloader.ui.components.defaultButton
 import nobility.downloader.ui.components.defaultTextField
 import nobility.downloader.ui.components.tooltipIconButton
 import nobility.downloader.ui.windows.ConsoleWindow
+import nobility.downloader.utils.AppInfo
 import nobility.downloader.utils.Constants.randomSeriesRowHeight
 import nobility.downloader.utils.ImageUtils
 import nobility.downloader.utils.Tools
@@ -122,8 +125,8 @@ fun downloaderUi() {
         }
     ) { padding ->
 
-        val randomSeries = remember { Core.randomSeries }
-        val randomSeries2 = remember { Core.randomSeries2 }
+        //val randomSeries = remember { Core.randomSeries }
+        //val randomSeries2 = remember { Core.randomSeries2 }
         val rowInteraction = remember { MutableInteractionSource() }
         val isHovering by rowInteraction.collectIsHoveredAsState()
 
@@ -136,36 +139,6 @@ fun downloaderUi() {
                 val seriesStateList = rememberScrollState()
                 val seriesStateList2 = rememberScrollState()
                 val coroutineScope = rememberCoroutineScope()
-                LaunchedEffect(Unit) {
-                    delay(5000)
-                    while (isActive) {
-                        if (isHovering) {
-                            delay(5000)
-                            continue
-                        }
-                        if (seriesStateList.canScrollForward) {
-                            seriesStateList.animateScrollBy(150f)
-                        } else if (seriesStateList.canScrollBackward) {
-                            seriesStateList.animateScrollTo(0)
-                        }
-                        delay(3000)
-                    }
-                }
-                LaunchedEffect(Unit) {
-                    delay(6000)
-                    while (isActive) {
-                        if (isHovering) {
-                            delay(5000)
-                            continue
-                        }
-                        if (seriesStateList2.canScrollForward) {
-                            seriesStateList2.animateScrollBy(150f)
-                        } else if (seriesStateList2.canScrollBackward) {
-                            seriesStateList2.animateScrollTo(0)
-                        }
-                        delay(4000)
-                    }
-                }
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(1.dp),
                     modifier = Modifier.fillMaxWidth()
@@ -282,123 +255,39 @@ fun downloaderUi() {
                         }
                     }
                 }
-                /*LazyRow(
-                    horizontalArrangement = Arrangement.spacedBy(1.dp),
-                    modifier = Modifier.fillMaxWidth()
-                        .height(randomSeriesRowHeight)
-                        .padding(top = 10.dp)
-                        .draggable(
-                            state = rememberDraggableState {
-                                coroutineScope.launch {
-                                    seriesStateList.scrollBy(-it)
-                                    seriesStateList2.scrollBy(-it)
-                                }
-                            },
-                            orientation = Orientation.Horizontal
-                        ).hoverable(rowInteraction),
-                    state = seriesStateList
-                ) {
-                    items(randomSeries, key = { it.name }) {
-                        val interaction = remember { MutableInteractionSource() }
-                        val hovered by interaction.collectIsHoveredAsState()
-                        val clicked by interaction.collectIsPressedAsState()
-                        val size = if (hovered && !clicked)
-                            125.dp
-                        else
-                            randomSeriesRowHeight
-                        Box(
-                            contentAlignment = Alignment.Center,
-                            modifier = Modifier.size(
-                                animateDpAsState(
-                                    size,
-                                    spring(0.7f, Spring.StiffnessMediumLow)
-                                ).value
-                            ).background(
-                                Color.Transparent,
-                                RectangleShape
-                            ).border(
-                                1.dp,
-                                color = if (it.seriesIdentity == SeriesIdentity.CARTOON)
-                                    MaterialTheme.colorScheme.onSurface
-                                else
-                                    MaterialTheme.colorScheme.primary,
-                                RectangleShape
-                            ).hoverable(interaction)
-                        ) {
-                            val bitmap by remember {
-                                mutableStateOf(ImageUtils.loadImageFromFilePath(it.imagePath))
+                @Suppress("KotlinConstantConditions")
+                if (AppInfo.AUTO_SCROLL_RANDOM_SERIES) {
+                    LaunchedEffect(Unit) {
+                        delay(5000)
+                        while (isActive) {
+                            if (isHovering) {
+                                delay(5000)
+                                continue
                             }
-                            Image(
-                                bitmap = bitmap,
-                                contentDescription = it.name,
-                                contentScale = ContentScale.FillBounds,
-                                modifier = Modifier.fillMaxSize()
-                                    .onClick {
-                                        Core.openDownloadConfirm(it.asToDownload)
-                                    }.pointerHoverIcon(PointerIcon.Hand)
-                            )
+                            if (seriesStateList.canScrollForward) {
+                                seriesStateList.animateScrollBy(150f)
+                            } else if (seriesStateList.canScrollBackward) {
+                                seriesStateList.animateScrollTo(0)
+                            }
+                            delay(3000)
                         }
-
+                    }
+                    LaunchedEffect(Unit) {
+                        delay(6000)
+                        while (isActive) {
+                            if (isHovering) {
+                                delay(5000)
+                                continue
+                            }
+                            if (seriesStateList2.canScrollForward) {
+                                seriesStateList2.animateScrollBy(150f)
+                            } else if (seriesStateList2.canScrollBackward) {
+                                seriesStateList2.animateScrollTo(0)
+                            }
+                            delay(4000)
+                        }
                     }
                 }
-                LazyRow(
-                    horizontalArrangement = Arrangement.spacedBy(1.dp),
-                    modifier = Modifier.fillMaxWidth()
-                        .height(randomSeriesRowHeight)
-                        .padding(1.dp)
-                        .draggable(
-                            state = rememberDraggableState {
-                                coroutineScope.launch {
-                                    seriesStateList.scrollBy(-it)
-                                    seriesStateList2.scrollBy(-it)
-                                }
-                            },
-                            orientation = Orientation.Horizontal
-                        ).hoverable(rowInteraction),
-                    state = seriesStateList2
-                ) {
-                    items(randomSeries2, key = { it.name }) {
-                        val interaction = remember { MutableInteractionSource() }
-                        val hovered by interaction.collectIsHoveredAsState()
-                        val clicked by interaction.collectIsPressedAsState()
-                        val size = if (hovered && !clicked)
-                            125.dp
-                        else
-                            randomSeriesRowHeight
-                        Box(
-                            contentAlignment = Alignment.Center,
-                            modifier = Modifier.size(
-                                animateDpAsState(
-                                    size,
-                                    spring(0.7f, Spring.StiffnessMediumLow)
-                                ).value
-                            ).background(
-                                Color.Transparent,
-                                RectangleShape
-                            ).border(
-                                1.dp,
-                                color = if (it.seriesIdentity == SeriesIdentity.CARTOON)
-                                    MaterialTheme.colorScheme.onSurface
-                                else
-                                    MaterialTheme.colorScheme.primary,
-                                RectangleShape
-                            ).hoverable(interaction)
-                        ) {
-                            val bitmap by remember {
-                                mutableStateOf(ImageUtils.loadImageFromFilePath(it.imagePath))
-                            }
-                            Image(
-                                bitmap = bitmap,
-                                contentDescription = it.name,
-                                contentScale = ContentScale.FillBounds,
-                                modifier = Modifier.fillMaxSize()
-                                    .onClick {
-                                        Core.openDownloadConfirm(it.asToDownload)
-                                    }.pointerHoverIcon(PointerIcon.Hand)
-                            )
-                        }
-                    }
-                }*/
             }
             Spacer(Modifier.weight(1f))
             Box(

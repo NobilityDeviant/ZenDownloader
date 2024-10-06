@@ -9,15 +9,14 @@ import java.nio.channels.FileChannel
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.StandardOpenOption
-import java.util.*
 import java.util.concurrent.CompletableFuture
 import javax.crypto.Cipher
 
 class UtilitySinkHandler(
-    val filePath: Path,
-    val bufferProvider: BufferProvider,
-    val asyncSink: AsyncSink?,
-    val decipherable: Decipherable?
+    private val filePath: Path,
+    private val bufferProvider: BufferProvider,
+    private val asyncSink: AsyncSink?,
+    private val decipherable: Decipherable?
 ) : SinkHandler {
 
     private val sinkLifeCycles: List<SinkLifeCycle> = listOfNotNull(
@@ -47,7 +46,7 @@ class UtilitySinkHandler(
             if (null != this.fileChannel) {
                 try {
                     fileChannel?.close()
-                } catch (ignored: Exception) {}
+                } catch (_: Exception) {}
             }
             Files.deleteIfExists(this.filePath)
             if (null != bufferWrapper) {
@@ -181,7 +180,7 @@ class UtilitySinkHandler(
                 bufferWrapper!!.release()
                 bufferWrapper = null
             }
-        } catch (ex: IOException) {
+        } catch (_: IOException) {
             // only print
             //log.error("dispose exception: " + filePath.fileName, ex)
         }
@@ -243,7 +242,7 @@ class UtilitySinkHandler(
             var spin = 1
             val maxSpin = 20
             while (true) {
-                if (!channel.isOpen()) {
+                if (!channel.isOpen) {
                     break
                 }
                 channel.write(buffer)

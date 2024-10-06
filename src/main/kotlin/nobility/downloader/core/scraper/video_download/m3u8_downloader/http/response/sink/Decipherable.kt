@@ -3,6 +3,8 @@ package nobility.downloader.core.scraper.video_download.m3u8_downloader.http.res
 import nobility.downloader.core.scraper.video_download.m3u8_downloader.http.DecryptionKey
 import nobility.downloader.core.scraper.video_download.m3u8_downloader.util.ByteBufferUtil
 import nobility.downloader.core.scraper.video_download.m3u8_downloader.util.Utils
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 import java.io.IOException
 import java.nio.ByteBuffer
 import javax.crypto.Cipher
@@ -23,12 +25,12 @@ class Decipherable(
             if (null != cipher) {
                 try {
                     cipher.doFinal()
-                } catch (ignored: Exception) {
+                } catch (_: Exception) {
                 }
                 this.cipher = null
-                //if (log.isDebugEnabled()) {
-                  //  log.debug("reInit, reset cipher: {}", identity)
-                //}
+                if (log.isDebugEnabled) {
+                    log.debug("reInit, reset cipher: {}", identity)
+                }
             }
             val heapBuffer = this.heapBuffer
             heapBuffer?.clear()
@@ -97,5 +99,9 @@ class Decipherable(
             presetBuffer?.release()
             this.presetBuffer = null
         }
+    }
+
+    companion object {
+        val log: Logger = LoggerFactory.getLogger(Decipherable::class.java)
     }
 }

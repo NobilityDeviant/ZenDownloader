@@ -7,18 +7,12 @@ fun interface CheckedSupplier<R> : Serializable {
     fun get(): R
 
     companion object {
-        fun <R> constant(value: R): CheckedSupplier<R> {
-            return CheckedSupplier<R> { value }
-        }
 
         fun <R> of(methodReference: CheckedSupplier<R>?): CheckedSupplier<R>? {
             return methodReference
         }
 
-        fun <R> narrow(f: CheckedSupplier<out R>): CheckedSupplier<R> {
-            return f as CheckedSupplier<R>
-        }
-
+        @Suppress("warnings")
         const val serialVersionUID: Long = 1L
     }
 }

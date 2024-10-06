@@ -1,10 +1,8 @@
 package nobility.downloader.core.scraper.video_download.m3u8_downloader.util
 
-import nobility.downloader.core.scraper.video_download.m3u8_downloader.support.log.WhiteboardMarkers
 import nobility.downloader.core.scraper.video_download.m3u8_downloader.util.CollUtil.newArrayListWithCapacity
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import org.slf4j.Marker
 import java.io.BufferedReader
 import java.io.File
 import java.io.InputStreamReader
@@ -34,7 +32,7 @@ object VideoUtil {
             if (result is String) {
                 return result
             }
-        } catch (e: ClassNotFoundException) {
+        } catch (_: ClassNotFoundException) {
             // try use ffmpeg from env:PATH
             if (execCommand(mutableListOf("ffmpeg", "-version"))) {
                 return "ffmpeg"
@@ -147,10 +145,9 @@ object VideoUtil {
                 .redirectErrorStream(true)
                 .start()
             var s: String?
-            val processStd: Marker = WhiteboardMarkers.whiteboardMarker
             val stdInput = BufferedReader(InputStreamReader(videoProcess.inputStream))
             while ((stdInput.readLine().also { s = it }) != null) {
-                log.warn(processStd, s)
+                log.warn(s)
             }
 
             val code = videoProcess.waitFor()

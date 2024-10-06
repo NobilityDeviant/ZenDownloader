@@ -56,7 +56,7 @@ class PoolConfig private constructor(
         return this.slotsClaimPlannerOfCoterie
     }
 
-    fun slotsPerChunk(): Int {
+    private fun slotsPerChunk(): Int {
         return this.slotsPerBlock * this.blocksPerChunk
     }
 
@@ -106,7 +106,7 @@ class PoolConfig private constructor(
         private var slotsClaimPlannerOfCoterie: IntUnaryOperator
 
         init {
-            this.slotsClaimPlannerOfCoterie = IntUnaryOperator { execCount: Int -> 2 }
+            this.slotsClaimPlannerOfCoterie = IntUnaryOperator { 2 }
         }
 
         /**
@@ -127,11 +127,6 @@ class PoolConfig private constructor(
         fun blocksPerChunk(blocksPerChunk: Int): Builder {
             Preconditions.checkPositive(blocksPerChunk, "blocksPerChunk")
             this.blocksPerChunk = blocksPerChunk
-            return this
-        }
-
-        fun printMetric(): Builder {
-            this.printMetric = true
             return this
         }
 
@@ -225,7 +220,7 @@ class PoolConfig private constructor(
 
         val DEFAULT: PoolConfig = custom().build()
 
-        fun custom(): Builder {
+        private fun custom(): Builder {
             return Builder()
         }
 

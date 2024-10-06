@@ -14,21 +14,25 @@ import java.util.function.IntUnaryOperator
 
 class LocalPool<T>(
     val identity: ScopedIdentity,
-    val globalPool: GlobalPool<T>,
-    val blocksPerReallocate: Int,
-    val slotsPerLink: Int,
+    private val globalPool: GlobalPool<T>,
+    private val blocksPerReallocate: Int,
+    private val slotsPerLink: Int,
     slotsOfInitialCoterie: Int,
-    val pooledObjFactory: PooledObjFactory<T>,
+    private val pooledObjFactory: PooledObjFactory<T>,
     blocks: List<Block<T>>,
-    val poolMetric: PoolMetric
+    private val poolMetric: PoolMetric
 ) {
     private var totalBlocks: Int
 
     private val owner: Thread
 
-    private val releaseLinkThreshold: Int
+    private val releaseLinkThreshold = slotsPerLink + slotsOfInitialCoterie
 
-    private val slotsOfInitialCoterie: Int
+    //this.blocksPerReallocate = Preconditions.checkPositive(blocksPerReallocate, "blocksPerReallocate")
+    private val slotsOfInitialCoterie = Preconditions.checkNonNegative(
+        slotsOfInitialCoterie,
+        "slotsOfInitialCoterie"
+    )
 
     private val recycler: Recycler<T>
 
@@ -43,9 +47,6 @@ class LocalPool<T>(
     private val freeList: ConcurrentLinkedDeque<Slot<T>>
 
     init {
-        //this.blocksPerReallocate = Preconditions.checkPositive(blocksPerReallocate, "blocksPerReallocate")
-        this.slotsOfInitialCoterie = Preconditions.checkNonNegative(slotsOfInitialCoterie, "slotsOfInitialCoterie")
-        this.releaseLinkThreshold = slotsPerLink + slotsOfInitialCoterie
 
         this.recycler = Recycler { slot: Slot<T> -> this.deallocate(slot) }
         this.freeListSize = LongAdder()
@@ -88,7 +89,7 @@ class LocalPool<T>(
         return slot
     }
 
-    fun deallocate(slot: Slot<T>) {
+    private fun deallocate(slot: Slot<T>) {
         val internalGet = slot.internalGet()
         if (internalGet != null) {
             pooledObjFactory.passivate(internalGet)
@@ -184,25 +185,26 @@ class LocalPool<T>(
     }
 
     fun release(c: List<Slot<T>>) {
-        val slots = c
         val localStack = this.localStack
         val freeList: ConcurrentLinkedDeque<Slot<T>> = this.freeList
         val isLocalThread = Thread.currentThread() === owner
-        val releaseSize = slots.size
+        val releaseSize = c.size
         var stackSize = localStack.size
 
         if (isLocalThread) {
             // try to reduce call freeListSize.sum()
             if ((!freeListLinkState.get() && releaseSize + stackSize < releaseLinkThreshold) && (releaseSize + stackSize + freeListSize.sum()) < releaseLinkThreshold) {
-                slots.forEach(Consumer { e: Slot<T>? -> localStack.offerFirst(e) })
+                c.forEach(Consumer { e: Slot<T> ->
+                    localStack.offerFirst(e)
+                })
                 return
             }
         } else {
             if (freeListLinkState.get() || (releaseSize + freeListSize.sum()) < releaseLinkThreshold) {
                 if (1 == releaseSize) {
-                    slots.forEach(Consumer { e: Slot<T>? -> freeList.offerFirst(e) })
+                    c.forEach(Consumer { e: Slot<T>? -> freeList.offerFirst(e) })
                 } else {
-                    freeList.addAll(slots)
+                    freeList.addAll(c)
                 }
                 freeListSize.add(releaseSize.toLong())
                 return
@@ -222,7 +224,7 @@ class LocalPool<T>(
                     if (slotsPerLink == linkSlots.size) {
                         globalPool.release(Link(linkSlots))
                         //if (log.isDebugEnabled()) {
-                          //  log.debug("release link to globalPool: {}", getIdentity())
+                        //  log.debug("release link to globalPool: {}", getIdentity())
                         //}
                         linkSlots = newArrayDequeWithCapacity(slotsPerLink)
                     }
@@ -231,8 +233,8 @@ class LocalPool<T>(
                 freeListLinkState.compareAndSet(true, false)
             }
 
-            slots.forEach(Consumer { e: Slot<T>? -> localStack.offerFirst(e) })
-            linkSlots.forEach(Consumer { e: Slot<T>? -> localStack.offerLast(e) })
+            c.forEach(Consumer { e: Slot<T> -> localStack.offerFirst(e) })
+            linkSlots.forEach(Consumer { e: Slot<T> -> localStack.offerLast(e) })
             stackSize = localStack.size
             if (stackSize >= slotsPerLink) {
                 var count = stackSize
@@ -244,7 +246,7 @@ class LocalPool<T>(
                     if (slotsPerLink == linkSlots.size) {
                         globalPool.release(Link(linkSlots))
                         //if (log.isDebugEnabled()) {
-                          //  log.debug("release link to globalPool: {}", getIdentity())
+                        //  log.debug("release link to globalPool: {}", getIdentity())
                         //}
                         if (count <= remainingBreak) {
                             break
@@ -270,7 +272,7 @@ class LocalPool<T>(
                 freeListLinkState.compareAndSet(true, false)
                 if (linkSlots.size + releaseSize >= slotsPerLink) {
                     val deque = newArrayDeque<Slot<T>>(linkSlots)
-                    slots.forEach(Consumer { e: Slot<T>? -> deque.addFirst(e) })
+                    c.forEach(Consumer { e: Slot<T> -> deque.addFirst(e) })
 
                     linkSlots = newArrayDequeWithCapacity(slotsPerLink)
                     while (null != (deque.pollLast().also { slot = it })) {
@@ -278,7 +280,7 @@ class LocalPool<T>(
                         if (slotsPerLink == linkSlots.size) {
                             globalPool.release(Link(linkSlots))
                             //if (log.isDebugEnabled()) {
-                              //  log.debug("release link to globalPool: {}", getIdentity())
+                            //  log.debug("release link to globalPool: {}", getIdentity())
                             //}
                             linkSlots = newArrayDequeWithCapacity(slotsPerLink)
                         }
@@ -293,15 +295,15 @@ class LocalPool<T>(
                         }
                     }
                 } else {
-                    linkSlots.addAll(slots)
+                    linkSlots.addAll(c)
                     freeList.addAll(linkSlots)
                     freeListSize.add(linkSlots.size.toLong())
                 }
             } else {
                 if (1 == releaseSize) {
-                    slots.forEach(Consumer { e: Slot<T>? -> freeList.offerFirst(e) })
+                    c.forEach(Consumer { e: Slot<T>? -> freeList.offerFirst(e) })
                 } else {
-                    freeList.addAll(slots)
+                    freeList.addAll(c)
                 }
                 freeListSize.add(releaseSize.toLong())
             }

@@ -30,7 +30,7 @@ object CollUtil {
         return list
     }
 
-    fun <E> newArrayList(elements: Iterator<E>): ArrayList<E> {
+    private fun <E> newArrayList(elements: Iterator<E>): ArrayList<E> {
         val list = newArrayList<E>()
         addAll(list, elements)
         return list

@@ -1,11 +1,7 @@
 package nobility.downloader.core.scraper.video_download.m3u8_downloader.core
 
 import nobility.downloader.core.scraper.video_download.m3u8_downloader.util.CollUtil
-import nobility.downloader.core.scraper.video_download.m3u8_downloader.util.Utils
-import nobility.downloader.core.scraper.video_download.m3u8_downloader.util.Utils.secondsFormat
 import nobility.downloader.utils.Tools
-import java.math.BigDecimal
-import java.math.RoundingMode
 import java.util.concurrent.Future
 import java.util.concurrent.atomic.AtomicLong
 import kotlin.concurrent.Volatile
@@ -14,21 +10,21 @@ import kotlin.math.max
 
 class M3u8ExecutorProgress : Runnable {
 
-    private val out = StringBuilder()
     private val seconds = AtomicLong(0)
     private val m3u8Progresses = CollUtil.newCopyOnWriteArrayList<M3u8Progress>()
 
     override fun run() {
         try {
             doProgress()
-        } catch (ex: Exception) {
+        } catch (_: Exception) {
             //log.error(ex.message, ex)
         }
     }
 
+    @Suppress("warnings")
     private fun doProgress() {
         val seconds = seconds.incrementAndGet()
-        if (m3u8Progresses.isEmpty()) {
+        if (m3u8Progresses.isEmpty) {
             return
         }
         var idx = 0
@@ -37,7 +33,8 @@ class M3u8ExecutorProgress : Runnable {
         val completes = CollUtil.newArrayDeque<M3u8Progress>()
         val removeItems = mutableListOf<M3u8Progress>()
         for (progress in m3u8Progresses) {
-            if (progress.doProgress(++idx, seconds)) {
+            idx++
+            if (progress.doProgress(seconds)) {
                 completes.offer(progress)
             }
             if (idx > limitTableSize) {
@@ -96,17 +93,14 @@ class M3u8ExecutorProgress : Runnable {
          * @return if complete
          */
         fun doProgress(
-            idx: Int,
             sec: Long
         ): Boolean {
 
             if (alreadyEnd()) {
-                val endSeconds = this.endSeconds
-                val failedCount = m3u8Download.getFailedTsDownloads().toInt()
-                val finishedCount = m3u8Download.getFinishedTsDownloads().toInt()
+                //val endSeconds = this.endSeconds
 
-                val nowBytes = nowBytes.get()
-                val avgSpeed = avgSpeed(nowBytes, endSeconds)
+                //val nowBytes = nowBytes.get()
+                //val avgSpeed = avgSpeed(nowBytes, endSeconds)
 
                 return true
             }
@@ -136,16 +130,16 @@ class M3u8ExecutorProgress : Runnable {
             this.lastBytes.set(lastBytes)
             val readBytes = max(0.0, (nowBytes - lastBytes).toDouble()).toLong()
 
-            val speed = speed(readBytes)
-            val avgSpeed = avgSpeed(nowBytes, seconds)
+            //val speed = speed(readBytes)
+            //val avgSpeed = avgSpeed(nowBytes, seconds)
 
             // "idx", "name", "seconds", "speed", "avgSpeed", "progress", "downloadSize", "estimatedTime",
             // "completed", "failed", "reading", "remained"
             val isDone = downloadFuture.isDone
             if (isDone) {
-                val endSeconds = if ((endSeconds.also { endSeconds = it }) > 0) endSeconds else (seconds.also {
-                    this.endSeconds = it
-                })
+                //val endSeconds = if ((endSeconds.also { endSeconds = it }) > 0) endSeconds else (seconds.also {
+                  //  this.endSeconds = it
+                //})
                 return true
             }
 
@@ -172,7 +166,7 @@ class M3u8ExecutorProgress : Runnable {
                 }
             }
 
-            val estimatedTime = if (remainingSeconds > 0) secondsFormat(remainingSeconds) else null
+            //val estimatedTime = if (remainingSeconds > 0) secondsFormat(remainingSeconds) else null
 
             m3u8Download.downloadListener?.downloadProgress(
                 progressPercent,
@@ -184,27 +178,11 @@ class M3u8ExecutorProgress : Runnable {
             return false
         }
 
-        private fun fullRate(): String {
-            return rate(1, 1)
-        }
+        //private fun speed(bytes: Long): String {
+          //  return Utils.bytesFormat(bytes, 3) + "/s"
+        //}
 
-        private fun rate(a: Long, b: Long): String {
-            return if (0L == a || 0L == b) {
-                "0.00%"
-            } else {
-                Utils.rate(a, b).toString() + "%"
-            }
-        }
-
-        private fun bytesFormat(bytes: Long): String {
-            return Utils.bytesFormat(bytes, 3)
-        }
-
-        private fun speed(bytes: Long): String {
-            return Utils.bytesFormat(bytes, 3) + "/s"
-        }
-
-        private fun avgSpeed(nowBytes: Long, seconds: Long): String {
+        /*private fun avgSpeed(nowBytes: Long, seconds: Long): String {
             val bigDecimal = BigDecimal.valueOf(nowBytes)
                 .divide(
                     BigDecimal.valueOf(seconds),
@@ -212,7 +190,7 @@ class M3u8ExecutorProgress : Runnable {
                     RoundingMode.HALF_UP
                 )
             return Utils.bytesFormat(bigDecimal, 3) + "/s"
-        }
+        }*/
 
     }
 }

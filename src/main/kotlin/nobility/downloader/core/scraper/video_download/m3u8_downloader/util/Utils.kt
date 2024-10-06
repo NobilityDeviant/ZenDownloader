@@ -11,7 +11,6 @@ import java.nio.charset.StandardCharsets
 import java.nio.file.*
 import java.security.MessageDigest
 import java.security.NoSuchAlgorithmException
-import java.util.*
 import java.util.function.Function
 import kotlin.experimental.and
 
@@ -100,10 +99,10 @@ object Utils {
         return String.format("%s %sB", decimal, "BKMGTPE"[z])
     }
 
-    fun bytesFormat(bigDecimal: BigDecimal, scale: Int): String {
-        Preconditions.checkNotNull(bigDecimal)
-        return bytesFormat(bigDecimal.toLong(), scale)
-    }
+    //fun bytesFormat(bigDecimal: BigDecimal, scale: Int): String {
+      //  Preconditions.checkNotNull(bigDecimal)
+        //return bytesFormat(bigDecimal.toLong(), scale)
+    //}
 
     fun equals(bigNum1: BigDecimal?, bigNum2: BigDecimal?): Boolean {
         if (bigNum1 === bigNum2) {
@@ -168,7 +167,7 @@ object Utils {
         }
         try {
             uri.toURL()
-        } catch (ex: Exception) {
+        } catch (_: Exception) {
             return false
         }
         return true
@@ -200,27 +199,6 @@ object Utils {
 
     fun <S, T> mapToNullable(`object`: S?, mapper: Function<S, T>): T? {
         return if (`object` != null) mapper.apply(`object`) else null
-    }
-
-    fun rate(a: Long, b: Long): BigDecimal {
-        return BigDecimal.valueOf(a).multiply(BigDecimal.valueOf(100))
-            .divide(BigDecimal.valueOf(b), 3, RoundingMode.HALF_UP)
-    }
-
-    @Throws(IOException::class)
-    fun checkAndCreateDir(dir: Path, dirName: String): Path {
-        Preconditions.checkNotBlank(dirName)
-        if (Files.exists(dir)) {
-            Preconditions.m3u8Check(
-                Files.isDirectory(dir),
-                "%s is not a directory: %s",
-                dirName,
-                dir
-            )
-        } else {
-            Files.createDirectory(dir)
-        }
-        return dir
     }
 
     @Throws(IOException::class)

@@ -157,7 +157,7 @@ class M3u8Executor(
             }
 
             override fun afterReadBytes(size: Int, end: Boolean) {
-                tsDownload.readBytes(size, end)
+                tsDownload.readBytes(size)
             }
 
             override fun afterDownloadComplete() {

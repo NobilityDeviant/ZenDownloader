@@ -74,6 +74,7 @@ class Core {
             if (initialized) {
                 return
             }
+            @Suppress("KotlinConstantConditions")
             if (!AppInfo.DEBUG_MODE) {
                 System.setOut(PrintStream(console))
                 System.setErr(PrintStream(errorConsole))
@@ -94,9 +95,9 @@ class Core {
             try {
                 var tries = 0
                 val series = BoxHelper.allSeriesNoMovies
-                if (series.size >= 50) {
+                if (series.size >= 30) {
                     val randoms = mutableListOf<Series>()
-                    while (randoms.size < 51) {
+                    while (randoms.size < 31) {
                         val random = series.random()
                         if (!randoms.contains(random) && random.imagePath.fileExists()) {
                             randoms.add(random)
@@ -106,8 +107,8 @@ class Core {
                         }
                         tries++
                     }
-                    randomSeries.addAll(randoms.subList(0, 25))
-                    randomSeries2.addAll(randoms.subList(25, 50))
+                    randomSeries.addAll(randoms.subList(0, 15))
+                    randomSeries2.addAll(randoms.subList(15, 30))
                 }
             } catch (_: Exception) {
             }

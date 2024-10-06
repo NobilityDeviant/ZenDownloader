@@ -39,7 +39,7 @@ class TsDownload(
                     finalFilePath,
                     StandardCopyOption.REPLACE_EXISTING
                 )
-            } catch (ex: Exception) {
+            } catch (_: Exception) {
                 //log.error(String.format("move %s to %s error: %s", filePath, finalFilePath, ex.message), ex)
             }
         }
@@ -67,23 +67,27 @@ class TsDownload(
         }
     }
 
-    fun readBytes(size: Int, end: Boolean) {
+    fun readBytes(size: Int) {
         readBytes.getAndAdd(size.toLong())
         m3u8Download.downloadBytes(size)
     }
 
     fun remainingBytes(): Long {
-        if (downloadStage == TsDownloadStage.READING) {
-            val contentLength = this.contentLength
-            return if (contentLength < 0) {
-                contentLength
-            } else {
-                contentLength - readBytes.get()
+        when (downloadStage) {
+            TsDownloadStage.READING -> {
+                val contentLength = this.contentLength
+                return if (contentLength < 0) {
+                    contentLength
+                } else {
+                    contentLength - readBytes.get()
+                }
             }
-        } else if (downloadStage == TsDownloadStage.NEW) {
-            return contentLength
-        } else {
-            return 0
+            TsDownloadStage.NEW -> {
+                return contentLength
+            }
+            else -> {
+                return 0
+            }
         }
     }
 
@@ -102,10 +106,9 @@ class TsDownload(
         if (other !is TsDownload) {
             return false
         }
-        val that = other
-        return uri == that.uri
-                && sequence == that.sequence
-                && m3u8Download == that.m3u8Download
+        return uri == other.uri
+                && sequence == other.sequence
+                && m3u8Download == other.m3u8Download
     }
 
     override fun hashCode(): Int {

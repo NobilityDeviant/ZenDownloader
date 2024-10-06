@@ -1,6 +1,5 @@
 package nobility.downloader.core.scraper.video_download.m3u8_downloader.http.component
 
-import nobility.downloader.core.scraper.video_download.m3u8_downloader.util.Utils
 import org.apache.hc.client5.http.HttpRequestRetryStrategy
 import org.apache.hc.client5.http.protocol.HttpClientContext
 import org.apache.hc.client5.http.utils.DateUtils
@@ -14,7 +13,7 @@ import java.net.NoRouteToHostException
 import java.net.UnknownHostException
 import java.util.*
 
-class CustomHttpRequestRetryStrategy protected constructor(
+open class CustomHttpRequestRetryStrategy protected constructor(
     maxRetries: Int,
     defaultRetryInterval: TimeValue,
     clazzes: Collection<Class<out IOException>>,
@@ -42,12 +41,12 @@ class CustomHttpRequestRetryStrategy protected constructor(
         defaultRetryInterval: TimeValue = TimeValue.ofSeconds(1L)
     ) : this(
         maxRetries, defaultRetryInterval,
-        Arrays.asList(
+        listOf(
             ExplicitlyTerminateIOException::class.java,
             UnknownHostException::class.java,
             NoRouteToHostException::class.java
         ),
-        Arrays.asList<Int>(
+        listOf<Int>(
             HttpStatus.SC_REQUEST_TIMEOUT, HttpStatus.SC_TOO_MANY_REQUESTS,
             HttpStatus.SC_BAD_GATEWAY, HttpStatus.SC_GATEWAY_TIMEOUT
         )
@@ -157,18 +156,6 @@ class CustomHttpRequestRetryStrategy protected constructor(
         return this.defaultRetryInterval
     }
 
-    private fun genIdentity(request: HttpRequest?): String? {
-        if (null == request) {
-            return null
-        }
-        try {
-            val uri = request.uri
-            return Utils.genIdentity(uri)
-        } catch (ignored: Exception) {
-        }
-        return null
-    }
-
     private fun getRetryAfterFormHeader(response: HttpResponse): TimeValue? {
         Objects.requireNonNull(response)
 
@@ -178,7 +165,7 @@ class CustomHttpRequestRetryStrategy protected constructor(
             val value = header.value
             try {
                 retryAfter = TimeValue.ofSeconds(value.toLong())
-            } catch (ignore: NumberFormatException) {
+            } catch (_: NumberFormatException) {
                 val retryAfterDate = DateUtils.parseStandardDate(value)
                 if (retryAfterDate != null) {
                     retryAfter = TimeValue.ofMilliseconds(retryAfterDate.toEpochMilli() - System.currentTimeMillis())
@@ -203,14 +190,16 @@ class CustomHttpRequestRetryStrategy protected constructor(
         return if (maxRetries >= 0) maxRetries else this.maxRetries
     }
 
-    protected fun handleAsIdempotent(request: HttpRequest): Boolean {
+    private fun handleAsIdempotent(request: HttpRequest): Boolean {
         return Method.isIdempotent(request.method)
     }
 
     companion object {
 
+        @Suppress("warnings")
         const val maxRetriesKey: String = "http.maxRetries"
 
+        @Suppress("warnings")
         const val retryAfterKey: String = "http.retryAfter"
 
         fun setMaxRetries(context: HttpContext, maxRetries: Int) {

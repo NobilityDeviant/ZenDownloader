@@ -39,7 +39,7 @@ class HttpRequestManager(
             managerConfig = HttpRequestManagerConfig.DEFAULT
         }
         this.state = AtomicReference(State.ACTIVE)
-        this.managerResource = HttpManagerResource(managerConfig)
+        this.managerResource = HttpManagerResource(managerConfig!!)
         //log.info("managerConfig={}", managerConfig)
     }
 
@@ -113,12 +113,13 @@ class HttpRequestManager(
         )
     }
 
+    @Suppress("SameParameterValue")
     private fun downloadFile(
         uri: URI,
         filePath: Path,
         parentIdentity: String?,
         requestConfig: HttpRequestConfig?,
-        decryptionKey: DecryptionKey?,
+        decryptionKey: DecryptionKey? = null,
         postProcessor: FileDownloadPostProcessor = FileDownloadPostProcessor.NOP
     ): CompletableFuture<Path> {
         return downloadFile(
@@ -221,7 +222,7 @@ class HttpRequestManager(
         )
     }
 
-    fun downloadFile(
+    private fun downloadFile(
         uri: URI,
         filePath: Path,
         identity: String,

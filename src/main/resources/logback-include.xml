@@ -5,9 +5,6 @@
     <property name="LOG_FILE_NAME" value="M3U8Catcher"/>
     <property name="ABSOLUTE_LOG_FILE" value="${LOG_FILE:-${LOG_PATH:-./log}/${app_name}/${LOG_FILE_NAME}-out.log}"/>
 
-    <conversionRule conversionWord="clr"
-                    converterClass="nobility.downloader.core.scraper.video_download.m3u8_downloader.support.log.ColorConverterWithMarkerWhiteboard"/>
-
     <appender name="RollingFile" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <encoder>
             <pattern>%clr(%d [%-5p] [%thread] %c{36}:%L - %m%n)</pattern>

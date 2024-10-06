@@ -32,14 +32,12 @@ import java.util.concurrent.TimeUnit
 import kotlin.concurrent.Volatile
 
 internal class HttpManagerResource(
-    managerConfig: HttpRequestManagerConfig?,
+    private val managerConfig: HttpRequestManagerConfig,
     ioReactorTerminateCallBacks: List<IOReactorTerminateCallBack?>? = null
 ) {
     val bufferSize: Int = 8192 * 4
 
     private val lock = Any()
-
-    private val managerConfig: HttpRequestManagerConfig
 
     private val ioReactorTerminateCallBacks: MutableList<IOReactorTerminateCallBack>
 
@@ -56,7 +54,6 @@ internal class HttpManagerResource(
     private var httpAsyncClientScope: HttpAsyncClientScope? = null
 
     init {
-        this.managerConfig = checkNotNull(managerConfig)
         this.ioReactorTerminateCallBacks = CollUtil.newArrayList(
             ListUtils.emptyIfNull<IOReactorTerminateCallBack>(ioReactorTerminateCallBacks)
         )
@@ -81,13 +78,13 @@ internal class HttpManagerResource(
         }
 
         Optional.ofNullable<ByteBufferPool>(this.heapBufferPool)
-            .filter { a: ByteBufferPool? ->
+            .filter {
                 managerConfig.objectPoolConfig.ifPrintMetric()
             }
             .ifPresent { obj: ByteBufferPool -> obj.printMetrics() }
 
         Optional.ofNullable<ByteBufferPool>(this.directBufferPool)
-            .filter { a: ByteBufferPool? ->
+            .filter {
                 managerConfig.objectPoolConfig.ifPrintMetric()
             }
             .ifPresent { obj: ByteBufferPool -> obj.printMetrics() }
@@ -113,15 +110,10 @@ internal class HttpManagerResource(
     }
 
     private fun destroyByteBuffLocalPool() {
-        val heapBufferPool: ByteBufferPool? = this.heapBufferPool
         val directBufferPool: ByteBufferPool? = this.directBufferPool
 
-        if (null != directBufferPool) {
-            directBufferPool.destroyLocalPool()
-        }
-        if (null != heapBufferPool) {
-            heapBufferPool.destroyLocalPool()
-        }
+        directBufferPool?.destroyLocalPool()
+        this.heapBufferPool?.destroyLocalPool()
     }
 
     private fun getHttpAsyncClientScope(): HttpAsyncClientScope {
@@ -189,10 +181,6 @@ internal class HttpManagerResource(
             }
         }
         return heapBufferPool!!
-    }
-
-    fun getManagerConfig(): HttpRequestManagerConfig {
-        return managerConfig
     }
 
     private fun millsTimeOut(mills: Long): Timeout {
@@ -307,7 +295,7 @@ internal class HttpManagerResource(
                 for (callBack in ioReactorTerminateCallBacks) {
                     try {
                         callBack.doFinally()
-                    } catch (ex: Exception) {
+                    } catch (_: Exception) {
                         //log.error("$callBack exec doFinally error", ex)
                     }
                 }
@@ -315,12 +303,10 @@ internal class HttpManagerResource(
         }
     }
 
-    private inner class ThreadFactoryWithCallback : DefaultThreadFactory {
-        constructor(namePrefix: String?) : super(namePrefix)
-
-        constructor(namePrefix: String?, daemon: Boolean) : super(namePrefix, daemon)
-
-        constructor(namePrefix: String?, group: ThreadGroup?, daemon: Boolean) : super(namePrefix, group, daemon)
+    private inner class ThreadFactoryWithCallback(
+        namePrefix: String?,
+        daemon: Boolean
+    ) : DefaultThreadFactory(namePrefix, daemon) {
 
         override fun newThread(runnable: Runnable): Thread {
             val target = RunnableWithCallback(runnable, ioReactorTerminateCallBacks)

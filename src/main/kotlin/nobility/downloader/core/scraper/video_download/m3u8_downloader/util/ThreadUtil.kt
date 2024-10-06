@@ -6,12 +6,6 @@ import java.util.concurrent.*
 import java.util.concurrent.ThreadPoolExecutor.CallerRunsPolicy
 
 object ThreadUtil {
-    fun safeSleep(mills: Long) {
-        try {
-            TimeUnit.MILLISECONDS.sleep(mills)
-        } catch (ignored: InterruptedException) {
-        }
-    }
 
     fun getThreadFactory(namePrefix: String?, daemon: Boolean): ThreadFactory {
         return NamedThreadFactory(daemon, namePrefix!!)
@@ -28,7 +22,7 @@ object ThreadUtil {
         return ScheduledThreadPoolExecutor(nThreads, getThreadFactory(nameFormat, daemon))
     }
 
-    fun callerRunsPolicy(identity: String?): CallerRunsPolicy {
+    private fun callerRunsPolicy(identity: String?): CallerRunsPolicy {
         return object : CallerRunsPolicy() {
             private val log: Logger = LoggerFactory.getLogger(CallerRunsPolicy::class.java)
 

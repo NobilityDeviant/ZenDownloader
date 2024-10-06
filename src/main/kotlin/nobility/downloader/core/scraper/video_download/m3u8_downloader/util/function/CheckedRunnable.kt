@@ -22,6 +22,7 @@ fun interface CheckedRunnable {
             return methodReference
         }
 
+        @Suppress("UNCHECKED_CAST")
         fun <T : Throwable, R> sneakyThrow(t: Throwable): R {
             throw t as T
         }
