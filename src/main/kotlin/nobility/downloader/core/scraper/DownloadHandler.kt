@@ -87,7 +87,7 @@ class DownloadHandler {
         }
         taskScope.launch task@{
             val saveDir = File(Defaults.SAVE_FOLDER.string())
-            if (!saveDir.exists() && !saveDir.mkdir()) {
+            if (!saveDir.exists() && !saveDir.mkdirs()) {
                 withContext(Dispatchers.Main) {
                     DialogHelper.showError(
                         "Your download folder doesn't exist and wasn't able to be created.",

@@ -192,7 +192,7 @@ class BoxHelper {
 
         private fun booleanSetting(setting: Defaults): Boolean {
             val meta = metaForKey(setting.key)
-            return meta?.booleanVal() ?: false
+            return meta?.booleanVal() == true
         }
 
         private fun integerSetting(setting: Defaults): Int {
@@ -242,6 +242,28 @@ class BoxHelper {
                     .equal(
                         Download_.slug,
                         slug,
+                        QueryBuilder.StringOrder.CASE_SENSITIVE
+                    ).and().equal(
+                        Download_.resolution,
+                        quality.resolution.toLong()
+                    ).build().use { query ->
+                        return query.findUniqueOrFirst()
+                    }
+            } catch (e: Exception) {
+                e.printStackTrace()
+                return null
+            }
+        }
+
+        fun downloadForNameAndQuality(
+            name: String,
+            quality: Quality
+        ): Download? {
+            try {
+                shared.downloadBox.query()
+                    .equal(
+                        Download_.name,
+                        name,
                         QueryBuilder.StringOrder.CASE_SENSITIVE
                     ).and().equal(
                         Download_.resolution,
@@ -506,7 +528,7 @@ class BoxHelper {
                     .use {
                         return it.findUnique()
                     }
-            } catch (ignored: Exception) {
+            } catch (_: Exception) {
                 try {
                     shared.wcoLinksBox.query()
                         .contains(
@@ -517,7 +539,7 @@ class BoxHelper {
                         .use {
                             return it.findUnique()
                         }
-                } catch (ignored: Exception) {
+                } catch (_: Exception) {
                 }
             }
             return null
@@ -537,10 +559,10 @@ class BoxHelper {
                 .equal(Genre_.name, name, QueryBuilder.StringOrder.CASE_INSENSITIVE)
                 .build().use {
                     val genre = it.findUniqueOrNull()
-                    if (genre != null) {
-                        return genre
+                    return if (genre != null) {
+                        genre
                     } else {
-                        return Genre("Null")
+                        Genre("Null")
                     }
                 }
         }

@@ -3,6 +3,7 @@ package nobility.downloader.core.settings
 import nobility.downloader.ui.windows.database.DatabaseSort
 import nobility.downloader.ui.windows.database.DatabaseType
 import nobility.downloader.utils.Constants
+import java.io.File
 
 /**
  * An enum used for easy settings management.
@@ -52,7 +53,7 @@ enum class Defaults(
     ),
     SAVE_FOLDER(
         "save_folder",
-        System.getProperty("user.home") + "/zen_videos/",
+        System.getProperty("user.home") + "${File.separator}zen_videos${File.separator}",
         """
             The folder where all your downloads get saved.
             Default: ${System.getProperty("user.home")}

@@ -174,12 +174,10 @@ class CoreChild {
             return false
         }
         val downloadFolder = File(Defaults.SAVE_FOLDER.string())
-        if (!downloadFolder.exists()) {
+        if (!downloadFolder.exists() && !downloadFolder.mkdirs()) {
             showError(
-                """
-                    The download folder in your settings doesn't exist. 
-                    You must set it up before downloading videos.
-                """.trimIndent()
+                "Your download folder doesn't exist and wasn't able to be created.",
+                "Be sure to set it inside the settings before downloading videos."
             )
             Core.openSettings()
             return false

@@ -49,6 +49,7 @@ data class Download(
                 && download.id == id
                 || download.slug == slug
                 && resolution == download.resolution
+                && name == download.name
     }
 
     fun updateProgress() {
