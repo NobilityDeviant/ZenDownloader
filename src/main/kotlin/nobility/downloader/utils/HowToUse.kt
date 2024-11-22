@@ -9,7 +9,11 @@ object HowToUse {
                   and pick out your favorite anime, cartoon or movie.
                                              
                   Once you find one that you want, you copy the link in the url bar and paste it into the programs Home page.
-                                            
+                  
+                  You can also look through the database window by pressing CTRL + W to find your shows.
+                  
+                  If the text inside the url bar isn't a URL, it will search for it inside the database window.
+                  
                   After it's filled, you press the Start button or hit the Enter key on your keyboard.
                   There is also right click options in the url field to help you out.
                                             

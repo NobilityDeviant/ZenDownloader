@@ -42,9 +42,9 @@ import nobility.downloader.core.BoxMaker
 import nobility.downloader.core.Core
 import nobility.downloader.core.entities.Episode
 import nobility.downloader.core.entities.data.SeriesIdentity
-import nobility.downloader.core.scraper.video_download.SimpleVideoDownloader
 import nobility.downloader.core.scraper.SeriesUpdater
 import nobility.downloader.core.scraper.data.ToDownload
+import nobility.downloader.core.scraper.video_download.VideoDownloadHandler
 import nobility.downloader.core.settings.Defaults
 import nobility.downloader.core.settings.Quality
 import nobility.downloader.ui.components.*
@@ -306,9 +306,9 @@ class DownloadConfirmWindow(
                             seasonData.onEachIndexed { index, seasonData ->
                                 section(
                                     seasonData = seasonData,
-                                    isExpanded = isExpandedMap[index] ?: false,
+                                    isExpanded = isExpandedMap[index] == true,
                                     onHeaderClick = {
-                                        isExpandedMap[index] = !(isExpandedMap[index] ?: false)
+                                        isExpandedMap[index] = isExpandedMap[index] != true
                                     }
                                 )
                             }
@@ -434,15 +434,21 @@ class DownloadConfirmWindow(
                     it.value,
                     it.value.contains(toDownload.episode)
                 )
+            }.sortedBy { data ->
+                val number = data.seasonTitle.filter { ch -> ch.isDigit() }.toIntOrNull()
+                return@sortedBy number?.toString()?: data.seasonTitle
+
             })
         } else {
-            seasonDataList.add(
-                SeasonData(
-                    "${series.name} Season 1 (${episodes.size})",
-                    episodes,
-                    true
+            if (episodes.isNotEmpty()) {
+                seasonDataList.add(
+                    SeasonData(
+                        "${series.name} (${episodes.size})",
+                        episodes,
+                        true
+                    )
                 )
-            )
+            }
             return seasonDataList
         }
     }
@@ -856,7 +862,7 @@ class DownloadConfirmWindow(
                                         for (i in 1..threads) {
                                             tasks.add(
                                                 launch {
-                                                    val downloader = SimpleVideoDownloader(temporaryQuality)
+                                                    val downloader = VideoDownloadHandler(temporaryQuality)
                                                     try {
                                                         downloader.run()
                                                     } catch (e: Exception) {
@@ -956,7 +962,7 @@ class DownloadConfirmWindow(
                                         for (i in 1..threads) {
                                             tasks.add(
                                                 launch {
-                                                    val downloader = SimpleVideoDownloader(temporaryQuality)
+                                                    val downloader = VideoDownloadHandler(temporaryQuality)
                                                     try {
                                                         downloader.run()
                                                     } catch (e: Exception) {

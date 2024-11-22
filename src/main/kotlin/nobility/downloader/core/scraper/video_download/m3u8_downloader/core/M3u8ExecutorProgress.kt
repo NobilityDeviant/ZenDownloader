@@ -4,7 +4,6 @@ import nobility.downloader.core.scraper.video_download.m3u8_downloader.util.Coll
 import nobility.downloader.utils.Tools
 import java.util.concurrent.Future
 import java.util.concurrent.atomic.AtomicLong
-import kotlin.concurrent.Volatile
 import kotlin.math.ceil
 import kotlin.math.max
 
@@ -34,7 +33,8 @@ class M3u8ExecutorProgress : Runnable {
         val removeItems = mutableListOf<M3u8Progress>()
         for (progress in m3u8Progresses) {
             idx++
-            if (progress.doProgress(seconds)) {
+            val doProgress = progress.doProgress(seconds)
+            if (doProgress) {
                 completes.offer(progress)
             }
             if (idx > limitTableSize) {
@@ -67,6 +67,11 @@ class M3u8ExecutorProgress : Runnable {
         )
     }
 
+    companion object {
+        const val VIDEO_TAG = "(VIDEO)"
+        const val AUDIO_TAG = "(AUDIO)"
+    }
+
     private class M3u8Progress(
         val m3u8Download: M3u8Download,
         val downloadFuture: Future<*>,
@@ -76,6 +81,11 @@ class M3u8ExecutorProgress : Runnable {
         private var endSeconds: Long = 0
         private val nowBytes = AtomicLong(0)
         private val lastBytes = AtomicLong(0)
+        private val tag = if (m3u8Download.fileName.endsWith("mp4"))
+            VIDEO_TAG
+        else if (m3u8Download.fileName.endsWith("m4a"))
+            AUDIO_TAG
+        else ""
 
         fun alreadyEnd(): Boolean {
             return endSeconds > 0
@@ -89,23 +99,15 @@ class M3u8ExecutorProgress : Runnable {
                 return max((nowBytes.get() - lastBytes.get()).toDouble(), 0.0).toLong()
             }
 
-        /**
-         * @return if complete
-         */
         fun doProgress(
             sec: Long
         ): Boolean {
 
             if (alreadyEnd()) {
-                //val endSeconds = this.endSeconds
-
-                //val nowBytes = nowBytes.get()
-                //val avgSpeed = avgSpeed(nowBytes, endSeconds)
-
                 return true
             }
-
             // timeliness param start
+            val count = m3u8Download.tsDownloadsCount
             var remainBytesInReading = 0
             val readingTsDownloads = m3u8Download.getReadingTsDownloads()
             var readingCount = readingTsDownloads.size
@@ -130,23 +132,8 @@ class M3u8ExecutorProgress : Runnable {
             this.lastBytes.set(lastBytes)
             val readBytes = max(0.0, (nowBytes - lastBytes).toDouble()).toLong()
 
-            //val speed = speed(readBytes)
-            //val avgSpeed = avgSpeed(nowBytes, seconds)
-
-            // "idx", "name", "seconds", "speed", "avgSpeed", "progress", "downloadSize", "estimatedTime",
-            // "completed", "failed", "reading", "remained"
-            val isDone = downloadFuture.isDone
-            if (isDone) {
-                //val endSeconds = if ((endSeconds.also { endSeconds = it }) > 0) endSeconds else (seconds.also {
-                  //  this.endSeconds = it
-                //})
-                return true
-            }
-
-            val count = m3u8Download.tsDownloadsCount
-            val remainedCount = count - finishedCount - failedCount - readingCount
+            val remainedCount = count - (finishedCount - failedCount - readingCount)
             val progressPercent = Tools.percentFormat.format((finishedCount + failedCount) / count.toDouble())
-            //rate((finishedCount + failedCount).toLong(), count.toLong())
 
             val remainingSeconds: Long
             val conCount = finishedCount + readingCount
@@ -166,13 +153,21 @@ class M3u8ExecutorProgress : Runnable {
                 }
             }
 
-            //val estimatedTime = if (remainingSeconds > 0) secondsFormat(remainingSeconds) else null
+            val isDone = downloadFuture.isDone
+            if (isDone) {
+                if ((endSeconds.also { endSeconds = it }) > 0) endSeconds else (seconds.also {
+                    this.endSeconds = it
+                })
+                m3u8Download.downloadListener?.downloadProgress?.invoke(
+                    "$tag 100%",
+                    0
+                )
+                return true
+            }
 
-            m3u8Download.downloadListener?.downloadProgress(
-                progressPercent,
-                remainingSeconds.toInt(),
-                finishedCount,
-                count
+            m3u8Download.downloadListener?.downloadProgress?.invoke(
+                "$tag $progressPercent",
+                remainingSeconds.toInt()
             )
 
             return false

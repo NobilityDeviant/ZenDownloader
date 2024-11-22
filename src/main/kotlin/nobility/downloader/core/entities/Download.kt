@@ -21,15 +21,17 @@ data class Download(
     @Transient
     var downloading = false
     @Transient
-    var merging = false
-    @Transient
     var paused = false
     @Transient
     var queued = false
     @Transient
-    var progress = mutableStateOf("0%")
+    var videoProgress = mutableStateOf("0%")
     @Transient
-    var remainingDownloadSeconds = mutableStateOf(0)
+    var audioProgress = mutableStateOf("")
+    @Transient
+    var remainingVideoDownloadSeconds = mutableStateOf(0)
+    @Transient
+    var remainingAudioDownloadSeconds = mutableStateOf(0)
 
     fun update(download: Download, updateProperties: Boolean) {
         downloadPath = download.downloadPath
@@ -38,6 +40,9 @@ data class Download(
         queued = download.queued
         downloading = download.downloading
         resolution = download.resolution
+        manualProgress = download.manualProgress
+        remainingVideoDownloadSeconds = download.remainingVideoDownloadSeconds
+        remainingAudioDownloadSeconds = download.remainingAudioDownloadSeconds
         if (updateProperties) {
             updateProgress()
         }
@@ -54,13 +59,10 @@ data class Download(
 
     fun updateProgress() {
         if (queued) {
-            setProgressValue("Queued")
+            setVideoProgressValue("Queued")
             return
         } else if (paused) {
-            setProgressValue("Paused")
-            return
-        } else if (merging) {
-            setProgressValue("Merging")
+            setVideoProgressValue("Paused")
             return
         }
         if (manualProgress && downloading) {
@@ -69,19 +71,37 @@ data class Download(
         val video = downloadFile()
         if (video != null && video.exists()) {
             if (manualProgress) {
-                setProgressValue("100%")
+                setVideoProgressValue("100%")
             } else {
                 val ratio = video.length() / fileSize.toDouble()
-                setProgressValue(Tools.percentFormat.format(ratio))
+                setVideoProgressValue(Tools.percentFormat.format(ratio))
             }
         } else {
-            setProgressValue("File Not Found")
+            setVideoProgressValue("File Not Found")
         }
     }
 
-    fun setProgressValue(value: String) {
-        if (progress.value != value) {
-            progress.value = value
+    fun updateVideoSeconds(seconds: Int) {
+        remainingVideoDownloadSeconds.value = seconds
+    }
+
+    fun updateAudioSeconds(seconds: Int) {
+        remainingAudioDownloadSeconds.value = seconds
+    }
+
+    fun setVideoProgressValue(
+        value: String
+    ) {
+        if (videoProgress.value != value) {
+            videoProgress.value = value
+        }
+    }
+
+    fun updateProgress(value: String, video: Boolean) {
+        if (video) {
+            videoProgress.value = value
+        } else {
+            audioProgress.value = value
         }
     }
 

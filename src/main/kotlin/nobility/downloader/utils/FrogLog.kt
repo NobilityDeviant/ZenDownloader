@@ -27,7 +27,7 @@ object FrogLog {
 
     fun logError(
         message: String,
-        exception: Throwable,
+        exception: Throwable?,
         important: Boolean = false
     ) {
         if (!important && !Defaults.SHOW_DEBUG_MESSAGES.boolean()) {
@@ -35,13 +35,15 @@ object FrogLog {
         }
         println(
             "[${callerClassName()}] [E] $message" +
-                    if (exception.localizedMessage.isNotEmpty())
+                    if (!exception?.localizedMessage.isNullOrEmpty())
                         "\nError: ${exception.localizedMessage}"
                     else
                         "Error: Invalid exception error"
         )
-        writeMessage("Stacktrace for ${message.trimIndent()}:", true)
-        exception.printStackTrace()
+        if (exception != null) {
+            writeMessage("Stacktrace for ${message.trimIndent()}:", true)
+            exception.printStackTrace()
+        }
     }
 
     fun logDebug(

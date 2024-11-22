@@ -1,5 +1,8 @@
 package nobility.downloader.core.scraper.video_download
 
+import nobility.downloader.core.scraper.video_download.ErrorCode.entries
+
+
 enum class ErrorCode(val code: Int) {
     NO_FRAME(0),
     IFRAME_FORBIDDEN(1),
@@ -7,7 +10,9 @@ enum class ErrorCode(val code: Int) {
     NO_JS(3),
     CLOUDFLARE_FUCK(4),
     SIMPLE_MODE_FAILED(5),
-    M3U8_LINK_FAILED(6);
+    M3U8_LINK_FAILED(6),
+    EMPTY_FRAME(7),
+    FAILED_PAGE_READ(8);
 
     companion object {
         fun errorCodeForCode(code: Int?): ErrorCode? {

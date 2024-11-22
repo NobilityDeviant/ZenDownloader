@@ -1,9 +1,7 @@
 package nobility.downloader.core.scraper.video_download.m3u8_downloader.util.function
 
-/**
- *
- */
 fun interface CheckedRunnable {
+
     @Throws(Throwable::class)
     fun run()
 

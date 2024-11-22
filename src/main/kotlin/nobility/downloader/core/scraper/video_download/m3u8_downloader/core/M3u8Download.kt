@@ -8,8 +8,6 @@ import nobility.downloader.core.scraper.video_download.m3u8_downloader.util.Util
 import nobility.downloader.core.scraper.video_download.m3u8_downloader.util.Utils.checkAndCreateDir
 import nobility.downloader.core.scraper.video_download.m3u8_downloader.util.VideoUtil
 import nobility.downloader.core.scraper.video_download.m3u8_downloader.util.function.Try
-import nobility.downloader.utils.FrogLog
-import org.apache.commons.lang3.StringUtils
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.io.File
@@ -32,7 +30,7 @@ import kotlin.io.path.deleteRecursively
 
 class M3u8Download(
     var uri: URI,
-    private var fileName: String,
+    var fileName: String,
     private var workHome: String?,
     private var targetFileDir: String,
     val downloadListener: M3u8DownloadListener?,
@@ -50,31 +48,38 @@ class M3u8Download(
     init {
         m3u8Check(Utils.isValidURL(uri), "uri is invalid: %s", uri)
         checkAndCreateDir(targetFileDir, "targetFileDir")
-        FrogLog.logInfo("Created m3u8 directory: $targetFileDir")
-        val finalFileName = getFinalFileName(fileName)
+        //FrogLog.logInfo("Created m3u8 directory: $targetFileDir")
+        //val finalFileName = getFinalFileName(fileName)
         val file = if (targetFileDir.endsWith(File.separator)) {
-            File(targetFileDir + finalFileName)
+            //File(targetFileDir + finalFileName)
+            File(targetFileDir + fileName)
         } else {
-            File("$targetFileDir${File.separator}$finalFileName")
+            //File("$targetFileDir${File.separator}$finalFileName")
+            File("$targetFileDir${File.separator}$fileName")
         }
-        FrogLog.logInfo("Final m3u8 file: ${file.absolutePath}")
-        //m3u8Check(!file.exists(), "file exists：%s", file)
+        //FrogLog.logInfo("Final m3u8 file: ${file.absolutePath}")
         m3u8Check(!Utils.isFileNameTooLong(file.toString()), "fileName too long: %s", file)
-        this.fileName = finalFileName
 
         if (workHome == null) {
             workHome = targetFileDir
         } else {
             checkAndCreateDir(workHome!!, "workHome")
         }
+        val workHome = workHome!!
+        val saveFolderName = if (fileName.endsWith("mp4")) {
+            "video"
+        } else if (fileName.endsWith("m4a")) {
+            "audio"
+        } else {
+            "ts"
+        }
+        val workFile = File(workHome)
         val tsSavePath = checkAndCreateDir(
-            workHome!! + Utils.mainName(
-                this.fileName
-            ),
+            workFile.absolutePath + File.separator + saveFolderName,
             "tsDir"
         )
         val tsFileTest = tsSavePath.resolve(
-            "1234567890-1234567890-1234567890.$unFinishedTsExtension"
+            "1234567890-1234567890-1234567890.$UNF_TS_EXTENSION"
         )
         m3u8Check(
             !Utils.isFileNameTooLong(tsFileTest.toString()),
@@ -117,7 +122,7 @@ class M3u8Download(
         failedTsDownloads.reset()
         readingTsDownloads.clear()
         finishedTsDownloads.reset()
-        downloadListener?.downloadStarted(this)
+        downloadListener?.downloadStarted?.invoke(this)
     }
 
     @OptIn(ExperimentalPathApi::class)
@@ -131,6 +136,10 @@ class M3u8Download(
             .map { it.finalFilePath.fileName.toString() }
 
         if (uncompletedTs.isNotEmpty()) {
+            downloadListener?.onMergeFinished?.invoke(
+                this,
+                Exception("Incomplete ts files found.")
+            )
             log.error(
                 String.format(
                     "ts unCompleted, identity=%s: %s",
@@ -151,7 +160,7 @@ class M3u8Download(
             }.get()
         }
 
-        downloadListener?.downloadSizeUpdated(totalSizeOfAllTsFiles)
+        downloadListener?.downloadSizeUpdated?.invoke(totalSizeOfAllTsFiles)
 
         val totalSize = Utils.bytesFormat(totalSizeOfAllTsFiles, 3)
 
@@ -179,11 +188,12 @@ class M3u8Download(
         if (targetFile.exists()) {
             targetFile.delete()
         }
+        //FrogLog.logInfo("Merging M3U8 files into ${targetFile.absolutePath}")
         val tsFiles = downloadList.sortedBy {
             it.sequence
         }.map { it.finalFilePath }
 
-        downloadListener?.onMergeStarted(this)
+        downloadListener?.onMergeStarted?.invoke(this)
 
         if (m3u8DownloadOptions.mergeWithoutConvertToMp4) {
             // merge into large ts
@@ -204,16 +214,26 @@ class M3u8Download(
                 }
             } catch (e: Exception) {
                 log.error("merge ts error(file={" + targetFile + "}): " + e.message, e)
+                downloadListener?.onMergeFinished?.invoke(
+                    this,
+                    e
+                )
                 throw RuntimeException(e)
             }
         } else {
             // merge into mp4
-            m3u8Check(
-                VideoUtil.convertToMp4(
-                    targetFile,
-                    tsFiles
-                ), "merge failed"
+            val success = VideoUtil.convertToMp4(
+                targetFile,
+                tsFiles
             )
+            if (!success) {
+                downloadListener?.onMergeFinished?.invoke(
+                    this,
+                    Exception("TS Convert to MP4 failed with no error.")
+                )
+                throw M3u8Exception("Merge failed.")
+            }
+
         }
 
         // delete ts
@@ -225,7 +245,7 @@ class M3u8Download(
             }
         }
 
-        downloadListener?.onMergeFinished(this)
+        downloadListener?.onMergeFinished?.invoke(this, null)
         //downloadListener?.downloadFinished(this)
 
         log.info("merge complete path={}", targetFile)
@@ -289,21 +309,11 @@ class M3u8Download(
 
         val log: Logger = LoggerFactory.getLogger(M3u8Download::class.java)
 
-        @Suppress("warnings")
-        const val m3u8StoreName: String = "m3u8Index.xml"
-
-        @Suppress("warnings")
-        const val unFinishedTsExtension: String = "progress"
+        const val M3U8_STORE_NAME: String = "m3u8Index.xml"
+        const val UNF_TS_EXTENSION: String = "progress"
 
         fun builder(): M3u8DownloadBuilder {
             return M3u8DownloadBuilder()
-        }
-
-        fun getFinalFileName(fileName: String): String {
-            m3u8Check(StringUtils.isNotBlank(fileName), "fileName is blank")
-            val mainName = Utils.mainName(fileName)
-            m3u8Check(StringUtils.isNotBlank(mainName), "fileName is invalid: %s", fileName)
-            return "$mainName.mp4"
         }
     }
 }

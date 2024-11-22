@@ -85,48 +85,9 @@ fun downloaderUi() {
                         items
                     }
                 )
-                /*Row(
-                    horizontalArrangement = Arrangement.spacedBy(5.dp),
-                    modifier = Modifier.align(Alignment.CenterHorizontally)
-                        .padding(top = 10.dp, start = 5.dp, end = 5.dp)
-                ) {
-                    val buttonWidth = 150.dp
-                    val buttonHeight = 30.dp
-                    defaultButton(
-                        "Clear",
-                        modifier = Modifier.defaultMinSize(
-                            minWidth = buttonWidth,
-                            minHeight = buttonHeight
-                        ),
-                    ) {
-                        Core.currentUrl = ""
-                    }
-                    defaultButton(
-                        "Paste",
-                        modifier = Modifier.defaultMinSize(
-                            minWidth = buttonWidth,
-                            minHeight = buttonHeight
-                        ),
-                    ) {
-                        Core.currentUrl = Tools.clipboardString
-                    }
-                    defaultButton(
-                        "Paste & Start",
-                        modifier = Modifier.defaultMinSize(
-                            minWidth = buttonWidth,
-                            minHeight = buttonHeight
-                        ),
-                    ) {
-                        Core.currentUrl = Tools.clipboardString
-                        Core.child.start()
-                    }
-                }*/
             }
         }
     ) { padding ->
-
-        //val randomSeries = remember { Core.randomSeries }
-        //val randomSeries2 = remember { Core.randomSeries2 }
         val rowInteraction = remember { MutableInteractionSource() }
         val isHovering by rowInteraction.collectIsHoveredAsState()
 

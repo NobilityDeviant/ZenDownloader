@@ -7,8 +7,6 @@ import nobility.downloader.core.scraper.video_download.m3u8_downloader.http.conf
 import nobility.downloader.core.scraper.video_download.m3u8_downloader.http.response.FileDownloadOptions
 import nobility.downloader.core.scraper.video_download.m3u8_downloader.http.response.FileDownloadPostProcessor
 import nobility.downloader.core.scraper.video_download.m3u8_downloader.util.CollUtil
-import nobility.downloader.core.scraper.video_download.m3u8_downloader.util.FutureUtil
-import nobility.downloader.core.scraper.video_download.m3u8_downloader.util.FutureUtil.disinterest
 import nobility.downloader.core.scraper.video_download.m3u8_downloader.util.ThreadUtil.newFixedScheduledThreadPool
 import nobility.downloader.core.scraper.video_download.m3u8_downloader.util.ThreadUtil.newFixedThreadPool
 import nobility.downloader.core.scraper.video_download.m3u8_downloader.util.function.CheckedRunnable
@@ -30,7 +28,7 @@ class M3u8Executor(
         optionsSelector(ifAsyncSink = true, useBufferPool = true)
 ) {
     val executor: ExecutorService
-    private val scheduler: ScheduledExecutorService
+    val scheduler: ScheduledExecutorService
     private val progressScheduler: M3u8ExecutorProgress
 
     init {
@@ -71,15 +69,25 @@ class M3u8Executor(
             }
         }
 
-        logExceptionConsumer.accept(CheckedRunnable { executor.shutdown() })
+        logExceptionConsumer.accept(CheckedRunnable {
+            executor.shutdown()
+        })
 
-        logExceptionConsumer.accept(CheckedRunnable { scheduler.shutdown() })
+        logExceptionConsumer.accept(CheckedRunnable {
+            scheduler.shutdown()
+        })
 
-        logExceptionConsumer.accept(CheckedRunnable { requestManager.shutdown() })
+        logExceptionConsumer.accept(CheckedRunnable {
+            requestManager.shutdown()
+        })
 
-        logExceptionConsumer.accept(CheckedRunnable { executor.awaitTermination(awaitMills, TimeUnit.MILLISECONDS) })
+        logExceptionConsumer.accept(CheckedRunnable {
+            executor.awaitTermination(awaitMills, TimeUnit.MILLISECONDS)
+        })
 
-        logExceptionConsumer.accept(CheckedRunnable { scheduler.awaitTermination(awaitMills, TimeUnit.MILLISECONDS) })
+        logExceptionConsumer.accept(CheckedRunnable {
+            scheduler.awaitTermination(awaitMills, TimeUnit.MILLISECONDS)
+        })
 
         logExceptionConsumer.accept(CheckedRunnable {
             requestManager.awaitTermination(
@@ -89,16 +97,17 @@ class M3u8Executor(
         })
     }
 
-    @Suppress("UNUSED")
     fun execute(downloads: List<M3u8Download>): CompletableFuture<Void> {
         if (downloads.isEmpty()) {
             return CompletableFuture.completedFuture(null)
         }
-        val futures = CollUtil.newArrayListWithCapacity<CompletableFuture<*>>(downloads.size)
+        val futures = CollUtil.newArrayListWithCapacity<CompletableFuture<M3u8Download>>(
+            downloads.size
+        )
         downloads.forEach {
             futures.add(execute(it))
         }
-        return disinterest(FutureUtil.allOfColl(futures))
+        return CompletableFuture.allOf(*futures.toTypedArray())
     }
 
     fun execute(m3u8Download: M3u8Download): CompletableFuture<M3u8Download> {
@@ -122,8 +131,7 @@ class M3u8Executor(
                 )
             )
         })
-
-        return disinterest(FutureUtil.allOfColl(downloadFileFutureList))
+        return CompletableFuture.allOf(*downloadFileFutureList.toTypedArray())
     }
 
     private fun convertKey(m3u8SecretKey: M3u8SecretKey?): DecryptionKey? {
@@ -209,21 +217,32 @@ class M3u8Executor(
                 val downloadTsFuture = downloadTs(tsDownloads, options)
 
                 // process scheduler
-                progressScheduler.addM3u8(m3u8Download, downloadTsFuture)
+                progressScheduler.addM3u8(
+                    m3u8Download,
+                    downloadTsFuture
+                )
 
                 // merge ts
                 downloadTsFuture.whenCompleteAsync({ _: Void?, th: Throwable? ->
+                    try {
+                        scheduler.shutdownNow()
+                    } catch (_: Exception) {}
                     if (null != th) {
                         log.error(th.message, th)
-                        m3u8Download.downloadListener?.downloadFinished(
+                        /*FrogLog.logError(
+                            "downloadTsFuture is complete with error.",
+                            th
+                        )*/
+                        m3u8Download.downloadListener?.downloadFinished?.invoke(
                             m3u8Download,
                             false
                         )
                     } else {
-                        m3u8Download.downloadListener?.downloadFinished(
+                        m3u8Download.downloadListener?.downloadFinished?.invoke(
                             m3u8Download,
                             true
                         )
+                        //FrogLog.logInfo("downloadTsFuture is complete.")
                         m3u8Download.mergeIntoVideo()
                     }
                 }, executor).whenComplete { _: Void?, th: Throwable? ->

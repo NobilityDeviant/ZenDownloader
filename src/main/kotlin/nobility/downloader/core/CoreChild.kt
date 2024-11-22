@@ -43,11 +43,13 @@ class CoreChild {
     private var shutdownExecuted = false
     val runningDrivers: MutableList<WebDriver> = Collections.synchronizedList(mutableListOf())
     val currentEpisodes: MutableList<Episode> = Collections.synchronizedList(mutableListOf())
-    val downloadList = mutableStateListOf<Download>()
+    val downloadList: MutableList<Download> = Collections.synchronizedList(mutableStateListOf<Download>())
     lateinit var movieHandler: MovieHandler
+
     @Volatile
     var downloadsFinishedForSession = 0
         private set
+
     @Volatile
     var downloadsInProgress = mutableStateOf(0)
         private set
@@ -247,6 +249,8 @@ class CoreChild {
                     Episode: 
                         
                     ${Core.exampleEpisode}
+                    
+                    You can also input a keyword to search inside the database window.
                         
                 """.trimIndent(),
                 size = DpSize(300.dp, 400.dp)
@@ -256,7 +260,8 @@ class CoreChild {
         try {
             URI(url).toURL()
         } catch (_: Exception) {
-            showError("This is not a valid URL.")
+            Core.openWco(url)
+            //showError("This is not a valid URL.")
             return false
         }
         val threads = Defaults.DOWNLOAD_THREADS.int()
@@ -361,16 +366,69 @@ class CoreChild {
         BoxHelper.shared.downloadBox.remove(download)
     }
 
+    fun finalizeM3u8DownloadProgress(
+        download: Download,
+        finalFileSize: Long,
+        success: Boolean
+    ) {
+        val index = indexForDownload(download)
+        if (index != -1) {
+            downloadList[index].updateVideoSeconds(0)
+            downloadList[index].updateAudioSeconds(0)
+            if (success) {
+                downloadList[index].updateProgress("", true)
+            } else {
+                downloadList[index].updateProgress("Failed to merge", true)
+            }
+            downloadList[index].updateProgress("", false)
+            downloadList[index].downloading = false
+            downloadList[index].manualProgress = true
+            if (success) {
+                downloadList[index].fileSize = finalFileSize
+                downloadList[index].updateProgress()
+            }
+        }
+    }
+
+    fun m3u8UpdateDownloadProgress(
+        download: Download,
+        progress: String,
+        isVideo: Boolean,
+        remainingSeconds: Int = -1,
+    ) {
+        val index = indexForDownload(download)
+        if (index != -1) {
+            if (remainingSeconds > -1) {
+                if (isVideo) {
+                    downloadList[index].updateVideoSeconds(remainingSeconds)
+                } else {
+                    downloadList[index].updateAudioSeconds(remainingSeconds)
+                }
+            }
+            if (isVideo) {
+                downloadList[index].updateProgress(
+                    progress,
+                    true
+                )
+            } else {
+                downloadList[index].updateProgress(
+                    progress,
+                    false
+                )
+            }
+        }
+    }
+
     fun updateDownloadProgress(
         download: Download,
         remainingSeconds: Int = -1
     ) {
         val index = indexForDownload(download)
         if (index != -1) {
-            downloadList[index].updateProgress()
             if (remainingSeconds > -1) {
-                downloadList[index].remainingDownloadSeconds.value = remainingSeconds
+                downloadList[index].remainingVideoDownloadSeconds.value = remainingSeconds
             }
+            downloadList[index].updateProgress()
         }
     }
 

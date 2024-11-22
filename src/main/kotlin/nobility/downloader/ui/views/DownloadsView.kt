@@ -127,11 +127,11 @@ class DownloadsView {
                 }
 
                 Sort.PROGRESS -> {
-                    Core.child.downloadList.sortedBy { it.progress.value }
+                    Core.child.downloadList.sortedBy { it.videoProgress.value }
                 }
 
                 Sort.PROGRESS_DESC -> {
-                    Core.child.downloadList.sortedByDescending { it.progress.value }
+                    Core.child.downloadList.sortedByDescending { it.videoProgress.value }
                 }
             }
         }
@@ -496,11 +496,16 @@ class DownloadsView {
                 textAlign = TextAlign.Center
             )
             divider()
+            val text = download.videoProgress.value  + Tools.secondsToRemainingTime(
+                download.remainingVideoDownloadSeconds.value
+            ) + if (download.audioProgress.value.isNotEmpty())
+                "\n" + download.audioProgress.value + Tools.secondsToRemainingTime(
+                    download.remainingAudioDownloadSeconds.value
+                )
+            else
+                ""
             Text(
-                text = download.progress.value + if (download.downloading)
-                    "\n${Tools.secondsToRemainingTime(
-                        download.remainingDownloadSeconds.value
-                    )}" else "",
+                text = text,
                 modifier = Modifier
                     .padding(4.dp)
                     .align(Alignment.CenterVertically)

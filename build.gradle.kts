@@ -20,7 +20,7 @@ kotlin {
 }
 
 group = "nobility.downloader"
-version = "1.0.5"
+version = "1.0.6"
 
 repositories {
     mavenCentral()
@@ -91,7 +91,7 @@ compose.desktop {
             targetFormats(
                 TargetFormat.Exe,
                 TargetFormat.Deb,
-                TargetFormat.Rpm //i can make this too, I was just so tired. will make later.
+                TargetFormat.Rpm //will make if someone asks
             )
             packageName = "ZenDownloader"
             packageVersion = version.toString()

@@ -13,9 +13,15 @@ class DownloadUpdater(
 
     suspend fun run() {
         while (running) {
-            Core.child.updateDownloadProgress(download, remainingSeconds)
+            Core.child.updateDownloadProgress(
+                download,
+                remainingSeconds
+            )
             delay(1000)
         }
-        Core.child.updateDownloadProgress(download, remainingSeconds)
+        Core.child.updateDownloadProgress(
+            download,
+            remainingSeconds
+        )
     }
 }

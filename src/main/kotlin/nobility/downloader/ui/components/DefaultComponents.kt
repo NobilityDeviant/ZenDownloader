@@ -4,8 +4,6 @@ import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.foundation.text.LocalTextContextMenu
-import androidx.compose.foundation.text.TextContextMenu
 import androidx.compose.material.DropdownMenuItem
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -19,7 +17,6 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
@@ -185,66 +182,6 @@ fun defaultTextField(
     }
 }
 
-@OptIn(ExperimentalFoundationApi::class)
-object EmptyContextMenu: TextContextMenu {
-    @Composable
-    override fun Area(
-        textManager: TextContextMenu.TextManager,
-        state: ContextMenuState,
-        content:@Composable () -> Unit
-    ) {
-        ContextMenuArea({
-            emptyList()
-        }, state, content = content)
-    }
-}
-
-@Suppress("UNUSED")
-@OptIn(ExperimentalFoundationApi::class)
-@Composable
-fun defaultTextFieldWithoutActions(
-    value: String,
-    hint: String = "",
-    singleLine: Boolean = true,
-    readOnly: Boolean = false,
-    enabled: Boolean = true,
-    colors:  TextFieldColors = TextFieldDefaults.colors(),
-    textStyle: TextStyle = LocalTextStyle.current,
-    keyboardOptions: KeyboardOptions = KeyboardOptions(),
-    modifier: Modifier = Modifier
-) {
-    var textValue by remember { mutableStateOf(TextFieldValue(value)) }
-    CompositionLocalProvider(
-        LocalTextContextMenu provides EmptyContextMenu
-    ) {
-        TextField(
-            textValue,
-            onValueChange = {
-                textValue = if (it.selection.length > 0) {
-                    it.copy(selection = textValue.selection)
-                } else {
-                    it
-                }
-            },
-            singleLine = singleLine,
-            readOnly = readOnly,
-            enabled = enabled,
-            placeholder = {
-                if (hint.isNotEmpty()) {
-                    Text(
-                        hint,
-                        modifier = Modifier.alpha(0.3f)
-                    )
-                }
-            },
-            textStyle = textStyle,
-            modifier = modifier,
-            colors = colors,
-            keyboardOptions = keyboardOptions
-        )
-    }
-}
-
 @Composable
 fun defaultSettingsTextField(
     value: String,
@@ -396,6 +333,23 @@ fun defaultCheckbox(
     CompositionLocalProvider(LocalMinimumInteractiveComponentEnforcement provides false) {
         Checkbox(
             stateChecked,
+            onCheckedChanged,
+            colors = CheckboxDefaults.colors(),
+            modifier = modifier
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun defaultCheckbox(
+    checked: Boolean,
+    modifier: Modifier = Modifier,
+    onCheckedChanged: ((Boolean) -> Unit)
+) {
+    CompositionLocalProvider(LocalMinimumInteractiveComponentEnforcement provides false) {
+        Checkbox(
+            checked,
             onCheckedChanged,
             colors = CheckboxDefaults.colors(),
             modifier = modifier

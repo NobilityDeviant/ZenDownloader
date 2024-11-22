@@ -56,6 +56,10 @@ object Tools {
                     .systemClipboard
                     .getData(DataFlavor.stringFlavor).toString()
             } catch (e: Exception) {
+                FrogLog.logError(
+                    "Failed to get clipboard contents.",
+                    e
+                )
                 ""
             }
         }
@@ -94,16 +98,6 @@ object Tools {
         return mLink.substring(
             mLink.indexOf(key1) + key1.length,
             mLink.indexOf(".")
-        )
-    }
-
-    /**
-     * Extract the full domain including the subdomain, www & https://
-     */
-    fun extractFullDomainFromLink(link: String): String {
-        return link.substring(
-            0,
-            link.ordinalIndexOf("/", 3)
         )
     }
 
@@ -292,15 +286,23 @@ object Tools {
     }
 
     fun secondsToRemainingTime(totalSeconds: Int): String {
+        if (totalSeconds <= 0) {
+            return ""
+        }
         val hours = totalSeconds / 3600
         val minutes = (totalSeconds % 3600) / 60
         val seconds = totalSeconds % 60
-        return String.format(
+        if (hours <= 0 && minutes > 0) {
+            return " (${if (minutes < 10) "0" else ""}$minutes:${if (seconds < 10) "0" else ""}$seconds)"
+        } else if (minutes <= 0 && hours <= 0) {
+            return " (0:${if (seconds < 10) "0" else ""}$seconds)"
+        }
+        return " (" + String.format(
             "%02d:%02d:%02d",
             hours,
             minutes,
             seconds
-        ) + " Time Left"
+        ) + ")"
     }
 
     private fun seriesCompare(

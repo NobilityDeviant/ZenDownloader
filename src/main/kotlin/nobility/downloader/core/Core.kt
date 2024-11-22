@@ -121,9 +121,11 @@ class Core {
             currentPage = Page.SETTINGS
         }
 
-        fun openWco() {
+        fun openWco(
+            initialSearch: String = ""
+        ) {
             val databaseWindow = DatabaseWindow()
-            databaseWindow.open()
+            databaseWindow.open(initialSearch)
         }
 
         fun openUpdate(

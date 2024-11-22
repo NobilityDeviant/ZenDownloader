@@ -35,8 +35,10 @@ import androidx.compose.ui.unit.sp
 import compose.icons.EvaIcons
 import compose.icons.evaicons.Fill
 import compose.icons.evaicons.fill.*
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import nobility.downloader.core.BoxHelper
+import nobility.downloader.core.BoxHelper.Companion.boolean
 import nobility.downloader.core.BoxHelper.Companion.int
 import nobility.downloader.core.BoxHelper.Companion.update
 import nobility.downloader.core.Core
@@ -44,10 +46,7 @@ import nobility.downloader.core.entities.Series
 import nobility.downloader.core.entities.data.SeriesIdentity
 import nobility.downloader.core.scraper.data.ToDownload
 import nobility.downloader.core.settings.Defaults
-import nobility.downloader.ui.components.defaultButton
-import nobility.downloader.ui.components.defaultCheckbox
-import nobility.downloader.ui.components.defaultDropdownItem
-import nobility.downloader.ui.components.defaultSettingsTextField
+import nobility.downloader.ui.components.*
 import nobility.downloader.ui.components.dialog.DialogHelper
 import nobility.downloader.ui.windows.MovieEditorWindow
 import nobility.downloader.ui.windows.utils.AppWindowScope
@@ -56,7 +55,7 @@ import nobility.downloader.utils.*
 import java.util.regex.Pattern
 
 /**
- * An experimental window for showing the database.
+ * A window for showing the database.
  * Unlike JavaFX we have full control now.
  * With that said, I actually have to optimize and create a lot of stuff myself.
  * If you're having any issues please report them!
@@ -65,47 +64,64 @@ import java.util.regex.Pattern
  */
 class DatabaseWindow {
 
-    private var databaseSort by mutableStateOf(
-        DatabaseSort.sortForId(Defaults.DB_LAST_SORT_USED.int())
-    )
     private var loading by mutableStateOf(false)
-    private var type by mutableStateOf(
-        DatabaseType.typeForId(Defaults.DB_LAST_TYPE_USED.int())
-    )
-    private var searchText by mutableStateOf("")
-    private var searchByGenre = mutableStateOf(true)
     private var resultText by mutableStateOf("")
 
-    private val sortedSeries: List<Series>
-        get() {
-            return when (databaseSort) {
-                DatabaseSort.NAME -> databaseByType.sortedBy { it.name }
-                DatabaseSort.NAME_DESC -> databaseByType.sortedByDescending { it.name }
-                DatabaseSort.EPISODES -> databaseByType.sortedBy { it.episodesSize }
-                DatabaseSort.EPISODES_DESC -> databaseByType.sortedByDescending { it.episodesSize }
-            }
-        }
+    private val mSearchByGenre = MutableStateFlow(
+        Defaults.DB_SEARCH_GENRE.boolean()
+    )
+    private val searchByGenre = mSearchByGenre.asStateFlow()
 
-    private val filteredSeries: List<Series>
-        get() = sortedSeries.filter {
-            if (searchText.isNotEmpty()) {
-                var foundGenre = false
-                if (searchByGenre.value) {
-                    for (genre in it.genreNames) {
-                        if (genre.equals(searchText, true)) {
-                            foundGenre = true
-                            break
+    private val mSearchByDesc = MutableStateFlow(
+        Defaults.DB_SEARCH_DESC.boolean()
+    )
+    private val searchByDesc = mSearchByDesc.asStateFlow()
+
+    private val mDatabaseType = MutableStateFlow(
+        DatabaseType.typeForId(Defaults.DB_LAST_TYPE_USED.int())
+    )
+    private val databaseType = mDatabaseType.asStateFlow()
+
+    private val mDatabaseSort = MutableStateFlow(
+        DatabaseSort.sortForId(Defaults.DB_LAST_SORT_USED.int())
+    )
+    private val databaseSort = mDatabaseSort.asStateFlow()
+
+    private val mSearchText = MutableStateFlow("")
+    private val searchText = mSearchText.asStateFlow()
+
+    private val series = combine(
+        databaseType,
+        databaseSort,
+        searchText,
+        searchByGenre,
+        searchByDesc
+    ) { type, sort, search, byGenre, byDesc ->
+            if (search.isBlank()) {
+                sortedSeries
+            } else {
+                sortedSeries.filter {
+                    var foundGenre = false
+                    if (byGenre) {
+                        for (genre in it.genreNames) {
+                            if (genre.equals(search, true)) {
+                                foundGenre = true
+                                break
+                            }
                         }
                     }
+                    it.name.contains(search, true) || (byDesc && it.description.contains(search, true)) || foundGenre
                 }
-                return@filter it.name.contains(searchText, true) || foundGenre
             }
-            true
-        }
+        }.stateIn(
+            Core.child.taskScope,
+            SharingStarted.WhileSubscribed(5000),
+            sortedSeries
+        )
 
     private val databaseByType: List<Series>
         get() {
-            return when (type) {
+            return when (databaseType.value) {
                 DatabaseType.ANIME -> BoxHelper.shared.dubbedSeriesBox.all
                     .plus(BoxHelper.shared.subbedSeriesBox.all)
 
@@ -115,9 +131,21 @@ class DatabaseWindow {
             }
         }
 
+    private val sortedSeries: List<Series>
+        get() {
+            return when (databaseSort.value) {
+                DatabaseSort.NAME -> databaseByType.sortedBy { it.name }
+                DatabaseSort.NAME_DESC -> databaseByType.sortedByDescending { it.name }
+                DatabaseSort.EPISODES -> databaseByType.sortedBy { it.episodesSize }
+                DatabaseSort.EPISODES_DESC -> databaseByType.sortedByDescending { it.episodesSize }
+            }
+        }
 
     @OptIn(ExperimentalFoundationApi::class)
-    fun open() {
+    fun open(
+        initialSearch: String = ""
+    ) {
+        mSearchText.value = initialSearch
         ApplicationState.newWindow(
             "Database"
         ) {
@@ -134,10 +162,11 @@ class DatabaseWindow {
                             horizontalArrangement = Arrangement.spacedBy(5.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
+                            val search by searchText.collectAsState()
                             defaultSettingsTextField(
-                                searchText,
+                                search,
                                 onValueChanged = {
-                                    searchText = it
+                                    mSearchText.value = it
                                 },
                                 hint = randomSearchHint,
                                 textStyle = MaterialTheme.typography.labelLarge,
@@ -145,19 +174,48 @@ class DatabaseWindow {
                                     .padding(10.dp).height(40.dp),
                                 requestFocus = true
                             )
-                            defaultCheckbox(
-                                searchByGenre,
-                                modifier = Modifier.padding(top = 10.dp, bottom = 10.dp)
-                            ) {
-                                searchByGenre.value = searchByGenre.value.not()
+                            val searchByGenre by searchByGenre.collectAsState()
+                            val searchByDesc by searchByDesc.collectAsState()
+                            val genreTooltip = "Enables searching by genre. Search by genre is case sensitive."
+                            tooltip(genreTooltip) {
+                                defaultCheckbox(
+                                    searchByGenre,
+                                    modifier = Modifier.padding(top = 10.dp, bottom = 10.dp)
+                                ) {
+                                    mSearchByGenre.value = searchByGenre.not()
+                                    Defaults.DB_SEARCH_GENRE.update(mSearchByGenre.value)
+                                }
                             }
-                            Text(
-                                "Search By Genre",
-                                fontSize = 14.sp,
-                                modifier = Modifier.onClick {
-                                    searchByGenre.value = searchByGenre.value.not()
-                                }.padding(top = 10.dp, bottom = 15.dp)
-                            )
+                            tooltip(genreTooltip) {
+                                Text(
+                                    "Genre",
+                                    fontSize = 14.sp,
+                                    modifier = Modifier.onClick {
+                                        mSearchByGenre.value = searchByGenre.not()
+                                        Defaults.DB_SEARCH_GENRE.update(mSearchByGenre.value)
+                                    }.padding(top = 10.dp, bottom = 15.dp)
+                                )
+                            }
+                            val descTooltip = "Enables searching by description keywords."
+                            tooltip(descTooltip) {
+                                defaultCheckbox(
+                                    searchByDesc,
+                                    modifier = Modifier.padding(top = 10.dp, bottom = 10.dp)
+                                ) {
+                                    mSearchByDesc.value = searchByDesc.not()
+                                    Defaults.DB_SEARCH_DESC.update(mSearchByDesc.value)
+                                }
+                            }
+                            tooltip(descTooltip) {
+                                Text(
+                                    "Description",
+                                    fontSize = 14.sp,
+                                    modifier = Modifier.onClick {
+                                        mSearchByDesc.value = searchByDesc.not()
+                                        Defaults.DB_SEARCH_DESC.update(mSearchByDesc.value)
+                                    }.padding(top = 10.dp, bottom = 15.dp)
+                                )
+                            }
                         }
                         Text(
                             resultText,
@@ -168,6 +226,7 @@ class DatabaseWindow {
                             horizontalArrangement = Arrangement.spacedBy(5.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
+                            val type by databaseType.collectAsState()
                             DatabaseType.entries.forEach {
                                 defaultButton(
                                     it.name.capitalizeFirst(),
@@ -184,8 +243,8 @@ class DatabaseWindow {
                                         else MaterialTheme.colorScheme.onPrimary
                                     )
                                 ) {
-                                    type = it
-                                    Defaults.DB_LAST_TYPE_USED.update(type.id)
+                                    mDatabaseType.value = it
+                                    Defaults.DB_LAST_TYPE_USED.update(mDatabaseType.value.id)
                                 }
                             }
                         }
@@ -197,6 +256,10 @@ class DatabaseWindow {
                         bottom = padding.calculateBottomPadding()
                     ).fillMaxSize()
                 ) {
+                    val series by series.collectAsState()
+                    //val series = zeries.collectAsState()
+
+
                     header()
                     Box(modifier = Modifier.fillMaxSize()) {
                         LazyColumn(
@@ -216,7 +279,7 @@ class DatabaseWindow {
                             state = seasonsListState
                         ) {
                             items(
-                                filteredSeries,
+                                series,
                                 key = { it.slug }
                             ) {
                                 seriesRow(it, this@newWindow)
@@ -239,8 +302,8 @@ class DatabaseWindow {
                                 scrollState = seasonsListState
                             )
                         )
-                        LaunchedEffect(filteredSeries.size) {
-                            resultText = "Showing ${filteredSeries.size} series results"
+                        LaunchedEffect(series.size) {
+                            resultText = "Showing ${series.size} series results"
                         }
                         DisposableEffect(Unit) {
                             onDispose {
@@ -276,7 +339,7 @@ class DatabaseWindow {
                 horizontalAlignment = Alignment.CenterHorizontally,
                 modifier = Modifier.weight(NAME_WEIGHT)
                     .align(Alignment.CenterVertically).onClick {
-                        databaseSort = when (databaseSort) {
+                        mDatabaseSort.value = when (databaseSort.value) {
                             DatabaseSort.NAME -> {
                                 DatabaseSort.NAME_DESC
                             }
@@ -289,7 +352,8 @@ class DatabaseWindow {
                                 DatabaseSort.NAME_DESC
                             }
                         }
-                        Defaults.DB_LAST_SORT_USED.update(databaseSort.id)
+                        //_dbSort.value = databaseSort
+                        Defaults.DB_LAST_SORT_USED.update(databaseSort.value.id)
                     }
             ) {
                 Row(
@@ -305,9 +369,10 @@ class DatabaseWindow {
                         fontSize = MaterialTheme.typography.bodySmall.fontSize,
                         textAlign = TextAlign.Center
                     )
-                    if (databaseSort == DatabaseSort.NAME || databaseSort == DatabaseSort.NAME_DESC) {
+                    val dbSort by databaseSort.collectAsState()
+                    if (dbSort == DatabaseSort.NAME || dbSort == DatabaseSort.NAME_DESC) {
                         Icon(
-                            if (databaseSort == DatabaseSort.NAME_DESC)
+                            if (dbSort == DatabaseSort.NAME_DESC)
                                 EvaIcons.Fill.ArrowIosDownward
                             else
                                 EvaIcons.Fill.ArrowIosUpward,
@@ -345,7 +410,7 @@ class DatabaseWindow {
                 horizontalAlignment = Alignment.CenterHorizontally,
                 modifier = Modifier.weight(EPISODES_WEIGHT)
                     .align(Alignment.CenterVertically).onClick {
-                        databaseSort = when (databaseSort) {
+                        mDatabaseSort.value = when (databaseSort.value) {
                             DatabaseSort.EPISODES -> {
                                 DatabaseSort.EPISODES_DESC
                             }
@@ -358,7 +423,7 @@ class DatabaseWindow {
                                 DatabaseSort.EPISODES_DESC
                             }
                         }
-                        Defaults.DB_LAST_SORT_USED.update(databaseSort.id)
+                        Defaults.DB_LAST_SORT_USED.update(databaseSort.value.id)
                     }
             ) {
                 Row(
@@ -374,9 +439,10 @@ class DatabaseWindow {
                         fontSize = MaterialTheme.typography.bodySmall.fontSize,
                         textAlign = TextAlign.Center
                     )
-                    if (databaseSort == DatabaseSort.EPISODES || databaseSort == DatabaseSort.EPISODES_DESC) {
+                    val dbSort by databaseSort.collectAsState()
+                    if (dbSort == DatabaseSort.EPISODES || dbSort == DatabaseSort.EPISODES_DESC) {
                         Icon(
-                            if (databaseSort == DatabaseSort.EPISODES_DESC)
+                            if (dbSort == DatabaseSort.EPISODES_DESC)
                                 EvaIcons.Fill.ArrowIosDownward
                             else
                                 EvaIcons.Fill.ArrowIosUpward,
@@ -638,7 +704,7 @@ class DatabaseWindow {
                                         options = listOf(
                                             Option("Cancel"),
                                             Option("Search For Genre") {
-                                                searchText = genre.name
+                                                mSearchText.value = genre.name
                                             },
                                             Option("Open Genre Link") {
                                                 if (genre.slug.isNotEmpty()) {
@@ -705,7 +771,7 @@ class DatabaseWindow {
         get() =
             BoxHelper.allSeries.map { it.name }.plus(
                 BoxHelper.shared.wcoGenreBox.all.map { it.name }
-            ).random()
+            ).random().lines().firstOrNull()?: ""
 
     companion object {
         private const val GENRE_TAG = "GEN"

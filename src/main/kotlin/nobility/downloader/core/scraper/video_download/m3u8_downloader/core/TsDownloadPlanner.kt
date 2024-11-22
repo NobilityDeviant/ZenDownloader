@@ -1,7 +1,7 @@
 package nobility.downloader.core.scraper.video_download.m3u8_downloader.core
 
-import nobility.downloader.core.scraper.video_download.m3u8_downloader.core.M3u8Download.Companion.m3u8StoreName
-import nobility.downloader.core.scraper.video_download.m3u8_downloader.core.M3u8Download.Companion.unFinishedTsExtension
+import nobility.downloader.core.scraper.video_download.m3u8_downloader.core.M3u8Download.Companion.M3U8_STORE_NAME
+import nobility.downloader.core.scraper.video_download.m3u8_downloader.core.M3u8Download.Companion.UNF_TS_EXTENSION
 import nobility.downloader.core.scraper.video_download.m3u8_downloader.http.config.HttpRequestConfig
 import nobility.downloader.core.scraper.video_download.m3u8_downloader.util.CollUtil
 import nobility.downloader.core.scraper.video_download.m3u8_downloader.util.Preconditions
@@ -9,7 +9,6 @@ import nobility.downloader.core.scraper.video_download.m3u8_downloader.util.Prec
 import nobility.downloader.core.scraper.video_download.m3u8_downloader.util.Preconditions.m3u8Exception
 import nobility.downloader.core.scraper.video_download.m3u8_downloader.util.Utils
 import nobility.downloader.core.scraper.video_download.m3u8_downloader.util.function.Try
-import org.apache.commons.collections4.CollectionUtils
 import org.apache.commons.lang3.ObjectUtils
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -19,7 +18,6 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
 import java.nio.file.attribute.BasicFileAttributes
-import java.util.*
 import java.util.function.BiPredicate
 import java.util.stream.Collectors
 
@@ -36,7 +34,7 @@ class TsDownloadPlanner(
         val identity = m3u8Download.identity
         val m3u8DownloadOptions = m3u8Download.getM3u8DownloadOptions()
 
-        val m3u8StorePath = tsDir.resolve(m3u8StoreName)
+        val m3u8StorePath = tsDir.resolve(M3U8_STORE_NAME)
         val optionsForApplyTsCache = m3u8DownloadOptions.optionsForApplyTsCache
         val requestConfigStrategy = m3u8DownloadOptions.m3u8HttpRequestConfigStrategy
 
@@ -106,15 +104,17 @@ class TsDownloadPlanner(
                 Try.of {
                     (!Files.isHidden(p)
                             && !ignoredPaths.contains(p)
-                            && !p.fileName.toString().endsWith(".$unFinishedTsExtension"))
+                            && !p.fileName.toString().endsWith(".$UNF_TS_EXTENSION"))
                 }.get()
             }
 
         Try.of { Files.find(tsDir, 2, matcher) }
             .get().use { pathStream ->
-                possibleCompletedFiles = pathStream!!.limit(10).collect(Collectors.toList())
+                possibleCompletedFiles = pathStream
+                    .limit(10)
+                    .collect(Collectors.toList())
             }
-        if (CollectionUtils.isEmpty(possibleCompletedFiles)) {
+        if (possibleCompletedFiles.isEmpty()) {
             return
         }
 
@@ -155,8 +155,7 @@ class TsDownloadPlanner(
             return
         }
 
-        if (Objects.isNull(m3u8Store.m3u8Uri)
-            || Objects.isNull(m3u8Store.finalM3u8Uri)) {
+        if (m3u8Store.m3u8Uri == null || m3u8Store.finalM3u8Uri == null) {
             log.error(
                 """
                     found possible completed files, but m3u8Store({}) is invalid, it cannot be confirmed whether it belongs to the current m3u8: {}
@@ -194,11 +193,11 @@ class TsDownloadPlanner(
         for (mediaSegment in mediaSegments) {
             val tsUri = mediaSegment.uri
             var tsFileName = Paths.get(tsUri.path).fileName.toString()
-            var tsFile = tsDir.resolve("$tsFileName.$unFinishedTsExtension")
+            var tsFile = tsDir.resolve("$tsFileName.$UNF_TS_EXTENSION")
 
             if (Utils.isFileNameTooLong(tsFile.toString())) {
                 val md5 = Utils.md5(tsUri.toString())
-                val rtsFile = tsDir.resolve("$md5.$unFinishedTsExtension")
+                val rtsFile = tsDir.resolve("$md5.$UNF_TS_EXTENSION")
                 log.info("fileName too long, use {}: {}", rtsFile, tsFile)
                 tsFile = rtsFile
                 tsFileName = "$md5.ts"

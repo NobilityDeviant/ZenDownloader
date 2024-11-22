@@ -1,6 +1,7 @@
 package nobility.downloader.core.scraper.video_download.m3u8_downloader.util
 
 import nobility.downloader.core.scraper.video_download.m3u8_downloader.util.CollUtil.newArrayListWithCapacity
+import nobility.downloader.utils.FrogLog
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.io.BufferedReader
@@ -122,11 +123,10 @@ object VideoUtil {
         try {
             val res = execCommand(command)
             if (res) {
-                log.info("convert succeed")
+                log.info("Convert succeeded")
             } else {
-                log.error("convert failed")
+                log.error("Convert failed")
             }
-
             Files.deleteIfExists(allTsFile)
             return res
         } catch (e: Exception) {
@@ -138,8 +138,51 @@ object VideoUtil {
         }
     }
 
+    fun mergeVideoAndAudio(
+        videoFile: File,
+        audioFile: File,
+        destVideoFile: File
+    ): Boolean {
+        val ffmpegPath = FfmpegPathHolder.ffmpegPath
+        //Preconditions.checkNotBlank(ffmpegPath, "ffmpeg path")
+        val startTime = System.currentTimeMillis()
+        //ffmpeg -i video.mp4 -i audio.m4a -acodec copy -vcodec copy output.mp4
+
+        val command = mutableListOf<String>()
+        command.add(ffmpegPath)
+        command.add("-i")
+        command.add(videoFile.absolutePath)
+        command.add("-i")
+        command.add(audioFile.absolutePath)
+        command.add("-acodec")
+        command.add("copy")
+        command.add("-vcodec")
+        command.add("copy")
+        command.add(destVideoFile.absolutePath)
+
+        try {
+            val res = execCommand(command)
+            if (!res) {
+                FrogLog.logError(
+                    "Failed to merge video and audio.",
+                    "Command returned 1."
+                )
+            }
+            return res
+        } catch (e: Exception) {
+            FrogLog.logError(
+                "Failed to merge video and audio.",
+                e
+            )
+            return false
+        } finally {
+            val endTime = System.currentTimeMillis()
+            log.info("Merge cost {} seconds", (endTime - startTime) / 1000.0)
+        }
+    }
+
     private fun execCommand(commands: List<String>): Boolean {
-        log.info("execCommand {}", java.lang.String.join(" ", commands))
+        FrogLog.logInfo("execCommand ${commands.joinToString(" ")}")
         try {
             val videoProcess = ProcessBuilder(commands)
                 .redirectErrorStream(true)
@@ -151,11 +194,13 @@ object VideoUtil {
             }
 
             val code = videoProcess.waitFor()
-            log.info("execCommand code={}", code)
-
+            FrogLog.logInfo("execCommand code=$code")
             return code == 0
         } catch (e: Exception) {
-            log.error(e.message, e)
+            FrogLog.logError(
+                "Failed to execute ffmpeg command.",
+                e
+            )
             return false
         }
     }

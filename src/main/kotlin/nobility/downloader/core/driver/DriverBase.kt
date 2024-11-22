@@ -22,7 +22,7 @@ abstract class DriverBase(
     private var nDriver: WebDriver? = null
     val driver get() = nDriver!!
     private var isSetup = false
-    protected var userAgent = ""
+    var userAgent = ""
     private val headless = Defaults.HEADLESS_MODE.boolean()
 
 

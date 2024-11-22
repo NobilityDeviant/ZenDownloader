@@ -13,8 +13,9 @@ sealed class Resource<T>(
             "$message | Error: " + if (exception != null)
                 exception.localizedMessage else "No error found."
         )
-        constructor(exception: Throwable? = null) : this("Error: " + if (exception != null)
+        constructor(exception: Throwable?) : this("Error: " + if (exception != null)
             exception.localizedMessage else "No error found.")
+        constructor(): this("err")
     }
 
     class ErrorCode<T>(

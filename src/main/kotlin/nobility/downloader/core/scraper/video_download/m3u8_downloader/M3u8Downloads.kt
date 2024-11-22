@@ -18,7 +18,6 @@ import java.net.URI
 import java.util.concurrent.CompletableFuture
 import java.util.function.IntSupplier
 import java.util.function.LongSupplier
-import kotlin.concurrent.Volatile
 import kotlin.math.ceil
 
 object M3u8Downloads {
@@ -28,38 +27,86 @@ object M3u8Downloads {
     suspend fun download(
         managerConfig: HttpRequestManagerConfig,
         download: M3u8Download
-    ): Any = withContext(Dispatchers.Default) {
-        val optionsSelector = FixedDownloadNumberOptionsSelector(
-            listOf(download),
-            managerConfig
-        )
-        var m3u8Executor: M3u8Executor? = null
-        var m3u8Complete: CompletableFuture<M3u8Download>? = null
-        try {
-            m3u8Executor = executorInstance(managerConfig, optionsSelector)
-            launch {
-                while (!m3u8Executor.executor.isTerminated) {
-                    if (!Core.child.isRunning) {
-                        try {
-                            m3u8Complete?.cancel(true)
-                            FrogLog.logInfo("Shutdown m3u8Executor gracefully.")
+    ): Boolean {
+        return withContext(Dispatchers.IO) {
+            val optionsSelector = FixedDownloadNumberOptionsSelector(
+                download,
+                managerConfig
+            )
+            var m3u8Executor: M3u8Executor? = null
+            var m3u8Complete: CompletableFuture<*>? = null
+            var stopped = false
+            try {
+                m3u8Executor = executorInstance(managerConfig, optionsSelector)
+                launch {
+                    while (!m3u8Executor.executor.isTerminated) {
+                        if (!Core.child.isRunning) {
+                            stopped = true
+                            try {
+                                m3u8Complete?.cancel(true)
+                                FrogLog.logInfo("Shutdown m3u8Executor gracefully.")
+                            } catch (e: Exception) {
+                                FrogLog.logError(
+                                    "Failed to shutdown m3u8Executor.",
+                                    e
+                                )
+                            }
                             break
-                        } catch (e: Exception) {
-                            FrogLog.logError(
-                                "Failed to shutdown m3u8Executor.",
-                                e
-                            )
                         }
                     }
                 }
+                m3u8Complete = m3u8Executor.execute(download)
+                m3u8Complete.await()
+            } catch (ex: Exception) {
+                log.error(ex.message, ex)
+            } finally {
+                delay(1000)
+                m3u8Executor?.shutdownAwaitMills(2000)
             }
-            m3u8Complete = m3u8Executor.execute(download)
-            m3u8Complete.await()
-        } catch (ex: Exception) {
-            log.error(ex.message, ex)
-        } finally {
-            delay(1000)
-            m3u8Executor?.shutdownAwaitMills(2000)
+            return@withContext stopped
+        }
+    }
+
+    suspend fun download(
+        managerConfig: HttpRequestManagerConfig,
+        downloads: List<M3u8Download>
+    ): Boolean {
+        return withContext(Dispatchers.IO) {
+            val optionsSelector = FixedDownloadNumberOptionsSelector(
+                downloads,
+                managerConfig
+            )
+            var m3u8Executor: M3u8Executor? = null
+            var m3u8Complete: CompletableFuture<*>? = null
+            var stopped = false
+            try {
+                m3u8Executor = executorInstance(managerConfig, optionsSelector)
+                launch {
+                    while (!m3u8Executor.executor.isTerminated) {
+                        if (!Core.child.isRunning) {
+                            stopped = true
+                            try {
+                                m3u8Complete?.cancel(true)
+                                FrogLog.logInfo("Shutdown m3u8Executor gracefully.")
+                            } catch (e: Exception) {
+                                FrogLog.logError(
+                                    "Failed to shutdown m3u8Executor.",
+                                    e
+                                )
+                            }
+                            break
+                        }
+                    }
+                }
+                m3u8Complete = m3u8Executor.execute(downloads)
+                m3u8Complete.await()
+            } catch (ex: Exception) {
+                log.error(ex.message, ex)
+            } finally {
+                delay(1000)
+                m3u8Executor?.shutdownAwaitMills(2000)
+            }
+            return@withContext stopped
         }
     }
 
@@ -84,6 +131,14 @@ object M3u8Downloads {
         downloads: List<M3u8Download>,
         managerConfig: HttpRequestManagerConfig
     ) : TsDownloadOptionsSelector {
+
+        constructor(
+            download: M3u8Download,
+            managerConfig: HttpRequestManagerConfig
+        ): this(
+            listOf(download),
+            managerConfig
+        )
 
         private var optionsSnapshot: OptionsSnapshot
         private val managerConfig: HttpRequestManagerConfig

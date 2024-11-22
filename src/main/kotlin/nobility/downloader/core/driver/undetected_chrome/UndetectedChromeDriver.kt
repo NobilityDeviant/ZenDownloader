@@ -40,28 +40,13 @@ class UndetectedChromeDriver(
         try {
             browser.destroy()
             super.quit()
-            // kill process
         } catch (e: Exception) {
             FrogLog.logError("Failed to kill driver.", e)
         }
-        //delete temp user dir
-        if (keepUserDataDir) {
-            for (i in 0..4) {
-                try {
-                    val file = File(userDataDir)
-                    if (!file.exists()) {
-                        break
-                    }
-                    val f = file.delete()
-                    if (f) {
-                        break
-                    }
-                } catch (e: Exception) {
-                    FrogLog.logError(
-                        "Failed to delete UndetectedChromeDriver's user data folder.",
-                        e
-                    )
-                }
+        if (!keepUserDataDir) {
+            val file = File(userDataDir)
+            if (file.exists()) {
+                file.deleteRecursively()
             }
         }
     }
