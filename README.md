@@ -156,7 +156,7 @@ and
 
 *Chrome Driver Path*
 
-Click the button *Set File* for each path respectively and choose your files.
+Click the button *Set File* for each path respectively to choose your files.
 
 The browser path will be the `chrome.exe` you were using earlier to check the version.
 
@@ -206,6 +206,29 @@ If you encounter any cloudflare errors, just keep trying or report it.
 **History**
 
 ![History](images/history.png?raw=true "History")
+
+# Side Tips
+
+**Episode Multi-Select**
+
+When you're in the `Download Confirm Window` you can multi-select specific episodes if there's a ton of them.
+
+Hold the `Shift` Key and click on the episode to highlight it. The first episode will be the starting point.
+
+![ShiftMode1](guide/shift_mode_1.png?raw=true "ShiftMode1")
+
+Now let go of the shift key, scroll down/up to whatever episode you want, hold the shift key again and select an episode.
+This will highlight every episode in between the starting point to the last one.
+
+![ShiftMode2](guide/shift_mode_2.png?raw=true "ShiftMode2")
+
+Now once everything you want to select is highlighted, let go of the shift key and press the `Select % Highlighted Episode(s)` Button.
+This will select everything that's been highlighted. It will lag, but just wait for it to finish.
+
+**Timeout Errors**
+
+If you are experiencing any timeout errors inside the `Error Console`, go to the settings page and increase the timeout to something higher.
+The timeout option effects everything related to timeouts and should help if you're having any issues.
 
 # Building
 
