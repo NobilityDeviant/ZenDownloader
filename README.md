@@ -8,7 +8,7 @@ Many of the anime websites out there are locked down really hard which makes wco
 
 **You can now download all paywalled movies!**
 
-**Now also supports M3U8 Videos & Episodes with 2 videos**
+**Now also supports M3U8 Videos & Episodes with 2 videos.**
 
 Don't pay for wco premium. I'll never support it and I don't recommend it.
 
@@ -40,7 +40,7 @@ You won't need to download the JRE because it comes pre-packaged.
 
 **Download & Install Chrome:** [Download](https://www.google.com/chrome/?platform=windows)
 
-*If you already have Chrome installed, make sure it's version 108 or higher*
+*If you already have Chrome installed, make sure it's version 108 or higher.*
 
 **Download & Install The Latest Release:** [Releases](https://github.com/NobilityDeviant/ZenDownloader/releases)
 
@@ -54,7 +54,7 @@ You're also going to need to install: [Visual C++ Redistributable for Visual Stu
 
 Download Chrome Here: [Download](https://www.google.com/chrome/?platform=linux)
 
-*If you already have Chrome installed, make sure it's version 108 or higher*
+*If you already have Chrome installed, make sure it's version 108 or higher.*
 
 Choose **64 bit .deb (For Debian/Ubuntu)**
 
@@ -84,28 +84,28 @@ Replacing `zendownloader.deb` with the file name.
 
 Input your password and you're done.
 
-If you wish to uninstall it then you can use the command:
+If you wish to uninstall it, then you can use the command:
 
 `sudo apt-get remove zendownloader`
 
-Once opened if you use a keyring, it will ask for the password.
+Once opened, if you use a keyring, it will ask for the password.
 After denying it I have found no issues, so this isn't needed afaik.
 
 Learn more about the keyring here: https://wiki.gnome.org/action/show/Projects/GnomeKeyring?action=show&redirect=GnomeKeyring
 
 # First Run
 
-For your first run you will be greeted with the *Asset Updater*
+For your first run you will be greeted with the **Asset Updater**
 
 This will download all the files (besides images) from the [Database Folder](https://github.com/NobilityDeviant/ZenDownloader/tree/master/database)
 
-If you want a better User Experience with the *Database Window* you should also download the images.
+If you want a better User Experience with the **Database Window** you should also download the images.
 
 A guide for that can be found here: [Download Images](https://github.com/NobilityDeviant/ZenDownloader/tree/master/database#series-images)
 
 # Asset Updater Not Working
 
-If the *Asset Updater* isn't working for you, then follow this guide to ensure you get all the updates: 
+If the **Asset Updater** isn't working for you, then follow this guide to ensure you get all the updates: 
 
 **Database Guide:** [Guide](https://github.com/NobilityDeviant/ZenDownloader/tree/master/database)
 
@@ -142,13 +142,13 @@ Now visit: [Chrome Driver Releases](https://googlechromelabs.github.io/chrome-fo
 
 and find the version closest to yours.
 
-If you can't find an exact match you can use the link it provides for your Operating System and replace the version with your own.
+If you can't find an exact match, you can use the link it provides for your Operating System and replace the version with your own.
 
 For example: [128.0.6613.85](https://storage.googleapis.com/chrome-for-testing-public/128.0.6613.85/win64/chromedriver-win64.zip)
 
 **Settings**
 
-Now inside `Settings` you will see 2 options:
+Now inside **Settings** you will see 2 options:
 
 *Chrome Browser Path*
 
@@ -156,7 +156,7 @@ and
 
 *Chrome Driver Path*
 
-Click the button *Set File* for each path respectively to choose your files.
+Click the **Set File** button for each path respectively to choose your files.
 
 The browser path will be the `chrome.exe` you were using earlier to check the version.
 
@@ -175,7 +175,9 @@ I will also have to keep track and update the useragents every now and then.
 
 If you encounter any cloudflare errors, just keep trying or report it.
 
+Don't worry too much though. 
 **ZenDownloader** comes equipped with a Kotlin version of Undetected ChromeDriver which bypasses all basic cloudflare blocking.
+The only way cloudflare would work, is if wco pays for their premium package which is expensive.
 
 # UI
 
@@ -211,9 +213,9 @@ If you encounter any cloudflare errors, just keep trying or report it.
 
 **Episode Multi-Select**
 
-When you're in the `Download Confirm Window` you can multi-select specific episodes if there's a ton of them.
+When you're in the **Download Confirm Window** you can multi-select specific episodes if there's a ton of them.
 
-Hold the `Shift` Key and click on the episode to highlight it. The first episode will be the starting point.
+Hold the **Shift Key** to enable `Shift Mode` and click on the episode to highlight it. The first episode will be the starting point.
 
 ![ShiftMode1](guide/shift_mode_1.png?raw=true "ShiftMode1")
 
@@ -245,19 +247,19 @@ In order to import the project through VCS, `Git` is needed as well.
 
 Download Git: [Download](https://git-scm.com/downloads)
 
-Once those are installed open *IntelliJ*.
+Once those are installed open **IntelliJ**.
 
 You will be greeted with the project window.
 
 ![Project Window](guide/idea_project_window.png?raw=true "Project Window")
 
-Select *Get From VCS*
+Select **Get From VCS**
 
 Scroll up and get the git url:
 
 ![Git Url](guide/get_git_link.png?raw=true "Get Git Link")
 
-Paste it in the URL field and press the *Clone* button.
+Paste it in the URL field and press the **Clone** button.
 
 Once imported it will throw an error about the JDK if it's not installed.
 
@@ -265,11 +267,11 @@ Click the error in the console and you'll be greeted with this window:
 
 ![Git Url](guide/select_jdk.png?raw=true "Select JDK")
 
-Under *Gradle JVM* select it and select *Download JDK* 
+Under **Gradle JVM** select it and select **Download JDK**
 
-For the version you will want to select *17*
+For the version you will want to select **17**
 
-Press *Download*, press *Apply* and press *Ok*
+Press **Download**, press **Apply** and press **Ok**
 
 Once that's been downloaded, go to File > Close Project
 
