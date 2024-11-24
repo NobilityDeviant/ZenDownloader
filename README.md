@@ -225,10 +225,14 @@ This will highlight every episode in between the starting point to the last one.
 Now once everything you want to select is highlighted, let go of the shift key and press the `Select % Highlighted Episode(s)` Button.
 This will select everything that's been highlighted. It will lag, but just wait for it to finish.
 
+![ShiftMode3](guide/shift_mode_3.png?raw=true "ShiftMode3")
+
 **Timeout Errors**
 
-If you are experiencing any timeout errors inside the `Error Console`, go to the settings page and increase the timeout to something higher.
+If you are experiencing any timeout errors inside the `Error Console`, go to the `Settings Page (CTRL + S)` and increase the timeout to something higher.
 The timeout option effects everything related to timeouts and should help if you're having any issues.
+
+![Timeout](guide/timeout.png?raw=true "Timeout")
 
 # Building
 
