@@ -95,11 +95,11 @@ Learn more about the keyring here: https://wiki.gnome.org/action/show/Projects/G
 
 # First Run
 
-For your first run you will be greeted with the **Asset Updater**
+For your first run, you will be greeted with the **Asset Updater**
 
 This will download all the files (besides images) from the [Database Folder](https://github.com/NobilityDeviant/ZenDownloader/tree/master/database)
 
-If you want a better User Experience with the **Database Window** you should also download the images.
+If you want a better User Experience with the **Database Window**, you should also download the images.
 
 A guide for that can be found here: [Download Images](https://github.com/NobilityDeviant/ZenDownloader/tree/master/database#series-images)
 
@@ -117,7 +117,7 @@ This works on both WIndows & Linux.
 First you're going to want to install Chrome from the offical website.
 You can follow the [Download & Install](https://github.com/NobilityDeviant/ZenDownloader#download--install) for that.
 
-Now when Chrome is installed you need to find the version of it.
+Now when Chrome is installed, you need to find the version of it.
 
 **Windows**
 
@@ -176,8 +176,10 @@ I will also have to keep track and update the useragents every now and then.
 If you encounter any cloudflare errors, just keep trying or report it.
 
 Don't worry too much though. 
+
 **ZenDownloader** comes equipped with a Kotlin version of Undetected ChromeDriver which bypasses all basic cloudflare blocking.
-The only way cloudflare would work, is if wco pays for their premium package which is expensive.
+
+The only way cloudflare would work is if wco pays for their premium package, which is expensive.
 
 # UI
 
