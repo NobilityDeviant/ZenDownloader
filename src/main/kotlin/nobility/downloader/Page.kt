@@ -1,7 +1,10 @@
 package nobility.downloader
 
 enum class Page(val title: String) {
-    HOME("Downloader"),
+    DOWNLOADER("Downloader"),
     DOWNLOADS("Downloads"),
-    SETTINGS("Settings")
+    HISTORY("History"),
+    RECENT("Recent Series"),
+    SETTINGS("Settings"),
+    ERROR_CONSOLE("Error Console")
 }

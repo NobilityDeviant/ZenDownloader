@@ -1,5 +1,6 @@
 package nobility.downloader.core.driver
 
 class BasicDriverBase(
-    userAgent: String = ""
-): DriverBase(userAgent)
+    userAgent: String = "",
+    headless: Boolean? = null
+): DriverBase(userAgent, headless)

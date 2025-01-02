@@ -1,9 +1,6 @@
 package nobility.downloader.core.scraper.video_download
 
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
+import kotlinx.coroutines.*
 import nobility.downloader.core.BoxHelper.Companion.int
 import nobility.downloader.core.Core
 import nobility.downloader.core.entities.Download
@@ -12,7 +9,6 @@ import nobility.downloader.core.scraper.video_download.m3u8_downloader.core.M3u8
 import nobility.downloader.core.scraper.video_download.m3u8_downloader.http.config.HttpRequestManagerConfig
 import nobility.downloader.core.settings.Defaults
 import nobility.downloader.utils.Constants
-import nobility.downloader.utils.DownloadUpdater
 import nobility.downloader.utils.Resource
 import nobility.downloader.utils.Tools
 import java.io.*
@@ -140,20 +136,52 @@ object Functions {
         }
         val con = wcoConnection(url, data.userAgent)
         con.setRequestProperty("Range", "bytes=$offset-")
+
+        var lastTime = System.currentTimeMillis()
+        var lastBytesRead = 0L
         val completeFileSize = con.contentLength + offset
         val buffer = ByteArray(8192)
         val bis = BufferedInputStream(con.inputStream)
         val fos = FileOutputStream(output, true)
         val bos = BufferedOutputStream(fos, buffer.size)
-        var count: Int
-        var total = offset
-        val updater = DownloadUpdater(download)
-        data.taskScope.launch { updater.run() }
-        val startTime = System.nanoTime()
-        while (bis.read(buffer).also { count = it } != -1) {
+        var bytesRead = 0
+        var totalBytesRead: Long = offset
+        val updaterJob = data.taskScope.launch {
+
+            var remainingSeconds = 0
+
+            while (isActive) {
+                val currentTime = System.currentTimeMillis()
+                val elapsedTime = (currentTime - lastTime) / 1000
+                if (elapsedTime > 0) {
+                    val bytesDownloadedSinceLastCheck = totalBytesRead - lastBytesRead
+                    val downloadSpeed = bytesDownloadedSinceLastCheck / elapsedTime
+                    if (downloadSpeed > 0) {
+                        val remainingBytes = completeFileSize - totalBytesRead
+                        val remainingTime = remainingBytes / downloadSpeed
+                        remainingSeconds = remainingTime.toInt()
+                        Core.child.updateDownloadProgress(
+                            download,
+                            remainingSeconds,
+                            downloadSpeed
+                        )
+                    }
+                    //update last checked time and bytes
+                    lastTime = currentTime
+                    lastBytesRead = totalBytesRead
+                    delay(1000)
+                }
+            }
+            Core.child.updateDownloadProgress(
+                download,
+                remainingSeconds
+            )
+        }
+
+        while (bis.read(buffer).also { bytesRead = it } != -1) {
             if (!Core.child.isRunning) {
                 data.writeMessage(
-                    "Stopping video download at ${Tools.bytesToString(total)}/${
+                    "Stopping video download at ${Tools.bytesToString(totalBytesRead)}/${
                         Tools.bytesToString(
                             completeFileSize
                         )
@@ -161,14 +189,10 @@ object Functions {
                 )
                 break
             }
-            total += count.toLong()
-            bos.write(buffer, 0, count)
-            val elapsedTime = System.nanoTime() - startTime
-            val totalTime = (elapsedTime * download.fileSize) / total
-            val remainingTime = (totalTime - elapsedTime) / 1_000_000_000
-            updater.remainingSeconds = remainingTime.toInt()
+            bos.write(buffer, 0, bytesRead)
+            totalBytesRead += bytesRead.toLong()
         }
-        updater.running = false
+        updaterJob.cancel()
         bos.flush()
         bos.close()
         fos.flush()

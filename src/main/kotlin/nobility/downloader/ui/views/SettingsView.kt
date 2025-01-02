@@ -2,7 +2,6 @@ package nobility.downloader.ui.views
 
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -10,7 +9,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -19,6 +17,7 @@ import com.darkrockstudios.libraries.mpfilepicker.FilePicker
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import nobility.downloader.Page
 import nobility.downloader.core.BoxHelper
 import nobility.downloader.core.BoxHelper.Companion.boolean
 import nobility.downloader.core.BoxHelper.Companion.intString
@@ -36,14 +35,14 @@ import nobility.downloader.utils.Constants.maxTimeout
 import nobility.downloader.utils.Constants.minThreads
 import nobility.downloader.utils.Constants.minTimeout
 import nobility.downloader.utils.FrogLog
-import nobility.downloader.utils.Tools
 import nobility.downloader.utils.fileExists
-import nobility.downloader.utils.tone
 import org.jsoup.Jsoup
 import java.util.regex.Matcher
 import java.util.regex.Pattern
 
-class SettingsView {
+class SettingsView: ViewPage {
+
+    override val page = Page.SETTINGS
 
     private var threads by mutableStateOf(
         Defaults.DOWNLOAD_THREADS.intString()
@@ -107,6 +106,10 @@ class SettingsView {
         Defaults.CTRL_FOR_HOTKEYS.boolean()
     )
 
+    private var enableRandomSeries = mutableStateOf(
+        Defaults.ENABLE_RANDOM_SERIES.boolean()
+    )
+
     private var disableUserAgentsUpdate = mutableStateOf(
         Defaults.DISABLE_USER_AGENTS_UPDATE.boolean()
     )
@@ -145,7 +148,7 @@ class SettingsView {
 
     @OptIn(ExperimentalLayoutApi::class)
     @Composable
-    fun settingsUi(windowScope: AppWindowScope) {
+    override fun ui(windowScope: AppWindowScope) {
         this.windowScope = windowScope
         Scaffold(
             bottomBar = {
@@ -192,14 +195,12 @@ class SettingsView {
                 }
             }
         ) {
-            val scrollState = rememberScrollState(0)
-            Box(
-                modifier = Modifier.fillMaxSize()
-            ) {
+            val scrollState = rememberScrollState()
+            fullBox {
                 Column(
                     modifier = Modifier.padding(
                         bottom = it.calculateBottomPadding(),
-                        end = 12.dp
+                        end = verticalScrollbarEndPadding
                     ).fillMaxWidth().verticalScroll(scrollState)
                 ) {
                     fieldRow(Defaults.DOWNLOAD_THREADS)
@@ -219,44 +220,8 @@ class SettingsView {
                         }
                     }
                     fieldWcoDomain()
-                    Box(
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text(
-                            "Error Console",
-                            modifier = Modifier.align(Alignment.Center)
-                                .padding(top = 5.dp, bottom = 5.dp),
-                            textAlign = TextAlign.Center,
-                            fontSize = 16.sp
-                        )
-                        defaultButton(
-                            "Copy Console Text",
-                            height = 35.dp,
-                            modifier = Modifier.align(Alignment.CenterEnd)
-                        ) {
-                            Tools.clipboardString = Core.errorConsole.text
-                            windowScope.showToast("Copied")
-                        }
-                    }
-                    Core.errorConsole.textField()
                 }
-                VerticalScrollbar(
-                    modifier = Modifier.align(Alignment.CenterEnd)
-                        .background(MaterialTheme.colorScheme.surface.tone(20.0))
-                        .fillMaxHeight()
-                        .padding(top = 3.dp, bottom = 3.dp),
-                    style = ScrollbarStyle(
-                        minimalHeight = 16.dp,
-                        thickness = 10.dp,
-                        shape = RoundedCornerShape(10.dp),
-                        hoverDurationMillis = 300,
-                        unhoverColor = MaterialTheme.colorScheme.surface.tone(50.0).copy(alpha = 0.70f),
-                        hoverColor = MaterialTheme.colorScheme.surface.tone(50.0).copy(alpha = 0.90f)
-                    ),
-                    adapter = rememberScrollbarAdapter(
-                        scrollState = scrollState
-                    )
-                )
+                verticalScrollbar(scrollState)
             }
         }
     }
@@ -265,89 +230,89 @@ class SettingsView {
     private fun openCheckBoxWindow() {
         ApplicationState.newWindow(
             "Update Options",
-            undecorated = true,
-            transparent = true,
+            undecorated = false,
+            transparent = false,
             alwaysOnTop = true,
-            size = DpSize(500.dp, 300.dp)
+            size = DpSize(500.dp, 350.dp)
         ) {
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(5.dp),
-                modifier = Modifier.fillMaxSize()
-                    .padding(10.dp)
-                    .background(
-                        color = MaterialTheme.colorScheme.background,
-                        shape = RoundedCornerShape(10.dp)
-                    ).border(
-                        1.dp,
-                        color = MaterialTheme.colorScheme.primary,
-                        shape = RoundedCornerShape(10.dp)
-                    )
-            ) {
-                FlowRow(
+            val scrollState = rememberScrollState()
+            fullBox {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.spacedBy(5.dp),
-                    horizontalArrangement = Arrangement.spacedBy(5.dp),
-                    maxItemsInEachRow = 3
+                    modifier = Modifier.fillMaxSize()
+                        .padding(end = verticalScrollbarEndPadding)
+                        .background(
+                            color = MaterialTheme.colorScheme.background
+                        ).verticalScroll(scrollState)
                 ) {
-                    Defaults.updateCheckBoxes.forEach {
-                        fieldCheckbox(it)
-                    }
-                }
-                Row(
-                    modifier = Modifier.align(Alignment.CenterHorizontally),
-                    horizontalArrangement = Arrangement.spacedBy(4.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    if (
-                        disableUserAgentsUpdate.value
-                        || disableWcoUrlsUpdate.value
-                        || disableWcoDataUpdate.value
-                        || disableWcoSeriesLinksUpdate.value
-                        || disableDubbedUpdate.value
-                        || disableSubbedUpdate.value
-                        || disableMoviesUpdate.value
-                        || disableCartoonUpdate.value
+                    FlowRow(
+                        verticalArrangement = Arrangement.spacedBy(5.dp),
+                        horizontalArrangement = Arrangement.spacedBy(5.dp),
+                        maxItemsInEachRow = 3,
+                        modifier = Modifier.padding(5.dp)
                     ) {
+                        Defaults.updateCheckBoxes.forEach {
+                            fieldCheckbox(it)
+                        }
+                    }
+                    Row(
+                        modifier = Modifier.align(Alignment.CenterHorizontally).padding(5.dp),
+                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        if (
+                            disableUserAgentsUpdate.value
+                            || disableWcoUrlsUpdate.value
+                            || disableWcoDataUpdate.value
+                            || disableWcoSeriesLinksUpdate.value
+                            || disableDubbedUpdate.value
+                            || disableSubbedUpdate.value
+                            || disableMoviesUpdate.value
+                            || disableCartoonUpdate.value
+                        ) {
+                            defaultButton(
+                                "Enable All Updates",
+                                width = 150.dp,
+                                height = 35.dp
+                            ) {
+                                disableUserAgentsUpdate.value = false
+                                disableWcoUrlsUpdate.value = false
+                                disableWcoDataUpdate.value = false
+                                disableWcoSeriesLinksUpdate.value = false
+                                disableDubbedUpdate.value = false
+                                disableSubbedUpdate.value = false
+                                disableMoviesUpdate.value = false
+                                disableCartoonUpdate.value = false
+                                updateSaveButton()
+                            }
+                        } else {
+                            defaultButton(
+                                "Disable All Updates",
+                                width = 150.dp,
+                                height = 35.dp
+                            ) {
+                                disableUserAgentsUpdate.value = true
+                                disableWcoUrlsUpdate.value = true
+                                disableWcoDataUpdate.value = true
+                                disableWcoSeriesLinksUpdate.value = true
+                                disableDubbedUpdate.value = true
+                                disableSubbedUpdate.value = true
+                                disableMoviesUpdate.value = true
+                                disableCartoonUpdate.value = true
+                                updateSaveButton()
+                            }
+                        }
                         defaultButton(
-                            "Enable All Updates",
+                            "Close",
                             width = 150.dp,
                             height = 35.dp
                         ) {
-                            disableUserAgentsUpdate.value = false
-                            disableWcoUrlsUpdate.value = false
-                            disableWcoDataUpdate.value = false
-                            disableWcoSeriesLinksUpdate.value = false
-                            disableDubbedUpdate.value = false
-                            disableSubbedUpdate.value = false
-                            disableMoviesUpdate.value = false
-                            disableCartoonUpdate.value = false
-                            updateSaveButton()
+                            closeWindow()
                         }
-                    } else {
-                        defaultButton(
-                            "Disable All Updates",
-                            width = 150.dp,
-                            height = 35.dp
-                        ) {
-                            disableUserAgentsUpdate.value = true
-                            disableWcoUrlsUpdate.value = true
-                            disableWcoDataUpdate.value = true
-                            disableWcoSeriesLinksUpdate.value = true
-                            disableDubbedUpdate.value = true
-                            disableSubbedUpdate.value = true
-                            disableMoviesUpdate.value = true
-                            disableCartoonUpdate.value = true
-                            updateSaveButton()
-                        }
-                    }
-                    defaultButton(
-                        "Close",
-                        width = 150.dp,
-                        height = 35.dp
-                    ) {
-                        closeWindow()
                     }
                 }
+                verticalScrollbar(scrollState)
             }
         }
     }
@@ -591,7 +556,7 @@ class SettingsView {
         }
     }
 
-    @Suppress("warnings")
+    @Suppress("SameParameterValue")
     @Composable
     private fun fieldDropdown(
         setting: Defaults
@@ -654,6 +619,7 @@ class SettingsView {
             Defaults.DISABLE_WCO_DATA_UPDATE -> "Disable WcoData Updates"
             Defaults.DISABLE_WCO_SERIES_LINKS_UPDATE -> "Disable Wco Series Links Updates"
             Defaults.CTRL_FOR_HOTKEYS -> "CTRL For Hotkeys"
+            Defaults.ENABLE_RANDOM_SERIES -> "Enable Random Series Rows"
             else -> "Not Implemented"
         }
         Row(
@@ -696,6 +662,14 @@ class SettingsView {
                                 autoScrollConsoles.value = autoScrollConsoles.value.not()
                             }
 
+                            Defaults.CTRL_FOR_HOTKEYS -> {
+                                ctrlForHotKeys.value = ctrlForHotKeys.value.not()
+                            }
+
+                            Defaults.ENABLE_RANDOM_SERIES -> {
+                                enableRandomSeries.value = enableRandomSeries.value.not()
+                            }
+
                             Defaults.DISABLE_USER_AGENTS_UPDATE -> {
                                 disableUserAgentsUpdate.value = disableUserAgentsUpdate.value.not()
                             }
@@ -730,6 +704,7 @@ class SettingsView {
 
                             else -> {}
                         }
+                        updateSaveButton()
                     }
                 )
             }
@@ -825,6 +800,18 @@ class SettingsView {
                             modifier = Modifier.height(30.dp)
                         ) {
                             ctrlForHotKeys.value = it
+                            updateSaveButton()
+                        }
+                    }
+                }
+
+                Defaults.ENABLE_RANDOM_SERIES -> {
+                    tooltip(setting.description) {
+                        defaultCheckbox(
+                            enableRandomSeries,
+                            modifier = Modifier.height(30.dp)
+                        ) {
+                            enableRandomSeries.value = it
                             updateSaveButton()
                         }
                     }
@@ -1102,6 +1089,10 @@ class SettingsView {
                     ctrlForHotKeys.value = it.boolean()
                 }
 
+                Defaults.ENABLE_RANDOM_SERIES -> {
+                    enableRandomSeries.value = it.boolean()
+                }
+
                 Defaults.DISABLE_USER_AGENTS_UPDATE -> {
                     disableUserAgentsUpdate.value = it.boolean()
                 }
@@ -1147,7 +1138,7 @@ class SettingsView {
         }
         val split = try {
             proxy.split(":".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             windowScope.showToast("Failed to parse proxy.")
             return false
         }
@@ -1275,6 +1266,10 @@ class SettingsView {
         Defaults.SEPARATE_SEASONS.update(separateSeasons.value)
         Defaults.AUTO_SCROLL_CONSOLES.update(autoScrollConsoles.value)
         Defaults.CTRL_FOR_HOTKEYS.update(ctrlForHotKeys.value)
+        if (Defaults.ENABLE_RANDOM_SERIES.boolean() != enableRandomSeries.value) {
+            Defaults.ENABLE_RANDOM_SERIES.update(enableRandomSeries.value)
+            Core.reloadRandomSeries()
+        }
         Defaults.DISABLE_USER_AGENTS_UPDATE.update(disableUserAgentsUpdate.value)
         Defaults.DISABLE_WCO_URLS_UPDATE.update(disableWcoUrlsUpdate.value)
         Defaults.DISABLE_DUBBED_UPDATE.update(disableDubbedUpdate.value)
@@ -1307,6 +1302,7 @@ class SettingsView {
                 || Defaults.SEPARATE_SEASONS.boolean() != separateSeasons.value
                 || Defaults.AUTO_SCROLL_CONSOLES.boolean() != autoScrollConsoles.value
                 || Defaults.CTRL_FOR_HOTKEYS.boolean() != ctrlForHotKeys.value
+                || Defaults.ENABLE_RANDOM_SERIES.boolean() != enableRandomSeries.value
                 || Defaults.DISABLE_USER_AGENTS_UPDATE.boolean() != disableUserAgentsUpdate.value
                 || Defaults.DISABLE_WCO_URLS_UPDATE.boolean() != disableWcoUrlsUpdate.value
                 || Defaults.DISABLE_DUBBED_UPDATE.boolean() != disableDubbedUpdate.value
@@ -1315,6 +1311,10 @@ class SettingsView {
                 || Defaults.DISABLE_MOVIES_UPDATE.boolean() != disableMoviesUpdate.value
                 || Defaults.DISABLE_WCO_DATA_UPDATE.boolean() != disableWcoDataUpdate.value
                 || Defaults.DISABLE_WCO_SERIES_LINKS_UPDATE.boolean() != disableWcoSeriesLinksUpdate.value
+    }
+
+    override fun onClose() {
+
     }
 
 }

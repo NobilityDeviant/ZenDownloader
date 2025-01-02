@@ -5,7 +5,7 @@ buildscript {
         mavenCentral()
     }
     dependencies {
-        classpath("io.objectbox:objectbox-gradle-plugin:3.8.0")
+        classpath("io.objectbox:objectbox-gradle-plugin:4.0.3")
     }
 }
 
@@ -42,7 +42,7 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.0-RC2")
     //implementation("org.mozilla:rhino:1.7.15")
     //database
-    val objectBox = "3.8.0"
+    val objectBox = "4.0.3"
     implementation("io.objectbox:objectbox-linux:$objectBox")
     implementation("io.objectbox:objectbox-macos:$objectBox")
     implementation("io.objectbox:objectbox-windows:$objectBox")

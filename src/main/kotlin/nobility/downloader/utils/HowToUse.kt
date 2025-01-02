@@ -10,7 +10,7 @@ object HowToUse {
                                              
                   Once you find one that you want, you copy the link in the url bar and paste it into the programs Home page.
                   
-                  You can also look through the database window by pressing CTRL + W to find your shows.
+                  You can also look through the database window by clicking the Video Database tab to find your shows.
                   
                   If the text inside the url bar isn't a URL, it will search for it inside the database window.
                   
@@ -21,10 +21,12 @@ object HowToUse {
                                             
                   Once you have selected some episodes, press the Download (X) Episodes button and let the program do it's thing.
                                             
-                  You can view the download progress in the Downloads page by pressing the download icon in the home page or press CTRL + D.
+                  You can view the download progress in the Downloads page by pressing the download tab in the home page.
                                             
-                  Don't forget to visit the Settings page and tweak your options.
-                                            
-                  Settings can be viewed with pressing the Settings icon in the home page on the top left or by pressing CTRL + S.
+                  Don't forget to visit the Settings page and tweak your settings.
+                  Settings can be viewed by clicking the Settings tab.
+                  If you hover over any setting (Title or One of the components) you can see the details of each one.
+                  
+                  Also remember to read the github readme. That will show mostly everything you need to know.
                """.trimIndent()
 }

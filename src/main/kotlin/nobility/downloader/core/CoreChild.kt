@@ -6,10 +6,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
+import kotlinx.coroutines.*
+import nobility.downloader.Page
 import nobility.downloader.core.BoxHelper.Companion.boolean
 import nobility.downloader.core.BoxHelper.Companion.int
 import nobility.downloader.core.BoxHelper.Companion.string
@@ -29,8 +27,6 @@ import org.openqa.selenium.WebDriver
 import java.io.File
 import java.net.URI
 import java.util.*
-import java.util.logging.Level
-import java.util.logging.Logger
 import kotlin.system.exitProcess
 
 
@@ -40,8 +36,10 @@ class CoreChild {
     var isRunning = false
         private set
     var isUpdating by mutableStateOf(false)
-    private var shutdownExecuted = false
-    val runningDrivers: MutableList<WebDriver> = Collections.synchronizedList(mutableListOf())
+    var shutdownExecuted by mutableStateOf(false)
+    var shutdownProgress by mutableStateOf(Pair(0, 0))
+    val runningDrivers: MutableMap<String, WebDriver> = Collections.synchronizedMap(mutableMapOf())
+    //val runningDrivers: MutableList<WebDriver> = Collections.synchronizedList(mutableListOf())
     val currentEpisodes: MutableList<Episode> = Collections.synchronizedList(mutableListOf())
     val downloadList: MutableList<Download> = Collections.synchronizedList(mutableStateListOf<Download>())
     lateinit var movieHandler: MovieHandler
@@ -54,9 +52,15 @@ class CoreChild {
     var downloadsInProgress = mutableStateOf(0)
         private set
 
+    @Volatile
+    var downloadsInQueue = mutableStateOf(0)
+        private set
+
+    private fun synchronizeDownloadsInQueue() {
+        downloadsInQueue.value = currentEpisodes.size
+    }
+
     fun init() {
-        System.setProperty("webdriver.chrome.silentOutput", "true")
-        Logger.getLogger("org.openqa.selenium").level = Level.OFF
         BoxHelper.shared.downloadBox.all.forEach {
             addDownload(it)
         }
@@ -110,33 +114,33 @@ class CoreChild {
 
     fun softStart() {
         currentEpisodes.clear()
-        Core.startButtonEnabled.value = false
-        Core.stopButtonEnabled.value = true
+        Core.startButtonEnabled = false
+        Core.stopButtonEnabled = true
         isRunning = true
         downloadsFinishedForSession = 0
-        synchronizeDownloadsInProgress()
+        synchronizeDownloadsInQueue()
     }
 
     fun stop() {
         if (!isRunning) {
             return
         }
-        Core.startButtonEnabled.value = true
-        Core.stopButtonEnabled.value = false
+        Core.startButtonEnabled = true
+        Core.stopButtonEnabled = false
         isRunning = false
         currentEpisodes.clear()
-        synchronizeDownloadsInProgress()
+        downloadsInProgress.value = 0
+        synchronizeDownloadsInQueue()
     }
 
     fun shutdown(force: Boolean = false) {
         if (force && !shutdownExecuted) {
             shutdownExecuted = true
             stop()
-            runningDrivers.forEach {
-                it.close()
-                it.quit()
+            taskScope.launch {
+                killAllDrivers()
+                exitProcess(-1)
             }
-            exitProcess(-1)
         }
         if (isRunning) {
             DialogHelper.showConfirm(
@@ -150,20 +154,36 @@ class CoreChild {
             ) {
                 shutdownExecuted = true
                 stop()
-                ArrayList(runningDrivers).forEach {
-                    it.close()
-                    it.quit()
+                taskScope.launch {
+                    killAllDrivers()
+                    exitProcess(0)
                 }
-                exitProcess(0)
             }
         } else {
             shutdownExecuted = true
-            ArrayList(runningDrivers).forEach {
-                it.close()
-                it.quit()
+            taskScope.launch {
+                killAllDrivers()
+                exitProcess(0)
             }
-            exitProcess(0)
         }
+    }
+
+    private suspend fun killAllDrivers() = withContext(Dispatchers.Default) {
+        val tasks = mutableListOf<Job>()
+        val copyRunningDrivers = HashMap(runningDrivers)
+        shutdownProgress = Pair(0, copyRunningDrivers.size)
+        var index = 0
+        copyRunningDrivers.forEach { _, driver ->
+            tasks.add(launch {
+                try {
+                    driver.close()
+                    driver.quit()
+                } catch (_: Exception) {
+                }
+                shutdownProgress = Pair(index, copyRunningDrivers.size)
+            })
+        }
+        tasks.joinAll()
     }
 
     private fun canStart(): Boolean {
@@ -181,7 +201,7 @@ class CoreChild {
                 "Your download folder doesn't exist and wasn't able to be created.",
                 "Be sure to set it inside the settings before downloading videos."
             )
-            Core.openSettings()
+            Core.changePage(Page.SETTINGS)
             return false
         }
         try {
@@ -193,7 +213,7 @@ class CoreChild {
                        You can try selecting a folder in the user or home folder. Those are usually not restricted.
                     """.trimIndent()
                 )
-                Core.openSettings()
+                Core.changePage(Page.SETTINGS)
                 return false
             }
         } catch (e: Exception) {
@@ -212,7 +232,7 @@ class CoreChild {
                             If you are having issues with this, open the settings and enable Bypass Disk Space Check.
                         """.trimIndent()
                     )
-                    Core.openSettings()
+                    Core.changePage(Page.SETTINGS)
                     return false
                 }
             } else {
@@ -226,7 +246,7 @@ class CoreChild {
                                 If you are having issues with this, open the settings and enable Bypass Disk Space Check.
                             """.trimIndent()
                         )
-                        Core.openSettings()
+                        Core.changePage(Page.SETTINGS)
                         return false
                     }
                 } else {
@@ -253,7 +273,7 @@ class CoreChild {
                     You can also input a keyword to search inside the database window.
                         
                 """.trimIndent(),
-                size = DpSize(300.dp, 400.dp)
+                size = DpSize(400.dp, 400.dp)
             )
             return false
         }
@@ -276,18 +296,21 @@ class CoreChild {
         return true
     }
 
-    private fun synchronizeDownloadsInProgress() {
-        downloadsInProgress.value = currentEpisodes.size
-    }
-
     @Synchronized
     fun incrementDownloadsFinished() {
         downloadsFinishedForSession++
     }
 
     @Synchronized
+    fun incrementDownloadsInProgress() {
+        downloadsInProgress.value++
+    }
+
+    @Synchronized
     fun decrementDownloadsInProgress() {
-        downloadsInProgress.value--
+        if (downloadsInProgress.value > 0) {
+            downloadsInProgress.value--
+        }
     }
 
     private fun isEpisodeInQueue(episode: Episode): Boolean {
@@ -302,7 +325,7 @@ class CoreChild {
     fun addEpisodeToQueue(episode: Episode): Boolean {
         if (!isEpisodeInQueue(episode)) {
             currentEpisodes.add(episode)
-            synchronizeDownloadsInProgress()
+            synchronizeDownloadsInQueue()
             return true
         }
         return false
@@ -316,7 +339,7 @@ class CoreChild {
                 added++
             }
         }
-        synchronizeDownloadsInProgress()
+        synchronizeDownloadsInQueue()
         return added
     }
 
@@ -328,17 +351,9 @@ class CoreChild {
             }
             val link = currentEpisodes.first()
             currentEpisodes.removeAt(0)
-            synchronizeDownloadsInProgress()
+            synchronizeDownloadsInQueue()
             return link
         }
-
-    fun updateDownloadInDatabase(download: Download, updateProperties: Boolean) {
-        BoxHelper.shared.downloadBox.put(download)
-        val index = indexForDownload(download)
-        if (index != -1) {
-            downloadList[index].update(download, updateProperties)
-        }
-    }
 
     private fun indexForDownload(download: Download): Int {
         for ((index, d) in downloadList.withIndex()) {
@@ -358,6 +373,7 @@ class CoreChild {
         } else {
             //push it to the top of the list
             download.dateAdded = System.currentTimeMillis()
+            updateDownloadInDatabase(download)
         }
     }
 
@@ -419,14 +435,36 @@ class CoreChild {
         }
     }
 
+    fun Download.update(
+        updateProperties: Boolean = true
+    ) {
+        updateDownloadInDatabase(this, updateProperties)
+    }
+
+    fun updateDownloadInDatabase(
+        download: Download,
+        updateProperties: Boolean = true
+    ) {
+        val index = indexForDownload(download)
+        if (index != -1) {
+            downloadList[index].updateWithDownload(download, updateProperties)
+        } else {
+            BoxHelper.shared.downloadBox.put(download)
+        }
+    }
+
     fun updateDownloadProgress(
         download: Download,
-        remainingSeconds: Int = -1
+        remainingSeconds: Int = -1,
+        downloadSpeed: Long = -1
     ) {
         val index = indexForDownload(download)
         if (index != -1) {
             if (remainingSeconds > -1) {
-                downloadList[index].remainingVideoDownloadSeconds.value = remainingSeconds
+                downloadList[index].updateVideoSeconds(remainingSeconds)
+            }
+            if (downloadSpeed > -1) {
+                downloadList[index].updateDownloadSpeed(downloadSpeed)
             }
             downloadList[index].updateProgress()
         }

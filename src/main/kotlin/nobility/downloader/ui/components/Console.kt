@@ -2,16 +2,32 @@ package nobility.downloader.ui.components
 
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.PointerButton
+import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
+import compose.icons.EvaIcons
+import compose.icons.evaicons.Fill
+import compose.icons.evaicons.Outline
+import compose.icons.evaicons.fill.Copy
+import compose.icons.evaicons.fill.Trash
+import compose.icons.evaicons.outline.Close
+import compose.icons.evaicons.outline.DiagonalArrowRightUp
 import kotlinx.coroutines.launch
+import nobility.downloader.Page
 import nobility.downloader.core.BoxHelper.Companion.boolean
+import nobility.downloader.core.Core
 import nobility.downloader.core.settings.Defaults
+import nobility.downloader.ui.windows.utils.AppWindowScope
+import nobility.downloader.ui.windows.utils.ApplicationState
 import nobility.downloader.utils.AppInfo
+import nobility.downloader.utils.Tools
+import nobility.downloader.utils.tone
 import java.io.OutputStream
 import java.util.*
 
@@ -19,8 +35,10 @@ class Console(
     private val errorMode: Boolean = false
 ) : OutputStream() {
 
+    var consolePoppedOut by mutableStateOf(false)
     private var consoleText = mutableStateOf("")
     private val sb = StringBuilder()
+    var unreadErrors by mutableStateOf(false)
 
     val text get() = consoleText.value
     var size = 0
@@ -41,6 +59,7 @@ class Console(
 
     override fun write(b: Int) {
         clearIfSize(
+            @Suppress("KotlinConstantConditions")
             if (AppInfo.DEBUG_MODE)
                 5_000
             else if (errorMode) 3_000
@@ -66,6 +85,11 @@ class Console(
             }
         }
         sb.append(b.toChar())
+        if (errorMode) {
+            if (Core.currentPage != Page.ERROR_CONSOLE) {
+                unreadErrors = true
+            }
+        }
     }
 
     override fun flush() {}
@@ -84,14 +108,18 @@ class Console(
         return consoleText.value.isEmpty() && size > 0
     }
 
-    private fun clear() {
+    fun clear() {
         consoleText.value = ""
         size = 0
     }
 
     @OptIn(ExperimentalFoundationApi::class)
     @Composable
-    fun textField(unbound: Boolean = false) {
+    fun textField(
+        windowScope: AppWindowScope,
+        unbound: Boolean = false,
+        popoutMode: Boolean = false
+    ) {
         val scrollState = rememberScrollState(size)
         val scope = rememberCoroutineScope()
         val contextMenuRepresentation = if (isSystemInDarkTheme()) {
@@ -103,7 +131,6 @@ class Console(
             ContextMenuDataProvider(
                 items = {
                     listOf(
-                        ContextMenuItem("Clear Console") { clear() },
                         ContextMenuItem("Scroll To Top") {
                             scope.launch {
                                 scrollState.scrollTo(0)
@@ -125,17 +152,64 @@ class Console(
                             .height(200.dp)
                             .padding(start = 5.dp, end = 5.dp, bottom = 5.dp)
                     }
-                    TextField(
-                        value = consoleText.value,
-                        readOnly = true,
-                        onValueChange = {
-                            consoleText.value = it
-                        },
-                        modifier = modifier.onClick(
-                            matcher = PointerMatcher.mouse(PointerButton.Secondary)
-                        ) {}.verticalScroll(scrollState),
-                        colors = TextFieldDefaults.colors()
-                    )
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                        modifier = Modifier.align(Alignment.End)
+                    ) {
+                        if ((!popoutMode && !consolePoppedOut) || popoutMode) {
+                            tooltipIconButton(
+                                "Copy Console Text",
+                                EvaIcons.Fill.Copy,
+                                iconColor = MaterialTheme.colorScheme.primary
+                            ) {
+                                Tools.clipboardString = text
+                                windowScope.showToast("Copied Console Text")
+                            }
+                        }
+                        if ((!popoutMode && !consolePoppedOut) || popoutMode) {
+                            tooltipIconButton(
+                                "Clear Console",
+                                EvaIcons.Fill.Trash,
+                                iconColor = MaterialTheme.colorScheme.primary
+                            ) {
+                                clear()
+                            }
+                        }
+                        tooltipIconButton(
+                            if (consolePoppedOut)
+                                "Close Console Window" else "Pop out Console",
+                            if (consolePoppedOut)
+                                EvaIcons.Outline.Close else EvaIcons.Outline.DiagonalArrowRightUp,
+                            iconColor = MaterialTheme.colorScheme.primary
+                        ) {
+                            if (consolePoppedOut) {
+                                closeWindow()
+                            } else {
+                                openWindow()
+                            }
+                        }
+                    }
+                    if ((!popoutMode && !consolePoppedOut) || (popoutMode && consolePoppedOut)) {
+                        TextField(
+                            value = consoleText.value,
+                            readOnly = true,
+                            onValueChange = {
+                                consoleText.value = it
+                            },
+                            modifier = modifier.onClick(
+                                matcher = PointerMatcher.mouse(PointerButton.Secondary)
+                            ) {}.verticalScroll(scrollState),
+                            colors = TextFieldDefaults.colors()
+                        )
+                    } else if (!popoutMode && consolePoppedOut) {
+                        Column(
+                            modifier = modifier
+                                .background(
+                                    MaterialTheme.colorScheme.surfaceVariant.tone(20.0)
+                                )
+                        ) {}
+                    }
                     //auto scroll
                     LaunchedEffect(size) {
                         if (Defaults.AUTO_SCROLL_CONSOLES.boolean()) {
@@ -147,4 +221,36 @@ class Console(
         }
     }
 
+    private val windowTitle = "${if (errorMode) "Error " else ""}Console"
+
+    fun closeWindow() {
+        ApplicationState.removeWindowWithId(windowTitle)
+    }
+
+    fun openWindow() {
+        consolePoppedOut = true
+        ApplicationState.newWindow(
+            windowTitle,
+            size = DpSize(400.dp, 250.dp),
+            windowAlignment = Alignment.BottomEnd,
+            alwaysOnTop = Defaults.CONSOLE_ON_TOP.boolean(),
+            onClose = {
+                consolePoppedOut = false
+                return@newWindow true
+            }
+        ) {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier.background(
+                    MaterialTheme.colorScheme.surface
+                )
+            ) {
+                textField(
+                    this@newWindow,
+                    true,
+                    true
+                )
+            }
+        }
+    }
 }

@@ -1,20 +1,32 @@
 package nobility.downloader.ui.windows
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.gestures.Orientation
+import androidx.compose.foundation.gestures.draggable
+import androidx.compose.foundation.gestures.rememberDraggableState
+import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.layout.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Settings
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.zIndex
 import compose.icons.EvaIcons
 import compose.icons.evaicons.Fill
 import compose.icons.evaicons.fill.*
+import kotlinx.coroutines.launch
 import nobility.downloader.Page
 import nobility.downloader.core.BoxHelper
 import nobility.downloader.core.BoxHelper.Companion.boolean
@@ -22,13 +34,9 @@ import nobility.downloader.core.BoxHelper.Companion.string
 import nobility.downloader.core.BoxHelper.Companion.update
 import nobility.downloader.core.Core
 import nobility.downloader.core.settings.Defaults
-import nobility.downloader.ui.components.SpacePosition
-import nobility.downloader.ui.components.defaultDropdownItem
+import nobility.downloader.ui.components.*
 import nobility.downloader.ui.components.dialog.DialogHelper
-import nobility.downloader.ui.components.tooltip
-import nobility.downloader.ui.components.tooltipIconButton
 import nobility.downloader.ui.theme.coreTheme
-import nobility.downloader.ui.views.downloaderUi
 import nobility.downloader.ui.windows.utils.AppWindowScope
 import nobility.downloader.ui.windows.utils.ApplicationState
 import nobility.downloader.utils.*
@@ -38,9 +46,12 @@ import nobility.downloader.utils.Constants.mediumIconSize
 fun mainWindow(scope: AppWindowScope) {
     uiWrapper(scope) {
         when (Core.currentPage) {
-            Page.HOME -> downloaderUi()
-            Page.DOWNLOADS -> Core.downloads.downloadsUi(scope)
-            Page.SETTINGS -> Core.settings.settingsUi(scope)
+            Page.DOWNLOADER -> Core.downloaderView.ui(scope)
+            Page.DOWNLOADS -> Core.downloadsView.ui(scope)
+            Page.SETTINGS -> Core.settingsView.ui(scope)
+            Page.HISTORY -> Core.historyView.ui(scope)
+            Page.RECENT -> Core.recentView.ui(scope)
+            Page.ERROR_CONSOLE -> Core.errorConsoleView.ui(scope)
         }
     }
 }
@@ -48,12 +59,13 @@ fun mainWindow(scope: AppWindowScope) {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun uiWrapper(
-    scope: AppWindowScope,
+    windowScope: AppWindowScope,
     content: @Composable (PaddingValues) -> Unit
 ) {
     var showFileMenu by remember {
         mutableStateOf(false)
     }
+    val closeMenu = { showFileMenu = false }
     coreTheme {
         Scaffold(
             modifier = Modifier.fillMaxSize(),
@@ -61,88 +73,88 @@ private fun uiWrapper(
                 TopAppBar(
                     modifier = Modifier.height(Constants.topbarHeight),
                     title = {
-                        Text(
-                            text = Core.currentPage.title,
-                            modifier = Modifier.padding(top = 8.dp),
-                            fontSize = MaterialTheme.typography.headlineSmall.fontSize,
-                            color = MaterialTheme.colorScheme.onPrimary,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            fontWeight = FontWeight.Bold
-                        )
-                    },
-                    navigationIcon = {
-                        var mainIconText by remember { mutableStateOf("") }
-                        mainIconText = if (Core.currentPage != Page.HOME) {
-                            "Home [ESC]"
-                        } else {
-                            "Settings [CTRL + S]"
-                        }
-                        tooltipIconButton(
-                            tooltipText = mainIconText,
-                            icon = if (Core.currentPage == Page.HOME)
-                                Icons.Filled.Settings else EvaIcons.Fill.ArrowBack
+                        Row(
+                            modifier = Modifier.fillMaxSize(),
+                            horizontalArrangement = Arrangement.spacedBy(4.dp),
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
-                            if (Core.currentPage == Page.HOME) {
-                                Core.openSettings()
-                            } else {
-                                if (Core.currentPage == Page.SETTINGS) {
-                                    if (Core.settings.settingsChanged()) {
-                                        DialogHelper.showConfirm(
-                                            "You have unsaved settings. Would you like to save them?",
-                                            "Save Settings",
-                                            size = DpSize(300.dp, 200.dp),
-                                            onConfirmTitle = "Save",
-                                            onDeny = {
-                                                Core.currentPage = Page.HOME
+                            Text(
+                                text = Core.currentPage.title,
+                                modifier = Modifier.width(170.dp),
+                                fontSize = MaterialTheme.typography.headlineSmall.fontSize,
+                                color = MaterialTheme.colorScheme.onPrimary,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                fontWeight = FontWeight.Bold
+                            )
+                            val coroutineScope = rememberCoroutineScope()
+                            val listState = rememberLazyListState()
+                            LazyRow(
+                                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.align(Alignment.Bottom)
+                                    .draggable(
+                                        state = rememberDraggableState {
+                                            coroutineScope.launch {
+                                                listState.scrollBy(-it)
+                                            }
+                                        },
+                                        orientation = Orientation.Horizontal
+                                    ),
+                                state = listState
+                            ) {
+                                items(
+                                    Page.entries,
+                                    key = { it.name }
+                                ) { page ->
+                                    if (page == Page.DOWNLOADS) {
+                                        BadgedBox(
+                                            badge = {
+                                                if (Core.child.downloadsInProgress.value > 0) {
+                                                    Badge(
+                                                        containerColor = Color.Red,
+                                                        modifier = Modifier.offset(y = 2.dp, x = (-8).dp)
+                                                    ) {
+                                                        Text(
+                                                            Core.child.downloadsInProgress.value.toString(),
+                                                            overflow = TextOverflow.Clip,
+                                                            color = Color.White,
+                                                            fontWeight = FontWeight.Bold,
+                                                            fontSize = 10.sp
+                                                        )
+                                                    }
+                                                }
                                             }
                                         ) {
-                                            if (Core.settings.saveSettings()) {
-                                                Core.currentPage = Page.HOME
+                                            pageButton(page)
+                                        }
+                                    } else if (page == Page.ERROR_CONSOLE) {
+                                        BadgedBox(
+                                            badge = {
+                                                if (Core.errorConsole.unreadErrors) {
+                                                    Badge(
+                                                        containerColor = Color.Red,
+                                                        modifier = Modifier.offset(y = 2.dp, x = (-8).dp)
+                                                    ) {}
+                                                }
                                             }
+                                        ) {
+                                            pageButton(page)
                                         }
                                     } else {
-                                        Core.currentPage = Page.HOME
+                                        pageButton(page)
                                     }
-                                } else {
-                                    Core.currentPage = Page.HOME
+                                }
+                                item(key = {"database-button"}) {
+                                    tabButton("Video Database") {
+                                        Core.openWco()
+                                    }
                                 }
                             }
                         }
                     },
                     actions = {
-                        if (Core.currentPage == Page.HOME) {
-                            tooltip("Downloads [CTRL + D]") {
-                                BadgedBox(
-                                    badge = {
-                                        if (Core.child.downloadsInProgress.value > 0) {
-                                            Badge(
-                                                containerColor = Color.Red,
-                                                modifier = Modifier.offset(y = 6.dp, x = (-1).dp)
-                                            ) {
-                                                Text(
-                                                    Core.child.downloadsInProgress.value.toString(),
-                                                    overflow = TextOverflow.Clip,
-                                                    color = Color.White,
-                                                    fontWeight = FontWeight.Bold,
-                                                    fontSize = 10.sp
-                                                )
-                                            }
-                                        }
-                                    },
-                                    modifier = Modifier.size(mediumIconSize)
-                                ) {
-                                    IconButton(onClick = { Core.currentPage = Page.DOWNLOADS }) {
-                                        Icon(
-                                            EvaIcons.Fill.Download,
-                                            "",
-                                            tint = MaterialTheme.colorScheme.onPrimary,
-                                            modifier = Modifier.size(mediumIconSize)
-                                        )
-                                    }
-                                }
-                            }
-                        } else if (Core.currentPage == Page.DOWNLOADS) {
+                        if (Core.currentPage == Page.DOWNLOADS) {
                             tooltipIconButton(
                                 "Open Download Folder",
                                 icon = EvaIcons.Fill.Folder
@@ -151,44 +163,27 @@ private fun uiWrapper(
                                     Defaults.SAVE_FOLDER.string()
                                 )
                             }
+                        } else if (Core.currentPage == Page.SETTINGS) {
+                            tooltipIconButton(
+                                if (!Core.darkMode.value) "Dark Mode" else "Light Mode",
+                                if (!Core.darkMode.value) EvaIcons.Fill.Moon else EvaIcons.Fill.Sun,
+                                mediumIconSize,
+                                onClick = {
+                                    Core.darkMode.value = Core.darkMode.value.not()
+                                    Defaults.DARK_MODE.update(
+                                        Defaults.DARK_MODE.boolean().not()
+                                    )
+                                },
+                                spacePosition = SpacePosition.START,
+                                space = 10.dp
+                            )
                         }
-                        tooltipIconButton(
-                            "Options",
-                            EvaIcons.Fill.MoreVertical,
-                            mediumIconSize - 2.dp,
-                            onClick = { showFileMenu = !showFileMenu },
-                            spacePosition = SpacePosition.START,
-                            space = 10.dp
-                        )
-                        val closeMenu = { showFileMenu = false }
-                        DropdownMenu(
-                            expanded = showFileMenu,
-                            onDismissRequest = { closeMenu() }
-                        ) {
-                            when (Core.currentPage) {
-                                Page.HOME -> {
-                                    defaultDropdownItem(
-                                        "Open Download History",
-                                        EvaIcons.Fill.Archive
-                                    ) {
-                                        closeMenu()
-                                        scope.showToast("HI")
-                                        Core.openHistory()
-                                    }
-                                    defaultDropdownItem(
-                                        "Open Recent Series & Episodes",
-                                        EvaIcons.Fill.ExternalLink
-                                    ) {
-                                        closeMenu()
-                                        Core.openRecents()
-                                    }
-                                    defaultDropdownItem(
-                                        "Open Video Database",
-                                        EvaIcons.Fill.Video
-                                    ) {
-                                        closeMenu()
-                                        Core.openWco()
-                                    }
+
+                        var options = mutableStateListOf<@Composable () -> Unit>()
+
+                        when (Core.currentPage) {
+                            Page.DOWNLOADER -> {
+                                options.add {
                                     defaultDropdownItem(
                                         "Check For Updates",
                                         EvaIcons.Fill.CloudDownload
@@ -196,6 +191,8 @@ private fun uiWrapper(
                                         closeMenu()
                                         Core.openUpdate()
                                     }
+                                }
+                                options.add {
                                     defaultDropdownItem(
                                         "How To Use",
                                         EvaIcons.Fill.Book
@@ -207,6 +204,8 @@ private fun uiWrapper(
                                             DpSize(400.dp, 400.dp)
                                         )
                                     }
+                                }
+                                options.add {
                                     defaultDropdownItem(
                                         "Key Combinations",
                                         EvaIcons.Fill.Keypad
@@ -214,10 +213,12 @@ private fun uiWrapper(
                                         closeMenu()
                                         DialogHelper.showMessage(
                                             "Key Combinations",
-                                            keyGuide,
+                                            KeyEvents.keyGuide,
                                             DpSize(400.dp, 400.dp)
                                         )
                                     }
+                                }
+                                options.add {
                                     defaultDropdownItem(
                                         "Donate",
                                         EvaIcons.Fill.Gift
@@ -233,6 +234,8 @@ private fun uiWrapper(
                                             """.trimIndent()
                                         )
                                     }
+                                }
+                                options.add {
                                     defaultDropdownItem(
                                         "About",
                                         EvaIcons.Fill.Info
@@ -260,51 +263,91 @@ private fun uiWrapper(
                                         )
                                     }
                                 }
+                            }
 
-                                Page.DOWNLOADS -> {
-                                    if (Core.child.isRunning) {
+                            Page.DOWNLOADS -> {
+                                if (Core.child.isRunning) {
+                                    options.add {
                                         defaultDropdownItem(
                                             "Stop Downloads",
                                             EvaIcons.Fill.Close
                                         ) {
                                             closeMenu()
                                             Core.child.stop()
-                                            scope.showToast("All downloads have been stopped.")
+                                            windowScope.showToast("All downloads have been stopped.")
                                         }
                                     }
+                                }
+                                options.add {
                                     defaultDropdownItem(
-                                        "Open Download History",
-                                        EvaIcons.Fill.Archive
+                                        "Clear All Downloads",
+                                        EvaIcons.Fill.Trash
                                     ) {
                                         closeMenu()
-                                        Core.openHistory()
-                                    }
-                                    defaultDropdownItem(
-                                        "Clear Downloads",
-                                        EvaIcons.Fill.Trash,
-                                        enabled = Core.child.downloadList.isNotEmpty()
-                                    ) {
-                                        closeMenu()
+                                        if (Core.child.downloadList.isEmpty()) {
+                                            return@defaultDropdownItem
+                                        }
                                         if (!Core.child.isRunning) {
                                             DialogHelper.showConfirm(
                                                 """
                                                Are you sure you want to clear all downloads?
-                                               This is just going to clear the downloaf list. No files will be deleted.
-                                               This action is irreversible unless you save a backup of the database folder.
+                                               This is just going to delete the entire download list. 
+                                               No files will be deleted.
+                                               This action is irreversible unless you save a backup of the database folder first.
                                             """.trimIndent(),
                                                 "Clear Downloads"
                                             ) {
                                                 val size = Core.child.downloadList.size
                                                 Core.child.downloadList.clear()
-                                                DialogHelper.showMessage("Success", "Cleared $size downloads")
+                                                BoxHelper.shared.downloadBox.removeAll()
+                                                DialogHelper.showMessageSmall("Success", "Deleted $size downloads.")
                                             }
                                         } else {
                                             DialogHelper.showError("You can't clear downloads while things are downloading.")
                                         }
                                     }
                                 }
+                                options.add {
+                                    defaultDropdownItem(
+                                        "Clear Downloads & Delete Incomplete Files",
+                                        EvaIcons.Fill.Trash
+                                    ) {
+                                        closeMenu()
+                                        if (Core.child.downloadList.isEmpty()) {
+                                            return@defaultDropdownItem
+                                        }
+                                        if (!Core.child.isRunning) {
+                                            DialogHelper.showConfirm(
+                                                """
+                                               Are you sure you want to clear all downloads?
+                                               This is going to delete the entire download list. 
+                                               All found incomplete files will be deleted as well.
+                                               Please note that this may potentially delete videos that are completed.
+                                               It shouldn't, but that's why there's a second option.
+                                               This action is irreversible unless you save a backup of the database folder first.
+                                            """.trimIndent(),
+                                                "Clear All Downloads"
+                                            ) {
+                                                val size = Core.child.downloadList.size
+                                                Core.child.downloadList.forEach { download ->
+                                                    val file = download.downloadFile()
+                                                    if (file != null && !download.isComplete) {
+                                                        file.delete()
+                                                    }
+                                                }
+                                                Core.child.downloadList.clear()
+                                                BoxHelper.shared.downloadBox.removeAll()
+                                                DialogHelper.showMessageSmall("Success", "Deleted $size downloads.")
+                                            }
+                                        } else {
+                                            DialogHelper.showError("You can't clear downloads while things are downloading.")
+                                        }
+                                    }
+                                }
+                            }
 
-                                Page.SETTINGS -> {
+                            Page.SETTINGS -> {
+                                options.add {
                                     defaultDropdownItem(
                                         "Open Database Folder",
                                         EvaIcons.Fill.Folder
@@ -314,22 +357,27 @@ private fun uiWrapper(
                                     }
                                 }
                             }
+
+                            else -> {}
                         }
 
-                        if (Core.currentPage == Page.SETTINGS) {
+                        if (options.isNotEmpty()) {
                             tooltipIconButton(
-                                if (!Core.darkMode.value) "Dark Mode" else "Light Mode",
-                                if (!Core.darkMode.value) EvaIcons.Fill.Moon else EvaIcons.Fill.Sun,
-                                mediumIconSize,
-                                onClick = {
-                                    Core.darkMode.value = Core.darkMode.value.not()
-                                    Defaults.DARK_MODE.update(
-                                        Defaults.DARK_MODE.boolean().not()
-                                    )
-                                },
+                                "Options",
+                                EvaIcons.Fill.MoreVertical,
+                                mediumIconSize - 2.dp,
+                                onClick = { showFileMenu = !showFileMenu },
                                 spacePosition = SpacePosition.START,
                                 space = 10.dp
                             )
+                            DropdownMenu(
+                                expanded = showFileMenu,
+                                onDismissRequest = { closeMenu() }
+                            ) {
+                                options.forEach { o ->
+                                    o.invoke()
+                                }
+                            }
                         }
                     },
                     colors = TopAppBarDefaults.topAppBarColors(
@@ -338,12 +386,51 @@ private fun uiWrapper(
                 )
             },
             content = {
+                if (Core.child.shutdownExecuted) {
+                    Box(
+                        modifier = Modifier.fillMaxSize()
+                            .zIndex(10f),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Column(
+                            verticalArrangement = Arrangement.spacedBy(4.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            modifier = Modifier.wrapContentHeight()
+                                .background(
+                                    MaterialTheme.colorScheme.surface,
+                                    shape = RoundedCornerShape(10.dp)
+                                ).border(
+                                    1.dp,
+                                    MaterialTheme.colorScheme.error,
+                                    RoundedCornerShape(10.dp)
+                                )
+                        ) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(80.dp)
+                                    .padding(top = 15.dp, bottom = 15.dp),
+                                color = MaterialTheme.colorScheme.error
+                            )
+                            Text(
+                                """
+                                        Shutdown Executed.
+                                        Please wait patiently while the program kills all running drivers.
+                                        
+                                        Drivers Killed: ${Core.child.shutdownProgress.first}/${Core.child.shutdownProgress.second}
+                                    """.trimIndent(),
+                                fontSize = 12.sp,
+                                color = MaterialTheme.colorScheme.onSurface,
+                                textAlign = TextAlign.Center,
+                                modifier = Modifier.padding(20.dp)
+                            )
+                        }
+                    }
+                }
                 Column(
                     modifier = Modifier.padding(top = it.calculateTopPadding())
                 ) {
                     content(it)
                 }
-                ApplicationState.addToastToWindow(scope)
+                ApplicationState.addToastToWindow(windowScope)
             }
         )
     }

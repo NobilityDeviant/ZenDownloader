@@ -9,31 +9,29 @@ import kotlin.math.max
 
 class M3u8ExecutorProgress : Runnable {
 
-    private val seconds = AtomicLong(0)
+    private val elapsedSeconds = AtomicLong(0)
     private val m3u8Progresses = CollUtil.newCopyOnWriteArrayList<M3u8Progress>()
 
     override fun run() {
         try {
             doProgress()
-        } catch (_: Exception) {
-            //log.error(ex.message, ex)
-        }
+        } catch (_: Exception) {}
     }
 
     @Suppress("warnings")
     private fun doProgress() {
-        val seconds = seconds.incrementAndGet()
+        val elapsedSecondsInc = elapsedSeconds.incrementAndGet()
         if (m3u8Progresses.isEmpty) {
             return
         }
         var idx = 0
-        var readBytes = 0L
         val limitTableSize = 10
         val completes = CollUtil.newArrayDeque<M3u8Progress>()
         val removeItems = mutableListOf<M3u8Progress>()
         for (progress in m3u8Progresses) {
             idx++
-            val doProgress = progress.doProgress(seconds)
+            val doProgress = progress.doProgress(elapsedSecondsInc)
+            //this isnt needed, remove and test
             if (doProgress) {
                 completes.offer(progress)
             }
@@ -42,9 +40,6 @@ class M3u8ExecutorProgress : Runnable {
                     removeItems.add(it)
                 }
             }
-
-            readBytes += progress.readBytes
-
         }
 
         if (removeItems.isNotEmpty()) {
@@ -62,7 +57,7 @@ class M3u8ExecutorProgress : Runnable {
             M3u8Progress(
                 m3u8Download,
                 downloadFuture,
-                seconds.get()
+                elapsedSeconds.get()
             )
         )
     }
@@ -91,14 +86,6 @@ class M3u8ExecutorProgress : Runnable {
             return endSeconds > 0
         }
 
-        val readBytes: Long
-            get() {
-                if (alreadyEnd()) {
-                    return 0
-                }
-                return max((nowBytes.get() - lastBytes.get()).toDouble(), 0.0).toLong()
-            }
-
         fun doProgress(
             sec: Long
         ): Boolean {
@@ -116,7 +103,7 @@ class M3u8ExecutorProgress : Runnable {
                 if (remainingBytes <= 0) {
                     readingCount--
                 } else {
-                    remainBytesInReading += remainingBytes.toInt()
+                    remainBytesInReading = remainingBytes.toInt()
                 }
             }
 
@@ -138,8 +125,11 @@ class M3u8ExecutorProgress : Runnable {
             val remainingSeconds: Long
             val conCount = finishedCount + readingCount
             remainingSeconds = if (readBytes > 0 && conCount > 0) {
+                //just added brackets for clarification of ordery
                 ceil(
-                    (remainedCount * readBytes * seconds + remainedCount.toLong() * remainBytesInReading + conCount.toLong() * remainBytesInReading) /
+                    ((remainedCount * readBytes * seconds) +
+                            (remainedCount.toLong() * remainBytesInReading) +
+                            (conCount.toLong() * remainBytesInReading)) /
                             (conCount * readBytes * 1.0)
                 ).toLong()
             } else {

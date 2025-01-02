@@ -161,10 +161,10 @@ enum class Defaults(
         "chrome_browser_path",
         "",
         """
-            The path to your Chrome browser's exe file.
+            The path to your Chrome browser's executable file.
             You can adjust this if the app is failing to use your correct chrome version.
-            You don't need to use option as the program will find chrome for you.
-            Example: C:\Program Files\Google\Chrome\Application\chrome.exe
+            You don't need to use this option as the program will find chrome for you.
+            Example: C:\Users\CuratedDev\Desktop\portable-chrome\chrome.exe
             Default: Empty
             Requires: Chrome Driver Path
         """.trimIndent()
@@ -175,7 +175,7 @@ enum class Defaults(
         """
             The path to your ChromeDriver file.
             You can adjust this if the app is failing to use your correct chrome version.
-            You don't need to use option as the program will get it for you.
+            You don't need to use this option as the program will get it for you.
             Example: C:\Users\CuratedDev\Desktop\chromedriver-win64\chromedriver.exe
             Default: Empty
             Requires: Chrome Browser Path
@@ -262,6 +262,15 @@ enum class Defaults(
     ENABLE_PROXY("enable_proxy", false),
     FIRST_LAUNCH("1st-launch", false),
     DARK_MODE("dark_mode", true),
+    ENABLE_RANDOM_SERIES(
+        "enable_random_series",
+        true,
+        """
+            Used to toggle the Downloader pages random series rows
+            that appear below the url bar.
+            Default: On
+        """.trimIndent()
+    ),
     WCO_GENRES_LAST_UPDATED("wco_genres_last_updated", 0L),
     DB_LAST_SCROLL_POS("db_last_scroll_pos", 0),
     DB_LAST_TYPE_USED("db_last_type", DatabaseType.ANIME.id),
@@ -278,7 +287,8 @@ enum class Defaults(
             CONSOLE_ON_TOP,
             AUTO_SCROLL_CONSOLES,
             HEADLESS_MODE,
-            SHOW_DEBUG_MESSAGES
+            SHOW_DEBUG_MESSAGES,
+            ENABLE_RANDOM_SERIES
         )
 
         val updateCheckBoxes get() = listOf(

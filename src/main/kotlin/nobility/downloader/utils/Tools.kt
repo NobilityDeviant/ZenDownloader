@@ -227,23 +227,6 @@ object Tools {
         return sdf.format(time).replace(" ", "\n")
     }
 
-    val date: String
-        get() {
-            val c = Calendar.getInstance()
-            val day = c[Calendar.DAY_OF_MONTH]
-            val year = c[Calendar.YEAR]
-            val month = c[Calendar.MONTH] + 1
-            return "$month/$day/$year"
-        }
-
-    val currentTime: String
-        get() {
-            val c = Calendar.getInstance()
-            val hour = c[Calendar.HOUR]
-            val minute = c[Calendar.MINUTE]
-            return "$hour:$minute"
-        }
-
     val baseEpisodesComparator = Comparator { e1: Episode, e2: Episode ->
         val seasonKey = "Season"
         val ovaKey = "OVA"
@@ -287,7 +270,8 @@ object Tools {
 
     fun secondsToRemainingTime(totalSeconds: Int): String {
         if (totalSeconds <= 0) {
-            return ""
+            //println("Got $totalSeconds seconds. returning empty")
+            return "0:00"
         }
         val hours = totalSeconds / 3600
         val minutes = (totalSeconds % 3600) / 60
@@ -305,6 +289,7 @@ object Tools {
         ) + ")"
     }
 
+    @Suppress("KotlinConstantConditions")
     private fun seriesCompare(
         first: String,
         second: String
@@ -314,22 +299,30 @@ object Tools {
             val seasonPattern = Pattern.compile("(?i)$seasonKey \\d{0,3}")
             val s1Matcher = seasonPattern.matcher(first)
             val s2Matcher = seasonPattern.matcher(second)
-            var s1Number = ""
-            var s2Number = ""
+            var s1Number: String? = ""
+            var s2Number: String? = ""
             while (s1Matcher.find()) {
                 s1Number = s1Matcher.group(0)
             }
             while (s2Matcher.find()) {
                 s2Number = s2Matcher.group(0)
             }
-            if (s1Number.isNotEmpty() && s2Number.isEmpty()) {
+            if (!s1Number.isNullOrBlank() && s2Number.isNullOrBlank()) {
                 return 1
-            } else if (s2Number.isNotEmpty() && s1Number.isEmpty()) {
+            } else if (!s2Number.isNullOrBlank() && s1Number.isNullOrBlank()) {
                 return -1
             }
-            if (s1Number.isNotEmpty() && s2Number.isNotEmpty()) {
-                return s1Number.filter { it.isDigit() }.toInt()
-                    .compareTo(s2Number.filter { it.isDigit() }.toInt())
+            if (!s1Number.isNullOrBlank() && !s2Number.isNullOrBlank()) {
+                val s1Filtered = s1Number.filter { it.isDigit() }.toIntOrNull()
+                val s2Filtered = s2Number.filter { it.isDigit() }.toIntOrNull()
+                if (s1Filtered != null && s2Filtered != null) {
+                    return s1Filtered.compareTo(s2Filtered)
+                } else if (s1Filtered == null && s2Filtered != null) {
+                    return -1
+                    //false flag? I don't see anything wrong with this check.
+                } else if (s1Filtered != null && s2Filtered == null) {
+                    return 1
+                }
             }
         } catch (e: Exception) {
             e.printStackTrace()
@@ -337,6 +330,7 @@ object Tools {
         return 0
     }
 
+    @Suppress("KotlinConstantConditions")
     private fun episodeCompare(
         first: String,
         second: String
@@ -346,24 +340,29 @@ object Tools {
             val episodePattern = Pattern.compile("(?i)$episodeKey \\d{0,4}")
             val e1Matcher = episodePattern.matcher(first)
             val e2Matcher = episodePattern.matcher(second)
-            var e1Number = ""
-            var e2Number = ""
+            var e1Number: String? = ""
+            var e2Number: String? = ""
             while (e1Matcher.find()) {
                 e1Number = e1Matcher.group(0)
             }
             while (e2Matcher.find()) {
                 e2Number = e2Matcher.group(0)
             }
-            if (e1Number.isNotBlank() && e2Number.isBlank()) {
+            if (!e1Number.isNullOrBlank() && e2Number.isNullOrBlank()) {
                 return 1
-            } else if (e2Number.isNotBlank() && e1Number.isBlank()) {
+            } else if (!e2Number.isNullOrBlank() && e1Number.isNullOrBlank()) {
                 return -1
             }
-            if (e1Number.isNotBlank() && e2Number.isNotBlank()) {
-                val e1NumberDigits = e1Number.filter { it.isDigit() }.toIntOrNull()
-                val e2NumberDigits = e2Number.filter { it.isDigit() }.toIntOrNull()
-                if (e1NumberDigits != null && e2NumberDigits != null) {
-                    return e1NumberDigits.compareTo(e2NumberDigits)
+            if (!e1Number.isNullOrBlank() && !e2Number.isNullOrBlank()) {
+                val e1Filtered = e1Number.filter { it.isDigit() }.toIntOrNull()
+                val e2Filtered = e2Number.filter { it.isDigit() }.toIntOrNull()
+                if (e1Filtered != null && e2Filtered != null) {
+                    return e1Filtered.compareTo(e2Filtered)
+                } else if (e1Filtered == null && e2Filtered != null) {
+                    return -1
+                    //false flag? I don't see anything wrong with this check.
+                } else if (e1Filtered != null && e2Filtered == null) {
+                    return 1
                 }
             }
         } catch (e: Exception) {

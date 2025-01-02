@@ -1,6 +1,7 @@
 package nobility.downloader.core.scraper
 
 import kotlinx.coroutines.*
+import nobility.downloader.Page
 import nobility.downloader.core.BoxHelper
 import nobility.downloader.core.BoxHelper.Companion.string
 import nobility.downloader.core.BoxMaker
@@ -93,7 +94,7 @@ class DownloadHandler {
                         "Your download folder doesn't exist and wasn't able to be created.",
                         "Be sure to set it inside the settings before downloading videos."
                     )
-                    Core.openSettings()
+                    Core.changePage(Page.SETTINGS)
                 }
                 kill()
                 return@task

@@ -1,84 +1,115 @@
 package nobility.downloader.utils
 
 import androidx.compose.ui.input.key.*
-import androidx.compose.ui.unit.DpSize
-import androidx.compose.ui.unit.dp
 import nobility.downloader.Page
 import nobility.downloader.core.BoxHelper.Companion.boolean
 import nobility.downloader.core.BoxHelper.Companion.string
 import nobility.downloader.core.Core
 import nobility.downloader.core.settings.Defaults
-import nobility.downloader.ui.components.dialog.DialogHelper
 
-fun loadKeyEvents(): (KeyEvent) -> Boolean = {
-    val up = it.type == KeyEventType.KeyUp
-    val ctrl = if (Defaults.CTRL_FOR_HOTKEYS.boolean())
-        it.isCtrlPressed else !Core.currentUrlFocused
-    if (ctrl && it.key == Key.D && up) {
-        Core.currentPage = Page.DOWNLOADS
-        true
-    } else if (ctrl && it.key == Key.S && up) {
-        Core.openSettings()
-        true
-    } else if (ctrl && it.key == Key.O && up) {
-        Tools.openFile(
-            Defaults.SAVE_FOLDER.string()
+typealias AwtKey = java.awt.event.KeyEvent
+
+class KeyEvents {
+
+    companion object {
+
+        val shared = KeyEvents()
+        val shortcuts = mutableListOf<Shortcut>()
+        var keyGuide = """
+            Anything with + CTRL means you must be holding down the Control Key.
+            
+            CTRL is optional inside the settings. CTRL Enabled: ${Defaults.CTRL_FOR_HOTKEYS.boolean()}
+            
+            
+        """.trimIndent()
+            private set
+
+        data class Shortcut(
+            val key: Key,
+            val name: String,
+            val ctrl: Boolean = false,
+            val func: () -> Unit
         )
-        true
-    } else if (ctrl && it.key == Key.R && up) {
-        Core.openRecents()
-        true
-    } else if (ctrl && it.key == Key.W && up) {
-        Core.openWco()
-        true
-    } else if (ctrl && it.key == Key.H && up) {
-        Core.openHistory()
-        true
-    } else if (it.key == Key.Escape && up) {
-        if (Core.currentPage == Page.SETTINGS) {
-            if (Core.settings.settingsChanged()) {
-                DialogHelper.showConfirm(
-                    "You have unsaved settings. Would you like to save them?",
-                    "Save Settings",
-                    size = DpSize(300.dp, 200.dp),
-                    onConfirmTitle = "Save",
-                    onDeny = {
-                        Core.currentPage = Page.HOME
+
+        init {
+            Page.entries.forEach { page ->
+                var key1: Key
+                when (page) {
+                    Page.DOWNLOADER -> {
+                        key1 = Key.F1
                     }
-                ) {
-                    if (Core.settings.saveSettings()) {
-                        Core.currentPage = Page.HOME
+                    Page.DOWNLOADS -> {
+                        key1 = Key.F2
+                    }
+                    Page.HISTORY -> {
+                        key1 = Key.F3
+                    }
+                    Page.RECENT -> {
+                        key1 = Key.F4
+                    }
+                    Page.SETTINGS -> {
+                        key1 = Key.F5
+                    }
+                    Page.ERROR_CONSOLE -> {
+                        key1 = Key.F6
                     }
                 }
-            } else {
-                Core.currentPage = Page.HOME
+                shortcuts.add(
+                    Shortcut(key1, page.title) {
+                        Core.changePage(page)
+                    }
+                )
             }
-        } else {
-            if (Core.currentPage != Page.HOME) {
-                Core.currentPage = Page.HOME
-            } else {
-                Core.currentPage = Page.SETTINGS
+            shortcuts.add(
+                Shortcut(Key.Escape, "Settings/Last Page") {
+                    if (Core.currentPage == Page.SETTINGS) {
+                        Core.changePage(Core.lastPage)
+                    } else {
+                        Core.changePage(Page.SETTINGS)
+                    }
+                }
+            )
+            shortcuts.add(
+                Shortcut(Key.O, "Open Save Folder", true) {
+                    Tools.openFile(
+                        Defaults.SAVE_FOLDER.string()
+                    )
+                }
+            )
+            shortcuts.add(
+                Shortcut(Key.W, "Open Video Database", true) {
+                    Core.openWco()
+                }
+            )
+
+            shortcuts.forEachIndexed { i, s ->
+                keyGuide += """
+                    ${s.name} = ${AwtKey.getKeyText(s.key.keyCode.toInt())} ${if (s.ctrl) " + CTRL" else ""}
+                """.trimIndent()
+                if (i != shortcuts.lastIndex) {
+                    keyGuide += "\n"
+                }
             }
         }
-        true
-    } else {
+    }
+
+    fun loadKeyEvents(): (KeyEvent) -> Boolean = core@ {
+        val up = it.type == KeyEventType.KeyUp
+        val ctrl = if (Defaults.CTRL_FOR_HOTKEYS.boolean())
+            it.isCtrlPressed else !Core.currentUrlFocused
+        if (up) {
+            shortcuts.forEach { s ->
+                if (it.key == s.key) {
+                    if (s.ctrl && ctrl) {
+                        s.func()
+                        return@core true
+                    } else {
+                        s.func()
+                        return@core true
+                    }
+                }
+            }
+        }
         false
     }
 }
-
-val keyGuide: String get() = """
-    These are all the key combinations for this program.  
-    
-    Anything with CTRL + means you must be holding down the Control Key.
-    
-    CTRL is now optional in the settings. It's on by default.
-    
-    ESC = Home Page/Settings Page
-    CTRL + D = Downloads Page
-    CTRL + S = Settings Page
-    CTRL + W = Database Window
-    CTRL + H = History Window
-    CTRL + O = Open Download Folder
-    CTRL + R = Wcofun Recents Window
-    
-""".trimIndent()

@@ -3,6 +3,7 @@ package nobility.downloader.utils
 object AppInfo {
 
     const val DEBUG_MODE = false
+    const val USE_CUSTOM_ERROR_PS = true
     const val UPDATE_ASSETS_ON_LAUNCH = true
     const val AUTO_SCROLL_RANDOM_SERIES = false
     private const val NAME = "ZenDownloader"

@@ -26,44 +26,48 @@ import androidx.compose.ui.input.pointer.PointerButton
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import compose.icons.EvaIcons
 import compose.icons.evaicons.Fill
 import compose.icons.evaicons.fill.*
 import kotlinx.coroutines.launch
+import nobility.downloader.Page
 import nobility.downloader.core.BoxHelper.Companion.seriesForSlug
 import nobility.downloader.core.Core
 import nobility.downloader.core.entities.Download
 import nobility.downloader.core.scraper.data.ToDownload
 import nobility.downloader.ui.components.defaultDropdownItem
 import nobility.downloader.ui.components.dialog.DialogHelper
+import nobility.downloader.ui.components.fullBox
+import nobility.downloader.ui.components.verticalScrollbar
+import nobility.downloader.ui.components.verticalScrollbarEndPadding
 import nobility.downloader.ui.windows.utils.AppWindowScope
 import nobility.downloader.utils.Tools
 import nobility.downloader.utils.hover
 import nobility.downloader.utils.slugToLink
-import nobility.downloader.utils.tone
 
-class DownloadsView {
+class DownloadsView : ViewPage {
+
+    override val page = Page.DOWNLOADS
 
     private var sort by mutableStateOf(Sort.DATE_DESC)
     private var deletedFile = false //used so it doesn't scroll to top on deletion (hacky)
 
     @Composable
-    fun downloadsUi(windowScope: AppWindowScope) {
+    override fun ui(windowScope: AppWindowScope) {
         val scope = rememberCoroutineScope()
         val scrollState = rememberLazyListState()
         Column(
             modifier = Modifier.fillMaxSize()
         ) {
             header()
-            Box(
-                modifier = Modifier.fillMaxSize()
-            ) {
+            fullBox {
                 LazyColumn(
                     verticalArrangement = Arrangement.spacedBy(1.dp),
                     modifier = Modifier.padding(
                         top = 5.dp,
                         bottom = 5.dp,
-                        end = 12.dp
+                        end = verticalScrollbarEndPadding
                     ).fillMaxSize()
                         .draggable(
                             state = rememberDraggableState {
@@ -79,23 +83,7 @@ class DownloadsView {
                         downloadRow(it, windowScope)
                     }
                 }
-                VerticalScrollbar(
-                    modifier = Modifier.align(Alignment.CenterEnd)
-                        .background(MaterialTheme.colorScheme.surface.tone(20.0))
-                        .fillMaxHeight()
-                        .padding(top = 3.dp, bottom = 3.dp),
-                    style = ScrollbarStyle(
-                        minimalHeight = 16.dp,
-                        thickness = 10.dp,
-                        shape = RoundedCornerShape(10.dp),
-                        hoverDurationMillis = 300,
-                        unhoverColor = MaterialTheme.colorScheme.surface.tone(50.0).copy(alpha = 0.70f),
-                        hoverColor = MaterialTheme.colorScheme.surface.tone(50.0).copy(alpha = 0.90f)
-                    ),
-                    adapter = rememberScrollbarAdapter(
-                        scrollState = scrollState
-                    )
-                )
+                verticalScrollbar(scrollState)
             }
         }
         LaunchedEffect(downloads.size) {
@@ -143,7 +131,7 @@ class DownloadsView {
             modifier = Modifier.background(
                 color = MaterialTheme.colorScheme.inversePrimary,
                 shape = RectangleShape
-            ).height(40.dp).fillMaxWidth().padding(end = 12.dp),
+            ).height(40.dp).fillMaxWidth().padding(end = verticalScrollbarEndPadding),
             horizontalArrangement = Arrangement.spacedBy(4.dp)
         ) {
             Column(
@@ -496,14 +484,15 @@ class DownloadsView {
                 textAlign = TextAlign.Center
             )
             divider()
-            val text = download.videoProgress.value  + Tools.secondsToRemainingTime(
-                download.remainingVideoDownloadSeconds.value
-            ) + if (download.audioProgress.value.isNotEmpty())
-                "\n" + download.audioProgress.value + Tools.secondsToRemainingTime(
-                    download.remainingAudioDownloadSeconds.value
-                )
-            else
-                ""
+            val time = if (download.downloading)
+                Tools.secondsToRemainingTime(download.videoDownloadSeconds.value) + download.downloadSpeed.value +
+                        if (download.audioProgress.value.isNotEmpty())
+                            "\n" + download.audioProgress.value + Tools.secondsToRemainingTime(
+                                download.audioDownloadSeconds.value
+                            )
+                        else ""
+            else ""
+            val text = download.videoProgress.value + " $time"
             Text(
                 text = text,
                 modifier = Modifier
@@ -511,7 +500,7 @@ class DownloadsView {
                     .align(Alignment.CenterVertically)
                     .weight(PROGRESS_WEIGHT),
                 color = MaterialTheme.colorScheme.onSurface,
-                fontSize = MaterialTheme.typography.bodySmall.fontSize,
+                fontSize = 11.sp,
                 textAlign = TextAlign.Center
             )
         }
@@ -534,6 +523,10 @@ class DownloadsView {
         )
     }
 
+    override fun onClose() {
+
+    }
+
     private enum class Sort {
         NAME,
         NAME_DESC,
@@ -545,7 +538,7 @@ class DownloadsView {
 
     companion object {
         private val spaceBetweenNameAndIcon = 1.dp
-        private val rowHeight = 80.dp
+        private val rowHeight = 85.dp
         private const val NAME_WEIGHT = 5f
         private const val FILE_SIZE_WEIGHT = 1f
         private const val DATE_WEIGHT = 1.5f

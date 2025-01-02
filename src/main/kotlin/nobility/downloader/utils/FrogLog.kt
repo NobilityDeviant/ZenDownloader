@@ -1,10 +1,8 @@
 package nobility.downloader.utils
 
 import nobility.downloader.core.BoxHelper.Companion.boolean
+import nobility.downloader.core.Core
 import nobility.downloader.core.settings.Defaults
-import java.io.BufferedWriter
-import java.io.File
-import java.io.FileWriter
 
 object FrogLog {
 
@@ -13,16 +11,21 @@ object FrogLog {
         errorMessage: String? = null,
         important: Boolean = false
     ) {
-        if (!important && !Defaults.SHOW_DEBUG_MESSAGES.boolean()) {
-            return
+        val fullMessage = "[${callerClassName()}] [E] $message" +
+                if (!errorMessage.isNullOrEmpty())
+                    "\nError: $errorMessage"
+                else
+                    ""
+        if (important) {
+            println(fullMessage)
+        } else {
+            @Suppress("KotlinConstantConditions")
+            if (AppInfo.USE_CUSTOM_ERROR_PS) {
+                Core.errorPrintStream?.println(fullMessage)
+            } else {
+                System.err.println(fullMessage)
+            }
         }
-        println(
-            "[${callerClassName()}] [E] $message" +
-                    if (!errorMessage.isNullOrEmpty())
-                        "\nError: $errorMessage"
-                    else
-                        ""
-        )
     }
 
     fun logError(
@@ -30,19 +33,35 @@ object FrogLog {
         exception: Throwable?,
         important: Boolean = false
     ) {
-        if (!important && !Defaults.SHOW_DEBUG_MESSAGES.boolean()) {
-            return
+        val fullMessage = "[${callerClassName()}] [E] $message" +
+                if (exception?.localizedMessage.isNullOrEmpty())
+                    "\nError: Invalid exception."
+                else
+                    ""
+                //if (!exception?.localizedMessage.isNullOrEmpty())
+                  //  "\nError: ${exception.localizedMessage}"
+                //else
+
+        if (important) {
+            println(fullMessage)
+        } else {
+            @Suppress("KotlinConstantConditions")
+            if (AppInfo.USE_CUSTOM_ERROR_PS) {
+                Core.errorPrintStream?.println(fullMessage)
+            } else {
+                System.err.println(fullMessage)
+            }
         }
-        println(
-            "[${callerClassName()}] [E] $message" +
-                    if (!exception?.localizedMessage.isNullOrEmpty())
-                        "\nError: ${exception.localizedMessage}"
-                    else
-                        "Error: Invalid exception error"
-        )
         if (exception != null) {
-            writeMessage("Stacktrace for ${message.trimIndent()}:", true)
-            exception.printStackTrace()
+            //writeMessage("Filtered Stacktrace for ${message.trimIndent()}:", true)
+            @Suppress("KotlinConstantConditions")
+            if (AppInfo.USE_CUSTOM_ERROR_PS) {
+                val stacktrace = filterStackTrace(exception)
+                stacktrace.forEach { Core.errorPrintStream?.println(it) }
+                exception.printStackTrace(Core.errorPrintStream)
+            } else {
+                exception.printStackTrace()
+            }
         }
     }
 
@@ -70,47 +89,14 @@ object FrogLog {
         toErrorStream: Boolean = false
     ) {
         if (toErrorStream) {
-            System.err.println(message)
+            @Suppress("KotlinConstantConditions")
+            if (AppInfo.USE_CUSTOM_ERROR_PS) {
+                Core.errorPrintStream?.println(message)
+            } else {
+                System.err.println(message)
+            }
         } else {
             println(message)
-        }
-    }
-
-    fun writeErrorToFile(s: String, fileName: String) {
-        if (!Defaults.SHOW_DEBUG_MESSAGES.boolean()) {
-            return
-        }
-        val debugPath = File("./debug/")
-        if (!debugPath.exists()) {
-            if (!debugPath.mkdir()) {
-                logError(
-                    "Failed to write error to file. Unable to find/create the debug folder." +
-                            "\nWriting it here instead." +
-                            "\nError: \n$s"
-                )
-                return
-            }
-        }
-        val debugFile = File(debugPath.absolutePath + "/$fileName.txt")
-        var bufferedWriter: BufferedWriter? = null
-        try {
-            bufferedWriter = BufferedWriter(FileWriter(debugFile, true))
-            bufferedWriter.newLine()
-            bufferedWriter.newLine()
-            bufferedWriter.write("[${Tools.date}][${Tools.currentTime}][DEBUG ERROR]")
-            bufferedWriter.newLine()
-            bufferedWriter.write(s)
-            bufferedWriter.flush()
-            logInfo(
-                "Successfully wrote error to file: ${debugFile.absolutePath}"
-            )
-        } catch (e: Exception) {
-            logError(
-                "Failed to write error to file.",
-                e
-            )
-        } finally {
-            bufferedWriter?.close()
         }
     }
 
@@ -145,6 +131,16 @@ object FrogLog {
             return className.split(".").lastOrNull()?: NO_CLASS
         }
         return className
+    }
+
+    fun filterStackTrace(throwable: Throwable): List<StackTraceElement> {
+        var enteredOurCode = false
+        return throwable.stackTrace.filter {
+            if (it.className.startsWith("nobility.downloader")) {
+                enteredOurCode = true
+                true
+            } else enteredOurCode
+        }
     }
 
     private const val NO_CLASS = "NoClass"

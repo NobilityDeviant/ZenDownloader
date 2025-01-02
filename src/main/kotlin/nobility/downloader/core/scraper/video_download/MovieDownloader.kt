@@ -17,11 +17,11 @@ import org.openqa.selenium.By
 import org.openqa.selenium.support.ui.ExpectedConditions
 import org.openqa.selenium.support.ui.WebDriverWait
 import java.io.File
-import java.io.IOException
 import java.time.Duration
 
 object MovieDownloader {
 
+    @Suppress("SelfAssignment")
     suspend fun handleMovie(
         movie: MovieHandler.Movie,
         data: VideoDownloadData
@@ -33,7 +33,7 @@ object MovieDownloader {
         if (!saveFolder.exists() && !saveFolder.mkdirs()) {
             data.writeMessage(
                 "Failed to create movies save folder: ${saveFolder.absolutePath} " +
-                        "Defaulting to $downloadFolderPath"
+                        "\nDefaulting to $downloadFolderPath"
             )
             saveFolder = File(downloadFolderPath + File.separator)
         }
@@ -46,7 +46,7 @@ object MovieDownloader {
             movie.slug,
             Quality.LOW
         )
-        data.writeMessage("Detected movie for ${movie.slug}. Using movie mode.")
+        data.logInfo("Detected movie for ${movie.slug}")
         if (data.mCurrentDownload != null) {
             if (data.currentDownload.downloadPath.isEmpty()
                 || !File(data.currentDownload.downloadPath).exists()
@@ -56,13 +56,7 @@ object MovieDownloader {
             }
             Core.child.addDownload(data.currentDownload)
             if (data.currentDownload.isComplete) {
-                data.writeMessage("[DB] Skipping completed video: " + movie.name)
-                data.currentDownload.downloading = false
-                data.currentDownload.queued = false
-                Core.child.updateDownloadInDatabase(
-                    data.currentDownload,
-                    true
-                )
+                data.writeMessage("[DB] Skipping completed video.")
                 data.finishEpisode()
                 return@withContext
             } else {
@@ -87,31 +81,27 @@ object MovieDownloader {
             videoLinkError = videoPlayer.getAttribute("innerHTML")
         } catch (_: Exception) {
             data.writeMessage(
-                """
-                    Failed to find video player for movie: $link
-                    Retrying...
-                """.trimIndent()
+                "Failed to find video player for movie: $link | Retrying..."
             )
             data.retries++
             return@withContext
         }
         if (downloadLink.isEmpty()) {
-            if (videoLinkError.isNotEmpty()) {
-                data.logInfo("Movie mode empty link source: \n${videoLinkError.trim()}")
-            }
+            //if (videoLinkError.isNotEmpty()) {
+              //  data.logInfo("Movie mode empty link source: \n${videoLinkError.trim()}")
+            //}
             data.writeMessage(
-                "Failed to find video link for movie: ${movie.slug.slugToLink()}. Retrying..."
+                "Failed to find video link for movie: ${movie.slug.slugToLink()}. | Retrying..."
             )
             data.retries++
             return@withContext
         }
-        data.logInfo("Successfully found movie video link with $data.retries retries.")
+        data.logInfo("Successfully found movie video link with ${data.retries} retries.")
 
         try {
             if (data.mCurrentDownload == null) {
                 data.mCurrentDownload = Download()
                 data.currentDownload.downloadPath = saveFile.absolutePath
-                //ignore these warnings
                 data.currentDownload.name = data.currentEpisode.name
                 data.currentDownload.slug = data.currentEpisode.slug
                 data.currentDownload.seriesSlug = data.currentEpisode.seriesSlug
@@ -120,9 +110,9 @@ object MovieDownloader {
                 data.currentDownload.fileSize = 0
                 data.currentDownload.queued = true
                 Core.child.addDownload(data.currentDownload)
-                data.logInfo("Created new download.")
+                data.logInfo("Created new download for movie.")
             } else {
-                data.logInfo("Using existing download.")
+                data.logInfo("Using existing download for movie.")
             }
             data.driver.navigate().to(downloadLink)
             val originalFileSize = fileSize(downloadLink, data.base.userAgent)
@@ -133,11 +123,9 @@ object MovieDownloader {
             }
             if (saveFile.exists()) {
                 if (saveFile.length() >= originalFileSize) {
-                    data.writeMessage("[IO Skipping completed movie.")
+                    data.writeMessage("[IO] Skipping completed movie.")
                     data.currentDownload.downloadPath = saveFile.absolutePath
                     data.currentDownload.fileSize = originalFileSize
-                    data.currentDownload.downloading = false
-                    data.currentDownload.queued = false
                     Core.child.updateDownloadInDatabase(data.currentDownload, true)
                     data.finishEpisode()
                     return@withContext
@@ -150,10 +138,10 @@ object MovieDownloader {
                     }
                 } catch (e: Exception) {
                     data.logError(
-                        "Unable to create video file for the movie ${data.currentEpisode.name}",
+                        "Failed to create video file.",
                         e
                     )
-                    data.writeMessage("Failed to create new video file for the movie ${data.currentEpisode.name} Retrying...")
+                    data.writeMessage("Failed to create new video file. Retrying...")
                     data.retries++
                     return@withContext
                 }
@@ -171,22 +159,18 @@ object MovieDownloader {
             Core.child.updateDownloadInDatabase(data.currentDownload, true)
             if (saveFile.exists() && saveFile.length() >= originalFileSize) {
                 Core.child.incrementDownloadsFinished()
-                data.writeMessage("Successfully downloaded movie: $episodeName")
+                data.writeMessage("Successfully downloaded movie.")
                 data.finishEpisode()
             }
-        } catch (e: IOException) {
+        } catch (e: Exception) {
             data.currentDownload.queued = true
             data.currentDownload.downloading = false
             Core.child.updateDownloadInDatabase(data.currentDownload, true)
             data.writeMessage(
-                """
-                   Failed to download the movie $episodeName
-                   Error: ${e.localizedMessage}
-                   Reattempting the download...
-                """.trimIndent()
+                "Failed to download movie. | Retrying..."
             )
             data.logError(
-                "Failed to download the movie $episodeName",
+                "Failed to download movie.",
                 e
             )
         }

@@ -6,10 +6,11 @@ import nobility.downloader.ui.windows.AssetUpdateWindow
 import nobility.downloader.ui.windows.mainWindow
 import nobility.downloader.ui.windows.utils.ApplicationState
 import nobility.downloader.utils.AppInfo
-import nobility.downloader.utils.loadKeyEvents
+import nobility.downloader.utils.KeyEvents
 
 
 fun main() {
+    @Suppress("KotlinConstantConditions")
     if (AppInfo.UPDATE_ASSETS_ON_LAUNCH) {
         val assetUpdateWindow = AssetUpdateWindow()
         assetUpdateWindow.open {
@@ -21,7 +22,7 @@ fun main() {
              */
             ApplicationState.newWindow(
                 AppInfo.TITLE,
-                loadKeyEvents(),
+                KeyEvents.shared.loadKeyEvents(),
                 maximized = true,
                 onClose = {
                     Core.child.shutdown(false)
@@ -33,7 +34,7 @@ fun main() {
             true
         }
     } else {
-        //initialize the core singleton before anything besides the updater.
+        //initialize the core singleton before anything.
         //this is the root of the app.
         Core.initialize()
         /**
@@ -41,7 +42,7 @@ fun main() {
          */
         ApplicationState.newWindow(
             AppInfo.TITLE,
-            loadKeyEvents(),
+            KeyEvents.shared.loadKeyEvents(),
             maximized = true,
             onClose = {
                 Core.child.shutdown(false)

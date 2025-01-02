@@ -278,9 +278,7 @@ class DownloadConfirmWindow(
                             }
                         }
                     }
-                    Box(
-                        modifier = Modifier.fillMaxSize()
-                    ) {
+                    fullBox {
                         val seasonData = filteredEpisodes
                         val isExpandedMap = rememberSavableSnapshotStateMap {
                             List(seasonData.size) { index: Int ->
@@ -292,7 +290,7 @@ class DownloadConfirmWindow(
                             modifier = Modifier.padding(
                                 top = 5.dp,
                                 bottom = 5.dp,
-                                end = 12.dp
+                                end = verticalScrollbarEndPadding
                             ).fillMaxSize().draggable(
                                 state = rememberDraggableState {
                                     scope.launch {
@@ -313,23 +311,7 @@ class DownloadConfirmWindow(
                                 )
                             }
                         }
-                        VerticalScrollbar(
-                            modifier = Modifier.align(Alignment.CenterEnd)
-                                .background(MaterialTheme.colorScheme.surface.tone(20.0))
-                                .fillMaxHeight()
-                                .padding(top = 3.dp, bottom = 3.dp),
-                            style = ScrollbarStyle(
-                                minimalHeight = 16.dp,
-                                thickness = 10.dp,
-                                shape = RoundedCornerShape(10.dp),
-                                hoverDurationMillis = 300,
-                                unhoverColor = MaterialTheme.colorScheme.surface.tone(50.0).copy(alpha = 0.70f),
-                                hoverColor = MaterialTheme.colorScheme.surface.tone(50.0).copy(alpha = 0.90f)
-                            ),
-                            adapter = rememberScrollbarAdapter(
-                                scrollState = episodesListState
-                            )
-                        )
+                        verticalScrollbar(episodesListState)
                         if (toDownload.episode != null) {
                             LaunchedEffect(Unit) {
                                 val index = indexForEpisode(toDownload.episode)
@@ -629,27 +611,30 @@ class DownloadConfirmWindow(
                 color = MaterialTheme.colorScheme.onPrimary
             )
             if (!singleEpisode) {
-                val checked = mutableStateOf(selectedEpisodes.containsOne(seasonData.episodes))
-                Checkbox(
-                    checked.value,
+                var checked by mutableStateOf(selectedEpisodes.containsOne(seasonData.episodes))
+                var selectedCount = selectedEpisodes.filter { episode ->
+                    seasonData.episodes.contains(episode)
+                }.size
+                defaultButton(
+                    if (checked) "($selectedCount) Selected" else "Select All",
                     modifier = Modifier.align(Alignment.CenterVertically),
-                    colors = CheckboxDefaults.colors(
-                        checkedColor = MaterialTheme.colorScheme.surface,
-                        uncheckedColor = MaterialTheme.colorScheme.onPrimary,
-                        checkmarkColor = MaterialTheme.colorScheme.onSurface
-                    ),
-                    onCheckedChange = {
-                        checked.value = if (it) {
-                            selectedEpisodes.addAll(seasonData.episodes)
-                            updateSelectedText()
-                            true
-                        } else {
-                            selectedEpisodes.removeAll(seasonData.episodes)
-                            updateSelectedText()
-                            false
-                        }
+                    fontSize = 13.sp,
+                    fontColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.primaryContainer
+                    )
+                ) {
+                    checked = checked.not()
+                    if (checked) {
+                        selectedEpisodes.addAll(seasonData.episodes)
+                        updateSelectedText()
+                        true
+                    } else {
+                        selectedEpisodes.removeAll(seasonData.episodes)
+                        updateSelectedText()
+                        false
                     }
-                )
+                }
             }
             //https://github.com/mohammadestk/compose-expandable/blob/master/expandable/src/main/java/dev/esteki/expandable/Expandable.kt
             val expandAnimation = animateFloatAsState(
@@ -918,7 +903,7 @@ class DownloadConfirmWindow(
                                 enabled = downloadButtonEnabled,
                             ) {
                                 if (series.episodes.isEmpty()) {
-                                    windowScope.showToast("There's no episodes to download,")
+                                    windowScope.showToast("There's no episodes to download.")
                                     return@defaultButton
                                 }
                                 if (!singleEpisode && selectedEpisodes.isEmpty()) {

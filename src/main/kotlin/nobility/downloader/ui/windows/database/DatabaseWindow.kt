@@ -261,13 +261,13 @@ class DatabaseWindow {
 
 
                     header()
-                    Box(modifier = Modifier.fillMaxSize()) {
+                    fullBox {
                         LazyColumn(
                             verticalArrangement = Arrangement.spacedBy(1.dp),
                             modifier = Modifier.padding(
                                 top = 5.dp,
                                 bottom = 5.dp,
-                                end = 12.dp
+                                end = verticalScrollbarEndPadding
                             ).fillMaxSize().draggable(
                                 state = rememberDraggableState {
                                     scope.launch {
@@ -285,23 +285,7 @@ class DatabaseWindow {
                                 seriesRow(it, this@newWindow)
                             }
                         }
-                        VerticalScrollbar(
-                            modifier = Modifier.align(Alignment.CenterEnd)
-                                .background(MaterialTheme.colorScheme.surface.tone(20.0))
-                                .fillMaxHeight()
-                                .padding(top = 3.dp, bottom = 3.dp),
-                            style = ScrollbarStyle(
-                                minimalHeight = 16.dp,
-                                thickness = 10.dp,
-                                shape = RoundedCornerShape(10.dp),
-                                hoverDurationMillis = 300,
-                                unhoverColor = MaterialTheme.colorScheme.surface.tone(50.0).copy(alpha = 0.70f),
-                                hoverColor = MaterialTheme.colorScheme.surface.tone(50.0).copy(alpha = 0.90f)
-                            ),
-                            adapter = rememberScrollbarAdapter(
-                                scrollState = seasonsListState
-                            )
-                        )
+                        verticalScrollbar(seasonsListState)
                         LaunchedEffect(series.size) {
                             resultText = "Showing ${series.size} series results"
                         }
@@ -332,7 +316,7 @@ class DatabaseWindow {
             modifier = Modifier.background(
                 color = MaterialTheme.colorScheme.inversePrimary,
                 shape = RectangleShape
-            ).height(40.dp).fillMaxWidth().padding(end = 12.dp),
+            ).height(40.dp).fillMaxWidth().padding(end = verticalScrollbarEndPadding),
             horizontalArrangement = Arrangement.spacedBy(4.dp)
         ) {
             Column(

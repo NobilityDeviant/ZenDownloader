@@ -17,7 +17,6 @@ data class Download(
 ) : Episode() {
 
     var manualProgress = false
-
     @Transient
     var downloading = false
     @Transient
@@ -29,20 +28,64 @@ data class Download(
     @Transient
     var audioProgress = mutableStateOf("")
     @Transient
-    var remainingVideoDownloadSeconds = mutableStateOf(0)
+    var videoDownloadSeconds = mutableStateOf(0)
+        private set
     @Transient
-    var remainingAudioDownloadSeconds = mutableStateOf(0)
+    var audioDownloadSeconds = mutableStateOf(0)
+        private set
+    @Transient
+    var downloadSpeed = mutableStateOf("")
+        private set
 
-    fun update(download: Download, updateProperties: Boolean) {
-        downloadPath = download.downloadPath
-        dateAdded = download.dateAdded
-        fileSize = download.fileSize
-        queued = download.queued
-        downloading = download.downloading
-        resolution = download.resolution
-        manualProgress = download.manualProgress
-        remainingVideoDownloadSeconds = download.remainingVideoDownloadSeconds
-        remainingAudioDownloadSeconds = download.remainingAudioDownloadSeconds
+    fun updateWithDownload(
+        download: Download,
+        updateProperties: Boolean
+    ) {
+        var changed = false
+        if (downloadPath != download.downloadPath) {
+            downloadPath = download.downloadPath
+            changed = true
+        }
+        if (dateAdded != download.dateAdded) {
+            dateAdded = download.dateAdded
+            changed = true
+        }
+        if (fileSize != download.fileSize) {
+            fileSize = download.fileSize
+            changed = true
+        }
+        if (queued != download.queued) {
+            queued = download.queued
+            changed = true
+        }
+        if (downloading != download.downloading) {
+            downloading = download.downloading
+            changed = true
+        }
+        if (resolution != download.resolution) {
+            resolution = download.resolution
+            changed = true
+        }
+        if (manualProgress != download.manualProgress) {
+            manualProgress = download.manualProgress
+            changed = true
+        }
+        /*if (videoDownloadSeconds.value != download.videoDownloadSeconds.value) {
+            videoDownloadSeconds.value = download.videoDownloadSeconds.value
+            changed = true
+        }
+        if (audioDownloadSeconds.value != download.audioDownloadSeconds.value) {
+            audioDownloadSeconds = download.audioDownloadSeconds
+            changed = true
+        }*/
+        if (videoProgress.value != download.videoProgress.value) {
+            videoProgress.value = download.videoProgress.value
+            changed = true
+        }
+        if (audioProgress.value != download.audioProgress.value) {
+            audioProgress.value = download.audioProgress.value
+            changed = true
+        }
         if (updateProperties) {
             updateProgress()
         }
@@ -82,11 +125,15 @@ data class Download(
     }
 
     fun updateVideoSeconds(seconds: Int) {
-        remainingVideoDownloadSeconds.value = seconds
+        videoDownloadSeconds.value = seconds
     }
 
     fun updateAudioSeconds(seconds: Int) {
-        remainingAudioDownloadSeconds.value = seconds
+        audioDownloadSeconds.value = seconds
+    }
+
+    fun updateDownloadSpeed(bps: Long) {
+        downloadSpeed.value = " (${Tools.bytesToString(bps)}ps)"
     }
 
     fun setVideoProgressValue(

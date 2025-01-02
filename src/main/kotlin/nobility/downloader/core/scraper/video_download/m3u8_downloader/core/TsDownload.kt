@@ -6,7 +6,6 @@ import java.nio.file.Path
 import java.nio.file.StandardCopyOption
 import java.util.*
 import java.util.concurrent.atomic.AtomicLong
-import kotlin.concurrent.Volatile
 
 class TsDownload(
     val uri: URI,

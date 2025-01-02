@@ -1,12 +1,12 @@
 package nobility.downloader.ui.windows
 
-import androidx.compose.foundation.*
 import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.gestures.draggable
 import androidx.compose.foundation.gestures.rememberDraggableState
 import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -30,7 +30,9 @@ import nobility.downloader.core.settings.Defaults
 import nobility.downloader.core.updates.Update
 import nobility.downloader.ui.components.defaultButton
 import nobility.downloader.ui.components.dialog.DialogHelper
+import nobility.downloader.ui.components.fullBox
 import nobility.downloader.ui.components.linkifyText
+import nobility.downloader.ui.components.verticalScrollbar
 import nobility.downloader.ui.windows.utils.AppWindowScope
 import nobility.downloader.ui.windows.utils.ApplicationState
 import nobility.downloader.utils.*
@@ -157,14 +159,12 @@ class UpdateWindow(
                     }
                 }
             ) { padding ->
-                Box(
-                    modifier = Modifier.fillMaxSize()
-                ) {
-                    val columnScrollState = rememberScrollState(0)
+                fullBox {
+                    val scrollState = rememberScrollState()
                     Column(
                         modifier = Modifier.padding(
                             bottom = padding.calculateBottomPadding()
-                        ).fillMaxSize().verticalScroll(columnScrollState)
+                        ).fillMaxSize().verticalScroll(scrollState)
                     ) {
                         Text(
                             if (update.isLatest)
@@ -250,23 +250,7 @@ class UpdateWindow(
                             }
                         }
                     }
-                    VerticalScrollbar(
-                        modifier = Modifier.align(Alignment.CenterEnd)
-                            .background(MaterialTheme.colorScheme.surface.tone(20.0))
-                            .fillMaxHeight()
-                            .padding(top = 3.dp, bottom = 3.dp),
-                        style = ScrollbarStyle(
-                            minimalHeight = 16.dp,
-                            thickness = 10.dp,
-                            shape = RoundedCornerShape(10.dp),
-                            hoverDurationMillis = 300,
-                            unhoverColor = MaterialTheme.colorScheme.surface.tone(50.0).copy(alpha = 0.70f),
-                            hoverColor = MaterialTheme.colorScheme.surface.tone(50.0).copy(alpha = 0.90f)
-                        ),
-                        adapter = rememberScrollbarAdapter(
-                            scrollState = columnScrollState
-                        )
-                    )
+                    verticalScrollbar(scrollState)
                 }
                 ApplicationState.addToastToWindow(this)
             }

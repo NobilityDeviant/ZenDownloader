@@ -63,7 +63,7 @@ class VideoDownloadHelper(
                         data.resRetries = 3
                         data.logError(
                             "Failed to find video frame for: $slug" +
-                                    "Please report this in github issues with the video you are trying to download."
+                                    "\nPlease report this in github issues with the video you are trying to download."
                         )
                         return Resource.Error()
                     } else if (errorCode == ErrorCode.FAILED_EXTRACT_RES) {
@@ -224,7 +224,11 @@ class VideoDownloadHelper(
             if (m3u8Mode) {
                 var hslLink = ""
                 var domain = ""
-                val frameDoc = Jsoup.parse(sbFrame.toString())
+                val frameString = sbFrame.toString()
+                val frameDoc = Jsoup.parse(frameString)
+                //if (frameString.contains("<!-- <source ")) {
+                    //this while isn't going to load
+                //}
                 val source = frameDoc.getElementsByTag("source").firstOrNull()
                 if (source != null) {
                     hslLink = source.attr("src")
@@ -436,8 +440,7 @@ class VideoDownloadHelper(
                 data.currentDownload.downloading = false
                 data.currentDownload.queued = false
                 Core.child.updateDownloadInDatabase(
-                    data.currentDownload,
-                    true
+                    data.currentDownload
                 )
                 data.finishEpisode()
                 return@withContext false
@@ -723,7 +726,7 @@ class VideoDownloadHelper(
                             break
                         } else {
                             currentDownload.queued = true
-                            Core.child.updateDownloadProgress(currentDownload)
+                            Core.child.updateDownloadInDatabase(currentDownload, true)
                         }
                     }
                     data.logInfo("(2nd) Successfully found video link with $retries retries.")

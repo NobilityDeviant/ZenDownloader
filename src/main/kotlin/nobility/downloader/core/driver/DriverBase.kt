@@ -13,17 +13,20 @@ import org.openqa.selenium.JavascriptExecutor
 import org.openqa.selenium.WebDriver
 import org.openqa.selenium.chrome.ChromeOptions
 import java.time.Duration
+import java.util.*
 
 abstract class DriverBase(
-    userAgent: String = ""
+    userAgent: String = "",
+    headless: Boolean? = null
 ) {
 
+    private val id = UUID.randomUUID().toString()
     private val chromeOptions = ChromeOptions()
     private var nDriver: WebDriver? = null
     val driver get() = nDriver!!
     private var isSetup = false
     var userAgent = ""
-    private val headless = Defaults.HEADLESS_MODE.boolean()
+    private val headless = headless ?: Defaults.HEADLESS_MODE.boolean()
 
 
     init {
@@ -93,7 +96,7 @@ abstract class DriverBase(
         driver.manage().timeouts().scriptTimeout(
             Duration.ofSeconds(timeout)
         )
-        Core.child.runningDrivers.add(driver)
+        Core.child.runningDrivers.put(id, driver)
         isSetup = true
     }
 
@@ -111,9 +114,9 @@ abstract class DriverBase(
 
     open fun killDriver() {
         if (nDriver != null) {
-            Core.child.runningDrivers.remove(driver)
             driver.close()
             driver.quit()
+            Core.child.runningDrivers.remove(id)
         }
     }
 }

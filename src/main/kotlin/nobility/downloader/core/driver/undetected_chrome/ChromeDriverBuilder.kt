@@ -16,7 +16,6 @@ import java.nio.file.Files
 import java.util.*
 import java.util.regex.Pattern
 
-
 class ChromeDriverBuilder {
 
     private var keepUserDataDir = false
@@ -139,7 +138,7 @@ class ChromeDriverBuilder {
         val patcher = Patcher(driverExecutablePath)
         try {
             patcher.auto()
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             throw RuntimeException("CDC patcher failed.")
         }
     }
@@ -159,12 +158,12 @@ class ChromeDriverBuilder {
             if (arg.contains("--remote-debugging-host")) {
                 try {
                     debugHost = arg.split("=".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()[1]
-                } catch (ignored: Exception) {}
+                } catch (_: Exception) {}
             }
             if (arg.contains("--remote-debugging-port")) {
                 try {
                     debugPort = arg.split("=".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()[1].toInt()
-                } catch (ignored: Exception) {}
+                } catch (_: Exception) {}
             }
         }
         if (debugHost == null) {
@@ -187,8 +186,9 @@ class ChromeDriverBuilder {
             if (experimentals["debuggerAddress"] != null) {
                 return chromeOptions
             }
-        } catch (ignored: Exception) {
+        } catch (_: Exception) {
         }
+        chromeOptions.addArguments("--remote-allow-origins=*")
         chromeOptions.setExperimentalOption("debuggerAddress", "$debugHost:$debugPort")
         return chromeOptions
     }
@@ -264,7 +264,7 @@ class ChromeDriverBuilder {
         if (mBinaryLocation.isEmpty() || !mBinaryLocation.fileExists()) {
             try {
                 mBinaryLocation = chromePath()
-            } catch (e: Exception) {
+            } catch (_: Exception) {
                 throw RuntimeException("Failed to find chrome binary.")
             }
             if (mBinaryLocation.isEmpty()) {
@@ -382,7 +382,7 @@ class ChromeDriverBuilder {
                     }
                     newPrefs = JSONObject.parseObject(stringBuilder.toString()).innerMap
                 }
-            } catch (e: Exception) {
+            } catch (_: Exception) {
                 throw RuntimeException("Default preferences directory not found.")
             }
 
@@ -390,7 +390,7 @@ class ChromeDriverBuilder {
                 prefs.entries.forEach { pref ->
                     undotMerge(pref.key, pref.value, newPrefs)
                 }
-            } catch (e: Exception) {
+            } catch (_: Exception) {
                 throw RuntimeException("Failed to merge preferences.")
             }
 
@@ -399,7 +399,7 @@ class ChromeDriverBuilder {
                     bw.write(JSONObject.toJSONString(newPrefs))
                     bw.flush()
                 }
-            } catch (e: Exception) {
+            } catch (_: Exception) {
                 throw RuntimeException("Failed to write preferences to file.")
             }
         }
@@ -433,18 +433,18 @@ class ChromeDriverBuilder {
                 writer.write(json)
                 writer.close()
             }
-        } catch (ignored: Exception) {
+        } catch (_: Exception) {
         } finally {
             if (reader != null) {
                 try {
                     reader.close()
-                } catch (ignored: Exception) {
+                } catch (_: Exception) {
                 }
             }
             if (writer != null) {
                 try {
                     writer.close()
-                } catch (ignored: Exception) {
+                } catch (_: Exception) {
                 }
             }
         }
@@ -525,7 +525,7 @@ class ChromeDriverBuilder {
             val argsField = chromeOptions.javaClass.superclass.getDeclaredField("args")
             argsField.isAccessible = true
             args = ArrayList(argsField[chromeOptions] as List<String>)
-        } catch (ignored: Exception) {
+        } catch (_: Exception) {
         }
     }
 
@@ -595,7 +595,7 @@ class ChromeDriverBuilder {
             }
             try {
                 undotMerge(k2, value, dict[k1] as MutableMap<String, Any>)
-            } catch (ignored: Exception) {
+            } catch (_: Exception) {
             }
             return
         }

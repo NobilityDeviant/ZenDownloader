@@ -1,10 +1,11 @@
+@file:Suppress("ConstPropertyName")
+
 package nobility.downloader.utils
 
 import androidx.compose.ui.unit.dp
 
-@Suppress("warnings")
 object Constants {
-    val topbarHeight = 45.dp
+    val topbarHeight = 50.dp
     val mediumIconSize = 30.dp
     val largeIconSize = 45.dp
     val randomSeriesRowHeight = 110.dp

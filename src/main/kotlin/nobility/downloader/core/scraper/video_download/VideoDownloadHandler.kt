@@ -7,7 +7,6 @@ import nobility.downloader.core.scraper.video_download.Functions.fileSize
 import nobility.downloader.core.scraper.video_download.MovieDownloader.handleMovie
 import nobility.downloader.core.settings.Quality
 import nobility.downloader.utils.Constants
-import java.io.IOException
 
 /**
  * The core handler of video downloading.
@@ -75,6 +74,9 @@ class VideoDownloadHandler(
                                     it.downloadLink == downloadLink
                                 }
                             )
+                            //if (data.mCurrentDownload != null) {
+                              //  Core.child.removeDownload(data.currentDownload)
+                            //}
                             data.retries++
                             continue
                         }
@@ -135,21 +137,24 @@ class VideoDownloadHandler(
                         data.finishEpisode()
                     }
                 }
-            } catch (e: IOException) {
+            } catch (e: Exception) {
                 data.currentDownload.queued = true
                 data.currentDownload.downloading = false
                 Core.child.updateDownloadInDatabase(
                     data.currentDownload,
                     true
                 )
-                data.logError(
-                    "Failed to download video. Retrying...",
-                    e,
-                    true
-                )
+                if (e.message?.contains("Connection reset", true) == false) {
+                    data.logError(
+                        "Failed to download video. Retrying...",
+                        e,
+                        true
+                    )
+                }
                 data.retries++
             }
         }
+        killDriver()
     }
 
     fun killDriver() {

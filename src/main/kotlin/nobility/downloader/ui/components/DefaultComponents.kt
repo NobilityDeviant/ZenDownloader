@@ -2,6 +2,7 @@ package nobility.downloader.ui.components
 
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.DropdownMenuItem
@@ -13,6 +14,7 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -20,12 +22,16 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import compose.icons.EvaIcons
 import compose.icons.evaicons.Fill
 import compose.icons.evaicons.fill.ArrowDown
+import nobility.downloader.Page
+import nobility.downloader.core.Core
 import nobility.downloader.utils.Constants
+import nobility.downloader.utils.tone
 
 data class DropdownOption(
     val title: String,
@@ -144,7 +150,7 @@ fun defaultTextField(
     singleLine: Boolean = true,
     readOnly: Boolean = false,
     enabled: Boolean = true,
-    colors:  TextFieldColors = TextFieldDefaults.colors(),
+    colors: TextFieldColors = TextFieldDefaults.colors(),
     textStyle: TextStyle = LocalTextStyle.current,
     keyboardOptions: KeyboardOptions = KeyboardOptions(),
     modifier: Modifier = Modifier,
@@ -286,6 +292,63 @@ fun defaultButton(
 }
 
 @Composable
+fun pageButton(
+    page: Page,
+    modifier: Modifier = Modifier
+) {
+    defaultButton(
+        page.title + if (page == Page.DOWNLOADS) " (${Core.child.downloadsInQueue.value})" else "",
+        modifier = modifier,
+        colors = ButtonDefaults.buttonColors(
+            containerColor = if (Core.currentPage == page)
+                MaterialTheme.colorScheme.surface
+            else
+                MaterialTheme.colorScheme.primaryContainer
+        ),
+        shape = RoundedCornerShape(
+            topStart = 7.dp,
+            topEnd = 7.dp
+        ),
+        height = 35.dp,
+        width = 110.dp,
+        padding = 0.dp,
+        fontColor = if (Core.currentPage == page)
+            MaterialTheme.colorScheme.onSurface
+        else
+            MaterialTheme.colorScheme.onSecondaryContainer,
+        fontSize = 11.sp
+    ) {
+        Core.changePage(page)
+    }
+}
+
+@Composable
+fun tabButton(
+    title: String,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit
+) {
+    defaultButton(
+        title,
+        modifier = modifier,
+        colors = ButtonDefaults.buttonColors(
+            containerColor = MaterialTheme.colorScheme.tertiaryContainer
+        ),
+        shape = RoundedCornerShape(
+            topStart = 7.dp,
+            topEnd = 7.dp
+        ),
+        height = 35.dp,
+        width = 110.dp,
+        padding = 0.dp,
+        fontColor = MaterialTheme.colorScheme.onTertiaryContainer,
+        fontSize = 11.sp
+    ) {
+        onClick.invoke()
+    }
+}
+
+@Composable
 fun defaultButton(
     text: String,
     modifier: Modifier = Modifier,
@@ -293,7 +356,11 @@ fun defaultButton(
     height: Dp = 40.dp,
     width: Dp = 120.dp,
     colors: ButtonColors = ButtonDefaults.buttonColors(),
+    shape: Shape = RoundedCornerShape(4.dp),
+    border: BorderStroke? = null,
     padding: Dp = 5.dp,
+    fontSize: TextUnit = 11.sp,
+    fontColor: Color = MaterialTheme.typography.bodyLarge.color,
     onClick: () -> Unit
 ) {
     Button(
@@ -302,7 +369,8 @@ fun defaultButton(
             .height(height)
             .width(width)
             .then(modifier),
-        shape = RoundedCornerShape(4.dp),
+        shape = shape,
+        border = border,
         colors = colors,
         enabled = enabled,
         contentPadding = PaddingValues(5.dp)
@@ -312,7 +380,8 @@ fun defaultButton(
         ) {
             Text(
                 text,
-                fontSize = 11.sp,
+                fontSize = fontSize,
+                color = fontColor,
                 fontWeight = FontWeight.Bold,
                 textAlign = TextAlign.Center,
                 modifier = Modifier.align(Alignment.CenterHorizontally),
@@ -373,6 +442,7 @@ fun defaultIcon(
     )
 }
 
+@Suppress("UNUSED")
 @Composable
 fun tooltipIconButton(
     tooltipText: String,
@@ -438,6 +508,64 @@ fun tooltipIconButton(
             )
         }
     }
+}
+
+val verticalScrollbarEndPadding = 10.dp
+
+@Composable
+fun fullBox(
+    content: @Composable BoxScope.() -> Unit
+) {
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        content = content
+    )
+}
+
+@Composable
+fun BoxScope.verticalScrollbar(
+    scrollState: ScrollState
+) {
+    VerticalScrollbar(
+        modifier = Modifier.align(Alignment.CenterEnd)
+            .background(MaterialTheme.colorScheme.surface.tone(20.0))
+            .fillMaxHeight()
+            .padding(top = 3.dp, bottom = 3.dp),
+        style = ScrollbarStyle(
+            minimalHeight = 16.dp,
+            thickness = 10.dp,
+            shape = RoundedCornerShape(10.dp),
+            hoverDurationMillis = 300,
+            unhoverColor = MaterialTheme.colorScheme.surface.tone(50.0).copy(alpha = 0.70f),
+            hoverColor = MaterialTheme.colorScheme.surface.tone(50.0).copy(alpha = 0.90f)
+        ),
+        adapter = rememberScrollbarAdapter(
+            scrollState = scrollState
+        )
+    )
+}
+
+@Composable
+fun BoxScope.verticalScrollbar(
+    scrollState: LazyListState
+) {
+    VerticalScrollbar(
+        modifier = Modifier.align(Alignment.CenterEnd)
+            .background(MaterialTheme.colorScheme.surface.tone(20.0))
+            .fillMaxHeight()
+            .padding(top = 3.dp, bottom = 3.dp),
+        style = ScrollbarStyle(
+            minimalHeight = 16.dp,
+            thickness = 10.dp,
+            shape = RoundedCornerShape(10.dp),
+            hoverDurationMillis = 300,
+            unhoverColor = MaterialTheme.colorScheme.surface.tone(50.0).copy(alpha = 0.70f),
+            hoverColor = MaterialTheme.colorScheme.surface.tone(50.0).copy(alpha = 0.90f)
+        ),
+        adapter = rememberScrollbarAdapter(
+            scrollState = scrollState
+        )
+    )
 }
 
 enum class SpacePosition {

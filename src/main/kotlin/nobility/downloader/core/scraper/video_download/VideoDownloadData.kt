@@ -57,12 +57,6 @@ class VideoDownloadData(
             Core.child.addDownload(currentDownload)
             if (currentDownload.isComplete) {
                 writeMessage("(DB) Skipping completed video.")
-                currentDownload.downloading = false
-                currentDownload.queued = false
-                Core.child.updateDownloadInDatabase(
-                    currentDownload,
-                    true
-                )
                 finishEpisode()
                 return false
             } else {
@@ -106,7 +100,7 @@ class VideoDownloadData(
                     + if (seasonFolder != null) (File.separator + seasonFolder + File.separator) else ""
         )
         if (!saveFolder.exists() && !saveFolder.mkdirs()) {
-            writeMessage(
+            logError(
                 "Failed to create series save folder: ${saveFolder.absolutePath} " +
                         "Defaulting to $downloadFolderPath/NoSeries"
             )
@@ -149,6 +143,7 @@ class VideoDownloadData(
             resRetries = 0
             retries = 0
             m3u8Retries = 0
+            Core.child.incrementDownloadsInProgress()
         }
         return true
     }
@@ -184,8 +179,18 @@ class VideoDownloadData(
     }
 
     fun finishEpisode() {
-        mCurrentEpisode = null
-        Core.child.decrementDownloadsInProgress()
+        if (mCurrentDownload != null) {
+            currentDownload.queued = false
+            currentDownload.downloading = false
+            Core.child.updateDownloadInDatabase(
+                currentDownload
+            )
+            mCurrentDownload = null
+        }
+        if (mCurrentEpisode != null) {
+            mCurrentEpisode = null
+            Core.child.decrementDownloadsInProgress()
+        }
     }
 
     fun writeMessage(s: String) {
