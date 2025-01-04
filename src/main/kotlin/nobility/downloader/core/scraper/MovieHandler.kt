@@ -2,8 +2,8 @@ package nobility.downloader.core.scraper
 
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import nobility.downloader.core.BoxHelper
 import nobility.downloader.utils.AppInfo
+import nobility.downloader.utils.Constants
 import nobility.downloader.utils.FrogLog
 import nobility.downloader.utils.Tools
 import java.io.File
@@ -19,7 +19,7 @@ class MovieHandler {
     private val movies = mutableListOf<Movie>()
 
     suspend fun loadMovies() {
-        val moviesFile = File(BoxHelper.databasePath + "movies.txt")
+        val moviesFile = File(Constants.databasePath + "movies.txt")
         if (!moviesFile.exists()) {
             FrogLog.writeMessage(
                 "movies.txt not found. Downloading movie list..."
@@ -52,7 +52,7 @@ class MovieHandler {
     private suspend fun downloadMovieList() = withContext(Dispatchers.IO) {
         movies.clear()
         try {
-            val moviesFile = File(BoxHelper.databasePath + "movies.txt")
+            val moviesFile = File(Constants.databasePath + "movies.txt")
             Tools.downloadFile(
                 AppInfo.WCO_MOVIE_LIST_LINK,
                 moviesFile
@@ -105,7 +105,7 @@ class MovieHandler {
     }
 
     companion object {
-        @Suppress("warnings")
+        @Suppress("ConstPropertyName")
         const val wcoMoviePlaylistLink = "https://www.wcostream.tv/playlist-cat/"
         const val DELIMITER = "<SPL>"
     }

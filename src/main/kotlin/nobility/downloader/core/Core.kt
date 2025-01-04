@@ -17,6 +17,7 @@ import nobility.downloader.ui.components.Console
 import nobility.downloader.ui.components.dialog.DialogHelper
 import nobility.downloader.ui.views.*
 import nobility.downloader.ui.windows.DownloadConfirmWindow
+import nobility.downloader.ui.windows.ImageUpdaterWindow
 import nobility.downloader.ui.windows.UpdateWindow
 import nobility.downloader.ui.windows.database.DatabaseWindow
 import nobility.downloader.utils.AppInfo
@@ -223,6 +224,11 @@ class Core {
         ) {
             val databaseWindow = DatabaseWindow()
             databaseWindow.open(initialSearch)
+        }
+
+        fun openImageUpdater() {
+            val imageUpdaterWindow = ImageUpdaterWindow()
+            imageUpdaterWindow.open()
         }
 
         fun openUpdate(

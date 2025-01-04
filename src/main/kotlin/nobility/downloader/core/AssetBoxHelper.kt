@@ -29,7 +29,7 @@ class AssetBoxHelper {
 
     fun booleanSetting(setting: Defaults): Boolean {
         val meta = metaForKey(setting.key)
-        return meta?.booleanVal() ?: false
+        return meta?.booleanVal() == true
     }
 
     fun close() {

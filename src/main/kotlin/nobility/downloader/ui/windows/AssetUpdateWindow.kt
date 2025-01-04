@@ -28,6 +28,7 @@ import nobility.downloader.ui.components.defaultButton
 import nobility.downloader.ui.windows.utils.AppWindowScope
 import nobility.downloader.ui.windows.utils.ApplicationState
 import nobility.downloader.utils.AppInfo
+import nobility.downloader.utils.Constants
 import nobility.downloader.utils.Tools
 import nobility.downloader.utils.UserAgents
 import org.jsoup.Jsoup
@@ -40,9 +41,10 @@ import kotlin.system.exitProcess
 
 
 /**
- * An experimental asset update window.
+ * An asset update window.
  * Since we can't manage files in use, why not update them before?
- * Note that we can't access anything from the Core so it needs to be standalone.
+ * Note that we can't access anything from the Core/BoxHelper so it needs to be standalone.
+ * If we try to use anything there, the singleton will launch and it will crash due to a ObjectBox error.
  * Comes with a shutdown/fail feature to ensure incomplete downloads get handled.
  * All assets are very low in download size. We don't really need to worry about much besides available file space for unzipping.
  */
@@ -314,8 +316,8 @@ class AssetUpdateWindow {
                 val finished = total >= completeFileSize
                 if (finished) {
                     if (downloadFile.name.endsWith(".zip")) {
-                        downloadText = "Finished downloading $asset Unzipping file..."
-                        println("Successfully downloaded: $asset Unzipping file...")
+                        downloadText = "Finished downloading $asset | Unzipping file..."
+                        println("Successfully downloaded: $asset | Unzipping file...")
                         val zipFile = ZipFile(downloadFile)
                         zipFile.extractAll(File(asset.path).parent)
                         downloadFile.delete()
@@ -342,11 +344,11 @@ class AssetUpdateWindow {
             bis?.close()
             try {
                 bos?.close()
-            } catch (ignored: Exception) {
+            } catch (_: Exception) {
             }
             try {
                 fos?.close()
-            } catch (ignored: Exception) {
+            } catch (_: Exception) {
             }
         }
     }
@@ -455,7 +457,7 @@ class AssetUpdateWindow {
     }
 
     companion object {
-        private val databasePath = "${System.getProperty("user.home")}${File.separator}.zen_database${File.separator}"
+        private val databasePath = Constants.databasePath
         private val movieListPath = databasePath + "movies.txt"
         val userAgentsPath = databasePath + "user_agents.txt"
         private val linksPath = databasePath + "wco" + File.separator + "links" + File.separator

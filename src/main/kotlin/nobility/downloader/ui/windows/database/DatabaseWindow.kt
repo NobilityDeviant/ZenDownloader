@@ -27,6 +27,7 @@ import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.DpSize
@@ -55,11 +56,8 @@ import nobility.downloader.utils.*
 import java.util.regex.Pattern
 
 /**
- * A window for showing the database.
- * Unlike JavaFX we have full control now.
- * With that said, I actually have to optimize and create a lot of stuff myself.
- * If you're having any issues please report them!
- * I want this to be as good as it possibly can be.
+ * A window for showing the video database.
+ * Mostly everything has been handcrafted and I couldn't be happier.
  * @author NobilityDev
  */
 class DatabaseWindow {
@@ -155,13 +153,21 @@ class DatabaseWindow {
                 modifier = Modifier.fillMaxSize(50f),
                 bottomBar = {
                     Column(
-                        modifier = Modifier.fillMaxWidth().padding(15.dp),
+                        modifier = Modifier.fillMaxWidth()
+                            .wrapContentHeight(Alignment.Bottom).padding(bottom = 4.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         Row(
                             horizontalArrangement = Arrangement.spacedBy(5.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
+                            tooltipIconButton(
+                                "Genres",
+                                EvaIcons.Fill.BookOpen,
+                                iconColor = MaterialTheme.colorScheme.primary
+                            ) {
+                                openGenresWindow()
+                            }
                             val search by searchText.collectAsState()
                             defaultSettingsTextField(
                                 search,
@@ -171,7 +177,7 @@ class DatabaseWindow {
                                 hint = randomSearchHint,
                                 textStyle = MaterialTheme.typography.labelLarge,
                                 modifier = Modifier.fillMaxWidth(0.50f)
-                                    .padding(10.dp).height(40.dp),
+                                    .padding(end = 10.dp).height(40.dp),
                                 requestFocus = true
                             )
                             val searchByGenre by searchByGenre.collectAsState()
@@ -220,10 +226,10 @@ class DatabaseWindow {
                         Text(
                             resultText,
                             fontSize = 14.sp,
-                            modifier = Modifier.padding(10.dp)
+                            modifier = Modifier.padding(4.dp)
                         )
                         Row(
-                            horizontalArrangement = Arrangement.spacedBy(5.dp),
+                            horizontalArrangement = Arrangement.spacedBy(7.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             val type by databaseType.collectAsState()
@@ -232,7 +238,7 @@ class DatabaseWindow {
                                     it.name.capitalizeFirst(),
                                     height = 40.dp,
                                     width = 150.dp,
-                                    padding = 10.dp,
+                                    //padding = 10.dp,
                                     enabled = !loading,
                                     colors = ButtonDefaults.buttonColors(
                                         containerColor = if (type == it)
@@ -666,7 +672,7 @@ class DatabaseWindow {
                 )
             }
         }
-        androidx.compose.material.Text(
+        Text(
             text = annotatedString,
             color = textColor,
             style = style,
@@ -756,6 +762,89 @@ class DatabaseWindow {
             BoxHelper.allSeries.map { it.name }.plus(
                 BoxHelper.shared.wcoGenreBox.all.map { it.name }
             ).random().lines().firstOrNull()?: ""
+
+    @OptIn(ExperimentalFoundationApi::class)
+    private fun openGenresWindow() {
+        ApplicationState.newWindow(
+            "Genres",
+            size = DpSize(300.dp, 300.dp),
+            alwaysOnTop = true
+        ) {
+            fullBox {
+                val scope = rememberCoroutineScope()
+                val scrollState = rememberLazyListState()
+                Column(
+                    modifier = Modifier.fillMaxSize()
+                        .background(MaterialTheme.colorScheme.surface),
+                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        "Click a genre to search for it",
+                        fontSize = 11.sp,
+                        textAlign = TextAlign.Center,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier.padding(2.dp)
+                    )
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize()
+                            .padding(end = verticalScrollbarEndPadding)
+                            .draggable(
+                                state = rememberDraggableState {
+                                    scope.launch {
+                                        scrollState.scrollBy(-it)
+                                    }
+                                },
+                                orientation = Orientation.Vertical,
+                            ),
+                        verticalArrangement = Arrangement.spacedBy(4.dp),
+                        state = scrollState
+                    ) {
+                        items(
+                            BoxHelper.shared.wcoGenreBox.all
+                                .distinctBy { it.name }
+                                .sortedBy { it.capitalName },
+                            key = { it.name }
+                        ) { genre ->
+                            Column(
+                                modifier = Modifier.fillMaxWidth().height(35.dp)
+                                    .onClick(
+                                        matcher = PointerMatcher.mouse(PointerButton.Secondary)
+                                    ) { mSearchText.value = genre.name }
+                                    .clickable(
+                                        interactionSource = remember { MutableInteractionSource() },
+                                        indication = rememberRipple(
+                                            color = MaterialTheme.colorScheme
+                                                .secondaryContainer.hover()
+                                        )
+                                    ) { mSearchText.value = genre.name }
+                                    .background(
+                                        color = MaterialTheme.colorScheme.secondaryContainer,
+                                        shape = RoundedCornerShape(5.dp)
+                                    ),
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                Row(
+                                    modifier = Modifier.fillMaxSize(),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        genre.capitalName,
+                                        color = MaterialTheme.colorScheme.onPrimaryContainer,
+                                        fontSize = 16.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        textAlign = TextAlign.Center,
+                                        modifier = Modifier.fillMaxWidth()
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+                verticalScrollbar(scrollState)
+            }
+        }
+    }
 
     companion object {
         private const val GENRE_TAG = "GEN"

@@ -36,11 +36,11 @@ class Console(
 ) : OutputStream() {
 
     var consolePoppedOut by mutableStateOf(false)
-    private var consoleText = mutableStateOf("")
+    private var consoleText by mutableStateOf("")
     private val sb = StringBuilder()
     var unreadErrors by mutableStateOf(false)
 
-    val text get() = consoleText.value
+    val text get() = consoleText
     var size = 0
         private set
 
@@ -71,7 +71,7 @@ class Console(
                 $sb
               
                 """.trimIndent()
-            consoleText.value = consoleText.value.plus(text)
+            consoleText = consoleText.plus(text)
             size++
             sb.setLength(0)
             if (!errorMode) {
@@ -105,11 +105,11 @@ class Console(
     }
 
     fun isEmpty(): Boolean {
-        return consoleText.value.isEmpty() && size > 0
+        return consoleText.isEmpty() && size > 0
     }
 
     fun clear() {
-        consoleText.value = ""
+        consoleText = ""
         size = 0
     }
 
@@ -192,15 +192,19 @@ class Console(
                     }
                     if ((!popoutMode && !consolePoppedOut) || (popoutMode && consolePoppedOut)) {
                         TextField(
-                            value = consoleText.value,
+                            value = consoleText,
                             readOnly = true,
                             onValueChange = {
-                                consoleText.value = it
+                                consoleText = it
                             },
                             modifier = modifier.onClick(
                                 matcher = PointerMatcher.mouse(PointerButton.Secondary)
                             ) {}.verticalScroll(scrollState),
-                            colors = TextFieldDefaults.colors()
+                            colors = TextFieldDefaults.colors(),
+                            textStyle = if (errorMode)
+                                MaterialTheme.typography.labelSmall
+                            else
+                                MaterialTheme.typography.labelLarge
                         )
                     } else if (!popoutMode && consolePoppedOut) {
                         Column(

@@ -47,10 +47,7 @@ import nobility.downloader.ui.components.fullBox
 import nobility.downloader.ui.components.verticalScrollbar
 import nobility.downloader.ui.components.verticalScrollbarEndPadding
 import nobility.downloader.ui.windows.utils.AppWindowScope
-import nobility.downloader.utils.ImageUtils
-import nobility.downloader.utils.Tools
-import nobility.downloader.utils.hover
-import nobility.downloader.utils.linkToSlug
+import nobility.downloader.utils.*
 
 class RecentView: ViewPage {
 
@@ -74,6 +71,8 @@ class RecentView: ViewPage {
         val resultData = result.data
         if (resultData != null) {
             recentData.addAll(resultData.data)
+        } else {
+            FrogLog.logError("Failed to load recent series.", result.message)
         }
         loading = false
     }

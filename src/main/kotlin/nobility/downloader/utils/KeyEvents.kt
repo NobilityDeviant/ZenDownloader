@@ -81,6 +81,22 @@ class KeyEvents {
                     Core.openWco()
                 }
             )
+            shortcuts.add(
+                Shortcut(Key.DirectionLeft, "Cycle Through Tabs", true) {
+                    val before = Page.beforePage(Core.currentPage)
+                    if (before != null) {
+                        Core.changePage(before)
+                    }
+                }
+            )
+            shortcuts.add(
+                Shortcut(Key.DirectionRight, "Cycle Through Tabs", true) {
+                    val next = Page.nextPage(Core.currentPage)
+                    if (next != null) {
+                        Core.changePage(next)
+                    }
+                }
+            )
 
             shortcuts.forEachIndexed { i, s ->
                 keyGuide += """

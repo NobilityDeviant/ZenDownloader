@@ -70,7 +70,7 @@ fun String.fileExists(): Boolean {
 fun <T> Query<T>.findUniqueOrFirst(): T? {
     return try {
         findUnique()
-    } catch (e: NonUniqueResultException) {
+    } catch (_: NonUniqueResultException) {
         findFirst()
     }
 }
@@ -78,11 +78,12 @@ fun <T> Query<T>.findUniqueOrFirst(): T? {
 fun <T> Query<T>.findUniqueOrNull(): T? {
     return try {
         findUnique()
-    } catch (e: NonUniqueResultException) {
+    } catch (_: NonUniqueResultException) {
         null
     }
 }
 
+@Suppress("UNUSED")
 fun WebDriverManager.clearDriverCacheClean(): WebDriverManager {
     val cacheFolder: File = this.config().cacheFolder
     FileUtils.cleanDirectory(cacheFolder)

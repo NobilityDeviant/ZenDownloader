@@ -32,10 +32,10 @@ import nobility.downloader.ui.components.defaultButton
 import nobility.downloader.ui.components.dialog.DialogHelper
 import nobility.downloader.ui.components.fullBox
 import nobility.downloader.ui.components.linkifyText
-import nobility.downloader.ui.components.verticalScrollbar
 import nobility.downloader.ui.windows.utils.AppWindowScope
 import nobility.downloader.ui.windows.utils.ApplicationState
 import nobility.downloader.utils.*
+import nobility.downloader.utils.Constants.bottomBarHeight
 import java.io.*
 import java.net.URI
 import java.security.SecureRandom
@@ -85,19 +85,21 @@ class UpdateWindow(
                     }
                     true
                 }
-            },
-            resizable = false
+            }
         ) {
             appWindowScope = this
             Scaffold(
-                modifier = Modifier.fillMaxSize(50f),
+                modifier = Modifier.fillMaxSize(),
                 bottomBar = {
                     Column(
-                        modifier = Modifier.fillMaxWidth().padding(15.dp)
+                        modifier = Modifier.fillMaxWidth().height(bottomBarHeight)
                     ) {
+                        HorizontalDivider()
                         Row(
-                            horizontalArrangement = Arrangement.spacedBy(5.dp),
+                            horizontalArrangement = Arrangement.spacedBy(4.dp),
+                            verticalAlignment = Alignment.CenterVertically,
                             modifier = Modifier.align(Alignment.CenterHorizontally)
+                                .padding(10.dp)
                         ) {
                             if (!cancelled) {
                                 if (!Core.child.isUpdating && !Defaults.DENIED_UPDATE.boolean()) {
@@ -105,7 +107,6 @@ class UpdateWindow(
                                         "Deny Update",
                                         height = 40.dp,
                                         width = 150.dp,
-                                        padding = 5.dp,
                                         enabled = !update.isLatest
                                     ) {
                                         Defaults.DENIED_UPDATE.update(true)
@@ -119,7 +120,6 @@ class UpdateWindow(
                                     "Update",
                                     height = 40.dp,
                                     width = 150.dp,
-                                    padding = 5.dp,
                                     enabled = updateButtonEnabled
                                 ) {
                                     downloadUpdate()
@@ -129,7 +129,6 @@ class UpdateWindow(
                                         "Cancel",
                                         height = 40.dp,
                                         width = 150.dp,
-                                        padding = 5.dp,
                                         enabled = cancelButtonEnabled
                                     ) {
                                         DialogHelper.showConfirm(
@@ -160,11 +159,12 @@ class UpdateWindow(
                 }
             ) { padding ->
                 fullBox {
-                    val scrollState = rememberScrollState()
                     Column(
                         modifier = Modifier.padding(
                             bottom = padding.calculateBottomPadding()
-                        ).fillMaxSize().verticalScroll(scrollState)
+                        ).fillMaxSize(),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(4.dp)
                     ) {
                         Text(
                             if (update.isLatest)
@@ -174,7 +174,7 @@ class UpdateWindow(
                             textAlign = TextAlign.Center,
                             fontSize = MaterialTheme.typography.bodyLarge.fontSize,
                             fontWeight = FontWeight.Bold,
-                            modifier = Modifier.padding(10.dp).align(Alignment.CenterHorizontally)
+                            modifier = Modifier.padding(4.dp)
                         )
                         Surface(
                             modifier = Modifier.fillMaxWidth()
@@ -199,12 +199,12 @@ class UpdateWindow(
                             "Update Log:",
                             textAlign = TextAlign.Center,
                             fontSize = MaterialTheme.typography.bodyLarge.fontSize,
-                            modifier = Modifier.padding(10.dp).align(Alignment.CenterHorizontally)
+                            fontWeight = FontWeight.Bold
                         )
                         val scrollState = rememberScrollState()
                         val scope = rememberCoroutineScope()
                         Surface(
-                            modifier = Modifier.fillMaxWidth().height(200.dp),
+                            modifier = Modifier.fillMaxWidth().fillMaxHeight(),
                             color = MaterialTheme.colorScheme.surfaceVariant
                         ) {
                             linkifyText(
@@ -250,7 +250,6 @@ class UpdateWindow(
                             }
                         }
                     }
-                    verticalScrollbar(scrollState)
                 }
                 ApplicationState.addToastToWindow(this)
             }

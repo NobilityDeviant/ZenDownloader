@@ -27,7 +27,7 @@ object ImageUtils {
         try {
             bufferedImage = ImageIO.read(File(series.imagePath))
             return bufferedImage.toComposeImageBitmap()
-        } catch (e: IOException) {
+        } catch (_: IOException) {
             return loadSeriesImageFromLink(series)
         }
     }
@@ -47,7 +47,7 @@ object ImageUtils {
         try {
             bufferedImage = ImageIO.read(URI(series.imageLink).toURL())
             return bufferedImage.toComposeImageBitmap()
-        } catch (e: IOException) {
+        } catch (_: IOException) {
             return noImage
         }
     }
@@ -62,7 +62,7 @@ object ImageUtils {
         try {
             bufferedImage = ImageIO.read(File(filePath))
             return bufferedImage.toComposeImageBitmap()
-        } catch (e: IOException) {
+        } catch (_: IOException) {
             return loadImageFromLink(urlBackup)
         }
     }
@@ -78,7 +78,7 @@ object ImageUtils {
         try {
             bufferedImage = ImageIO.read(URI(link).toURL())
             return bufferedImage.toComposeImageBitmap()
-        } catch (e: IOException) {
+        } catch (_: IOException) {
             return noImage
         }
     }
@@ -93,7 +93,7 @@ object ImageUtils {
         try {
             bufferedImage = ImageIO.read(File(filePath))
             return bufferedImage.toComposeImageBitmap()
-        } catch (e: IOException) {
+        } catch (_: IOException) {
             return noImage
         }
     }

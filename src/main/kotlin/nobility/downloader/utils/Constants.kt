@@ -3,9 +3,12 @@
 package nobility.downloader.utils
 
 import androidx.compose.ui.unit.dp
+import java.io.File
 
 object Constants {
-    val topbarHeight = 50.dp
+    val databasePath = "${System.getProperty("user.home")}${File.separator}.zen_database${File.separator}"
+    val topBarHeight = 50.dp
+    val bottomBarHeight = 80.dp
     val mediumIconSize = 30.dp
     val largeIconSize = 45.dp
     val randomSeriesRowHeight = 110.dp

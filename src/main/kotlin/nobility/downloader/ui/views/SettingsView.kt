@@ -30,6 +30,7 @@ import nobility.downloader.ui.components.*
 import nobility.downloader.ui.components.dialog.DialogHelper
 import nobility.downloader.ui.windows.utils.AppWindowScope
 import nobility.downloader.ui.windows.utils.ApplicationState
+import nobility.downloader.utils.Constants.bottomBarHeight
 import nobility.downloader.utils.Constants.maxThreads
 import nobility.downloader.utils.Constants.maxTimeout
 import nobility.downloader.utils.Constants.minThreads
@@ -153,7 +154,7 @@ class SettingsView: ViewPage {
         Scaffold(
             bottomBar = {
                 Column(
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth().height(bottomBarHeight)
                 ) {
                     HorizontalDivider()
                     Row(
@@ -162,6 +163,13 @@ class SettingsView: ViewPage {
                         horizontalArrangement = Arrangement.spacedBy(4.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
+                        defaultButton(
+                            "Update Series Images",
+                            width = 150.dp,
+                            height = 40.dp
+                        ) {
+                            Core.openImageUpdater()
+                        }
                         defaultButton(
                             "Update Options",
                             width = 150.dp,

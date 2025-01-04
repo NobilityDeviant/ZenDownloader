@@ -261,7 +261,7 @@ class DownloaderView: ViewPage {
                     Row(
                         horizontalArrangement = Arrangement.spacedBy(5.dp),
                         modifier = Modifier.align(Alignment.Center)
-                            .offset(y = Constants.mediumIconSize)
+                            .offset(y = Constants.mediumIconSize + 10.dp)
                     ) {
                         val buttonWidth = 150.dp
                         val buttonHeight = 50.dp

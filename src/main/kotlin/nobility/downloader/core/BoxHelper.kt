@@ -9,10 +9,7 @@ import nobility.downloader.core.entities.settings.SettingsMeta
 import nobility.downloader.core.entities.settings.SettingsMeta_
 import nobility.downloader.core.settings.Defaults
 import nobility.downloader.core.settings.Quality
-import nobility.downloader.utils.FrogLog
-import nobility.downloader.utils.findUniqueOrFirst
-import nobility.downloader.utils.findUniqueOrNull
-import nobility.downloader.utils.fixedSlug
+import nobility.downloader.utils.*
 import java.io.File
 
 /**
@@ -90,7 +87,7 @@ class BoxHelper {
 
         val shared = BoxHelper()
 
-        val databasePath get() = "${System.getProperty("user.home")}${File.separator}.zen_database${File.separator}"
+        private val databasePath get() = Constants.databasePath
         val wcoPath get() = databasePath + File.separator + "wco" + File.separator
         val seriesPath get() = databasePath + File.separator + "series" + File.separator
         val seriesImagesPath: String get() = databasePath + "series_images${File.separator}"

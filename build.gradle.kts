@@ -20,7 +20,7 @@ kotlin {
 }
 
 group = "nobility.downloader"
-version = "1.0.6"
+version = "1.0.7"
 
 repositories {
     mavenCentral()
@@ -60,21 +60,19 @@ dependencies {
     //for unzipping assets
     implementation("net.lingala.zip4j:zip4j:2.11.5")
     //m3u8 downloading
-    //implementation("io.github.kanglong1023:m3u8-catcher:1.0.0") {
-      //  exclude("org.bytedeco", "ffmpeg-platform")
-    //}
     implementation("org.bytedeco:ffmpeg:5.0-1.5.7")
     implementation("org.bytedeco:ffmpeg:5.0-1.5.7:windows-x86_64")
     implementation("org.bytedeco:ffmpeg:1.5.7:linux-x86_64")
     implementation("org.bytedeco:javacpp:1.5.7:windows-x86_64")
     implementation("org.bytedeco:javacpp:1.5.7:linux-x86_64")
-    
     implementation("org.apache.commons:commons-lang3:3.6")
     implementation("org.apache.commons:commons-collections4:4.3")
     implementation("org.bouncycastle:bcprov-jdk18on:1.74")
     implementation("org.apache.httpcomponents.client5:httpclient5:5.2.1")
     implementation("io.netty:netty-common:4.1.113.Final")
     implementation("org.jctools:jctools-core:4.0.3")
+
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.8.0-RC")
 }
 
 apply(plugin = "io.objectbox")

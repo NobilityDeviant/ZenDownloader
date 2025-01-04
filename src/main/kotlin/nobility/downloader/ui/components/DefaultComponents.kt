@@ -237,7 +237,9 @@ fun defaultSettingsTextField(
                         if (hint.isNotEmpty()) {
                             Text(
                                 hint,
-                                modifier = Modifier.alpha(0.3f)
+                                modifier = Modifier.alpha(0.3f),
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
                             )
                         }
                     },

@@ -43,6 +43,7 @@ import nobility.downloader.ui.components.*
 import nobility.downloader.ui.components.dialog.DialogHelper
 import nobility.downloader.ui.windows.utils.AppWindowScope
 import nobility.downloader.utils.*
+import nobility.downloader.utils.Constants.bottomBarHeight
 
 class HistoryView: ViewPage {
 
@@ -111,17 +112,17 @@ class HistoryView: ViewPage {
             modifier = Modifier.fillMaxSize(50f),
             bottomBar = {
                 Column(
-                    modifier = Modifier.fillMaxWidth().padding(15.dp)
+                    modifier = Modifier.fillMaxWidth().height(bottomBarHeight)
                 ) {
                     Row(
-                        horizontalArrangement = Arrangement.spacedBy(5.dp),
+                        horizontalArrangement = Arrangement.spacedBy(4.dp),
                         modifier = Modifier.align(Alignment.CenterHorizontally)
+                            .padding(10.dp)
                     ) {
                         defaultButton(
                             "Clear History",
                             height = 40.dp,
                             width = 150.dp,
-                            padding = 10.dp,
                             enabled = clearHistoryEnabled
                         ) {
                             DialogHelper.showConfirm(
@@ -141,7 +142,6 @@ class HistoryView: ViewPage {
                             "Check For New Episodes",
                             height = 40.dp,
                             width = 150.dp,
-                            padding = 10.dp,
                             enabled = checkForEpisodesButtonEnabled
                         ) {
                             if (historyData.isEmpty()) {

@@ -201,30 +201,13 @@ object DialogHelper {
 
     fun showMessageSmall(
         title: String,
-        message: String,
-        size: DpSize = DpSize(300.dp, 200.dp)
+        message: String
     ) {
-        ApplicationState.newWindow(
+        showMessage(
             title,
-            undecorated = true,
-            resizable = false,
-            transparent = true,
-            alwaysOnTop = true,
-            size = size
-        ) {
-            dialogWrapper(
-                title,
-                message
-            ) {
-                defaultButton(
-                    "Close",
-                    height = 40.dp,
-                    width = 120.dp
-                ) {
-                    closeWindow()
-                }
-            }
-        }
+            message,
+            DpSize(300.dp, 200.dp)
+        )
     }
 
     fun showError(

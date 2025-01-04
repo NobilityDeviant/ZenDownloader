@@ -71,7 +71,7 @@ private fun uiWrapper(
             modifier = Modifier.fillMaxSize(),
             topBar = {
                 TopAppBar(
-                    modifier = Modifier.height(Constants.topbarHeight),
+                    modifier = Modifier.height(Constants.topBarHeight),
                     title = {
                         Row(
                             modifier = Modifier.fillMaxSize(),
@@ -353,7 +353,7 @@ private fun uiWrapper(
                                         EvaIcons.Fill.Folder
                                     ) {
                                         closeMenu()
-                                        Tools.openFile(BoxHelper.databasePath)
+                                        Tools.openFile(Constants.databasePath)
                                     }
                                 }
                             }

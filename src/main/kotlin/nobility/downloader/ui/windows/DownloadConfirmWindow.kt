@@ -52,6 +52,7 @@ import nobility.downloader.ui.components.dialog.DialogHelper
 import nobility.downloader.ui.windows.utils.AppWindowScope
 import nobility.downloader.ui.windows.utils.ApplicationState
 import nobility.downloader.utils.*
+import nobility.downloader.utils.Constants.bottomBarHeight
 import java.util.*
 
 class DownloadConfirmWindow(
@@ -556,7 +557,7 @@ class DownloadConfirmWindow(
                     MaterialTheme.colorScheme.onSurfaceVariant
                         .tone(80.0)
             )
-            if (!singleEpisode) {
+            if (!singleEpisode && !shiftHeld) {
                 Checkbox(
                     checked,
                     onCheckedChange = {
@@ -727,8 +728,7 @@ class DownloadConfirmWindow(
         coroutineScope: CoroutineScope
     ) {
         Column(
-            modifier = Modifier.fillMaxWidth()
-                .wrapContentHeight(Alignment.CenterVertically),
+            modifier = Modifier.fillMaxWidth().height(bottomBarHeight)
         ) {
             Row(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -737,13 +737,23 @@ class DownloadConfirmWindow(
                     .padding(10.dp)
             ) {
                 if (shiftHeld) {
-                    Text(
-                        "Shift Mode",
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Bold,
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier.height(bottomBarButtonHeight)
-                    )
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            "Shift Mode",
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Bold,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.padding(bottom = 2.dp)
+                        )
+                        Text(
+                            "Click any episode to highlight it from Point A to Point B.",
+                            fontSize = 11.sp,
+                            textAlign = TextAlign.Center
+                        )
+                    }
                 } else {
                     if (highlightedEpisodes.isNotEmpty()) {
                         defaultButton(
@@ -928,6 +938,9 @@ class DownloadConfirmWindow(
                                         )
                                     }
                                     return@defaultButton
+                                }
+                                if (singleEpisode) {
+                                    selectedEpisodes.add(series.episodes.first())
                                 }
                                 Core.child.softStart()
                                 //must use an outside scope because closing this window
