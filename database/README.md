@@ -71,7 +71,7 @@ Most series have an image associated with them. In order to have a better experi
 
 # Download Images Window
 
-There's now an option to download the series images inside the app.
+There's now an option to download the series images inside the Settings tab.
 
 ![Series Image Updater](images/image_updater.png)
 
