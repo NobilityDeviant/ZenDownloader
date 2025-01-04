@@ -9,6 +9,7 @@ Many of the anime websites out there are locked down really hard which makes wco
 **You can now download all paywalled movies!**
 
 **Now also supports M3U8 Videos & Episodes with 2 videos.**
+`M3u8 downloading is currently broken.`
 
 Don't pay for wco premium. I'll never support it and I don't recommend it.
 
