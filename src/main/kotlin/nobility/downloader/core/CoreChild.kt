@@ -44,12 +44,15 @@ class CoreChild {
     val downloadList: MutableList<Download> = Collections.synchronizedList(mutableStateListOf<Download>())
     lateinit var movieHandler: MovieHandler
 
+    @Volatile
     var downloadsFinishedForSession = 0
         private set
 
+    @Volatile
     var downloadsInProgress = mutableStateOf(0)
         private set
 
+    @Volatile
     var downloadsInQueue = mutableStateOf(0)
         private set
 
