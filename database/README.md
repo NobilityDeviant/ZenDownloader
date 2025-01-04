@@ -69,7 +69,7 @@ The data is just the genres for now.
 
 Most series have an image associated with them. In order to have a better experience when using the Database Window, it's advised that you also download the images.
 
-# Download Images Window
+# Series Image Updater
 
 There's now an option to download the series images inside the Settings tab.
 
