@@ -10,7 +10,9 @@ Many of the anime websites out there are locked down really hard which makes wco
 
 **Now also supports M3U8 Videos & Episodes with 2 videos.**
 
-Don't pay for wco premium. I'll never support it and I don't recommend it.
+Ok ok.. I'll support premium minimally. 
+
+**You can now use your wcopremium.tv credentials to download higher quality movies.**
 
 We're back for blood. >:(
 
