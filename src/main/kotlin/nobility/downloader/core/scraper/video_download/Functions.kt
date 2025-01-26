@@ -146,7 +146,7 @@ object Functions {
         val bos = BufferedOutputStream(fos, buffer.size)
         var bytesRead = 0
         var totalBytesRead: Long = offset
-        val updaterJob = data.taskScope.launch {
+        val updaterJob = launch {
 
             var remainingSeconds = 0
 

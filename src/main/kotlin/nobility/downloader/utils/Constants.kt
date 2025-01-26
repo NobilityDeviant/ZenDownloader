@@ -21,6 +21,7 @@ object Constants {
     const val maxSimpleRetries = 5
     const val maxFullRetries = 3
     const val maxM3U8Retries = 3
+    const val maxPremRetries = 3
     const val minSpaceNeeded = 150 //in megabytes
     const val averageVideoSize = 100 //in megabytes
     const val daysToUpdateWcoUrl = 7

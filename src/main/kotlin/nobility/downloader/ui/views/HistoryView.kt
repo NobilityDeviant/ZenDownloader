@@ -190,7 +190,7 @@ class HistoryView: ViewPage {
                 ).fillMaxSize()
             ) {
                 header()
-                fullBox {
+                FullBox {
                     LazyColumn(
                         verticalArrangement = Arrangement.spacedBy(4.dp),
                         modifier = Modifier.padding(
@@ -472,7 +472,7 @@ class HistoryView: ViewPage {
             Text(
                 text = seriesData.name,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                fontSize = MaterialTheme.typography.bodyMedium.fontSize,
+                fontSize = MaterialTheme.typography.headlineSmall.fontSize,
                 modifier = Modifier
                     .padding(4.dp)
                     .align(Alignment.CenterVertically)

@@ -30,7 +30,7 @@ import nobility.downloader.core.settings.Defaults
 import nobility.downloader.core.updates.Update
 import nobility.downloader.ui.components.defaultButton
 import nobility.downloader.ui.components.dialog.DialogHelper
-import nobility.downloader.ui.components.fullBox
+import nobility.downloader.ui.components.FullBox
 import nobility.downloader.ui.components.linkifyText
 import nobility.downloader.ui.windows.utils.AppWindowScope
 import nobility.downloader.ui.windows.utils.ApplicationState
@@ -158,7 +158,7 @@ class UpdateWindow(
                     }
                 }
             ) { padding ->
-                fullBox {
+                FullBox {
                     Column(
                         modifier = Modifier.padding(
                             bottom = padding.calculateBottomPadding()

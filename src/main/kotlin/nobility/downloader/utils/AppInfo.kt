@@ -7,7 +7,7 @@ object AppInfo {
     const val UPDATE_ASSETS_ON_LAUNCH = true
     const val AUTO_SCROLL_RANDOM_SERIES = false
     private const val NAME = "ZenDownloader"
-    const val VERSION = "1.0.7"
+    const val VERSION = "1.0.8" //version can only have 3 numbers split by decimals
     const val TITLE = "$NAME v$VERSION"
     const val RELEASES_LINK = "https://github.com/NobilityDeviant/ZenDownloader/releases"
     const val GITHUB_LATEST = "https://api.github.com/repos/NobilityDeviant/ZenDownloader/releases/latest"

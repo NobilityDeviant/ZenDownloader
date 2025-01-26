@@ -38,7 +38,7 @@ import nobility.downloader.core.entities.Download
 import nobility.downloader.core.scraper.data.ToDownload
 import nobility.downloader.ui.components.defaultDropdownItem
 import nobility.downloader.ui.components.dialog.DialogHelper
-import nobility.downloader.ui.components.fullBox
+import nobility.downloader.ui.components.FullBox
 import nobility.downloader.ui.components.verticalScrollbar
 import nobility.downloader.ui.components.verticalScrollbarEndPadding
 import nobility.downloader.ui.windows.utils.AppWindowScope
@@ -61,7 +61,7 @@ class DownloadsView : ViewPage {
             modifier = Modifier.fillMaxSize()
         ) {
             header()
-            fullBox {
+            FullBox {
                 LazyColumn(
                     verticalArrangement = Arrangement.spacedBy(1.dp),
                     modifier = Modifier.padding(

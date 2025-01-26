@@ -39,6 +39,7 @@ class VideoDownloadData(
     var retries = 0
     var resRetries = 0
     var m3u8Retries = 0
+    var premRetries = 0
     val qualityAndDownloads = mutableListOf<QualityAndDownload>()
 
     fun createDownload(
@@ -82,7 +83,7 @@ class VideoDownloadData(
         return true
     }
 
-    fun generateSaveFile(
+    fun generateEpisodeSaveFile(
         updatedQuality: Quality,
         extraName: String = ""
     ): File {
@@ -143,6 +144,7 @@ class VideoDownloadData(
             resRetries = 0
             retries = 0
             m3u8Retries = 0
+            premRetries = 0
             Core.child.incrementDownloadsInProgress()
         }
         return true
@@ -157,6 +159,7 @@ class VideoDownloadData(
             resRetries = 0
             retries = 0
             m3u8Retries = 0
+            premRetries = 0
             return true
         }
         return false
@@ -173,6 +176,7 @@ class VideoDownloadData(
             resRetries = 0
             retries = 0
             m3u8Retries = 0
+            premRetries = 0
             return true
         }
         return false

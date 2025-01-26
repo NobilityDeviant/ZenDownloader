@@ -31,8 +31,7 @@ class DownloadHandler {
         if (slug == "anime/movies") {
             return Resource.Error(
                 """
-                    You can't scrape the movies series at the moment.
-                    Soon there will be a movies window for easy searching.
+                    You can't scrape the movies series. Please use the database window instead.
                 """.trimIndent()
             )
         }
@@ -69,7 +68,7 @@ class DownloadHandler {
                 toDownload = resultData
             } else if (resultData.episode != null) {
                 toDownload = resultData
-                FrogLog.writeMessage("Downloading episode from: $url")
+                FrogLog.writeMessage("Successfully scraped episode from: $url")
             } else {
                 return Resource.Error("Failed to find data for download.")
             }

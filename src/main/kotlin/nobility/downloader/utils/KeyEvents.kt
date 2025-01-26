@@ -71,6 +71,9 @@ class KeyEvents {
             )
             shortcuts.add(
                 Shortcut(Key.O, "Open Save Folder", true) {
+                    if (Core.currentPage == Page.SETTINGS && Core.settingsFieldFocused) {
+                        return@Shortcut
+                    }
                     Tools.openFile(
                         Defaults.SAVE_FOLDER.string()
                     )
@@ -78,11 +81,17 @@ class KeyEvents {
             )
             shortcuts.add(
                 Shortcut(Key.W, "Open Video Database", true) {
+                    if (Core.currentPage == Page.SETTINGS && Core.settingsFieldFocused) {
+                        return@Shortcut
+                    }
                     Core.openWco()
                 }
             )
             shortcuts.add(
                 Shortcut(Key.DirectionLeft, "Cycle Through Tabs", true) {
+                    if (Core.currentPage == Page.SETTINGS && Core.settingsFieldFocused) {
+                        return@Shortcut
+                    }
                     val before = Page.beforePage(Core.currentPage)
                     if (before != null) {
                         Core.changePage(before)
@@ -91,6 +100,9 @@ class KeyEvents {
             )
             shortcuts.add(
                 Shortcut(Key.DirectionRight, "Cycle Through Tabs", true) {
+                    if (Core.currentPage == Page.SETTINGS && Core.settingsFieldFocused) {
+                        return@Shortcut
+                    }
                     val next = Page.nextPage(Core.currentPage)
                     if (next != null) {
                         Core.changePage(next)
@@ -119,7 +131,7 @@ class KeyEvents {
                     if (s.ctrl && ctrl) {
                         s.func()
                         return@core true
-                    } else {
+                    } else if (!s.ctrl) {
                         s.func()
                         return@core true
                     }

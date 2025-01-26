@@ -3,6 +3,7 @@ package nobility.downloader.core.scraper.video_download
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import nobility.downloader.core.Core
+import nobility.downloader.core.scraper.video_download.Functions.downloadVideo
 import nobility.downloader.core.scraper.video_download.Functions.fileSize
 import nobility.downloader.core.scraper.video_download.MovieDownloader.handleMovie
 import nobility.downloader.core.settings.Quality
@@ -44,7 +45,7 @@ class VideoDownloadHandler(
             val parsedData = parsedResult.data!!
             val downloadLink = parsedData.downloadLink
             val qualityOption = parsedData.quality
-            val saveFile = data.generateSaveFile(qualityOption)
+            val saveFile = data.generateEpisodeSaveFile(qualityOption)
             val created = data.createDownload(
                 slug,
                 qualityOption,
@@ -74,9 +75,6 @@ class VideoDownloadHandler(
                                     it.downloadLink == downloadLink
                                 }
                             )
-                            //if (data.mCurrentDownload != null) {
-                              //  Core.child.removeDownload(data.currentDownload)
-                            //}
                             data.retries++
                             continue
                         }
@@ -117,8 +115,9 @@ class VideoDownloadHandler(
                     data.currentDownload.fileSize = originalFileSize
                     Core.child.addDownload(data.currentDownload)
                     Core.child.updateDownloadInDatabase(data.currentDownload, true)
-                    data.driver.navigate().back()
-                    Functions.downloadVideo(
+                    data.driver.navigate().to("https://blank.org")
+                    //data.driver.navigate().back()
+                    downloadVideo(
                         downloadLink,
                         saveFile,
                         data

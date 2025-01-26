@@ -9,18 +9,18 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.darkrockstudios.libraries.mpfilepicker.DirectoryPicker
 import com.darkrockstudios.libraries.mpfilepicker.FilePicker
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import nobility.downloader.Page
 import nobility.downloader.core.BoxHelper
 import nobility.downloader.core.BoxHelper.Companion.boolean
-import nobility.downloader.core.BoxHelper.Companion.intString
+import nobility.downloader.core.BoxHelper.Companion.int
+import nobility.downloader.core.BoxHelper.Companion.long
 import nobility.downloader.core.BoxHelper.Companion.string
 import nobility.downloader.core.BoxHelper.Companion.update
 import nobility.downloader.core.Core
@@ -35,131 +35,67 @@ import nobility.downloader.utils.Constants.maxThreads
 import nobility.downloader.utils.Constants.maxTimeout
 import nobility.downloader.utils.Constants.minThreads
 import nobility.downloader.utils.Constants.minTimeout
-import nobility.downloader.utils.FrogLog
 import nobility.downloader.utils.fileExists
-import org.jsoup.Jsoup
-import java.util.regex.Matcher
-import java.util.regex.Pattern
+import nobility.downloader.utils.normalizeEnumName
 
-class SettingsView: ViewPage {
+
+class SettingsView : ViewPage {
 
     override val page = Page.SETTINGS
 
-    private var threads by mutableStateOf(
-        Defaults.DOWNLOAD_THREADS.intString()
-    )
-    private var timeout by mutableStateOf(
-        Defaults.TIMEOUT.intString()
-    )
-    private var saveFolder by mutableStateOf(
-        Defaults.SAVE_FOLDER.string()
-    )
-    private var proxy by mutableStateOf(
-        Defaults.PROXY.string()
-    )
-    private var wcoDomain by mutableStateOf(
-        Defaults.WCO_DOMAIN.string()
-    )
-    private var wcoExtension by mutableStateOf(
-        Defaults.WCO_EXTENSION.string()
-    )
-
-    private var chromePath by mutableStateOf(
-        Defaults.CHROME_BROWSER_PATH.string()
-    )
-
-    private var chromeDriverPath by mutableStateOf(
-        Defaults.CHROME_DRIVER_PATH.string()
-    )
-
-    private var quality by mutableStateOf(
-        Defaults.QUALITY.string()
-    )
-
-    private var proxyEnabled = mutableStateOf(false)
-    private var debugMessages = mutableStateOf(
-        Defaults.SHOW_DEBUG_MESSAGES.boolean()
-    )
-    private var bypassDiskSpace = mutableStateOf(
-        Defaults.BYPASS_DISK_SPACE.boolean()
-    )
-    private var showTooltips = mutableStateOf(
-        Defaults.SHOW_TOOLTIPS.boolean()
-    )
-
-    private var consoleOnTop = mutableStateOf(
-        Defaults.CONSOLE_ON_TOP.boolean()
-    )
-
-    private var headlessMode = mutableStateOf(
-        Defaults.HEADLESS_MODE.boolean()
-    )
-
-    private var separateSeasons = mutableStateOf(
-        Defaults.SEPARATE_SEASONS.boolean()
-    )
-
-    private var autoScrollConsoles = mutableStateOf(
-        Defaults.AUTO_SCROLL_CONSOLES.boolean()
-    )
-
-    private var ctrlForHotKeys = mutableStateOf(
-        Defaults.CTRL_FOR_HOTKEYS.boolean()
-    )
-
-    private var enableRandomSeries = mutableStateOf(
-        Defaults.ENABLE_RANDOM_SERIES.boolean()
-    )
-
-    private var disableUserAgentsUpdate = mutableStateOf(
-        Defaults.DISABLE_USER_AGENTS_UPDATE.boolean()
-    )
-
-    private var disableWcoUrlsUpdate = mutableStateOf(
-        Defaults.DISABLE_WCO_URLS_UPDATE.boolean()
-    )
-
-    private var disableDubbedUpdate = mutableStateOf(
-        Defaults.DISABLE_DUBBED_UPDATE.boolean()
-    )
-
-    private var disableSubbedUpdate = mutableStateOf(
-        Defaults.DISABLE_SUBBED_UPDATE.boolean()
-    )
-
-    private var disableCartoonUpdate = mutableStateOf(
-        Defaults.DISABLE_CARTOON_UPDATE.boolean()
-    )
-
-    private var disableMoviesUpdate = mutableStateOf(
-        Defaults.DISABLE_MOVIES_UPDATE.boolean()
-    )
-
-    private var disableWcoSeriesLinksUpdate = mutableStateOf(
-        Defaults.DISABLE_WCO_SERIES_LINKS_UPDATE.boolean()
-    )
-
-    private var disableWcoDataUpdate = mutableStateOf(
-        Defaults.DISABLE_WCO_DATA_UPDATE.boolean()
-    )
-
     private var saveButtonEnabled = mutableStateOf(false)
-
     private lateinit var windowScope: AppWindowScope
+    private val focusModifier get() = Modifier.onFocusChanged {
+        Core.settingsFieldFocused = it.isFocused
+    }
+    private val stringOptions = mutableStateMapOf<Defaults, MutableState<String>>()
+    private val booleanOptions = mutableStateMapOf<Defaults, MutableState<Boolean>>()
+    private val intOptions = mutableStateMapOf<Defaults, MutableState<Int>>()
+    private val longOptions = mutableStateMapOf<Defaults, MutableState<Long>>()
 
-    @OptIn(ExperimentalLayoutApi::class)
+    init {
+        Defaults.settings.forEach {
+            if (it.value is String) {
+                stringOptions.put(
+                    it, mutableStateOf(it.string())
+                )
+            } else if (it.value is Boolean) {
+                booleanOptions.put(
+                    it, mutableStateOf(it.boolean())
+                )
+            } else if (it.value is Int) {
+                intOptions.put(
+                    it, mutableStateOf(it.int())
+                )
+            } else if (it.value is Long) {
+                longOptions.put(
+                    it, mutableStateOf(it.long())
+                )
+            }
+        }
+    }
+
+    @OptIn(ExperimentalLayoutApi::class, ExperimentalFoundationApi::class)
     @Composable
     override fun ui(windowScope: AppWindowScope) {
         this.windowScope = windowScope
+        val focusManager = LocalFocusManager.current
         Scaffold(
             bottomBar = {
                 Column(
-                    modifier = Modifier.fillMaxWidth().height(bottomBarHeight)
+                    modifier = Modifier.fillMaxWidth()
+                        .height(bottomBarHeight)
+                        .onClick {
+                            focusManager.clearFocus(true)
+                        }
                 ) {
                     HorizontalDivider()
                     Row(
                         modifier = Modifier.align(Alignment.CenterHorizontally)
-                            .padding(10.dp),
+                            .padding(10.dp)
+                            .onClick {
+                                focusManager.clearFocus(true)
+                            },
                         horizontalArrangement = Arrangement.spacedBy(4.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
@@ -204,19 +140,23 @@ class SettingsView: ViewPage {
             }
         ) {
             val scrollState = rememberScrollState()
-            fullBox {
+            FullBox {
                 Column(
                     modifier = Modifier.padding(
                         bottom = it.calculateBottomPadding(),
                         end = verticalScrollbarEndPadding
                     ).fillMaxWidth().verticalScroll(scrollState)
+                        .onClick {
+                            focusManager.clearFocus(true)
+                        }
                 ) {
-                    fieldRow(Defaults.DOWNLOAD_THREADS)
-                    fieldRow(Defaults.TIMEOUT)
-                    fieldRow(Defaults.SAVE_FOLDER)
-                    fieldRow(Defaults.CHROME_BROWSER_PATH)
-                    fieldRow(Defaults.CHROME_DRIVER_PATH)
-                    //fieldRow(Defaults.PROXY)
+                    fieldRowInt(Defaults.DOWNLOAD_THREADS, false)
+                    fieldRowInt(Defaults.TIMEOUT, false)
+                    fieldRow(Defaults.SAVE_FOLDER, true)
+                    fieldRow(Defaults.CHROME_BROWSER_PATH, true)
+                    fieldRow(Defaults.CHROME_DRIVER_PATH, true)
+                    fieldRow(Defaults.WCO_PREMIUM_USERNAME, true)
+                    fieldRow(Defaults.WCO_PREMIUM_PASSWORD, true)
                     fieldDropdown(Defaults.QUALITY)
                     FlowRow(
                         verticalArrangement = Arrangement.spacedBy(5.dp),
@@ -227,11 +167,468 @@ class SettingsView: ViewPage {
                             fieldCheckbox(it)
                         }
                     }
-                    fieldWcoDomain()
                 }
                 verticalScrollbar(scrollState)
             }
         }
+    }
+
+    @Suppress("SameParameterValue")
+    @OptIn(ExperimentalFoundationApi::class)
+    @Composable
+    private fun fieldRow(
+        setting: Defaults,
+        fullWidth: Boolean
+    ) {
+        val option = stringOptions[setting] ?: return
+        val title = setting.alternativeName.ifEmpty {
+            setting.name.normalizeEnumName()
+        }
+        val modifier = Modifier.height(30.dp)
+            .then(if (fullWidth) Modifier.width(300.dp) else Modifier)
+            .then(focusModifier)
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(5.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.padding(10.dp)
+        ) {
+            tooltip(setting.description) {
+                Text(
+                    "$title:",
+                    style = MaterialTheme.typography.labelMedium
+                )
+            }
+            when (setting) {
+                Defaults.WCO_PREMIUM_PASSWORD -> {
+                    val showOption = booleanOptions[Defaults.SHOW_WCO_PREMIUM_PASSWORD]
+                    if (showOption != null) {
+                        defaultSettingsTextField(
+                            option.value,
+                            { text ->
+                                option.value = text
+                                updateSaveButton()
+                            },
+                            passwordMode = !showOption.value,
+                            modifier = modifier
+                        )
+                        defaultCheckbox(
+                            showOption.value,
+                            modifier = Modifier.height(30.dp)
+                        ) {
+                            showOption.value = it
+                            updateSaveButton()
+                        }
+                        Text(
+                            "Show Password",
+                            fontSize = 12.sp,
+                            modifier = Modifier.onClick {
+                                showOption.value = showOption.value.not()
+                                updateSaveButton()
+                            }
+                        )
+                    }
+                }
+
+                Defaults.SAVE_FOLDER -> {
+                    defaultSettingsTextField(
+                        option.value,
+                        { text ->
+                            option.value = text
+                            updateSaveButton()
+                        },
+                        modifier = modifier
+                    )
+                    var showFilePicker by remember { mutableStateOf(false) }
+                    DirectoryPicker(
+                        show = showFilePicker,
+                        initialDirectory = option.value,
+                        title = "Choose Save Folder"
+                    ) {
+                        if (it != null) {
+                            option.value = it
+                            updateSaveButton()
+                        }
+                        showFilePicker = false
+                    }
+                    defaultButton(
+                        "Set Folder",
+                        height = 30.dp,
+                        width = 80.dp
+                    ) {
+                        showFilePicker = true
+                    }
+                }
+
+                Defaults.CHROME_BROWSER_PATH -> {
+                    defaultSettingsTextField(
+                        option.value,
+                        { text ->
+                            option.value = text
+                            updateSaveButton()
+                        },
+                        modifier = modifier
+                    )
+                    var showFilePicker by remember { mutableStateOf(false) }
+                    FilePicker(
+                        show = showFilePicker,
+                        initialDirectory = Defaults.SAVE_FOLDER.value.toString(),
+                        title = "Choose Chrome Browser File"
+                    ) {
+                        if (it != null) {
+                            option.value = it.path
+                            updateSaveButton()
+                        }
+                        showFilePicker = false
+                    }
+                    defaultButton(
+                        "Set File",
+                        height = 30.dp,
+                        width = 80.dp
+                    ) {
+                        showFilePicker = true
+                    }
+                }
+
+                Defaults.CHROME_DRIVER_PATH -> {
+                    defaultSettingsTextField(
+                        option.value,
+                        { text ->
+                            option.value = text
+                            updateSaveButton()
+                        },
+                        modifier = modifier
+                    )
+                    var showFilePicker by remember { mutableStateOf(false) }
+                    FilePicker(
+                        show = showFilePicker,
+                        initialDirectory = Defaults.SAVE_FOLDER.value.toString(),
+                        title = "Choose Chrome Driver FIle"
+                    ) {
+                        if (it != null) {
+                            option.value = it.path
+                            updateSaveButton()
+                        }
+                        showFilePicker = false
+                    }
+                    defaultButton(
+                        "Set File",
+                        height = 30.dp,
+                        width = 80.dp
+                    ) {
+                        showFilePicker = true
+                    }
+                }
+
+                else -> {
+                    defaultSettingsTextField(
+                        option.value,
+                        {
+                            option.value = it
+                            updateSaveButton()
+                        },
+                        modifier = modifier
+                    )
+                }
+            }
+        }
+    }
+
+    @Suppress("SameParameterValue")
+    @OptIn(ExperimentalFoundationApi::class)
+    @Composable
+    private fun fieldRowInt(
+        setting: Defaults,
+        fullWidth: Boolean
+    ) {
+        val option = intOptions[setting] ?: return
+        val title = setting.alternativeName.ifEmpty {
+            setting.name.normalizeEnumName()
+        }
+        val modifier = Modifier.height(30.dp)
+            .then(if (fullWidth) Modifier.width(300.dp) else Modifier)
+            .then(focusModifier)
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(5.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.padding(10.dp)
+        ) {
+            tooltip(setting.description) {
+                Text(
+                    "$title:",
+                    style = MaterialTheme.typography.labelMedium
+                )
+            }
+            when (setting) {
+                Defaults.DOWNLOAD_THREADS -> {
+                    defaultSettingsTextField(
+                        if (option.value == -1) "" else option.value.toString(),
+                        { text ->
+                            option.value = textToDigits(FieldType.THREADS, text)
+                            updateSaveButton()
+                        },
+                        numbersOnly = true,
+                        modifier = modifier
+                    )
+                }
+
+                Defaults.TIMEOUT -> {
+                    defaultSettingsTextField(
+                        if (option.value == -1) "" else option.value.toString(),
+                        { text ->
+                            option.value = textToDigits(FieldType.TIMEOUT, text)
+                            updateSaveButton()
+                        },
+                        numbersOnly = true,
+                        modifier = modifier
+                    )
+                }
+
+                else -> {
+                    defaultSettingsTextField(
+                        option.value.toString(),
+                        { text ->
+                            val toNum = text.toIntOrNull()
+                            if (toNum != null) {
+                                option.value = toNum
+                                updateSaveButton()
+                            }
+                        },
+                        modifier = modifier
+                    )
+                }
+            }
+        }
+    }
+
+    @Suppress("SameParameterValue")
+    @Composable
+    private fun fieldDropdown(
+        setting: Defaults
+    ) {
+        val option = stringOptions[setting] ?: return
+        val title = setting.alternativeName.ifEmpty {
+            setting.name.normalizeEnumName()
+        }
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(5.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.padding(10.dp)
+        ) {
+            tooltip(setting.description) {
+                Text(
+                    "$title:",
+                    style = MaterialTheme.typography.labelMedium
+                )
+            }
+            if (setting == Defaults.QUALITY) {
+                var expanded by remember { mutableStateOf(false) }
+                val options = Quality.entries.map {
+                    DropdownOption(it.tag) {
+                        expanded = false
+                        option.value = it.tag
+                        updateSaveButton()
+                    }
+                }
+                tooltip(setting.description) {
+                    defaultDropdown(
+                        option.value,
+                        expanded,
+                        options,
+                        onTextClick = { expanded = true }
+                    ) { expanded = false }
+                }
+            }
+        }
+    }
+
+    @OptIn(ExperimentalFoundationApi::class)
+    @Composable
+    private fun fieldCheckbox(
+        setting: Defaults
+    ) {
+        val title = setting.alternativeName.ifEmpty {
+            setting.name.normalizeEnumName()
+        }
+        val option = booleanOptions[setting] ?: return
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(5.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.padding(10.dp)
+        ) {
+            tooltip(setting.description) {
+                Text(
+                    "$title:",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.onClick {
+                        option.value = option.value.not()
+                        updateSaveButton()
+                    }
+                )
+            }
+            tooltip(setting.description) {
+                defaultCheckbox(
+                    option.value,
+                    modifier = Modifier.height(30.dp)
+                ) {
+                    option.value = it
+                    updateSaveButton()
+                }
+            }
+        }
+    }
+
+    private enum class FieldType {
+        THREADS, TIMEOUT;
+    }
+
+    private fun textToDigits(
+        type: FieldType,
+        text: String
+    ): Int {
+        if (text.isEmpty()) {
+            return -1
+        }
+        val filtered = text.filter { it.isDigit() }
+        if (filtered.isEmpty()) {
+            return -1
+        }
+        var num = filtered.toInt()
+        if (type == FieldType.THREADS) {
+            if (num < minThreads) {
+                num = minThreads
+            } else if (num > maxThreads) {
+                num = maxThreads
+            }
+        } else if (type == FieldType.TIMEOUT) {
+            if (num < minTimeout) {
+                num = minTimeout
+            } else if (num > maxTimeout) {
+                num = maxTimeout
+            }
+        }
+        return num
+    }
+
+    fun saveSettings(): Boolean {
+        val threads = intOptions[Defaults.DOWNLOAD_THREADS]
+        if (threads != null) {
+            if (threads.value <= 0) {
+                threads.value = Defaults.DOWNLOAD_THREADS.int()
+            }
+            if (threads.value < minThreads || threads.value > maxThreads) {
+                windowScope.showToast("You must enter a Download Threads value of $minThreads-$maxThreads.")
+                return false
+            }
+        }
+        val timeout = intOptions[Defaults.TIMEOUT]
+        if (timeout != null) {
+            if (timeout.value <= 0) {
+                timeout.value = Defaults.TIMEOUT.int()
+            } else if (timeout.value < minTimeout || timeout.value > maxTimeout) {
+                windowScope.showToast("You must enter a Network Timeout value of $minTimeout-$maxTimeout.")
+                return false
+            }
+        }
+        val saveFolder = stringOptions[Defaults.SAVE_FOLDER]
+        if (saveFolder != null) {
+            if (saveFolder.value.isEmpty()) {
+                saveFolder.value = Defaults.SAVE_FOLDER.string()
+            }
+            if (!saveFolder.value.fileExists()) {
+                windowScope.showToast("The download folder doesn't exist.")
+                return false
+            }
+        }
+        val chromePath = stringOptions[Defaults.CHROME_BROWSER_PATH]
+        if (chromePath != null && chromePath.value.isNotEmpty()) {
+            if (!chromePath.value.fileExists()) {
+                windowScope.showToast("The chrome browser path doesn't exist.")
+                return false
+            }
+        }
+        val chromeDriverPath = stringOptions[Defaults.CHROME_DRIVER_PATH]
+        if (chromeDriverPath != null && chromeDriverPath.value.isNotEmpty()) {
+            if (!chromeDriverPath.value.fileExists()) {
+                windowScope.showToast("The chrome driver path doesn't exist.")
+                return false
+            }
+        }
+        if (chromePath != null && chromeDriverPath != null) {
+            if (chromePath.value.isNotEmpty() && chromeDriverPath.value.isEmpty()) {
+                windowScope.showToast("Both Chrome Browser and Chrome Driver paths need to be set.")
+                return false
+            }
+            if (chromeDriverPath.value.isNotEmpty() && chromePath.value.isEmpty()) {
+                windowScope.showToast("Both Chrome Browser and Chrome Driver paths need to be set.")
+                return false
+            }
+        }
+        val wcoUsername = stringOptions[Defaults.WCO_PREMIUM_USERNAME]
+        val wcoPassword = stringOptions[Defaults.WCO_PREMIUM_PASSWORD]
+        if (wcoUsername != null && wcoPassword != null) {
+            if (wcoPassword.value.isNotEmpty() && wcoUsername.value.isEmpty()) {
+                windowScope.showToast("You need a Wco Premium Username to set a Wco Premium Password.")
+                return false
+            }
+        }
+        stringOptions.keys.forEach {
+            val option = stringOptions[it]
+            if (option != null) {
+                it.update(option.value)
+            }
+        }
+        booleanOptions.keys.forEach {
+            val option = booleanOptions[it]
+            if (option != null) {
+                it.update(option.value)
+            }
+        }
+        intOptions.keys.forEach {
+            val option = intOptions[it]
+            if (option != null) {
+                it.update(option.value)
+            }
+        }
+        longOptions.keys.forEach {
+            val option = longOptions[it]
+            if (option != null) {
+                it.update(option.value)
+            }
+        }
+        Core.child.refreshDownloadsProgress()
+        Core.reloadRandomSeries()
+        updateValues()
+        windowScope.showToast("Settings successfully saved.")
+        return true
+    }
+
+    private fun updateSaveButton() {
+        saveButtonEnabled.value = settingsChanged()
+    }
+
+    fun updateValues() {
+        Defaults.entries.forEach {
+            if (it.value is String) {
+                stringOptions[it]?.value = it.string()
+            } else if (it.value is Boolean) {
+                booleanOptions[it]?.value = it.boolean()
+            } else if (it.value is Int) {
+                intOptions[it]?.value = it.int()
+            } else if (it.value is Long) {
+                longOptions[it]?.value = it.long()
+            }
+        }
+        saveButtonEnabled.value = false
+    }
+
+    fun settingsChanged(): Boolean {
+        val strings = stringOptions.filter { it.value.value != it.key.string() }
+        val booleans = booleanOptions.filter { it.value.value != it.key.boolean() }
+        val ints = intOptions.filter { it.value.value != it.key.int() }
+        val longs = longOptions.filter { it.value.value != it.key.long() }
+        return strings.isNotEmpty() || booleans.isNotEmpty()
+                || ints.isNotEmpty() || longs.isNotEmpty()
     }
 
     @OptIn(ExperimentalLayoutApi::class)
@@ -244,7 +641,7 @@ class SettingsView: ViewPage {
             size = DpSize(500.dp, 350.dp)
         ) {
             val scrollState = rememberScrollState()
-            fullBox {
+            FullBox {
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.spacedBy(5.dp),
@@ -269,30 +666,19 @@ class SettingsView: ViewPage {
                         horizontalArrangement = Arrangement.spacedBy(4.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        if (
-                            disableUserAgentsUpdate.value
-                            || disableWcoUrlsUpdate.value
-                            || disableWcoDataUpdate.value
-                            || disableWcoSeriesLinksUpdate.value
-                            || disableDubbedUpdate.value
-                            || disableSubbedUpdate.value
-                            || disableMoviesUpdate.value
-                            || disableCartoonUpdate.value
-                        ) {
+                        if (booleanOptions.map {
+                                Defaults.updateCheckBoxes.contains(it.key)
+                            }.any { it }) {
                             defaultButton(
                                 "Enable All Updates",
                                 width = 150.dp,
                                 height = 35.dp
                             ) {
-                                disableUserAgentsUpdate.value = false
-                                disableWcoUrlsUpdate.value = false
-                                disableWcoDataUpdate.value = false
-                                disableWcoSeriesLinksUpdate.value = false
-                                disableDubbedUpdate.value = false
-                                disableSubbedUpdate.value = false
-                                disableMoviesUpdate.value = false
-                                disableCartoonUpdate.value = false
-                                updateSaveButton()
+                                booleanOptions.forEach {
+                                    if (Defaults.updateCheckBoxes.contains(it.key)) {
+                                        it.value.value = false
+                                    }
+                                }
                             }
                         } else {
                             defaultButton(
@@ -300,15 +686,11 @@ class SettingsView: ViewPage {
                                 width = 150.dp,
                                 height = 35.dp
                             ) {
-                                disableUserAgentsUpdate.value = true
-                                disableWcoUrlsUpdate.value = true
-                                disableWcoDataUpdate.value = true
-                                disableWcoSeriesLinksUpdate.value = true
-                                disableDubbedUpdate.value = true
-                                disableSubbedUpdate.value = true
-                                disableMoviesUpdate.value = true
-                                disableCartoonUpdate.value = true
-                                updateSaveButton()
+                                booleanOptions.forEach {
+                                    if (Defaults.updateCheckBoxes.contains(it.key)) {
+                                        it.value.value = true
+                                    }
+                                }
                             }
                         }
                         defaultButton(
@@ -325,1004 +707,7 @@ class SettingsView: ViewPage {
         }
     }
 
-    @OptIn(ExperimentalFoundationApi::class)
-    @Composable
-    private fun fieldRow(
-        setting: Defaults
-    ) {
-        val title = when (setting) {
-            Defaults.DOWNLOAD_THREADS -> "Download Threads"
-            Defaults.TIMEOUT -> "Network Timeout"
-            Defaults.SAVE_FOLDER -> "Download Folder"
-            Defaults.PROXY -> "Proxy"
-            Defaults.CHROME_BROWSER_PATH -> "Chrome Browser Path"
-            Defaults.CHROME_DRIVER_PATH -> "Chrome Driver Path"
-            else -> ""
-        }
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(5.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.padding(10.dp)
-        ) {
-            tooltip(setting.description) {
-                Text(
-                    "$title:",
-                    style = MaterialTheme.typography.labelMedium
-                )
-            }
-            when (setting) {
-                Defaults.DOWNLOAD_THREADS -> {
-                    defaultSettingsTextField(
-                        threads,
-                        { text ->
-                            if (text.isNotEmpty()) {
-                                threads = textToDigits(FieldType.THREADS, text)
-                                updateSaveButton()
-                            } else {
-                                if (threads.isNotEmpty()) {
-                                    threads = ""
-                                }
-                            }
-                        },
-                        numbersOnly = true,
-                    )
-                }
 
-                Defaults.TIMEOUT -> {
-                    defaultSettingsTextField(
-                        timeout,
-                        { text ->
-                            if (text.isNotEmpty()) {
-                                timeout = textToDigits(FieldType.TIMEOUT, text)
-                                updateSaveButton()
-                            } else {
-                                if (timeout.isNotEmpty()) {
-                                    timeout = ""
-                                }
-                            }
-                        },
-                        numbersOnly = true,
-                    )
-                }
-
-                Defaults.SAVE_FOLDER -> {
-                    defaultSettingsTextField(
-                        saveFolder,
-                        { text ->
-                            if (text.isNotEmpty()) {
-                                saveFolder = text
-                                updateSaveButton()
-                            } else {
-                                if (saveFolder.isNotEmpty()) {
-                                    saveFolder = ""
-                                }
-                            }
-                        },
-                        modifier = Modifier.height(30.dp).width(300.dp),
-                    )
-                    var showFilePicker by remember { mutableStateOf(false) }
-                    DirectoryPicker(
-                        show = showFilePicker,
-                        initialDirectory = saveFolder,
-                        title = "Choose Save Folder"
-                    ) {
-                        if (it != null) {
-                            saveFolder = it
-                            updateSaveButton()
-                        }
-                        showFilePicker = false
-                    }
-                    defaultButton(
-                        "Set Folder",
-                        height = 30.dp,
-                        width = 80.dp
-                    ) {
-                        showFilePicker = true
-                    }
-                }
-
-                Defaults.CHROME_BROWSER_PATH -> {
-                    defaultSettingsTextField(
-                        chromePath,
-                        { text ->
-                            if (text.isNotEmpty()) {
-                                chromePath = text
-                                updateSaveButton()
-                            } else {
-                                if (chromePath.isNotEmpty()) {
-                                    chromePath = ""
-                                }
-                            }
-                        },
-                        modifier = Modifier.height(30.dp).width(300.dp),
-                    )
-                    var showFilePicker by remember { mutableStateOf(false) }
-                    FilePicker(
-                        show = showFilePicker,
-                        initialDirectory = Defaults.SAVE_FOLDER.value.toString(),
-                        title = "Choose Chrome Browser File"
-                    ) {
-                        if (it != null) {
-                            chromePath = it.path
-                            updateSaveButton()
-                        }
-                        showFilePicker = false
-                    }
-                    defaultButton(
-                        "Set File",
-                        height = 30.dp,
-                        width = 80.dp
-                    ) {
-                        showFilePicker = true
-                    }
-                }
-
-                Defaults.CHROME_DRIVER_PATH -> {
-                    defaultSettingsTextField(
-                        chromeDriverPath,
-                        { text ->
-                            if (text.isNotEmpty()) {
-                                chromeDriverPath = text
-                                updateSaveButton()
-                            } else {
-                                if (chromeDriverPath.isNotEmpty()) {
-                                    chromeDriverPath = ""
-                                }
-                            }
-                        },
-                        modifier = Modifier.height(30.dp).width(300.dp),
-                    )
-                    var showFilePicker by remember { mutableStateOf(false) }
-                    FilePicker(
-                        show = showFilePicker,
-                        initialDirectory = Defaults.SAVE_FOLDER.value.toString(),
-                        title = "Choose Chrome Driver FIle"
-                    ) {
-                        if (it != null) {
-                            chromeDriverPath = it.path
-                            updateSaveButton()
-                        }
-                        showFilePicker = false
-                    }
-                    defaultButton(
-                        "Set File",
-                        height = 30.dp,
-                        width = 80.dp
-                    ) {
-                        showFilePicker = true
-                    }
-                }
-
-                Defaults.PROXY -> {
-                    defaultSettingsTextField(
-                        proxy,
-                        { text ->
-                            if (text.isNotEmpty()) {
-                                proxy = text.trim()
-                                updateSaveButton()
-                            } else {
-                                if (proxy.isNotEmpty()) {
-                                    proxy = ""
-                                }
-                            }
-                        },
-                        enabled = proxyEnabled,
-                        modifier = Modifier.height(30.dp).width(180.dp),
-                    )
-                    defaultButton(
-                        "Test Proxy",
-                        enabled = proxyEnabled,
-                        modifier = Modifier.height(30.dp)
-                    ) {
-                        if (!isValidProxy()) {
-                            return@defaultButton
-                        }
-                        val timeout = this@SettingsView.timeout.toInt()
-                        windowScope.showToast("Testing proxy with timeout: $timeout")
-                        Core.child.taskScope.launch(Dispatchers.IO) {
-                            val website = "https://google.com"
-                            try {
-                                val split = proxy.split(":")
-                                val response = Jsoup.connect(website)
-                                    .proxy(split[0], split[1].toInt())
-                                    .followRedirects(true)
-                                    .timeout(timeout * 1000)
-                                    .execute()
-                                withContext(Dispatchers.Main) {
-                                    if (response.statusCode() == 200) {
-                                        windowScope.showToast("Proxy successfully connected to $website")
-                                    } else {
-                                        windowScope.showToast("Proxy failed to connect with status code: ${response.statusCode()}")
-                                    }
-                                }
-                            } catch (e: Exception) {
-                                DialogHelper.showError(
-                                    "Failed to connect to $website with proxy.", e
-                                )
-                            }
-                        }
-                    }
-                    defaultCheckbox(
-                        proxyEnabled,
-                        modifier = Modifier.height(30.dp)
-                    ) {
-                        proxyEnabled.value = it
-                        updateSaveButton()
-                    }
-                    Text(
-                        "Enable Proxy",
-                        fontSize = 12.sp,
-                        modifier = Modifier.onClick {
-                            proxyEnabled.value = proxyEnabled.value.not()
-                            updateSaveButton()
-                        }
-                    )
-                }
-
-                else -> {}
-            }
-        }
-    }
-
-    @Suppress("SameParameterValue")
-    @Composable
-    private fun fieldDropdown(
-        setting: Defaults
-    ) {
-        val title = when (setting) {
-            Defaults.QUALITY -> "Video Download Quality"
-            else -> ""
-        }
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(5.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.padding(10.dp)
-        ) {
-            tooltip(setting.description) {
-                Text(
-                    "$title:",
-                    style = MaterialTheme.typography.labelMedium
-                )
-            }
-            if (setting == Defaults.QUALITY) {
-                var expanded by remember { mutableStateOf(false) }
-                val options = Quality.entries.map {
-                    DropdownOption(it.tag) {
-                        expanded = false
-                        quality = it.tag
-                        updateSaveButton()
-                    }
-                }
-                tooltip(setting.description) {
-                    defaultDropdown(
-                        quality,
-                        expanded,
-                        options,
-                        onTextClick = { expanded = true }
-                    ) { expanded = false }
-                }
-            }
-        }
-    }
-
-    @OptIn(ExperimentalFoundationApi::class)
-    @Composable
-    private fun fieldCheckbox(
-        setting: Defaults
-    ) {
-        val title = when (setting) {
-            Defaults.SHOW_DEBUG_MESSAGES -> "Show Debug Messages"
-            Defaults.BYPASS_DISK_SPACE -> "Bypass Storage Space Check"
-            Defaults.SHOW_TOOLTIPS -> "Show Tooltips"
-            Defaults.CONSOLE_ON_TOP -> "Popout Console Window Always On Top"
-            Defaults.HEADLESS_MODE -> "Headless Mode"
-            Defaults.SEPARATE_SEASONS -> "Separate Seasons Into Folders"
-            Defaults.AUTO_SCROLL_CONSOLES -> "Auto Scroll Consoles"
-            Defaults.DISABLE_USER_AGENTS_UPDATE -> "Disable User Agents Updates"
-            Defaults.DISABLE_WCO_URLS_UPDATE -> "Disable WcoUrls Updates"
-            Defaults.DISABLE_DUBBED_UPDATE -> "Disable Dubbed Updates"
-            Defaults.DISABLE_SUBBED_UPDATE -> "Disable Subbed Updates"
-            Defaults.DISABLE_CARTOON_UPDATE -> "Disable Cartoon Updates"
-            Defaults.DISABLE_MOVIES_UPDATE -> "Disable Movies Updates"
-            Defaults.DISABLE_WCO_DATA_UPDATE -> "Disable WcoData Updates"
-            Defaults.DISABLE_WCO_SERIES_LINKS_UPDATE -> "Disable Wco Series Links Updates"
-            Defaults.CTRL_FOR_HOTKEYS -> "CTRL For Hotkeys"
-            Defaults.ENABLE_RANDOM_SERIES -> "Enable Random Series Rows"
-            else -> "Not Implemented"
-        }
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(5.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.padding(10.dp)
-        ) {
-            tooltip(setting.description) {
-                Text(
-                    "$title:",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    modifier = Modifier.onClick {
-                        when (setting) {
-                            Defaults.SHOW_DEBUG_MESSAGES -> {
-                                debugMessages.value = debugMessages.value.not()
-                            }
-
-                            Defaults.BYPASS_DISK_SPACE -> {
-                                bypassDiskSpace.value = bypassDiskSpace.value.not()
-                            }
-
-                            Defaults.SHOW_TOOLTIPS -> {
-                                showTooltips.value = showTooltips.value.not()
-                            }
-
-                            Defaults.CONSOLE_ON_TOP -> {
-                                consoleOnTop.value = consoleOnTop.value.not()
-                            }
-
-                            Defaults.HEADLESS_MODE -> {
-                                headlessMode.value = headlessMode.value.not()
-                            }
-
-                            Defaults.SEPARATE_SEASONS -> {
-                                separateSeasons.value = separateSeasons.value.not()
-                            }
-
-                            Defaults.AUTO_SCROLL_CONSOLES -> {
-                                autoScrollConsoles.value = autoScrollConsoles.value.not()
-                            }
-
-                            Defaults.CTRL_FOR_HOTKEYS -> {
-                                ctrlForHotKeys.value = ctrlForHotKeys.value.not()
-                            }
-
-                            Defaults.ENABLE_RANDOM_SERIES -> {
-                                enableRandomSeries.value = enableRandomSeries.value.not()
-                            }
-
-                            Defaults.DISABLE_USER_AGENTS_UPDATE -> {
-                                disableUserAgentsUpdate.value = disableUserAgentsUpdate.value.not()
-                            }
-
-                            Defaults.DISABLE_WCO_URLS_UPDATE -> {
-                                disableWcoUrlsUpdate.value = disableWcoUrlsUpdate.value.not()
-                            }
-
-                            Defaults.DISABLE_DUBBED_UPDATE -> {
-                                disableDubbedUpdate.value = disableDubbedUpdate.value.not()
-                            }
-
-                            Defaults.DISABLE_SUBBED_UPDATE -> {
-                                disableSubbedUpdate.value = disableSubbedUpdate.value.not()
-                            }
-
-                            Defaults.DISABLE_CARTOON_UPDATE -> {
-                                disableCartoonUpdate.value = disableCartoonUpdate.value.not()
-                            }
-
-                            Defaults.DISABLE_MOVIES_UPDATE -> {
-                                disableMoviesUpdate.value = disableMoviesUpdate.value.not()
-                            }
-
-                            Defaults.DISABLE_WCO_DATA_UPDATE -> {
-                                disableWcoDataUpdate.value = disableWcoDataUpdate.value.not()
-                            }
-
-                            Defaults.DISABLE_WCO_SERIES_LINKS_UPDATE -> {
-                                disableWcoSeriesLinksUpdate.value = disableWcoSeriesLinksUpdate.value.not()
-                            }
-
-                            else -> {}
-                        }
-                        updateSaveButton()
-                    }
-                )
-            }
-            when (setting) {
-                Defaults.SHOW_DEBUG_MESSAGES -> {
-                    tooltip(setting.description) {
-                        defaultCheckbox(
-                            debugMessages,
-                            modifier = Modifier.height(30.dp)
-                        ) {
-                            debugMessages.value = it
-                            updateSaveButton()
-                        }
-                    }
-                }
-
-                Defaults.BYPASS_DISK_SPACE -> {
-                    tooltip(setting.description) {
-                        defaultCheckbox(
-                            bypassDiskSpace,
-                            modifier = Modifier.height(30.dp)
-                        ) {
-                            bypassDiskSpace.value = it
-                            updateSaveButton()
-                        }
-                    }
-                }
-
-                Defaults.SHOW_TOOLTIPS -> {
-                    tooltip(setting.description) {
-                        defaultCheckbox(
-                            showTooltips,
-                            modifier = Modifier.height(30.dp)
-                        ) {
-                            showTooltips.value = it
-                            updateSaveButton()
-                        }
-                    }
-                }
-
-                Defaults.CONSOLE_ON_TOP -> {
-                    tooltip(setting.description) {
-                        defaultCheckbox(
-                            consoleOnTop,
-                            modifier = Modifier.height(30.dp)
-                        ) {
-                            consoleOnTop.value = it
-                            updateSaveButton()
-                        }
-                    }
-                }
-
-                Defaults.HEADLESS_MODE -> {
-                    tooltip(setting.description) {
-                        defaultCheckbox(
-                            headlessMode,
-                            modifier = Modifier.height(30.dp)
-                        ) {
-                            headlessMode.value = it
-                            updateSaveButton()
-                        }
-                    }
-                }
-
-                Defaults.SEPARATE_SEASONS -> {
-                    tooltip(setting.description) {
-                        defaultCheckbox(
-                            separateSeasons,
-                            modifier = Modifier.height(30.dp)
-                        ) {
-                            separateSeasons.value = it
-                            updateSaveButton()
-                        }
-                    }
-                }
-
-                Defaults.AUTO_SCROLL_CONSOLES -> {
-                    tooltip(setting.description) {
-                        defaultCheckbox(
-                            autoScrollConsoles,
-                            modifier = Modifier.height(30.dp)
-                        ) {
-                            autoScrollConsoles.value = it
-                            updateSaveButton()
-                        }
-                    }
-                }
-
-                Defaults.CTRL_FOR_HOTKEYS -> {
-                    tooltip(setting.description) {
-                        defaultCheckbox(
-                            ctrlForHotKeys,
-                            modifier = Modifier.height(30.dp)
-                        ) {
-                            ctrlForHotKeys.value = it
-                            updateSaveButton()
-                        }
-                    }
-                }
-
-                Defaults.ENABLE_RANDOM_SERIES -> {
-                    tooltip(setting.description) {
-                        defaultCheckbox(
-                            enableRandomSeries,
-                            modifier = Modifier.height(30.dp)
-                        ) {
-                            enableRandomSeries.value = it
-                            updateSaveButton()
-                        }
-                    }
-                }
-
-                Defaults.DISABLE_USER_AGENTS_UPDATE -> {
-                    tooltip(setting.description) {
-                        defaultCheckbox(
-                            disableUserAgentsUpdate,
-                            modifier = Modifier.height(30.dp)
-                        ) {
-                            disableUserAgentsUpdate.value = it
-                            updateSaveButton()
-                        }
-                    }
-                }
-
-                Defaults.DISABLE_WCO_URLS_UPDATE -> {
-                    tooltip(setting.description) {
-                        defaultCheckbox(
-                            disableWcoUrlsUpdate,
-                            modifier = Modifier.height(30.dp)
-                        ) {
-                            disableWcoUrlsUpdate.value = it
-                            updateSaveButton()
-                        }
-                    }
-                }
-
-                Defaults.DISABLE_DUBBED_UPDATE -> {
-                    tooltip(setting.description) {
-                        defaultCheckbox(
-                            disableDubbedUpdate,
-                            modifier = Modifier.height(30.dp)
-                        ) {
-                            disableDubbedUpdate.value = it
-                            updateSaveButton()
-                        }
-                    }
-                }
-
-                Defaults.DISABLE_SUBBED_UPDATE -> {
-                    tooltip(setting.description) {
-                        defaultCheckbox(
-                            disableSubbedUpdate,
-                            modifier = Modifier.height(30.dp)
-                        ) {
-                            disableSubbedUpdate.value = it
-                            updateSaveButton()
-                        }
-                    }
-                }
-
-                Defaults.DISABLE_CARTOON_UPDATE -> {
-                    tooltip(setting.description) {
-                        defaultCheckbox(
-                            disableCartoonUpdate,
-                            modifier = Modifier.height(30.dp)
-                        ) {
-                            disableCartoonUpdate.value = it
-                            updateSaveButton()
-                        }
-                    }
-                }
-
-                Defaults.DISABLE_MOVIES_UPDATE -> {
-                    tooltip(setting.description) {
-                        defaultCheckbox(
-                            disableMoviesUpdate,
-                            modifier = Modifier.height(30.dp)
-                        ) {
-                            disableMoviesUpdate.value = it
-                            updateSaveButton()
-                        }
-                    }
-                }
-
-                Defaults.DISABLE_WCO_DATA_UPDATE -> {
-                    tooltip(setting.description) {
-                        defaultCheckbox(
-                            disableWcoDataUpdate,
-                            modifier = Modifier.height(30.dp)
-                        ) {
-                            disableWcoDataUpdate.value = it
-                            updateSaveButton()
-                        }
-                    }
-                }
-
-                Defaults.DISABLE_WCO_SERIES_LINKS_UPDATE -> {
-                    tooltip(setting.description) {
-                        defaultCheckbox(
-                            disableWcoSeriesLinksUpdate,
-                            modifier = Modifier.height(30.dp)
-                        ) {
-                            disableWcoSeriesLinksUpdate.value = it
-                            updateSaveButton()
-                        }
-                    }
-                }
-
-                else -> {}
-            }
-        }
-    }
-
-    @Composable
-    private fun fieldWcoDomain() {
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(5.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.padding(10.dp)
-        ) {
-            val tooltipText = """
-                    Wcofun changes their domain a lot. This is used for the slug system to keep
-                    all wcofun links updated.
-                    Only use this option if you're having trouble connecting to wcofun.
-                    These values auto update everytime the app starts.
-                """.trimIndent()
-            tooltip(tooltipText) {
-                Text(
-                    "Wcofun Domain:",
-                    style = MaterialTheme.typography.labelMedium
-                )
-            }
-            tooltip(tooltipText) {
-                Text(
-                    "https://",
-                    style = MaterialTheme.typography.labelSmall
-                )
-            }
-            defaultSettingsTextField(
-                wcoDomain,
-                {
-                    wcoDomain = it
-                    updateSaveButton()
-                },
-                modifier = Modifier.width(100.dp).height(30.dp)
-            )
-            Text(
-                ".",
-                style = MaterialTheme.typography.labelSmall
-            )
-            defaultSettingsTextField(
-                wcoExtension,
-                {
-                    wcoExtension = it
-                    updateSaveButton()
-                },
-                modifier = Modifier.width(40.dp).height(30.dp)
-            )
-            tooltip(
-                """
-                Executes the auto update function that happens everytime the app starts.
-                The auto update function checks the links found in the text file and follows them to the latest redirect.
-            """.trimIndent()
-            ) {
-                defaultButton(
-                    "Auto Update",
-                    height = 30.dp,
-                    width = 80.dp
-                ) {
-                    windowScope.showToast("[TODO]")
-                }
-            }
-        }
-    }
-
-    private enum class FieldType {
-        THREADS, TIMEOUT;
-    }
-
-    private fun textToDigits(
-        type: FieldType,
-        text: String
-    ): String {
-        var mText = text.filter { it.isDigit() }
-        val num = mText.toIntOrNull()
-        if (num != null) {
-            if (type == FieldType.THREADS) {
-                if (num < minThreads) {
-                    mText = minThreads.toString()
-                } else if (num > maxThreads) {
-                    mText = maxThreads.toString()
-                }
-            } else if (type == FieldType.TIMEOUT) {
-                if (num < minTimeout) {
-                    if (mText.length > 1) {
-                        mText = minTimeout.toString()
-                    }
-                } else if (num > maxTimeout) {
-                    mText = maxTimeout.toString()
-                }
-            }
-        }
-        return mText
-    }
-
-    private fun updateSaveButton() {
-        saveButtonEnabled.value = settingsChanged()
-    }
-
-    fun updateValues() {
-        Defaults.entries.forEach {
-            when (it) {
-                Defaults.DOWNLOAD_THREADS -> {
-                    threads = it.intString()
-                }
-
-                Defaults.TIMEOUT -> {
-                    timeout = it.intString()
-                }
-
-                Defaults.SAVE_FOLDER -> {
-                    saveFolder = it.string()
-                }
-
-                Defaults.CHROME_BROWSER_PATH -> {
-                    chromePath = it.string()
-                }
-
-                Defaults.CHROME_DRIVER_PATH -> {
-                    chromeDriverPath = it.string()
-                }
-
-                Defaults.PROXY -> {
-                    proxy = it.string()
-                }
-
-                Defaults.ENABLE_PROXY -> {
-                    proxyEnabled.value = it.boolean()
-                }
-
-                Defaults.QUALITY -> {
-                    quality = it.string()
-                }
-
-                Defaults.SHOW_DEBUG_MESSAGES -> {
-                    debugMessages.value = it.boolean()
-                }
-
-                Defaults.BYPASS_DISK_SPACE -> {
-                    bypassDiskSpace.value = it.boolean()
-                }
-
-                Defaults.WCO_DOMAIN -> {
-                    wcoDomain = it.string()
-                }
-
-                Defaults.WCO_EXTENSION -> {
-                    wcoExtension = it.string()
-                }
-
-                Defaults.SHOW_TOOLTIPS -> {
-                    showTooltips.value = it.boolean()
-                }
-
-                Defaults.CONSOLE_ON_TOP -> {
-                    consoleOnTop.value = it.boolean()
-                }
-
-                Defaults.HEADLESS_MODE -> {
-                    headlessMode.value = it.boolean()
-                }
-
-                Defaults.SEPARATE_SEASONS -> {
-                    separateSeasons.value = it.boolean()
-                }
-
-                Defaults.AUTO_SCROLL_CONSOLES -> {
-                    autoScrollConsoles.value = it.boolean()
-                }
-
-                Defaults.CTRL_FOR_HOTKEYS -> {
-                    ctrlForHotKeys.value = it.boolean()
-                }
-
-                Defaults.ENABLE_RANDOM_SERIES -> {
-                    enableRandomSeries.value = it.boolean()
-                }
-
-                Defaults.DISABLE_USER_AGENTS_UPDATE -> {
-                    disableUserAgentsUpdate.value = it.boolean()
-                }
-
-                Defaults.DISABLE_WCO_URLS_UPDATE -> {
-                    disableWcoUrlsUpdate.value = it.boolean()
-                }
-
-                Defaults.DISABLE_DUBBED_UPDATE -> {
-                    disableDubbedUpdate.value = it.boolean()
-                }
-
-                Defaults.DISABLE_SUBBED_UPDATE -> {
-                    disableSubbedUpdate.value = it.boolean()
-                }
-
-                Defaults.DISABLE_CARTOON_UPDATE -> {
-                    disableCartoonUpdate.value = it.boolean()
-                }
-
-                Defaults.DISABLE_MOVIES_UPDATE -> {
-                    disableMoviesUpdate.value = it.boolean()
-                }
-
-                Defaults.DISABLE_WCO_DATA_UPDATE -> {
-                    disableWcoDataUpdate.value = it.boolean()
-                }
-
-                Defaults.DISABLE_WCO_SERIES_LINKS_UPDATE -> {
-                    disableWcoSeriesLinksUpdate.value = it.boolean()
-                }
-
-                else -> {}
-            }
-        }
-        saveButtonEnabled.value = false
-    }
-
-    private fun isValidProxy(): Boolean {
-        if (proxy.isEmpty()) {
-            windowScope.showToast("Please enter a proxy first.")
-            return false
-        }
-        val split = try {
-            proxy.split(":".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
-        } catch (_: Exception) {
-            windowScope.showToast("Failed to parse proxy.")
-            return false
-        }
-        val ip: String
-        val port: Int?
-        try {
-            if (split.size > 2) {
-                windowScope.showToast("Kotlin doesn't support Username & Password Authentication.")
-                return false
-            } else if (split.size < 2) {
-                windowScope.showToast("Please enter a valid proxy.")
-                return false
-            }
-            ip = split[0]
-            val regex = "^((25[0-5]|(2[0-4]|1\\d|[1-9]|)\\d)\\.?\\b){4}$"
-            val pattern: Pattern = Pattern.compile(regex)
-            val matcher: Matcher = pattern.matcher(ip)
-            if (!matcher.matches()) {
-                windowScope.showToast("The proxy ip isn't valid.")
-                return false
-            }
-            port = split[1].toIntOrNull()
-            if (port != null) {
-                if (port < 1 || port > 65535) {
-                    windowScope.showToast("The proxy port can only be 1-65535.")
-                    return false
-                }
-            } else {
-                windowScope.showToast("The proxy port needs to be numbers only.")
-                return false
-            }
-        } catch (e: Exception) {
-            windowScope.showToast("Something wen't wrong checking the proxy format. Look at the console for more info.")
-            FrogLog.logError(
-                "Failed to check the proxy in settings." +
-                        "\nGo to Settings and scroll to the bottom for the entire exception.",
-                e
-            )
-            return false
-        }
-        return true
-    }
-
-    fun saveSettings(): Boolean {
-        if (threads.isEmpty()) {
-            threads = Defaults.DOWNLOAD_THREADS.intString()
-        }
-        val threadsValue = threads.toIntOrNull()
-        if (threadsValue == null || threadsValue < minThreads || threadsValue > maxThreads) {
-            windowScope.showToast("You must enter a Download Threads value of $minThreads-$maxThreads.")
-            return false
-        }
-        if (timeout.isEmpty()) {
-            timeout = Defaults.SAVE_FOLDER.string()
-        }
-        val timeoutValue = timeout.toIntOrNull()
-        if (timeoutValue == null || timeoutValue < minTimeout || timeoutValue > maxTimeout) {
-            windowScope.showToast("You must enter a Network Timeout value of $minTimeout-$maxTimeout.")
-            return false
-        }
-        if (saveFolder.isEmpty()) {
-            saveFolder = Defaults.SAVE_FOLDER.string()
-        }
-        if (!saveFolder.fileExists()) {
-            windowScope.showToast("The download folder doesn't exist.")
-            return false
-        }
-        if (chromePath.isNotEmpty()) {
-            if (!chromePath.fileExists()) {
-                windowScope.showToast("The chrome browser path doesn't exist.")
-                return false
-            }
-        }
-        if (chromeDriverPath.isNotEmpty()) {
-            if (!chromeDriverPath.fileExists()) {
-                windowScope.showToast("The chrome driver path doesn't exist.")
-                return false
-            }
-        }
-        if (chromePath.isNotEmpty() && chromeDriverPath.isEmpty()) {
-            windowScope.showToast("Both Chrome Browser and Chrome Driver paths need to be set.")
-            return false
-        }
-        if (chromeDriverPath.isNotEmpty() && chromePath.isEmpty()) {
-            windowScope.showToast("Both Chrome Browser and Chrome Driver paths need to be set.")
-            return false
-        }
-        val proxyEnabledValue = proxyEnabled.value
-        if (proxy.isEmpty() && proxyEnabledValue) {
-            proxyEnabled.value = false
-        } else if (proxy.isNotEmpty() && proxyEnabledValue) {
-            if (!isValidProxy()) {
-                return false
-            }
-        }
-        if (wcoExtension.isNotEmpty()) {
-            val acceptedDomains = listOf(
-                "org", "net", "tv", "com", "io", "to",
-            )
-            wcoExtension = wcoExtension.replace("[^a-zA-Z]".toRegex(), "").lowercase()
-            if (!acceptedDomains.contains(wcoExtension)) {
-                DialogHelper.showError(
-                    "Your domain extension $wcoExtension isn't allowed. Please use any of these:" +
-                            "\n$acceptedDomains"
-                )
-                return false
-            }
-        }
-        Defaults.DOWNLOAD_THREADS.update(threadsValue)
-        Defaults.TIMEOUT.update(timeoutValue)
-        Defaults.SAVE_FOLDER.update(saveFolder)
-        Defaults.CHROME_BROWSER_PATH.update(chromePath)
-        Defaults.CHROME_DRIVER_PATH.update(chromeDriverPath)
-        Core.child.refreshDownloadsProgress()
-        Defaults.PROXY.update(proxy)
-        Defaults.ENABLE_PROXY.update(proxyEnabledValue)
-        Defaults.QUALITY.update(quality)
-        Defaults.SHOW_DEBUG_MESSAGES.update(debugMessages.value)
-        Defaults.BYPASS_DISK_SPACE.update(bypassDiskSpace.value)
-        Defaults.WCO_DOMAIN.update(wcoDomain)
-        Defaults.WCO_EXTENSION.update(wcoExtension)
-        Defaults.SHOW_TOOLTIPS.update(showTooltips.value)
-        Defaults.CONSOLE_ON_TOP.update(consoleOnTop.value)
-        Defaults.HEADLESS_MODE.update(headlessMode.value)
-        Defaults.SEPARATE_SEASONS.update(separateSeasons.value)
-        Defaults.AUTO_SCROLL_CONSOLES.update(autoScrollConsoles.value)
-        Defaults.CTRL_FOR_HOTKEYS.update(ctrlForHotKeys.value)
-        if (Defaults.ENABLE_RANDOM_SERIES.boolean() != enableRandomSeries.value) {
-            Defaults.ENABLE_RANDOM_SERIES.update(enableRandomSeries.value)
-            Core.reloadRandomSeries()
-        }
-        Defaults.DISABLE_USER_AGENTS_UPDATE.update(disableUserAgentsUpdate.value)
-        Defaults.DISABLE_WCO_URLS_UPDATE.update(disableWcoUrlsUpdate.value)
-        Defaults.DISABLE_DUBBED_UPDATE.update(disableDubbedUpdate.value)
-        Defaults.DISABLE_SUBBED_UPDATE.update(disableSubbedUpdate.value)
-        Defaults.DISABLE_CARTOON_UPDATE.update(disableCartoonUpdate.value)
-        Defaults.DISABLE_MOVIES_UPDATE.update(disableMoviesUpdate.value)
-        Defaults.DISABLE_WCO_DATA_UPDATE.update(disableWcoDataUpdate.value)
-        Defaults.DISABLE_WCO_SERIES_LINKS_UPDATE.update(disableWcoSeriesLinksUpdate.value)
-        updateValues()
-        windowScope.showToast("Settings successfully saved.")
-        return true
-    }
-
-    fun settingsChanged(): Boolean {
-        return Defaults.TIMEOUT.intString() != timeout
-                || Defaults.DOWNLOAD_THREADS.intString() != threads
-                || Defaults.SAVE_FOLDER.string() != saveFolder
-                || Defaults.CHROME_BROWSER_PATH.string() != chromePath
-                || Defaults.CHROME_DRIVER_PATH.string() != chromeDriverPath
-                || Defaults.PROXY.string() != proxy
-                || Defaults.ENABLE_PROXY.boolean() != proxyEnabled.value
-                || Defaults.QUALITY.string() != quality
-                || Defaults.SHOW_DEBUG_MESSAGES.boolean() != debugMessages.value
-                || Defaults.BYPASS_DISK_SPACE.boolean() != bypassDiskSpace.value
-                || Defaults.WCO_DOMAIN.string() != wcoDomain
-                || Defaults.WCO_EXTENSION.string() != wcoExtension
-                || Defaults.SHOW_TOOLTIPS.boolean() != showTooltips.value
-                || Defaults.CONSOLE_ON_TOP.boolean() != consoleOnTop.value
-                || Defaults.HEADLESS_MODE.boolean() != headlessMode.value
-                || Defaults.SEPARATE_SEASONS.boolean() != separateSeasons.value
-                || Defaults.AUTO_SCROLL_CONSOLES.boolean() != autoScrollConsoles.value
-                || Defaults.CTRL_FOR_HOTKEYS.boolean() != ctrlForHotKeys.value
-                || Defaults.ENABLE_RANDOM_SERIES.boolean() != enableRandomSeries.value
-                || Defaults.DISABLE_USER_AGENTS_UPDATE.boolean() != disableUserAgentsUpdate.value
-                || Defaults.DISABLE_WCO_URLS_UPDATE.boolean() != disableWcoUrlsUpdate.value
-                || Defaults.DISABLE_DUBBED_UPDATE.boolean() != disableDubbedUpdate.value
-                || Defaults.DISABLE_SUBBED_UPDATE.boolean() != disableSubbedUpdate.value
-                || Defaults.DISABLE_CARTOON_UPDATE.boolean() != disableCartoonUpdate.value
-                || Defaults.DISABLE_MOVIES_UPDATE.boolean() != disableMoviesUpdate.value
-                || Defaults.DISABLE_WCO_DATA_UPDATE.boolean() != disableWcoDataUpdate.value
-                || Defaults.DISABLE_WCO_SERIES_LINKS_UPDATE.boolean() != disableWcoSeriesLinksUpdate.value
-    }
-
-    override fun onClose() {
-
-    }
+    override fun onClose() {}
 
 }

@@ -22,7 +22,7 @@ import nobility.downloader.core.BoxHelper.Companion.int
 import nobility.downloader.core.settings.Defaults
 import nobility.downloader.ui.components.defaultButton
 import nobility.downloader.ui.components.dialog.DialogHelper
-import nobility.downloader.ui.components.fullBox
+import nobility.downloader.ui.components.FullBox
 import nobility.downloader.ui.windows.utils.AppWindowScope
 import nobility.downloader.ui.windows.utils.ApplicationState
 import nobility.downloader.utils.Constants.bottomBarHeight
@@ -114,7 +114,7 @@ class ImageUpdaterWindow() {
                     }
                 }
             ) { padding ->
-                fullBox {
+                FullBox {
                     Column(
                         modifier = Modifier.padding(
                             bottom = padding.calculateBottomPadding()
@@ -306,7 +306,6 @@ class ImageUpdaterWindow() {
         updateButtonEnabled.value = true
     }
 
-    @Suppress("UNUSED")
     private fun close() {
         if (downloadScope.isActive) {
             downloadScope.cancel()

@@ -19,6 +19,8 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
@@ -200,6 +202,7 @@ fun defaultSettingsTextField(
     settingsDescription: String = "",
     textStyle: TextStyle = MaterialTheme.typography.labelSmall,
     requestFocus: Boolean = false,
+    passwordMode: Boolean = false,
     contextMenuItems: () -> List<ContextMenuItem> = { listOf() }
 ) {
     val focusRequester = remember { FocusRequester() }
@@ -218,7 +221,7 @@ fun defaultSettingsTextField(
             ContextMenuDataProvider(
                 items = contextMenuItems
             ) {
-                fixedTextField(
+                FixedTextField(
                     value,
                     enabled = stateEnabled,
                     onValueChange = onValueChanged,
@@ -244,7 +247,11 @@ fun defaultSettingsTextField(
                         }
                     },
                     colors = TextFieldDefaults.colors(),
-                    padding = PaddingValues(start = 4.dp, end = 4.dp)
+                    padding = PaddingValues(start = 4.dp, end = 4.dp),
+                    visualTransformation = if (passwordMode)
+                        PasswordVisualTransformation()
+                    else
+                        VisualTransformation.None
                 )
             }
         }
@@ -514,8 +521,9 @@ fun tooltipIconButton(
 
 val verticalScrollbarEndPadding = 10.dp
 
+@Suppress("FunctionName")
 @Composable
-fun fullBox(
+fun FullBox(
     content: @Composable BoxScope.() -> Unit
 ) {
     Box(

@@ -43,7 +43,7 @@ import nobility.downloader.core.scraper.data.RecentResult
 import nobility.downloader.core.scraper.data.ToDownload
 import nobility.downloader.ui.components.defaultDropdownItem
 import nobility.downloader.ui.components.dialog.DialogHelper
-import nobility.downloader.ui.components.fullBox
+import nobility.downloader.ui.components.FullBox
 import nobility.downloader.ui.components.verticalScrollbar
 import nobility.downloader.ui.components.verticalScrollbarEndPadding
 import nobility.downloader.ui.windows.utils.AppWindowScope
@@ -100,7 +100,7 @@ class RecentView: ViewPage {
                 ).fillMaxSize()
             ) {
                 header()
-                fullBox {
+                FullBox {
                     LazyColumn(
                         verticalArrangement = Arrangement.spacedBy(4.dp),
                         modifier = Modifier.padding(
@@ -147,6 +147,17 @@ class RecentView: ViewPage {
             ).height(40.dp).fillMaxWidth().padding(end = verticalScrollbarEndPadding),
             horizontalArrangement = Arrangement.spacedBy(4.dp)
         ) {
+            Text(
+                text = "Image",
+                modifier = Modifier
+                    .padding(4.dp)
+                    .align(Alignment.CenterVertically)
+                    .weight(IMAGE_WEIGHT),
+                color = MaterialTheme.colorScheme.onPrimaryContainer,
+                fontSize = MaterialTheme.typography.bodySmall.fontSize,
+                textAlign = TextAlign.Center
+            )
+            divider(true)
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 modifier = Modifier.weight(NAME_WEIGHT)
@@ -189,17 +200,6 @@ class RecentView: ViewPage {
                     }
                 }
             }
-            divider(true)
-            Text(
-                text = "Image",
-                modifier = Modifier
-                    .padding(4.dp)
-                    .align(Alignment.CenterVertically)
-                    .weight(IMAGE_WEIGHT),
-                color = MaterialTheme.colorScheme.onPrimaryContainer,
-                fontSize = MaterialTheme.typography.bodySmall.fontSize,
-                textAlign = TextAlign.Center
-            )
         }
     }
 
@@ -284,16 +284,6 @@ class RecentView: ViewPage {
                 ).height(rowHeight).fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(4.dp)
         ) {
-            Text(
-                text = recentData.name,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                fontSize = MaterialTheme.typography.headlineSmall.fontSize,
-                modifier = Modifier
-                    .padding(4.dp)
-                    .align(Alignment.CenterVertically)
-                    .weight(NAME_WEIGHT)
-            )
-            divider()
             val imagePath = BoxHelper.seriesImagesPath + Tools.titleForImages(recentData.name)
             Image(
                 bitmap = ImageUtils.loadImageFromFileWithBackup(
@@ -302,7 +292,7 @@ class RecentView: ViewPage {
                 ),
                 contentDescription = null,
                 contentScale = ContentScale.FillBounds,
-                modifier = Modifier.size(300.dp, 235.dp)
+                modifier = Modifier.fillMaxSize()
                     .padding(10.dp)
                     .align(Alignment.CenterVertically)
                     .weight(IMAGE_WEIGHT)
@@ -312,6 +302,16 @@ class RecentView: ViewPage {
                             true
                         )
                     }.pointerHoverIcon(PointerIcon.Hand)
+            )
+            divider()
+            Text(
+                text = recentData.name,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                fontSize = MaterialTheme.typography.headlineSmall.fontSize,
+                modifier = Modifier
+                    .padding(4.dp)
+                    .align(Alignment.CenterVertically)
+                    .weight(NAME_WEIGHT)
             )
         }
     }
@@ -349,7 +349,7 @@ class RecentView: ViewPage {
     companion object {
         private val spaceBetweenNameAndIcon = 1.dp
         private val rowHeight = 130.dp
-        private const val NAME_WEIGHT = 5f
-        private const val IMAGE_WEIGHT = 1f
+        private const val NAME_WEIGHT = 7.1f
+        private const val IMAGE_WEIGHT = 1.9f
     }
 }

@@ -13,7 +13,6 @@ import java.awt.datatransfer.DataFlavor
 import java.awt.datatransfer.StringSelection
 import java.io.*
 import java.net.URI
-import java.nio.file.Files
 import java.text.CharacterIterator
 import java.text.DecimalFormat
 import java.text.SimpleDateFormat
@@ -27,24 +26,7 @@ object Tools {
 
     private const val DATE_FORMAT = "MM/dd/yyyy hh:mm:ssa"
 
-    data class FileMetaData(
-        val name: String,
-        val season: String,
-        val episodeNumber: Int
-    )
-
-    //i tried, couldn't figure it out :(
-    @Suppress("UNUSED")
-    fun addMetaDataToFile(
-        file: File,
-        metaData: FileMetaData
-    ) {
-        Files.setAttribute(
-            file.toPath(),
-            "user:title",
-            metaData.name
-        )
-    }
+    val percentFormat: DecimalFormat get() = DecimalFormat("#.##%")
 
     /**
      * Access clipboard outside a composable.
@@ -196,8 +178,6 @@ object Tools {
         ).trim() + ".jpg"
     }
 
-    val percentFormat = DecimalFormat("#.##%")
-
     fun bytesToMB(bytes: Long): Double {
         val kb = (bytes / 1024L).toInt()
         return (kb / 1024L).toDouble()
@@ -270,7 +250,6 @@ object Tools {
 
     fun secondsToRemainingTime(totalSeconds: Int): String {
         if (totalSeconds <= 0) {
-            //println("Got $totalSeconds seconds. returning empty")
             return "0:00"
         }
         val hours = totalSeconds / 3600

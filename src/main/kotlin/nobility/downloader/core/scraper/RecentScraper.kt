@@ -5,7 +5,7 @@ import kotlinx.coroutines.withContext
 import nobility.downloader.core.BoxHelper
 import nobility.downloader.core.BoxHelper.Companion.int
 import nobility.downloader.core.Core
-import nobility.downloader.core.driver.DriverBase
+import nobility.downloader.core.driver.BasicDriverBase
 import nobility.downloader.core.scraper.data.RecentResult
 import nobility.downloader.core.settings.Defaults
 import nobility.downloader.utils.Resource
@@ -17,11 +17,9 @@ import java.io.File
 
 object RecentScraper {
 
-    private class Scraper: DriverBase()
-
     suspend fun run(): Resource<RecentResult> = withContext(Dispatchers.IO) {
         val data = mutableListOf<RecentResult.Data>()
-        val scraper = Scraper()
+        val scraper = BasicDriverBase()
         try {
             scraper.driver.get(Core.wcoUrl)
             val doc = Jsoup.parse(scraper.driver.pageSource)

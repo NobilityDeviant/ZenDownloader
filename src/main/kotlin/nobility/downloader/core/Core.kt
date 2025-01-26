@@ -6,6 +6,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.flow.MutableStateFlow
 import nobility.downloader.Page
 import nobility.downloader.core.BoxHelper.Companion.boolean
 import nobility.downloader.core.BoxHelper.Companion.string
@@ -53,6 +54,8 @@ class Core {
         var startButtonEnabled by mutableStateOf(true)
         var stopButtonEnabled by mutableStateOf(false)
         var currentUrlFocused = false
+        var settingsFieldFocused = false
+        val genreSearchText = MutableStateFlow("")
         var darkMode = mutableStateOf(false)
         val randomSeries = mutableStateListOf<Series>()
         val randomSeries2 = mutableStateListOf<Series>()
@@ -90,28 +93,7 @@ class Core {
             currentUrl = Defaults.LAST_DOWNLOAD.string()
             currentUrlHint = exampleSeries
             darkMode.value = Defaults.DARK_MODE.boolean()
-            if (Defaults.ENABLE_RANDOM_SERIES.boolean()) {
-                try {
-                    var tries = 0
-                    val series = BoxHelper.allSeriesNoMovies
-                    if (series.size >= 30) {
-                        val randoms = mutableListOf<Series>()
-                        while (randoms.size < 31) {
-                            val random = series.random()
-                            if (!randoms.contains(random) && random.imagePath.fileExists()) {
-                                randoms.add(random)
-                            }
-                            if (tries >= 150) {
-                                break
-                            }
-                            tries++
-                        }
-                        randomSeries.addAll(randoms.subList(0, 15))
-                        randomSeries2.addAll(randoms.subList(15, 30))
-                    }
-                } catch (_: Exception) {
-                }
-            }
+            reloadRandomSeries()
             initialized = true
             openUpdate(true)
         }

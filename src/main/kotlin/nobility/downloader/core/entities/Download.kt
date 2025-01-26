@@ -70,14 +70,6 @@ data class Download(
             manualProgress = download.manualProgress
             changed = true
         }
-        /*if (videoDownloadSeconds.value != download.videoDownloadSeconds.value) {
-            videoDownloadSeconds.value = download.videoDownloadSeconds.value
-            changed = true
-        }
-        if (audioDownloadSeconds.value != download.audioDownloadSeconds.value) {
-            audioDownloadSeconds = download.audioDownloadSeconds
-            changed = true
-        }*/
         if (videoProgress.value != download.videoProgress.value) {
             videoProgress.value = download.videoProgress.value
             changed = true

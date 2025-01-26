@@ -1,7 +1,10 @@
+@file:Suppress("FunctionName")
+
 package nobility.downloader.ui.components
 
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.TooltipArea
+import androidx.compose.foundation.TooltipPlacement
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.padding
@@ -19,13 +22,14 @@ import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import nobility.downloader.core.BoxHelper.Companion.boolean
 import nobility.downloader.core.settings.Defaults
 
 @Composable
-fun basicTextFieldWithCursorAtEnd(
+fun BasicTextFieldWithCursorAtEnd(
     value: String,
     onValueChange: (String) -> Unit,
     modifier: Modifier = Modifier,
@@ -105,7 +109,7 @@ fun basicTextFieldWithCursorAtEnd(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun fixedTextField(
+fun FixedTextField(
     value: String,
     onValueChange: (String) -> Unit,
     modifier: Modifier = Modifier,
@@ -139,7 +143,7 @@ fun fixedTextField(
         backgroundColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.4f)
     )
     CompositionLocalProvider(LocalTextSelectionColors provides customTextSelectionColors) {
-        basicTextFieldWithCursorAtEnd(
+        BasicTextFieldWithCursorAtEnd(
             value = value,
             modifier = modifier,
             onValueChange = onValueChange,
@@ -203,7 +207,10 @@ fun tooltip(
                 }
             },
             modifier = modifier,
-            content = content
+            content = content,
+            tooltipPlacement = TooltipPlacement.CursorPoint(
+                offset = DpOffset(16.dp, 16.dp)
+            )
         )
     } else {
         content()

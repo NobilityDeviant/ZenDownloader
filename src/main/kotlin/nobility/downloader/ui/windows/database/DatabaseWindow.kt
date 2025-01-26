@@ -84,9 +84,8 @@ class DatabaseWindow {
         DatabaseSort.sortForId(Defaults.DB_LAST_SORT_USED.int())
     )
     private val databaseSort = mDatabaseSort.asStateFlow()
-
-    private val mSearchText = MutableStateFlow("")
-    private val searchText = mSearchText.asStateFlow()
+    
+    private val searchText = Core.genreSearchText.asStateFlow()
 
     private val series = combine(
         databaseType,
@@ -108,7 +107,10 @@ class DatabaseWindow {
                             }
                         }
                     }
-                    it.name.contains(search, true) || (byDesc && it.description.contains(search, true)) || foundGenre
+                    it.name.contains(search, true)
+                            || it.slug == search.linkToSlug()
+                            || (byDesc && it.description.contains(search, true))
+                            || foundGenre
                 }
             }
         }.stateIn(
@@ -143,7 +145,7 @@ class DatabaseWindow {
     fun open(
         initialSearch: String = ""
     ) {
-        mSearchText.value = initialSearch
+        Core.genreSearchText.value = initialSearch
         ApplicationState.newWindow(
             "Database"
         ) {
@@ -172,7 +174,7 @@ class DatabaseWindow {
                             defaultSettingsTextField(
                                 search,
                                 onValueChanged = {
-                                    mSearchText.value = it
+                                    Core.genreSearchText.value = it
                                 },
                                 hint = randomSearchHint,
                                 textStyle = MaterialTheme.typography.labelLarge,
@@ -267,7 +269,7 @@ class DatabaseWindow {
 
 
                     header()
-                    fullBox {
+                    FullBox {
                         LazyColumn(
                             verticalArrangement = Arrangement.spacedBy(1.dp),
                             modifier = Modifier.padding(
@@ -694,7 +696,7 @@ class DatabaseWindow {
                                         options = listOf(
                                             Option("Cancel"),
                                             Option("Search For Genre") {
-                                                mSearchText.value = genre.name
+                                                Core.genreSearchText.value = genre.name
                                             },
                                             Option("Open Genre Link") {
                                                 if (genre.slug.isNotEmpty()) {
@@ -770,7 +772,7 @@ class DatabaseWindow {
             size = DpSize(300.dp, 300.dp),
             alwaysOnTop = true
         ) {
-            fullBox {
+            FullBox {
                 val scope = rememberCoroutineScope()
                 val scrollState = rememberLazyListState()
                 Column(
@@ -810,14 +812,14 @@ class DatabaseWindow {
                                 modifier = Modifier.fillMaxWidth().height(35.dp)
                                     .onClick(
                                         matcher = PointerMatcher.mouse(PointerButton.Secondary)
-                                    ) { mSearchText.value = genre.name }
+                                    ) { Core.genreSearchText.value = genre.name }
                                     .clickable(
                                         interactionSource = remember { MutableInteractionSource() },
                                         indication = rememberRipple(
                                             color = MaterialTheme.colorScheme
                                                 .secondaryContainer.hover()
                                         )
-                                    ) { mSearchText.value = genre.name }
+                                    ) { Core.genreSearchText.value = genre.name }
                                     .background(
                                         color = MaterialTheme.colorScheme.secondaryContainer,
                                         shape = RoundedCornerShape(5.dp)

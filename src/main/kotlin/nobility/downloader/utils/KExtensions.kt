@@ -1,8 +1,6 @@
 package nobility.downloader.utils
 
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.intl.Locale
-import androidx.compose.ui.text.toLowerCase
 import com.materialkolor.ktx.toColor
 import com.materialkolor.ktx.toHct
 import io.github.bonigarcia.wdm.WebDriverManager
@@ -39,8 +37,14 @@ fun <T> List<T>.containsOne(other: List<T>): Boolean {
 
 fun String.capitalizeFirst(): String {
     return if (length > 1) {
-        first().uppercaseChar() + substring(1).toLowerCase(Locale.current)
-    } else this
+        first().uppercaseChar() + substring(1).lowercase()
+    } else this.uppercase()
+}
+
+fun String.normalizeEnumName(): String {
+    return this.replace("_", " ").split(" ").joinToString(" ") {
+        it.capitalizeFirst()
+    }
 }
 
 fun String.ordinalIndexOf(searchString: String, ordinal: Int): Int {

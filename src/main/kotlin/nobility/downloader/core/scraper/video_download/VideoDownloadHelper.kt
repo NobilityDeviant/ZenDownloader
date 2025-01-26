@@ -152,7 +152,7 @@ class VideoDownloadHelper(
         val secondFrameId = "cizgi-js-1"
         var m3u8Mode = false
         val fullLink = slug.slugToLink()
-        val qualities = mutableListOf<QualityAndDownload>()
+        val qualityAndDownloads = mutableListOf<QualityAndDownload>()
 
         data.logInfo("Scraping quality links from $fullLink")
         data.logInfo("Using UserAgent: ${data.userAgent}")
@@ -266,7 +266,7 @@ class VideoDownloadHelper(
                                                     domain + "/" + last.substringAfter("\"").substringBeforeLast("\"")
                                                 //FrogLog.logInfo("Found separate english audio for m3u8.")
                                                 separateAudio = true
-                                                qualities.add(
+                                                qualityAndDownloads.add(
                                                     QualityAndDownload(
                                                         quality,
                                                         domain + "/" + hslLines[index + 1],
@@ -278,7 +278,7 @@ class VideoDownloadHelper(
                                         }
                                     }
                                     if (!separateAudio) {
-                                        qualities.add(
+                                        qualityAndDownloads.add(
                                             QualityAndDownload(
                                                 quality,
                                                 domain + "/" + hslLines[index + 1]
@@ -290,14 +290,14 @@ class VideoDownloadHelper(
                         }
                     }
                 }
-                if (qualities.isEmpty()) {
+                if (qualityAndDownloads.isEmpty()) {
                     return@withContext Resource.ErrorCode(
                         "Failed to find m3u8 qualities.",
                         ErrorCode.M3U8_LINK_FAILED.code
                     )
                 } else {
                     data.logInfo("Successfully found m3u8 qualities.")
-                    return@withContext Resource.Success(qualities)
+                    return@withContext Resource.Success(qualityAndDownloads)
                 }
             }
             val src = sbFrame.toString()
@@ -331,11 +331,11 @@ class VideoDownloadHelper(
                         }
                         val videoLink = data.driver.currentUrl
                         if (videoLink.isNotEmpty()) {
-                            qualities.add(
+                            qualityAndDownloads.add(
                                 QualityAndDownload(quality, videoLink)
                             )
                             data.logInfo(
-                                "Found $quality link for $slug"
+                                "Found $quality quality."
                             )
                             if (quality == priorityQuality) {
                                 break
@@ -381,7 +381,7 @@ class VideoDownloadHelper(
                             }
                             val videoLink = data.driver.currentUrl
                             if (videoLink.isNotEmpty()) {
-                                qualities.add(
+                                qualityAndDownloads.add(
                                     QualityAndDownload(quality, videoLink, true)
                                 )
                                 data.logInfo(
@@ -403,13 +403,13 @@ class VideoDownloadHelper(
                     }
                 }
             }
-            if (qualities.isEmpty()) {
+            if (qualityAndDownloads.isEmpty()) {
                 return@withContext Resource.Error(
                     "Failed to find qualities."
                 )
             } else {
                 data.logInfo("Successfully found qualities.")
-                return@withContext Resource.Success(qualities)
+                return@withContext Resource.Success(qualityAndDownloads)
             }
         } catch (e: Exception) {
             return@withContext Resource.Error(e)
@@ -675,7 +675,7 @@ class VideoDownloadHelper(
             Defaults.QUALITY.string()
         )
         val episodeName = data.currentEpisode.name.fixForFiles() + "-01"
-        val saveFile = data.generateSaveFile(qualityOption, "-01")
+        val saveFile = data.generateEpisodeSaveFile(qualityOption, "-01")
         var currentDownload = downloadForNameAndQuality(
             episodeName,
             qualityOption

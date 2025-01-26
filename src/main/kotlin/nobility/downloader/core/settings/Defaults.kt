@@ -1,5 +1,10 @@
 package nobility.downloader.core.settings
 
+import nobility.downloader.core.BoxHelper.Companion.boolean
+import nobility.downloader.core.BoxHelper.Companion.float
+import nobility.downloader.core.BoxHelper.Companion.int
+import nobility.downloader.core.BoxHelper.Companion.long
+import nobility.downloader.core.BoxHelper.Companion.string
 import nobility.downloader.ui.windows.database.DatabaseSort
 import nobility.downloader.ui.windows.database.DatabaseType
 import nobility.downloader.utils.Constants
@@ -15,31 +20,9 @@ import java.io.File
 enum class Defaults(
     val key: String,
     val value: Any,
-    val description: String = ""
+    val description: String = "",
+    val alternativeName: String = ""
 ) {
-    BYPASS_DISK_SPACE(
-        "bypass_check",
-        false,
-        """
-            Bypassing the storage space checks can be needed sometimes.
-            Usually everything goes well, but if your storage has certain permission issues or anything else goes wrong,
-            the checks can fail even if you have enough space.
-            Storage must have at least 150MB to start downloading with this option off.
-            Default: Off
-        """.trimIndent()
-    ),
-    PROXY(
-        "proxy",
-        "",
-        """
-            The HTTPS IPV4 proxy used for downloads.
-            A proxy would be used in case you can't access the website.
-            Proxies must be put as the IP:Port format. Username & Password Authentication isn't fully supported in Kotlin.
-            Example: 122.188.1.22:6266
-            Note: Proxies aren't fully supported. It's recommended to use a VPN instead.
-            Default: Empty
-        """.trimIndent()
-    ),
     TIMEOUT(
         "timeout",
         30,
@@ -49,7 +32,8 @@ enum class Defaults(
             Lower = Faster Internet | Higher = Slower Internet
             Minimum: ${Constants.minTimeout} | Maximum: ${Constants.maxTimeout}
             Default: 30
-        """.trimIndent()
+        """.trimIndent(),
+        "Network Timeout"
     ),
     SAVE_FOLDER(
         "save_folder",
@@ -57,11 +41,12 @@ enum class Defaults(
         """
             The folder where all your downloads get saved.
             Default: ${System.getProperty("user.home")}
-        """.trimIndent()
+        """.trimIndent(),
+        "Download Folder"
     ),
     DOWNLOAD_THREADS(
         "download_threads",
-        1,
+        2,
         """
             The amount of browser instances used to download files at the same time.
             Each thread is considered a download process.
@@ -70,7 +55,7 @@ enum class Defaults(
             Cloudflare can also block your IP if you use too many.
             Lower = Slower PC | Higher = Faster PC
             Minimum: ${Constants.minThreads} | Maximum: ${Constants.maxThreads}
-            Default: 1
+            Default: 2
         """.trimIndent()
     ),
     TOAST_ALPHA(
@@ -99,7 +84,8 @@ enum class Defaults(
             Sometimes a quality option is available for certain videos.
             This option will try to get your selected option, but if it doesn't exist, it will default to the one underneath it.
             Default: 576p
-        """.trimIndent()
+        """.trimIndent(),
+        "Download Quality"
     ),
     SHOW_TOOLTIPS(
         "show_tooltips",
@@ -115,7 +101,8 @@ enum class Defaults(
         """
             When popping out the console, it will always stay on top of other windows.
             Default: On
-        """.trimIndent()
+        """.trimIndent(),
+        "Popout Console Window Always On Top"
     ),
     HEADLESS_MODE(
         "headless_mode",
@@ -253,6 +240,35 @@ enum class Defaults(
             Default: Off
         """.trimIndent()
     ),
+    WCO_PREMIUM_USERNAME(
+        "wco_prem_username",
+        "",
+        """
+            This is your username/email for logging into your https://www.wcopremium.tv/ account.
+            A wco subscription allows you to download everything at a higher quality and a different server.
+            Your wco account must have a subscription for this to be useful.
+            You can sign up here: https://www.wcopremium.tv/wp-login.php?action=register
+            Default: Empty
+        """.trimIndent()
+    ),
+    WCO_PREMIUM_PASSWORD(
+        "wco_prem_password",
+        "",
+        """
+            This is your password for logging into your https://www.wcopremium.tv/ account.
+            A wco subscription allows you to download everything at a higher quality and a different server.
+            Your wco account must have a subscription for this to be useful.
+            You can sign up here: https://www.wcopremium.tv/wp-login.php?action=register
+            This option doesn't have encryption and will always save.
+            Please be careful when storing your password.
+            Default: Empty
+            Requires: Wco Premium Username
+        """.trimIndent()
+    ),
+    SHOW_WCO_PREMIUM_PASSWORD(
+        "show_wco_prem_password",
+        false
+    ),
     LAST_DOWNLOAD("last_dl", ""),
     DENIED_UPDATE("denied_update", false),
     UPDATE_VERSION("update_version", "1.0"),
@@ -269,7 +285,8 @@ enum class Defaults(
             Used to toggle the Downloader pages random series rows
             that appear below the url bar.
             Default: On
-        """.trimIndent()
+        """.trimIndent(),
+        "Enable Random Series Rows"
     ),
     WCO_GENRES_LAST_UPDATED("wco_genres_last_updated", 0L),
     DB_LAST_SCROLL_POS("db_last_scroll_pos", 0),
@@ -279,10 +296,57 @@ enum class Defaults(
     DB_SEARCH_DESC("db_search_desc", true);
 
     companion object {
+
+        @Suppress("UNUSED")
+        fun Defaults.savedValue(): Any {
+            return if (value is String) {
+                string()
+            } else if (value is Boolean) {
+                boolean()
+            } else if (value is Int) {
+                int()
+            } else if (value is Long) {
+                long()
+            } else if (value is Float) {
+                float()
+            } else {
+                value
+            }
+        }
+
+        val settings get() = listOf(
+            DOWNLOAD_THREADS,
+            TIMEOUT,
+            SAVE_FOLDER,
+            WCO_DOMAIN,
+            WCO_EXTENSION,
+            CHROME_BROWSER_PATH,
+            CHROME_DRIVER_PATH,
+            QUALITY,
+            SHOW_DEBUG_MESSAGES,
+            SHOW_TOOLTIPS,
+            CONSOLE_ON_TOP,
+            HEADLESS_MODE,
+            SEPARATE_SEASONS,
+            AUTO_SCROLL_CONSOLES,
+            CTRL_FOR_HOTKEYS,
+            ENABLE_RANDOM_SERIES,
+            DISABLE_CARTOON_UPDATE,
+            DISABLE_DUBBED_UPDATE,
+            DISABLE_MOVIES_UPDATE,
+            DISABLE_SUBBED_UPDATE,
+            DISABLE_USER_AGENTS_UPDATE,
+            DISABLE_WCO_DATA_UPDATE,
+            DISABLE_WCO_SERIES_LINKS_UPDATE,
+            DISABLE_WCO_URLS_UPDATE,
+            WCO_PREMIUM_USERNAME,
+            WCO_PREMIUM_PASSWORD,
+            SHOW_WCO_PREMIUM_PASSWORD
+        )
+
         val checkBoxes get() = listOf(
             SEPARATE_SEASONS,
             SHOW_TOOLTIPS,
-            BYPASS_DISK_SPACE,
             CTRL_FOR_HOTKEYS,
             CONSOLE_ON_TOP,
             AUTO_SCROLL_CONSOLES,

@@ -8,7 +8,6 @@ import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.*
 import nobility.downloader.Page
-import nobility.downloader.core.BoxHelper.Companion.boolean
 import nobility.downloader.core.BoxHelper.Companion.int
 import nobility.downloader.core.BoxHelper.Companion.string
 import nobility.downloader.core.BoxHelper.Companion.update
@@ -21,8 +20,6 @@ import nobility.downloader.core.updates.UrlUpdater
 import nobility.downloader.ui.components.dialog.DialogHelper
 import nobility.downloader.ui.components.dialog.DialogHelper.showError
 import nobility.downloader.utils.Constants
-import nobility.downloader.utils.FrogLog
-import nobility.downloader.utils.Tools
 import org.openqa.selenium.WebDriver
 import java.io.File
 import java.net.URI
@@ -169,6 +166,9 @@ class CoreChild {
     }
 
     private suspend fun killAllDrivers() = withContext(Dispatchers.Default) {
+        if (runningDrivers.isEmpty()) {
+            return@withContext
+        }
         val tasks = mutableListOf<Job>()
         val copyRunningDrivers = HashMap(runningDrivers)
         shutdownProgress = Pair(0, copyRunningDrivers.size)
@@ -189,10 +189,6 @@ class CoreChild {
     private fun canStart(): Boolean {
         if (isUpdating) {
             showError("You can't download videos while the app is updating.")
-            return false
-        }
-        if (isRunning) {
-            showError("Failed to start the downloader because it's already running.")
             return false
         }
         val downloadFolder = File(Defaults.SAVE_FOLDER.string())
@@ -220,40 +216,6 @@ class CoreChild {
             showError("Failed to check for write permissions.", e)
             return false
         }
-        if (!Defaults.BYPASS_DISK_SPACE.boolean()) {
-            val root = downloadFolder.toPath().root
-            val usableSpace = root.toFile().usableSpace
-            if (usableSpace != 0L) {
-                if (Tools.bytesToMB(usableSpace) < Constants.minSpaceNeeded) {
-                    showError(
-                        """
-                            The download folder in your settings requires at least ${Constants.minSpaceNeeded}MB of free space.
-                            Most videos average around ${Constants.averageVideoSize}MB so the requirement is just to be safe.
-                            If you are having issues with this, open the settings and enable Bypass Disk Space Check.
-                        """.trimIndent()
-                    )
-                    Core.changePage(Page.SETTINGS)
-                    return false
-                }
-            } else {
-                val freeSpace = root.toFile().freeSpace
-                if (freeSpace != 0L) {
-                    if (Tools.bytesToMB(freeSpace) < Constants.minSpaceNeeded) {
-                        showError(
-                            """
-                                The download folder in your settings requires at least ${Constants.minSpaceNeeded}MB of free space.
-                                Most videos average around ${Constants.averageVideoSize}MB so the requirement is just to be safe.
-                                If you are having issues with this, open the settings and enable Bypass Disk Space Check.
-                            """.trimIndent()
-                        )
-                        Core.changePage(Page.SETTINGS)
-                        return false
-                    }
-                } else {
-                    FrogLog.writeMessage("[WARNING] Failed to check for free space. Make sure you have enough space to download videos. (150MB+)")
-                }
-            }
-        }
         val url = Core.currentUrl
         if (url.isEmpty()) {
             showError(
@@ -275,6 +237,11 @@ class CoreChild {
                 """.trimIndent(),
                 size = DpSize(400.dp, 400.dp)
             )
+            return false
+        }
+        if (isRunning) {
+            //showError("Failed to start the downloader because it's already running.")
+            Core.openWco(url)
             return false
         }
         try {

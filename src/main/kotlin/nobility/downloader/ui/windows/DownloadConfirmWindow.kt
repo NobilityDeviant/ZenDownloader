@@ -163,14 +163,16 @@ class DownloadConfirmWindow(
                                 height = 30.dp,
                                 width = 120.dp
                             ) {
-                                if (it.slug.isNotEmpty()) {
+                                Core.openWco(it.name)
+                                scope.showToast("Searching for ${it.name} in Database.")
+                                /*if (it.slug.isNotEmpty()) {
                                     DialogHelper.showLinkPrompt(
                                         it.slug.slugToLink(),
                                         true,
                                     )
                                 } else {
                                     scope.showToast("${it.name} doesn't have a slug.")
-                                }
+                                }*/
                             }
                         }
                     }
@@ -279,7 +281,7 @@ class DownloadConfirmWindow(
                             }
                         }
                     }
-                    fullBox {
+                    FullBox {
                         val seasonData = filteredEpisodes
                         val isExpandedMap = rememberSavableSnapshotStateMap {
                             List(seasonData.size) { index: Int ->

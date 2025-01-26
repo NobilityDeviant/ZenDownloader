@@ -247,7 +247,10 @@ class BoxHelper {
                         return query.findUniqueOrFirst()
                     }
             } catch (e: Exception) {
-                e.printStackTrace()
+                FrogLog.logError(
+                    "Failed to find download for slug and quality.",
+                    e
+                )
                 return null
             }
         }
@@ -269,7 +272,10 @@ class BoxHelper {
                         return query.findUniqueOrFirst()
                     }
             } catch (e: Exception) {
-                e.printStackTrace()
+                FrogLog.logError(
+                    "Failed to find download for name and quality.",
+                    e
+                )
                 return null
             }
         }
@@ -556,11 +562,7 @@ class BoxHelper {
                 .equal(Genre_.name, name, QueryBuilder.StringOrder.CASE_INSENSITIVE)
                 .build().use {
                     val genre = it.findUniqueOrNull()
-                    return if (genre != null) {
-                        genre
-                    } else {
-                        Genre("Null")
-                    }
+                    return genre ?: Genre("Null")
                 }
         }
     }
