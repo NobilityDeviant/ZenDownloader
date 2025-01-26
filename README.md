@@ -233,7 +233,7 @@ This will select everything that's been highlighted. It will lag, but just wait 
 
 **Timeout Errors**
 
-If you are experiencing any timeout errors inside the `Error Console`, go to the `Settings Page (CTRL + S)` and increase the timeout to something higher.
+If you are experiencing any timeout errors inside the `Error Console`, go to the `Settings Tab` and increase the timeout to something higher.
 The timeout option effects everything related to timeouts and should help if you're having any issues.
 
 ![Timeout](guide/timeout.png?raw=true "Timeout")

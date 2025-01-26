@@ -69,6 +69,19 @@ The data is just the genres for now.
 
 Most series have an image associated with them. In order to have a better experience when using the Database Window, it's advised that you also download the images.
 
+# Series Image Updater
+
+There's now an option to download the series images inside the Settings tab.
+
+![Series Image Updater](images/image_updater.png)
+
+Click the `Update Series Images` button and click the `Update Images` button inside the window.
+
+This will check every single image to see if it exists.
+If it doesn't exist or it's incomplete, it will download each image 1 by 1.
+
+# Manual Download
+
 The `series_images` folder goes inside the database folder as well.
 
 Example of path: `C:\Users\CuratedDev\.zen_database\series_images\`
