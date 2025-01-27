@@ -16,24 +16,34 @@ class UndetectedChromeDriver(
     private val browser: Process
 ) : ChromeDriver(chromeOptions) {
 
-    override fun get(url: String) {
+    fun go(
+        url: String,
+        catchError: Boolean = false
+    ) {
         if (headless) {
             headless()
         }
         cdcProps()
-        try {
+        if (catchError) {
+            try {
+                super.get(url)
+            } catch (e: Exception) {
+                FrogLog.logError("Caught UCD get() Error: $url", e)
+            }
+        } else {
             super.get(url)
-        } catch (e: Exception) {
-            FrogLog.logError("Failed to load url: $url", e)
         }
     }
 
-    override fun close() {
+    fun blank() {
+        go("https://blank.org")
+    }
+
+    fun kill() {
         try {
-            super.close()
-        } catch (e: Exception) {
-            FrogLog.logError("Failed to close driver.", e)
-        }
+            close()
+        } catch (_: Exception) {}
+        quit()
     }
 
     override fun quit() {

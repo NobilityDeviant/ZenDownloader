@@ -290,7 +290,7 @@ enum class Defaults(
     ),
     WCO_GENRES_LAST_UPDATED("wco_genres_last_updated", 0L),
     DB_LAST_SCROLL_POS("db_last_scroll_pos", 0),
-    DB_LAST_TYPE_USED("db_last_type", DatabaseType.ANIME.id),
+    DB_LAST_TYPE_USED("db_last_type", DatabaseType.ALL.id),
     DB_LAST_SORT_USED("db_last_sort", DatabaseSort.NAME.id),
     DB_SEARCH_GENRE("db_search_genre", true),
     DB_SEARCH_DESC("db_search_desc", true);

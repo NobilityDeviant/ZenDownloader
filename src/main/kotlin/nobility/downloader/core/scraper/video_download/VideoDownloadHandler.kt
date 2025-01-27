@@ -115,8 +115,7 @@ class VideoDownloadHandler(
                     data.currentDownload.fileSize = originalFileSize
                     Core.child.addDownload(data.currentDownload)
                     Core.child.updateDownloadInDatabase(data.currentDownload, true)
-                    data.driver.navigate().to("https://blank.org")
-                    //data.driver.navigate().back()
+                    data.undriver.blank()
                     downloadVideo(
                         downloadLink,
                         saveFile,

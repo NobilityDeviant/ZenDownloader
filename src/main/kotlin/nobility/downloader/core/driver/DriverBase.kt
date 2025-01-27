@@ -6,6 +6,7 @@ import nobility.downloader.core.BoxHelper.Companion.int
 import nobility.downloader.core.BoxHelper.Companion.string
 import nobility.downloader.core.Core
 import nobility.downloader.core.driver.undetected_chrome.ChromeDriverBuilder
+import nobility.downloader.core.driver.undetected_chrome.UndetectedChromeDriver
 import nobility.downloader.core.settings.Defaults
 import nobility.downloader.utils.FrogLog
 import nobility.downloader.utils.UserAgents
@@ -24,6 +25,7 @@ abstract class DriverBase(
     private val chromeOptions = ChromeOptions()
     private var nDriver: WebDriver? = null
     val driver get() = nDriver!!
+    val undriver get() = driver as UndetectedChromeDriver
     private var isSetup = false
     var userAgent = ""
     private val headless = headless ?: Defaults.HEADLESS_MODE.boolean()
@@ -48,7 +50,6 @@ abstract class DriverBase(
         if (headless) {
             chromeOptions.addArguments("--headless=new")
             chromeOptions.addArguments("--window-position=-2400,-2400")
-            //chromeOptions.addArguments("--headless=old")
         }
         chromeOptions.addArguments("--mute-audio")
         chromeOptions.addArguments("--user-agent=$userAgent")
@@ -114,8 +115,7 @@ abstract class DriverBase(
 
     open fun killDriver() {
         if (nDriver != null) {
-            driver.close()
-            driver.quit()
+            undriver.kill()
             Core.child.runningDrivers.remove(id)
         }
     }

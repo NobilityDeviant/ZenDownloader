@@ -164,15 +164,7 @@ class DownloadConfirmWindow(
                                 width = 120.dp
                             ) {
                                 Core.openWco(it.name)
-                                scope.showToast("Searching for ${it.name} in Database.")
-                                /*if (it.slug.isNotEmpty()) {
-                                    DialogHelper.showLinkPrompt(
-                                        it.slug.slugToLink(),
-                                        true,
-                                    )
-                                } else {
-                                    scope.showToast("${it.name} doesn't have a slug.")
-                                }*/
+                                scope.showToast("Searching for ${it.name} in Database")
                             }
                         }
                     }

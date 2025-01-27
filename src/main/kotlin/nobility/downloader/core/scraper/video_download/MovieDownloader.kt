@@ -268,7 +268,7 @@ object MovieDownloader {
             Core.child.addDownload(data.currentDownload)
             Core.child.updateDownloadInDatabase(data.currentDownload, true)
             //data.driver.navigate().back()
-            data.driver.navigate().to("https://blank.org")
+            data.undriver.blank()
             downloadVideo(downloadLink, saveFile, data)
             data.currentDownload.downloading = false
             //second time to ensure ui update

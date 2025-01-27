@@ -39,8 +39,6 @@ class Console(
     private var consoleText by mutableStateOf("")
     private val sb = StringBuilder()
     var unreadErrors by mutableStateOf(false)
-
-    val text get() = consoleText
     var size = 0
         private set
 
@@ -67,16 +65,19 @@ class Console(
         )
         if (b == '\r'.code) return
         if (b == '\n'.code) {
-            val text = """
-                $sb
-              
-                """.trimIndent()
-            consoleText = consoleText.plus(text)
-            size++
-            sb.setLength(0)
-            if (!errorMode) {
-                sb.append(time()).append(" ")
+            var text = sb.toString()
+            var filtered = false
+            for (s in filters) {
+                if (text.contains(s)) {
+                    filtered = true
+                    break
+                }
             }
+            if (!filtered) {
+                consoleText = consoleText.plus(text.plus("\n"))
+                size++
+            }
+            sb.clear()
             return
         }
         if (!errorMode) {
@@ -86,7 +87,7 @@ class Console(
         }
         sb.append(b.toChar())
         if (errorMode) {
-            if (Core.currentPage != Page.ERROR_CONSOLE) {
+            if (Core.currentPage != Page.ERROR_CONSOLE && !consolePoppedOut) {
                 unreadErrors = true
             }
         }
@@ -163,7 +164,7 @@ class Console(
                                 EvaIcons.Fill.Copy,
                                 iconColor = MaterialTheme.colorScheme.primary
                             ) {
-                                Tools.clipboardString = text
+                                Tools.clipboardString = consoleText
                                 windowScope.showToast("Copied Console Text")
                             }
                         }
@@ -256,5 +257,11 @@ class Console(
                 )
             }
         }
+    }
+
+    companion object {
+        private val filters = listOf<String>(
+            "Hint: use closeThreadResources() to avoid finalizing recycled transactions (initial commit count: 0)."
+        )
     }
 }

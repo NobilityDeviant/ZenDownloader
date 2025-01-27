@@ -2,7 +2,6 @@ package nobility.downloader.core.scraper.video_download
 
 import kotlinx.coroutines.*
 import nobility.downloader.core.BoxHelper.Companion.downloadForNameAndQuality
-import nobility.downloader.core.BoxHelper.Companion.int
 import nobility.downloader.core.BoxHelper.Companion.string
 import nobility.downloader.core.Core
 import nobility.downloader.core.entities.Download
@@ -226,9 +225,6 @@ class VideoDownloadHelper(
                 var domain = ""
                 val frameString = sbFrame.toString()
                 val frameDoc = Jsoup.parse(frameString)
-                //if (frameString.contains("<!-- <source ")) {
-                    //this while isn't going to load
-                //}
                 val source = frameDoc.getElementsByTag("source").firstOrNull()
                 if (source != null) {
                     hslLink = source.attr("src")
@@ -309,49 +305,50 @@ class VideoDownloadHelper(
                 linkIndex1 + linkKey1.length, linkIndex2
             )
             //idk how to execute the js, so we still have to use selenium.
-            data.driver.navigate().to(fullLink)
+            data.undriver.go(fullLink)
             val has720 = src.contains("obj720")
             val has1080 = src.contains("obj1080")
             //timeout just in case it hangs for too long.
-            withTimeout((Defaults.TIMEOUT.int() * 1000).toLong() * 3) {
-                for (quality in Quality.qualityList(has720, has1080)) {
-                    try {
-                        data.base.executeJs(
-                            JavascriptHelper.changeUrlToVideoFunction(
-                                functionLink,
-                                quality
-                            )
+            //withTimeout((Defaults.TIMEOUT.int() * 1000).toLong() * 3) {
+            for (quality in Quality.qualityList(has720, has1080)) {
+                try {
+                    data.base.executeJs(
+                        JavascriptHelper.changeUrlToVideoFunction(
+                            functionLink,
+                            quality
                         )
-                        delay(data.pageChangeWaitTime)
-                        if (src.contains("404 Not Found") || src.contains("404 - Page not Found")) {
-                            data.logInfo(
-                                "(404) Failed to find $quality quality link for $slug"
-                            )
-                            continue
-                        }
-                        val videoLink = data.driver.currentUrl
-                        if (videoLink.isNotEmpty()) {
-                            qualityAndDownloads.add(
-                                QualityAndDownload(quality, videoLink)
-                            )
-                            data.logInfo(
-                                "Found $quality quality."
-                            )
-                            if (quality == priorityQuality) {
-                                break
-                            }
-                        }
-                        data.driver.navigate().back()
-                        delay(2000)
-                    } catch (e: Exception) {
-                        data.logError(
-                            "An exception was thrown when looking for quality links.",
-                            e
+                    )
+                    delay(data.pageChangeWaitTime)
+                    if (src.contains("404 Not Found") || src.contains("404 - Page not Found")) {
+                        data.logInfo(
+                            "(404) Failed to find $quality quality link for $slug"
                         )
                         continue
                     }
+                    val videoLink = data.driver.currentUrl
+                    if (videoLink.isNotEmpty()) {
+                        qualityAndDownloads.add(
+                            QualityAndDownload(quality, videoLink)
+                        )
+                        data.logInfo(
+                            "Found $quality quality."
+                        )
+                        if (quality == priorityQuality) {
+                            break
+                        }
+                    }
+                    data.driver.navigate().back()
+                    //data.undriver.blank()
+                    //delay(2000)
+                } catch (e: Exception) {
+                    data.logError(
+                        "An exception was thrown when looking for quality links.",
+                        e
+                    )
+                    continue
                 }
             }
+            //}
             if (sbFrame2.isNotEmpty()) {
                 val src2 = sbFrame2.toString()
                 val secondLinkIndex1 = src2.indexOf(linkKey1)
@@ -363,46 +360,46 @@ class VideoDownloadHelper(
                 val secondHas720 = src2.contains("obj720")
                 val secondHas1080 = src2.contains("obj1080")
                 //timeout just in case it hangs for too long.
-                withTimeout((Defaults.TIMEOUT.int() * 1000).toLong() * 3) {
-                    for (quality in Quality.qualityList(secondHas720, secondHas1080)) {
-                        try {
-                            data.base.executeJs(
-                                JavascriptHelper.changeUrlToVideoFunction(
-                                    secondFunctionLink,
-                                    quality
-                                )
+                //withTimeout((Defaults.TIMEOUT.int() * 1000).toLong() * 3) {
+                for (quality in Quality.qualityList(secondHas720, secondHas1080)) {
+                    try {
+                        data.base.executeJs(
+                            JavascriptHelper.changeUrlToVideoFunction(
+                                secondFunctionLink,
+                                quality
                             )
-                            delay(data.pageChangeWaitTime)
-                            if (src.contains("404 Not Found") || src.contains("404 - Page not Found")) {
-                                data.logInfo(
-                                    "(2nd) (404) Failed to find $quality quality link for $slug"
-                                )
-                                continue
-                            }
-                            val videoLink = data.driver.currentUrl
-                            if (videoLink.isNotEmpty()) {
-                                qualityAndDownloads.add(
-                                    QualityAndDownload(quality, videoLink, true)
-                                )
-                                data.logInfo(
-                                    "(2nd) Found $quality link for $slug"
-                                )
-                                if (quality == priorityQuality) {
-                                    break
-                                }
-                            }
-                            data.driver.navigate().back()
-                            delay(2000)
-                        } catch (e: Exception) {
-                            data.logError(
-                                "(2nd) An exception was thrown when looking for quality links.",
-                                e
+                        )
+                        delay(data.pageChangeWaitTime)
+                        if (src.contains("404 Not Found") || src.contains("404 - Page not Found")) {
+                            data.logInfo(
+                                "(2nd) (404) Failed to find $quality quality link for $slug"
                             )
                             continue
                         }
+                        val videoLink = data.driver.currentUrl
+                        if (videoLink.isNotEmpty()) {
+                            qualityAndDownloads.add(
+                                QualityAndDownload(quality, videoLink, true)
+                            )
+                            data.logInfo(
+                                "(2nd) Found $quality link for $slug"
+                            )
+                            if (quality == priorityQuality) {
+                                break
+                            }
+                        }
+                        data.driver.navigate().back()
+                        //delay(2000)
+                    } catch (e: Exception) {
+                        data.logError(
+                            "(2nd) An exception was thrown when looking for quality links.",
+                            e
+                        )
+                        continue
                     }
                 }
             }
+            //}
             if (qualityAndDownloads.isEmpty()) {
                 return@withContext Resource.Error(
                     "Failed to find qualities."
@@ -532,11 +529,13 @@ class VideoDownloadHelper(
                 }
             }
         )
-        downloads.add(m3u8Download(
-            parsedQuality.downloadLink,
-            saveFile,
-            videoListener
-        ))
+        downloads.add(
+            m3u8Download(
+                parsedQuality.downloadLink,
+                saveFile,
+                videoListener
+            )
+        )
         val audioSaveFile = File(
             saveFile.parent,
             saveFile.nameWithoutExtension + ".m4a"

@@ -1,7 +1,5 @@
 package nobility.downloader.core.scraper.video_download
 
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import nobility.downloader.core.BoxHelper.Companion.boolean
 import nobility.downloader.core.BoxHelper.Companion.downloadForSlugAndQuality
 import nobility.downloader.core.BoxHelper.Companion.seriesForSlug
@@ -29,8 +27,9 @@ class VideoDownloadData(
 
     val base = BasicDriverBase()
     val driver get() = base.driver
+    val undriver get() = base.undriver
     val userAgent get() = base.userAgent
-    val taskScope = CoroutineScope(Dispatchers.Default)
+    //val taskScope = CoroutineScope(Dispatchers.Default)
     val pageChangeWaitTime = 5_000L //in milliseconds
     var mCurrentEpisode: Episode? = null
     var mCurrentDownload: Download? = null

@@ -92,15 +92,20 @@ class BoxHelper {
         val seriesPath get() = databasePath + File.separator + "series" + File.separator
         val seriesImagesPath: String get() = databasePath + "series_images${File.separator}"
 
-        val allSeries get() = shared.dubbedSeriesBox.all
-            .plus(shared.subbedSeriesBox.all)
-            .plus(shared.cartoonSeriesBox.all)
-            .plus(shared.moviesSeriesBox.all)
-            .plus(shared.miscSeriesBox.all)
+        val dubbed get() = shared.dubbedSeriesBox.all.filter { it.name.isNotEmpty() }
+        val subbed get() = shared.subbedSeriesBox.all.filter { it.name.isNotEmpty() }
+        val cartoons get() = shared.cartoonSeriesBox.all.filter { it.name.isNotEmpty() }
+        val movies: List<Series> get() = shared.moviesSeriesBox.all
+        val misc: List<Series> get() = shared.miscSeriesBox.all
+        val allSeriesNoMovies get() = dubbed.plus(subbed)
+            .plus(cartoons)
 
-        val allSeriesNoMovies get() = shared.dubbedSeriesBox.all
-            .plus(shared.subbedSeriesBox.all)
-            .plus(shared.cartoonSeriesBox.all)
+        val allSeries get() = dubbed
+            .plus(subbed)
+            .plus(cartoons)
+            .plus(movies)
+            .plus(misc)
+            .filter { it.name.isNotEmpty() }
 
         fun init() {
             loadSettings()
@@ -120,10 +125,6 @@ class BoxHelper {
 
         fun Defaults.int(): Int {
             return integerSetting(this)
-        }
-
-        fun Defaults.intString(): String {
-            return int().toString()
         }
 
         fun Defaults.long(): Long {

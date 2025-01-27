@@ -5,6 +5,7 @@ import androidx.compose.foundation.gestures.*
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -122,12 +123,12 @@ class DatabaseWindow {
     private val databaseByType: List<Series>
         get() {
             return when (databaseType.value) {
-                DatabaseType.ANIME -> BoxHelper.shared.dubbedSeriesBox.all
-                    .plus(BoxHelper.shared.subbedSeriesBox.all)
-
-                DatabaseType.CARTOON -> BoxHelper.shared.cartoonSeriesBox.all
-                DatabaseType.MOVIE -> BoxHelper.shared.moviesSeriesBox.all
-                DatabaseType.MISC -> BoxHelper.shared.miscSeriesBox.all
+                DatabaseType.ALL -> BoxHelper.allSeries
+                DatabaseType.DUBBED -> BoxHelper.dubbed
+                DatabaseType.SUBBED -> BoxHelper.subbed
+                DatabaseType.CARTOON -> BoxHelper.cartoons
+                DatabaseType.MOVIE -> BoxHelper.movies
+                DatabaseType.MISC -> BoxHelper.misc
             }
         }
 
@@ -230,17 +231,20 @@ class DatabaseWindow {
                             fontSize = 14.sp,
                             modifier = Modifier.padding(4.dp)
                         )
-                        Row(
-                            horizontalArrangement = Arrangement.spacedBy(7.dp),
-                            verticalAlignment = Alignment.CenterVertically
+                        val type by databaseType.collectAsState()
+                        LazyRow(
+                            horizontalArrangement = Arrangement.spacedBy(2.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.padding(bottom = 10.dp)
                         ) {
-                            val type by databaseType.collectAsState()
-                            DatabaseType.entries.forEach {
+                            items(
+                                DatabaseType.entries,
+                                key = { it.title }
+                            ) {
                                 defaultButton(
-                                    it.name.capitalizeFirst(),
-                                    height = 40.dp,
-                                    width = 150.dp,
-                                    //padding = 10.dp,
+                                    it.title,
+                                    height = 35.dp,
+                                    width = 110.dp,
                                     enabled = !loading,
                                     colors = ButtonDefaults.buttonColors(
                                         containerColor = if (type == it)
@@ -256,6 +260,32 @@ class DatabaseWindow {
                                 }
                             }
                         }
+                        /*Row(
+                            horizontalArrangement = Arrangement.spacedBy(7.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            val type by databaseType.collectAsState()
+                            DatabaseType.entries.forEach {
+                                defaultButton(
+                                    it.title,
+                                    height = 35.dp,
+                                    width = 100.dp,
+                                    //padding = 10.dp,
+                                    enabled = !loading,
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = if (type == it)
+                                            MaterialTheme.colorScheme.tertiary
+                                        else MaterialTheme.colorScheme.primary,
+                                        contentColor = if (type == it)
+                                            MaterialTheme.colorScheme.onTertiary
+                                        else MaterialTheme.colorScheme.onPrimary
+                                    )
+                                ) {
+                                    mDatabaseType.value = it
+                                    Defaults.DB_LAST_TYPE_USED.update(mDatabaseType.value.id)
+                                }
+                            }
+                        }*/
                     }
                 }
             ) { padding ->
@@ -265,9 +295,6 @@ class DatabaseWindow {
                     ).fillMaxSize()
                 ) {
                     val series by series.collectAsState()
-                    //val series = zeries.collectAsState()
-
-
                     header()
                     FullBox {
                         LazyColumn(
@@ -304,7 +331,6 @@ class DatabaseWindow {
                                 )
                             }
                         }
-                        //val saveKey = rememberSaveable { true }
                         LaunchedEffect(Unit) {
                             seasonsListState.scrollToItem(
                                 Defaults.DB_LAST_SCROLL_POS.int()
@@ -324,7 +350,9 @@ class DatabaseWindow {
             modifier = Modifier.background(
                 color = MaterialTheme.colorScheme.inversePrimary,
                 shape = RectangleShape
-            ).height(40.dp).fillMaxWidth().padding(end = verticalScrollbarEndPadding),
+            ).height(40.dp)
+                .fillMaxWidth()
+                .padding(end = verticalScrollbarEndPadding),
             horizontalArrangement = Arrangement.spacedBy(4.dp)
         ) {
             Column(
@@ -344,7 +372,6 @@ class DatabaseWindow {
                                 DatabaseSort.NAME_DESC
                             }
                         }
-                        //_dbSort.value = databaseSort
                         Defaults.DB_LAST_SORT_USED.update(databaseSort.value.id)
                     }
             ) {

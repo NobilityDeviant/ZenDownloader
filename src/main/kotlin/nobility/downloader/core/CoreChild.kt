@@ -11,6 +11,7 @@ import nobility.downloader.Page
 import nobility.downloader.core.BoxHelper.Companion.int
 import nobility.downloader.core.BoxHelper.Companion.string
 import nobility.downloader.core.BoxHelper.Companion.update
+import nobility.downloader.core.driver.undetected_chrome.UndetectedChromeDriver
 import nobility.downloader.core.entities.Download
 import nobility.downloader.core.entities.Episode
 import nobility.downloader.core.scraper.DownloadHandler
@@ -176,8 +177,12 @@ class CoreChild {
         copyRunningDrivers.forEach { _, driver ->
             tasks.add(launch {
                 try {
-                    driver.close()
-                    driver.quit()
+                    if (driver is UndetectedChromeDriver) {
+                        driver.kill()
+                    } else {
+                        driver.close()
+                        driver.quit()
+                    }
                 } catch (_: Exception) {
                 }
                 shutdownProgress = Pair(index, copyRunningDrivers.size)
