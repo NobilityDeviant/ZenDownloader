@@ -20,7 +20,7 @@ kotlin {
 }
 
 group = "nobility.downloader"
-version = "1.0.8"
+version = "1.0.81"
 
 repositories {
     mavenCentral()
