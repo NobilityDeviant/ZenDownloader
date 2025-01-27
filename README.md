@@ -10,7 +10,9 @@ Many of the anime websites out there are locked down really hard which makes wco
 
 **Now also supports M3U8 Videos & Episodes with 2 videos.**
 
-Don't pay for wco premium. I'll never support it and I don't recommend it.
+Ok ok.. I'll support premium minimally. 
+
+**You can now use your wcopremium.tv credentials to download higher quality movies.**
 
 We're back for blood. >:(
 
@@ -281,12 +283,10 @@ Once that's been downloaded, go to File > Close Project
 
 and then reopen it and you should be good to go.
 
-Also if you want to make the `.deb` or the `.rpm` file you also need to install a couple extra things:
+Also if you want to make the `.deb` or the `.rpm` file, you need to install a couple extra things:
 
 `sudo apt-get install binutils`
 
 `sudo apt-get install fakeroot`
 
 That's it! If you have any issues, please create an issue in Github and i'll get right on it.
-
-BTW please excuse all the commits. I am a pretty indecisive person and it takes me awhile to fix the READMEs.

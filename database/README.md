@@ -11,7 +11,7 @@ However the series images won't auto download at launch. You will still need to 
 
 There's now options to disable certain assets from auto downloading at the start of the app.
 
-Just go to Settings by pressing the cog button in the top right or press CTRL + S.
+Just go to Settings by pressing the Settings tab, pressing the Update Option button on the bottom and disable any option related to your asset.
 
 All assets will download for the first launch, but won't for the other launches.
 

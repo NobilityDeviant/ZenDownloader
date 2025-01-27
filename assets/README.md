@@ -28,6 +28,6 @@ I suggest not modifying them in any way. I will update them every now and then.
 
 There's now options to disable certain assets from auto downloading at the start of the app.
 
-Just go to Settings by pressing the cog button in the top right or press CTRL + S.
+Just go to Settings by pressing the Settings Tab, click the Update Options button on the bottom and disable any options related to the asset you want.
 
 All assets will download for the first launch, but won't for the other launches.
