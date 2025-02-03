@@ -65,6 +65,7 @@ private fun uiWrapper(
     var showFileMenu by remember {
         mutableStateOf(false)
     }
+    val scope = rememberCoroutineScope()
     val closeMenu = { showFileMenu = false }
     coreTheme {
         Scaffold(
@@ -354,6 +355,20 @@ private fun uiWrapper(
                                     ) {
                                         closeMenu()
                                         Tools.openFile(Constants.databasePath)
+                                    }
+                                }
+                            }
+
+                            Page.RECENT -> {
+                                options.add {
+                                    defaultDropdownItem(
+                                        "Download Recent Data",
+                                        EvaIcons.Fill.Download
+                                    ) {
+                                        closeMenu()
+                                        scope.launch {
+                                            Core.recentView.reloadRecentData()
+                                        }
                                     }
                                 }
                             }

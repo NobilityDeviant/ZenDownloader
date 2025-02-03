@@ -308,9 +308,88 @@ class VideoDownloadHelper(
             data.undriver.go(fullLink)
             val has720 = src.contains("obj720")
             val has1080 = src.contains("obj1080")
-            //timeout just in case it hangs for too long.
-            //withTimeout((Defaults.TIMEOUT.int() * 1000).toLong() * 3) {
-            for (quality in Quality.qualityList(has720, has1080)) {
+            var qualityIndex = 0
+            var qualityRetry = mutableMapOf<String, Int>()
+            val qualityList = Quality.qualityList(has720, has1080)
+            while (qualityIndex < qualityList.size) {
+                val quality = qualityList[qualityIndex]
+                try {
+                    data.base.executeJs(
+                        JavascriptHelper.changeUrlToVideoFunction(
+                            functionLink,
+                            quality
+                        )
+                    )
+                    delay(data.pageChangeWaitTime)
+                    //a new way to check if the javascript script threw an error.
+                    //JavascriptHelper will change the url to blank.org on a jquery error.
+                    //idk how to show the error, but we can at least do this
+                    if (data.driver.currentUrl == "https://blank.org") {
+                        val retry = qualityRetry[quality.tag]
+                        if (retry != null) {
+                            if (retry > 3) {
+                                data.logError(
+                                    "Failed to find ${quality.tag} quality after 3 retries. | Skipping quality"
+                                )
+                                qualityIndex++
+                                continue
+                            }
+                            qualityRetry.put(quality.tag, retry + 1)
+                            data.logError("The script has failed for quality: ${quality.tag} | Retrying... ($retry)")
+                        } else {
+                            qualityRetry.put(quality.tag, 1)
+                            data.logError("The script has failed for quality: ${quality.tag} | Retrying... (1)")
+                        }
+                        continue
+                    }
+                    if (src.contains("404 Not Found") || src.contains("404 - Page not Found")) {
+                        data.logError(
+                            "(404) Failed to find $quality quality. | Skipping quality"
+                        )
+                        qualityIndex++
+                        continue
+                    }
+                    val videoLink = data.driver.currentUrl
+                    if (videoLink.isNotEmpty()) {
+                        qualityAndDownloads.add(
+                            QualityAndDownload(quality, videoLink)
+                        )
+                        data.logInfo(
+                            "Found $quality quality."
+                        )
+                        if (quality == priorityQuality) {
+                            break
+                        }
+                    }
+                    data.driver.navigate().back()
+                    qualityIndex++
+                } catch (e: Exception) {
+                    val retry = qualityRetry[quality.tag]
+                    if (retry != null) {
+                        if (retry > 3) {
+                            data.logError(
+                                "An exception was thrown when looking for quality links after 3 retries. | Skipping quality",
+                                e
+                            )
+                            qualityIndex++
+                            continue
+                        }
+                        qualityRetry.put(quality.tag, retry + 1)
+                        data.logError(
+                            "An exception was thrown when looking for quality links. | Retrying... ($retry)",
+                            e.localizedMessage
+                        )
+                    } else {
+                        qualityRetry.put(quality.tag, 1)
+                        data.logError(
+                            "An exception was thrown when looking for quality links. | Retrying... (1)",
+                            e.localizedMessage
+                        )
+                    }
+                    continue
+                }
+            }
+            /*for (quality in Quality.qualityList(has720, has1080)) {
                 try {
                     data.base.executeJs(
                         JavascriptHelper.changeUrlToVideoFunction(
@@ -338,8 +417,6 @@ class VideoDownloadHelper(
                         }
                     }
                     data.driver.navigate().back()
-                    //data.undriver.blank()
-                    //delay(2000)
                 } catch (e: Exception) {
                     data.logError(
                         "An exception was thrown when looking for quality links.",
@@ -347,8 +424,7 @@ class VideoDownloadHelper(
                     )
                     continue
                 }
-            }
-            //}
+            }*/
             if (sbFrame2.isNotEmpty()) {
                 val src2 = sbFrame2.toString()
                 val secondLinkIndex1 = src2.indexOf(linkKey1)

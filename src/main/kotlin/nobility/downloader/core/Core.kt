@@ -102,7 +102,7 @@ class Core {
             if (currentPage == Page.SETTINGS) {
                 if (settingsView.settingsChanged()) {
                     DialogHelper.showConfirm(
-                        "You have unsaved settings. Would you like to save them?",
+                        "Would you like to save your settings?",
                         "Save Settings",
                         size = DpSize(300.dp, 200.dp),
                         onConfirmTitle = "Save",

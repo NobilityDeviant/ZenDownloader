@@ -289,6 +289,7 @@ enum class Defaults(
         "Enable Random Series Rows"
     ),
     WCO_GENRES_LAST_UPDATED("wco_genres_last_updated", 0L),
+    WCO_RECENT_LAST_UPDATED("wco_recent_last_updated", 0L),
     DB_LAST_SCROLL_POS("db_last_scroll_pos", 0),
     DB_LAST_TYPE_USED("db_last_type", DatabaseType.ALL.id),
     DB_LAST_SORT_USED("db_last_sort", DatabaseSort.NAME.id),

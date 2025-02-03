@@ -82,6 +82,7 @@ class BoxHelper {
 
     val wcoLinksBox: Box<CategoryLink> = linksBoxStore.boxFor(CategoryLink::class.java)
     val wcoGenreBox: Box<Genre> = wcoBoxStore.boxFor(Genre::class.java)
+    val wcoRecentBox: Box<RecentData> = wcoBoxStore.boxFor(RecentData::class.java)
 
     companion object {
 

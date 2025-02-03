@@ -28,6 +28,8 @@ object Tools {
 
     val percentFormat: DecimalFormat get() = DecimalFormat("#.##%")
 
+    val currentTime: Long get() = Date().time
+
     /**
      * Access clipboard outside a composable.
      */
@@ -89,14 +91,11 @@ object Tools {
      */
     fun fixTitle(
         title: String,
-        replaceDotAtStart: Boolean = false,
         fixNumbers: Boolean = true
     ): String {
         var mTitle = title
-        if (replaceDotAtStart) {
-            if (mTitle.startsWith(".")) {
-                mTitle = mTitle.substring(1)
-            }
+        if (mTitle.startsWith(".")) {
+            mTitle = mTitle.substring(1)
         }
         if (fixNumbers) {
             val matchSeason = Regex("Season(?:\\s|\\s?[:/]\\s?)\\d+").find(title)
@@ -171,16 +170,10 @@ object Tools {
             stripExtraFromTitle(
                 fixTitle(
                     title,
-                    true,
-                    fixNumbers = false
+                    false
                 )
             )
         ).trim() + ".jpg"
-    }
-
-    fun bytesToMB(bytes: Long): Double {
-        val kb = (bytes / 1024L).toInt()
-        return (kb / 1024L).toDouble()
     }
 
     fun bytesToString(bytes: Long): String {
@@ -202,9 +195,15 @@ object Tools {
             return sdf.format(Date())
         }
 
-    fun dateFormatted(time: Long): String {
+    fun dateFormatted(
+        time: Long,
+        newlineForTime: Boolean = true
+    ): String {
         val sdf = SimpleDateFormat(DATE_FORMAT)
-        return sdf.format(time).replace(" ", "\n")
+        return if (newlineForTime)
+            sdf.format(time).replace(" ", "\n")
+        else
+            sdf.format(time)
     }
 
     val baseEpisodesComparator = Comparator { e1: Episode, e2: Episode ->

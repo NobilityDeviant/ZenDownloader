@@ -51,8 +51,8 @@ fun String.ordinalIndexOf(searchString: String, ordinal: Int): Int {
     return StringUtils.ordinalIndexOf(this, searchString, ordinal)
 }
 
-fun String.fixForFiles(replaceDot: Boolean = true): String {
-    return Tools.fixTitle(this, replaceDot)
+fun String.fixForFiles(): String {
+    return Tools.fixTitle(this)
 }
 
 fun String.slugToLink(): String {

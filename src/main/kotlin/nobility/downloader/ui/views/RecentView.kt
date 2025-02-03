@@ -26,26 +26,26 @@ import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import compose.icons.EvaIcons
 import compose.icons.evaicons.Fill
 import compose.icons.evaicons.fill.ArrowIosDownward
 import compose.icons.evaicons.fill.ArrowIosUpward
 import compose.icons.evaicons.fill.Info
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import nobility.downloader.Page
 import nobility.downloader.core.BoxHelper
+import nobility.downloader.core.BoxHelper.Companion.long
+import nobility.downloader.core.BoxHelper.Companion.update
 import nobility.downloader.core.Core
 import nobility.downloader.core.entities.Episode
+import nobility.downloader.core.entities.RecentData
 import nobility.downloader.core.entities.Series
 import nobility.downloader.core.scraper.RecentScraper
-import nobility.downloader.core.scraper.data.RecentResult
 import nobility.downloader.core.scraper.data.ToDownload
-import nobility.downloader.ui.components.defaultDropdownItem
+import nobility.downloader.core.settings.Defaults
+import nobility.downloader.ui.components.*
 import nobility.downloader.ui.components.dialog.DialogHelper
-import nobility.downloader.ui.components.FullBox
-import nobility.downloader.ui.components.verticalScrollbar
-import nobility.downloader.ui.components.verticalScrollbarEndPadding
 import nobility.downloader.ui.windows.utils.AppWindowScope
 import nobility.downloader.utils.*
 
@@ -54,10 +54,11 @@ class RecentView: ViewPage {
     override val page = Page.RECENT
 
     private var sort by mutableStateOf(Sort.NAME)
-    private val recentData = mutableStateListOf<RecentResult.Data>()
+    private val recentData = BoxHelper.shared.wcoRecentBox.all
     private var loading by mutableStateOf(false)
+    private var lastUpdated by mutableStateOf(Defaults.WCO_RECENT_LAST_UPDATED.long())
 
-    private val sortedRecentData: List<RecentResult.Data>
+    private val sortedRecentData: List<RecentData>
         get() {
             return when (sort) {
                 Sort.NAME -> recentData.sortedBy { it.name }
@@ -65,14 +66,25 @@ class RecentView: ViewPage {
             }
         }
 
-    private suspend fun loadRecentData() {
+    suspend fun reloadRecentData() {
+        if (loading) {
+            return
+        }
+        BoxHelper.shared.wcoRecentBox.removeAll()
+        Defaults.WCO_RECENT_LAST_UPDATED.update(0L)
+        recentData.clear()
+        lastUpdated = 0
+        Defaults
         loading = true
         val result = RecentScraper.run()
-        val resultData = result.data
-        if (resultData != null) {
-            recentData.addAll(resultData.data)
+        if (result.data == true) {
+            recentData.addAll(BoxHelper.shared.wcoRecentBox.all)
+            lastUpdated = Defaults.WCO_RECENT_LAST_UPDATED.long()
         } else {
-            FrogLog.logError("Failed to load recent series.", result.message)
+            FrogLog.logError(
+                "Failed to load recent data.",
+                result.message
+            )
         }
         loading = false
     }
@@ -82,7 +94,37 @@ class RecentView: ViewPage {
         val scope = rememberCoroutineScope()
         val seasonsListState = rememberLazyListState()
         Scaffold(
-            modifier = Modifier.fillMaxSize(50f)
+            modifier = Modifier.fillMaxSize(50f),
+            bottomBar = {
+                if (!loading) {
+                    Column(
+                        modifier = Modifier
+                            .height(50.dp)
+                            .fillMaxWidth(),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
+                    ) {
+                        if (lastUpdated <= 0) {
+                            defaultButton(
+                                "Update Recent Series",
+                                height = 35.dp,
+                                width = 170.dp,
+                                padding = 0.dp
+                            ) {
+                                scope.launch {
+                                    reloadRecentData()
+                                }
+                            }
+                        } else {
+                            Text(
+                                "Last Updated: ${Tools.dateFormatted(lastUpdated, false)}",
+                                fontSize = 16.sp,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+                    }
+                }
+            }
         ) { padding ->
             if (loading) {
                 Box(
@@ -132,8 +174,9 @@ class RecentView: ViewPage {
             }
         }
         LaunchedEffect(Unit) {
-            delay(5000)
-            loadRecentData()
+            if (recentData.isEmpty()) {
+                reloadRecentData()
+            }
         }
     }
 
@@ -206,7 +249,7 @@ class RecentView: ViewPage {
     @OptIn(ExperimentalFoundationApi::class)
     @Composable
     private fun recentDataRow(
-        recentData: RecentResult.Data,
+        recentData: RecentData,
         windowScope: AppWindowScope
     ) {
         var showFileMenu by remember {
@@ -333,13 +376,11 @@ class RecentView: ViewPage {
         )
     }
 
-    private fun type(data: RecentResult.Data): String {
+    private fun type(data: RecentData): String {
         return if (data.isSeries) "Series" else "Episode"
     }
 
-    override fun onClose() {
-        recentData.clear()
-    }
+    override fun onClose() {}
 
     private enum class Sort {
         NAME,

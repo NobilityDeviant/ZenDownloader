@@ -35,7 +35,8 @@ object JavascriptHelper {
                     cdn = response.cdn;
                     server = response.server;
                     location.href = server + '/getvid?evid=' + $RES_KEY
-                });
+                })
+                .fail(function() { location.href = 'https://blank.org' });
             """
 
     @Suppress("UNUSED")

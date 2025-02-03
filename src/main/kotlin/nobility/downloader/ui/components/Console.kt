@@ -106,7 +106,7 @@ class Console(
     }
 
     fun isEmpty(): Boolean {
-        return consoleText.isEmpty() && size > 0
+        return consoleText.isEmpty() && size <= 0
     }
 
     fun clear() {

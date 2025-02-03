@@ -4,9 +4,10 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import nobility.downloader.core.BoxHelper
 import nobility.downloader.core.BoxHelper.Companion.int
+import nobility.downloader.core.BoxHelper.Companion.update
+import nobility.downloader.core.BoxMaker
 import nobility.downloader.core.Core
 import nobility.downloader.core.driver.BasicDriverBase
-import nobility.downloader.core.scraper.data.RecentResult
 import nobility.downloader.core.settings.Defaults
 import nobility.downloader.utils.Resource
 import nobility.downloader.utils.Tools
@@ -17,8 +18,7 @@ import java.io.File
 
 object RecentScraper {
 
-    suspend fun run(): Resource<RecentResult> = withContext(Dispatchers.IO) {
-        val data = mutableListOf<RecentResult.Data>()
+    suspend fun run(): Resource<Boolean> = withContext(Dispatchers.IO) {
         val scraper = BasicDriverBase()
         try {
             scraper.driver.get(Core.wcoUrl)
@@ -53,13 +53,13 @@ object RecentScraper {
                                 UserAgents.random
                             )
                         }
-                        data.add(RecentResult.Data(
+                        BoxMaker.makeRecent(
                             imagePath,
                             seriesImageLink,
                             episodeName,
                             episodeLink,
                             false
-                        ))
+                        )
                     }
                 }
             }
@@ -92,20 +92,21 @@ object RecentScraper {
                                 UserAgents.random
                             )
                         }
-                        data.add(RecentResult.Data(
+                        BoxMaker.makeRecent(
                             imagePath,
                             seriesImageLink,
                             seriesName,
                             seriesLink,
                             true
-                        ))
+                        )
                     }
                 }
             }
+            Defaults.WCO_RECENT_LAST_UPDATED.update(Tools.currentTime)
         } catch (e: Exception) {
             return@withContext Resource.Error(e)
         }
-        return@withContext Resource.Success(RecentResult(data))
+        return@withContext Resource.Success(true)
     }
 
 }

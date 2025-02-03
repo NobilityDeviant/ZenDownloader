@@ -116,4 +116,29 @@ object BoxMaker {
                 }
             }
     }
+
+    fun makeRecent(
+        imagePath: String,
+        imageLink: String,
+        name: String,
+        link: String,
+        isSeries: Boolean,
+    ) {
+        BoxHelper.shared.wcoRecentBox.query()
+            .equal(RecentData_.name, name, QueryBuilder.StringOrder.CASE_SENSITIVE)
+            .equal(RecentData_.link, link, QueryBuilder.StringOrder.CASE_SENSITIVE)
+            .build().use {
+                if (it.findUniqueOrNull() == null) {
+                    BoxHelper.shared.wcoRecentBox.put(
+                        RecentData(
+                            imagePath,
+                            imageLink,
+                            name,
+                            link,
+                            isSeries
+                        )
+                    )
+                }
+            }
+    }
 }
