@@ -631,7 +631,7 @@ class DatabaseWindow {
             )
             divider()
             Image(
-                ImageUtils.loadSeriesImageFromFileWithBackup(series),
+                ImageUtils.seriesImageBitmap(series),
                 contentDescription = "Image For ${series.name}",
                 contentScale = ContentScale.FillBounds,
                 modifier = Modifier.fillMaxSize()

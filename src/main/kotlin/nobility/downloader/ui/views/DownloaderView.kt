@@ -147,7 +147,9 @@ class DownloaderView: ViewPage {
                                 ).hoverable(interaction)
                             ) {
                                 val bitmap by remember {
-                                    mutableStateOf(ImageUtils.loadImageFromFilePath(it.imagePath))
+                                    mutableStateOf(
+                                        ImageUtils.fileImageBitmap(it.imagePath)
+                                    )
                                 }
                                 Image(
                                     bitmap = bitmap,
@@ -205,7 +207,9 @@ class DownloaderView: ViewPage {
                                 ).hoverable(interaction)
                             ) {
                                 val bitmap by remember {
-                                    mutableStateOf(ImageUtils.loadImageFromFilePath(it.imagePath))
+                                    mutableStateOf(
+                                        ImageUtils.fileImageBitmap(it.imagePath)
+                                    )
                                 }
                                 Image(
                                     bitmap = bitmap,

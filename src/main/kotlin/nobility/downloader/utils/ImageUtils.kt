@@ -3,98 +3,66 @@ package nobility.downloader.utils
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.toComposeImageBitmap
 import androidx.compose.ui.res.useResource
-import kotlinx.coroutines.launch
 import nobility.downloader.core.BoxHelper
-import nobility.downloader.core.Core
 import nobility.downloader.core.entities.Series
-import java.awt.image.BufferedImage
 import java.io.File
-import java.io.IOException
 import java.net.URI
 import javax.imageio.ImageIO
 
 object ImageUtils {
 
-    fun loadSeriesImageFromFileWithBackup(
+    private fun bitmapForPath(path: String): ImageBitmap? {
+        if (path.isEmpty()) {
+            return null
+        }
+        try {
+            val bufferedImage = ImageIO.read(File(path))
+            if (bufferedImage != null) {
+                return bufferedImage.toComposeImageBitmap()
+            }
+        } catch (_: Exception) {}
+        return null
+    }
+
+    private fun bitmapForLink(url: String): ImageBitmap? {
+        if (url.isEmpty()) {
+            return null
+        }
+        try {
+            val bufferedImage = ImageIO.read(URI(url).toURL())
+            if (bufferedImage != null) {
+                return bufferedImage.toComposeImageBitmap()
+            }
+        } catch (_: Exception) {}
+        return null
+    }
+
+    fun seriesImageBitmap(
         series: Series
     ): ImageBitmap {
-        if (series.imagePath.isEmpty()) {
-            return useResource(AppInfo.NO_IMAGE_PATH) {
-                ImageIO.read(it).toComposeImageBitmap()
-            }
-        }
-        val bufferedImage: BufferedImage
-        try {
-            bufferedImage = ImageIO.read(File(series.imagePath))
-            return bufferedImage.toComposeImageBitmap()
-        } catch (_: IOException) {
-            return loadSeriesImageFromLink(series)
+        val fileBitmap = bitmapForPath(series.imagePath)
+        return if (fileBitmap != null) {
+            return fileBitmap
+        } else {
+            val linkBitmap = bitmapForLink(series.imageLink)
+            return linkBitmap ?: noImage
         }
     }
 
-    private fun loadSeriesImageFromLink(
-        series: Series
+    fun fileImageBitmap(
+        filePath: String,
+        urlBackup: String? = null
     ): ImageBitmap {
-        if (series.imageLink.isEmpty()) {
-            return useResource(AppInfo.NO_IMAGE_PATH) {
-                ImageIO.read(it).toComposeImageBitmap()
+        val fileBitmap = bitmapForPath(filePath)
+        return if (fileBitmap != null) {
+            return fileBitmap
+        } else {
+            if (urlBackup != null) {
+                val linkBitmap = bitmapForLink(urlBackup)
+                return linkBitmap ?: noImage
+            } else {
+                return noImage
             }
-        }
-        Core.child.taskScope.launch {
-            downloadSeriesImage(series)
-        }
-        val bufferedImage: BufferedImage
-        try {
-            bufferedImage = ImageIO.read(URI(series.imageLink).toURL())
-            return bufferedImage.toComposeImageBitmap()
-        } catch (_: Exception) {
-            return noImage
-        }
-    }
-
-    fun loadImageFromFileWithBackup(filePath: String, urlBackup: String): ImageBitmap {
-        if (filePath.isEmpty()) {
-            return useResource(AppInfo.NO_IMAGE_PATH) {
-                ImageIO.read(it).toComposeImageBitmap()
-            }
-        }
-        val bufferedImage: BufferedImage
-        try {
-            bufferedImage = ImageIO.read(File(filePath))
-            return bufferedImage.toComposeImageBitmap()
-        } catch (_: Exception) {
-            return loadImageFromLink(urlBackup)
-        }
-    }
-
-
-    private fun loadImageFromLink(link: String): ImageBitmap {
-        if (link.isEmpty()) {
-            return useResource(AppInfo.NO_IMAGE_PATH) {
-                ImageIO.read(it).toComposeImageBitmap()
-            }
-        }
-        val bufferedImage: BufferedImage
-        try {
-            bufferedImage = ImageIO.read(URI(link).toURL())
-            return bufferedImage.toComposeImageBitmap()
-        } catch (_: Exception) {
-            return noImage
-        }
-    }
-
-    fun loadImageFromFilePath(filePath: String): ImageBitmap {
-        if (filePath.isEmpty()) {
-            return useResource(AppInfo.NO_IMAGE_PATH) {
-                ImageIO.read(it).toComposeImageBitmap()
-            }
-        }
-        val bufferedImage: BufferedImage
-        try {
-            bufferedImage = ImageIO.read(File(filePath))
-            return bufferedImage.toComposeImageBitmap()
-        } catch (_: Exception) {
-            return noImage
         }
     }
 
@@ -104,7 +72,7 @@ object ImageUtils {
         }
         val saveFolder = File(BoxHelper.seriesImagesPath)
         if (!saveFolder.exists() && !saveFolder.mkdirs()) {
-            FrogLog.writeMessage("Unable to download series image: ${series.imageLink}. Save folder was unable to be created.")
+            FrogLog.writeMessage("Failed to download series image: ${series.imageLink}. Save folder was unable to be created.")
             return
         }
         val saveFile = File(

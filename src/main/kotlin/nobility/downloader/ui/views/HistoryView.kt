@@ -503,7 +503,7 @@ class HistoryView: ViewPage {
             divider()
             val imagePath = BoxHelper.seriesImagesPath + Tools.titleForImages(seriesData.name)
             Image(
-                bitmap = ImageUtils.loadImageFromFileWithBackup(
+                bitmap = ImageUtils.fileImageBitmap(
                     imagePath,
                     seriesData.imageLink
                 ),

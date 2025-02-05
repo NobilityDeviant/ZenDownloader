@@ -329,7 +329,7 @@ class RecentView: ViewPage {
         ) {
             val imagePath = BoxHelper.seriesImagesPath + Tools.titleForImages(recentData.name)
             Image(
-                bitmap = ImageUtils.loadImageFromFileWithBackup(
+                bitmap = ImageUtils.fileImageBitmap(
                     imagePath,
                     recentData.imagePath
                 ),
