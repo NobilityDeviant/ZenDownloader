@@ -10,6 +10,7 @@ import nobility.downloader.utils.FrogLog
 import nobility.downloader.utils.Tools
 import nobility.downloader.utils.fixedSlug
 import nobility.downloader.utils.slugToLink
+import nobility.downloader.utils.source
 import org.jsoup.Jsoup
 
 /**
@@ -28,7 +29,7 @@ object IdentityScraper {
         val scraper = Scraper()
         try {
             scraper.driver.navigate().to(fullIdentityLink)
-            val doc = Jsoup.parse(scraper.driver.pageSource)
+            val doc = Jsoup.parse(scraper.driver.source())
             //runs really slow on ubuntu for some reason
             val list = doc.getElementsByClass("ddmcc")
             val uls = list.select("ul")
@@ -114,7 +115,7 @@ object IdentityScraper {
             val fullIdentityLink = identity.slug.slugToLink()
             val scraper = Scraper()
             scraper.driver.get(fullIdentityLink)
-            val doc = Jsoup.parse(scraper.driver.pageSource)
+            val doc = Jsoup.parse(scraper.driver.source())
             scraper.killDriver()
             val list = doc.getElementsByClass("ddmcc")
             val ul = list.select("ul")

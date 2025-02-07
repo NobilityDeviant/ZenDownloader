@@ -124,14 +124,23 @@ class DownloadHandler {
                     kill()
                 } catch (e: Exception) {
                     downloader.killDriver()
-                    if (e.localizedMessage != null) {
-                        if (e.localizedMessage.contains("unknown error: cannot find")) {
-                            FrogLog.writeMessage("Download Service Error: Unable to find your browser. Be sure to set it in the settings before downloading anything.")
+                    val error = e.localizedMessage
+                    if (!error.isNullOrEmpty()) {
+                        if (error.contains("unknown error: cannot find")
+                            || error.contains("Unable to find driver executable")
+                            || error.contains("unable to find binary")
+                        ) {
+                            FrogLog.writeMessage(
+                                "DownloadHandler failed. You must install Chrome before downloading videos."
+                            )
                         } else {
-                            FrogLog.writeMessage("Download Service Error: " + e.localizedMessage)
+                            FrogLog.logError(
+                                "DownloadHandler failed.",
+                                e
+                            )
                         }
                     } else {
-                        FrogLog.writeMessage("Download Service Error: Unspecified error.")
+                        FrogLog.writeMessage("DownloadHandler failed without a valid error.")
                     }
                     kill()
                 }

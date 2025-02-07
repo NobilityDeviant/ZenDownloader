@@ -12,6 +12,7 @@ import nobility.downloader.core.settings.Defaults
 import nobility.downloader.utils.Constants
 import nobility.downloader.utils.FrogLog
 import nobility.downloader.utils.linkToSlug
+import nobility.downloader.utils.source
 import org.jsoup.Jsoup
 import java.util.*
 
@@ -45,7 +46,7 @@ object GenresScraper {
         }
         val scraper = Scraper()
         scraper.driver.get(Core.wcoUrl)
-        val doc = Jsoup.parse(scraper.driver.pageSource)
+        val doc = Jsoup.parse(scraper.driver.source())
         scraper.killDriver()
         val genresHolder = doc.getElementById("sidebar_right3")
         if (genresHolder != null) {

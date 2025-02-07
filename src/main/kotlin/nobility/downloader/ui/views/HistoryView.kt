@@ -13,7 +13,6 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.CursorDropdownMenu
 import androidx.compose.material.Icon
-import androidx.compose.material.ripple.rememberRipple
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -443,10 +442,12 @@ class HistoryView: ViewPage {
                         )
                     } else {
                         windowScope.showToast("No new episodes were found for: ${seriesData.name}")
-                        FrogLog.logError(
-                            "Failed to find new episodes for ${seriesData.name}",
-                            result.message
-                        )
+                        if (!result.message.isNullOrEmpty()) {
+                            FrogLog.logError(
+                                "Failed to find new episodes for ${seriesData.name}",
+                                result.message
+                            )
+                        }
                     }
                 }
             }
@@ -458,7 +459,7 @@ class HistoryView: ViewPage {
                 ) { showFileMenu = showFileMenu.not() }
                 .clickable(
                     interactionSource = remember { MutableInteractionSource() },
-                    indication = rememberRipple(
+                    indication = ripple(
                         color = MaterialTheme.colorScheme
                             .secondaryContainer.hover()
                     )
@@ -553,7 +554,7 @@ class HistoryView: ViewPage {
         val series = BoxHelper.seriesForSlug(seriesData.slug)
             ?: return@withContext Resource.Error("Failed to find local series.")
         val result = SeriesUpdater.checkForNewEpisodes(series)
-        if (result.data != null) {
+        return@withContext if (result.data != null) {
             val updatedEpisodes = result.data.updatedEpisodes
             val seriesWco = BoxHelper.seriesForSlug(series.slug)
             seriesWco?.updateEpisodes(updatedEpisodes)

@@ -13,6 +13,7 @@ import nobility.downloader.utils.Resource
 import nobility.downloader.utils.Tools
 import nobility.downloader.utils.Tools.titleForImages
 import nobility.downloader.utils.UserAgents
+import nobility.downloader.utils.source
 import org.jsoup.Jsoup
 import java.io.File
 
@@ -22,7 +23,7 @@ object RecentScraper {
         val scraper = BasicDriverBase()
         try {
             scraper.driver.get(Core.wcoUrl)
-            val doc = Jsoup.parse(scraper.driver.pageSource)
+            val doc = Jsoup.parse(scraper.driver.source())
             scraper.killDriver()
             val recentEpisodeHolder = doc.getElementById("sidebar_right")
             if (recentEpisodeHolder != null) {

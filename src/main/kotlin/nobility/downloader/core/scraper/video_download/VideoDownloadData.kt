@@ -2,6 +2,7 @@ package nobility.downloader.core.scraper.video_download
 
 import nobility.downloader.core.BoxHelper.Companion.boolean
 import nobility.downloader.core.BoxHelper.Companion.downloadForSlugAndQuality
+import nobility.downloader.core.BoxHelper.Companion.int
 import nobility.downloader.core.BoxHelper.Companion.seriesForSlug
 import nobility.downloader.core.BoxHelper.Companion.string
 import nobility.downloader.core.Core
@@ -11,7 +12,6 @@ import nobility.downloader.core.entities.Episode
 import nobility.downloader.core.scraper.data.QualityAndDownload
 import nobility.downloader.core.settings.Defaults
 import nobility.downloader.core.settings.Quality
-import nobility.downloader.utils.Constants
 import nobility.downloader.utils.FrogLog
 import nobility.downloader.utils.Tools
 import nobility.downloader.utils.fixForFiles
@@ -22,7 +22,8 @@ import java.io.File
  * We use it in a separate class to be able to pass the data to any other function.
  */
 class VideoDownloadData(
-    val temporaryQuality: Quality?
+    val temporaryQuality: Quality? = null,
+    private val customTag: String? = null
 ) {
 
     val base = BasicDriverBase()
@@ -37,7 +38,6 @@ class VideoDownloadData(
     val currentDownload get() = mCurrentDownload!!
     var retries = 0
     var resRetries = 0
-    var m3u8Retries = 0
     var premRetries = 0
     val qualityAndDownloads = mutableListOf<QualityAndDownload>()
 
@@ -102,7 +102,7 @@ class VideoDownloadData(
         if (!saveFolder.exists() && !saveFolder.mkdirs()) {
             logError(
                 "Failed to create series save folder: ${saveFolder.absolutePath} " +
-                        "Defaulting to $downloadFolderPath/NoSeries"
+                        "Defaulting to $downloadFolderPath${File.separator}NoSeries"
             )
             saveFolder = File(downloadFolderPath + File.separator + "NoSeries")
         }
@@ -142,7 +142,6 @@ class VideoDownloadData(
             }
             resRetries = 0
             retries = 0
-            m3u8Retries = 0
             premRetries = 0
             Core.child.incrementDownloadsInProgress()
         }
@@ -150,31 +149,13 @@ class VideoDownloadData(
     }
 
     fun reachedMax(): Boolean {
-        if (retries >= Constants.maxRetries) {
+        if (retries >= Defaults.VIDEO_RETRIES.int()) {
             if (mCurrentEpisode != null) {
-                writeMessage("Reached max retries of ${Constants.maxRetries}.")
+                writeMessage("Reached max retries of ${Defaults.VIDEO_RETRIES.int()}.")
             }
             finishEpisode()
             resRetries = 0
             retries = 0
-            m3u8Retries = 0
-            premRetries = 0
-            return true
-        }
-        return false
-    }
-
-    fun reachedMaxM3U8(): Boolean {
-        if (m3u8Retries >= Constants.maxM3U8Retries) {
-            if (mCurrentEpisode != null) {
-                writeMessage(
-                    "Reached max m3u8 retries of ${Constants.maxM3U8Retries}. Skipping download..."
-                )
-            }
-            finishEpisode()
-            resRetries = 0
-            retries = 0
-            m3u8Retries = 0
             premRetries = 0
             return true
         }
@@ -230,5 +211,5 @@ class VideoDownloadData(
         )
     }
 
-    private val tag get() = if (mCurrentEpisode != null) "[S] [${currentEpisode.name}]" else "[S] [No Episode]"
+    private val tag get() = if (!customTag.isNullOrEmpty()) "[$customTag]" else if (mCurrentEpisode != null) "[S] [${currentEpisode.name}]" else "[S] [No Episode]"
 }

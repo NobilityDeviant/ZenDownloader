@@ -17,7 +17,6 @@ import androidx.compose.ui.unit.sp
 import com.darkrockstudios.libraries.mpfilepicker.DirectoryPicker
 import com.darkrockstudios.libraries.mpfilepicker.FilePicker
 import nobility.downloader.Page
-import nobility.downloader.core.BoxHelper
 import nobility.downloader.core.BoxHelper.Companion.boolean
 import nobility.downloader.core.BoxHelper.Companion.int
 import nobility.downloader.core.BoxHelper.Companion.long
@@ -27,7 +26,6 @@ import nobility.downloader.core.Core
 import nobility.downloader.core.settings.Defaults
 import nobility.downloader.core.settings.Quality
 import nobility.downloader.ui.components.*
-import nobility.downloader.ui.components.dialog.DialogHelper
 import nobility.downloader.ui.windows.utils.AppWindowScope
 import nobility.downloader.ui.windows.utils.ApplicationState
 import nobility.downloader.utils.Constants.bottomBarHeight
@@ -84,15 +82,15 @@ class SettingsView : ViewPage {
             bottomBar = {
                 Column(
                     modifier = Modifier.fillMaxWidth()
-                        .height(bottomBarHeight)
+                        .height(bottomBarHeight + 20.dp)
                         .onClick {
                             focusManager.clearFocus(true)
-                        }
+                        },
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     HorizontalDivider()
                     Row(
-                        modifier = Modifier.align(Alignment.CenterHorizontally)
-                            .padding(10.dp)
+                        modifier = Modifier.padding(10.dp)
                             .onClick {
                                 focusManager.clearFocus(true)
                             },
@@ -112,20 +110,6 @@ class SettingsView : ViewPage {
                             height = 40.dp
                         ) {
                             openCheckBoxWindow()
-                        }
-                        defaultButton(
-                            "Reset Settings",
-                            width = 150.dp,
-                            height = 40.dp
-                        ) {
-                            DialogHelper.showConfirm(
-                                "Are you sure you want to reset your settings to the default ones?",
-                                "Reset Settings"
-                            ) {
-                                BoxHelper.resetSettings()
-                                updateValues()
-                                windowScope.showToast("Settings have been reset.")
-                            }
                         }
                         defaultButton(
                             "Save Settings",
@@ -150,14 +134,21 @@ class SettingsView : ViewPage {
                             focusManager.clearFocus(true)
                         }
                 ) {
-                    fieldRowInt(Defaults.DOWNLOAD_THREADS, false)
-                    fieldRowInt(Defaults.TIMEOUT, false)
                     fieldRow(Defaults.SAVE_FOLDER, true)
                     fieldRow(Defaults.CHROME_BROWSER_PATH, true)
                     fieldRow(Defaults.CHROME_DRIVER_PATH, true)
                     fieldRow(Defaults.WCO_PREMIUM_USERNAME, true)
                     fieldRow(Defaults.WCO_PREMIUM_PASSWORD, true)
                     fieldDropdown(Defaults.QUALITY)
+                    FlowRow(
+                        verticalArrangement = Arrangement.spacedBy(5.dp),
+                        horizontalArrangement = Arrangement.spacedBy(5.dp),
+                        maxItemsInEachRow = 4
+                    ) {
+                        Defaults.intFields.forEach {
+                            fieldRowInt(it)
+                        }
+                    }
                     FlowRow(
                         verticalArrangement = Arrangement.spacedBy(5.dp),
                         horizontalArrangement = Arrangement.spacedBy(5.dp),
@@ -337,15 +328,13 @@ class SettingsView : ViewPage {
     @OptIn(ExperimentalFoundationApi::class)
     @Composable
     private fun fieldRowInt(
-        setting: Defaults,
-        fullWidth: Boolean
+        setting: Defaults
     ) {
         val option = intOptions[setting] ?: return
         val title = setting.alternativeName.ifEmpty {
             setting.name.normalizeEnumName()
         }
-        val modifier = Modifier.height(30.dp)
-            .then(if (fullWidth) Modifier.width(300.dp) else Modifier)
+        val modifier = Modifier.height(30.dp).width(60.dp)
             .then(focusModifier)
         Row(
             horizontalArrangement = Arrangement.spacedBy(5.dp),
@@ -367,6 +356,7 @@ class SettingsView : ViewPage {
                             updateSaveButton()
                         },
                         numbersOnly = true,
+                        textStyle = MaterialTheme.typography.labelMedium,
                         modifier = modifier
                     )
                 }
@@ -379,20 +369,20 @@ class SettingsView : ViewPage {
                             updateSaveButton()
                         },
                         numbersOnly = true,
+                        textStyle = MaterialTheme.typography.labelMedium,
                         modifier = modifier
                     )
                 }
 
                 else -> {
                     defaultSettingsTextField(
-                        option.value.toString(),
+                        if (option.value == -1) "" else option.value.toString(),
                         { text ->
-                            val toNum = text.toIntOrNull()
-                            if (toNum != null) {
-                                option.value = toNum
-                                updateSaveButton()
-                            }
+                            option.value = textToDigits(FieldType.RETRY, text)
+                            updateSaveButton()
                         },
+                        numbersOnly = true,
+                        textStyle = MaterialTheme.typography.labelMedium,
                         modifier = modifier
                     )
                 }
@@ -479,7 +469,7 @@ class SettingsView : ViewPage {
     }
 
     private enum class FieldType {
-        THREADS, TIMEOUT;
+        THREADS, TIMEOUT, RETRY;
     }
 
     private fun textToDigits(
@@ -506,11 +496,26 @@ class SettingsView : ViewPage {
             } else if (num > maxTimeout) {
                 num = maxTimeout
             }
+        } else if (type == FieldType.RETRY) {
+            if (num < 1) {
+                num = 1
+            } else if (num > 100) {
+                num = 100
+            }
         }
         return num
     }
 
     fun saveSettings(): Boolean {
+        val retryOptions = intOptions.filter { Defaults.intFields.contains(it.key) }
+        retryOptions.forEach {
+            if (it.value.value <= 0) {
+                it.value.value = 1
+            }
+            if (it.value.value > 100) {
+                it.value.value = 100
+            }
+        }
         val threads = intOptions[Defaults.DOWNLOAD_THREADS]
         if (threads != null) {
             if (threads.value <= 0) {

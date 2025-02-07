@@ -6,10 +6,8 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import nobility.downloader.ui.components.defaultButton
-import nobility.downloader.ui.windows.utils.AppWindowScope
 import nobility.downloader.ui.windows.utils.ApplicationState
 import nobility.downloader.utils.Option
-import nobility.downloader.utils.Tools
 import java.awt.Desktop
 import java.net.URI
 import java.util.*
@@ -65,39 +63,17 @@ object DialogHelper {
         val desktop = Desktop.getDesktop()
         when {
             Desktop.isDesktopSupported() && desktop.isSupported(Desktop.Action.BROWSE) -> desktop.browse(uri)
-            "mac" in osName -> Runtime.getRuntime().exec("open $uri")
-            "nix" in osName || "nux" in osName -> Runtime.getRuntime().exec("xdg-open $uri")
+            "mac" in osName -> Runtime.getRuntime().exec(arrayOf("open", uri.toString()))
+            "nix" in osName || "nux" in osName -> Runtime.getRuntime().exec(arrayOf("xdg-open", uri.toString()))
             else -> throw RuntimeException("Your operating system ($osName) isn't supported.")
         }
-    }
-
-    @Suppress("UNUSED")
-    fun showCopyPrompt(
-        textToCopy: String,
-        message: String = "Do you want to copy this to your clipboard?",
-        prompt: Boolean = true,
-        appWindowScope: AppWindowScope? = null
-    ) {
-        if (prompt) {
-            showConfirm(message) {
-                copyToClipboard(textToCopy)
-                appWindowScope?.showToast("Copied")
-            }
-        } else {
-            copyToClipboard(textToCopy)
-            appWindowScope?.showToast("Copied")
-        }
-    }
-
-    private fun copyToClipboard(text: String) {
-        Tools.clipboardString = text
     }
 
     fun showOptions(
         title: String = "",
         message: String = "",
         supportLinks: Boolean = true,
-        size: DpSize = DpSize(400.dp, 300.dp),
+        size: DpSize = mediumWindowSize,
         buttonWidth: Dp = 120.dp,
         options: List<Option>
     ) {
@@ -131,7 +107,7 @@ object DialogHelper {
     fun showConfirm(
         message: String,
         title: String = "Confirm",
-        size: DpSize = DpSize(400.dp, 300.dp),
+        size: DpSize = mediumWindowSize,
         supportLinks: Boolean = true,
         onDenyTitle: String = "Cancel",
         onConfirmTitle: String = "Confirm",
@@ -174,7 +150,7 @@ object DialogHelper {
     fun showMessage(
         title: String,
         message: String,
-        size: DpSize = DpSize(400.dp, 300.dp)
+        size: DpSize = mediumWindowSize
     ) {
         ApplicationState.newWindow(
             title,
@@ -199,22 +175,11 @@ object DialogHelper {
         }
     }
 
-    fun showMessageSmall(
-        title: String,
-        message: String
-    ) {
-        showMessage(
-            title,
-            message,
-            DpSize(300.dp, 200.dp)
-        )
-    }
-
     fun showError(
         title: String,
         message: String?,
         e: Exception? = null,
-        size: DpSize = DpSize(400.dp, 300.dp)
+        size: DpSize = mediumWindowSize
     ) {
         ApplicationState.newWindow(
             title,
@@ -246,7 +211,7 @@ object DialogHelper {
 
     fun showError(
         message: String,
-        size: DpSize = DpSize(400.dp, 300.dp)
+        size: DpSize = mediumWindowSize
     ) {
         showError(
             "Error",
@@ -258,7 +223,7 @@ object DialogHelper {
     fun showError(
         message: String,
         e: Exception,
-        size: DpSize = DpSize(400.dp, 300.dp)
+        size: DpSize = mediumWindowSize
     ) {
         showError(
             "Error",
@@ -267,4 +232,7 @@ object DialogHelper {
             size
         )
     }
+
+    val smallWindowSize = DpSize(300.dp, 200.dp)
+    val mediumWindowSize = DpSize(400.dp, 300.dp)
 }

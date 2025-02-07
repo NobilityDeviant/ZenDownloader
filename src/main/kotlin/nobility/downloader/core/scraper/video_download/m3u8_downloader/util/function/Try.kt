@@ -365,7 +365,7 @@ interface Try<T> : Serializable {
         fun isFatal(throwable: Throwable?): Boolean {
             return (throwable is InterruptedException
                     || throwable is LinkageError
-                    || throwable is ThreadDeath
+                    //|| throwable is ThreadDeath
                     || throwable is VirtualMachineError)
         }
 

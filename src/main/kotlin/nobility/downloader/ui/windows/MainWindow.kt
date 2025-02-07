@@ -36,7 +36,8 @@ import nobility.downloader.core.Core
 import nobility.downloader.core.settings.Defaults
 import nobility.downloader.ui.components.*
 import nobility.downloader.ui.components.dialog.DialogHelper
-import nobility.downloader.ui.theme.coreTheme
+import nobility.downloader.ui.components.dialog.DialogHelper.smallWindowSize
+import nobility.downloader.ui.theme.CoreTheme
 import nobility.downloader.ui.windows.utils.AppWindowScope
 import nobility.downloader.ui.windows.utils.ApplicationState
 import nobility.downloader.utils.*
@@ -67,7 +68,7 @@ private fun uiWrapper(
     }
     val scope = rememberCoroutineScope()
     val closeMenu = { showFileMenu = false }
-    coreTheme {
+    CoreTheme {
         Scaffold(
             modifier = Modifier.fillMaxSize(),
             topBar = {
@@ -111,13 +112,13 @@ private fun uiWrapper(
                                     if (page == Page.DOWNLOADS) {
                                         BadgedBox(
                                             badge = {
-                                                if (Core.child.downloadsInProgress.value > 0) {
+                                                if (Core.child.downloadsInQueue.value > 0) {
                                                     Badge(
                                                         containerColor = Color.Red,
                                                         modifier = Modifier.offset(y = 2.dp, x = (-8).dp)
                                                     ) {
                                                         Text(
-                                                            Core.child.downloadsInProgress.value.toString(),
+                                                            Core.child.downloadsInQueue.value.toString(),
                                                             overflow = TextOverflow.Clip,
                                                             color = Color.White,
                                                             fontWeight = FontWeight.Bold,
@@ -155,10 +156,20 @@ private fun uiWrapper(
                         }
                     },
                     actions = {
+                        if (Core.currentPage == Page.SETTINGS) {
+                            tooltipIconButton(
+                                "Hover over each settings title to see it's description.",
+                                icon = EvaIcons.Fill.QuestionMarkCircle,
+                                iconSize = mediumIconSize,
+                                spacePosition = SpacePosition.START,
+                                space = 10.dp
+                            ) {}
+                        }
                         if (Core.currentPage == Page.DOWNLOADS) {
                             tooltipIconButton(
                                 "Open Download Folder",
-                                icon = EvaIcons.Fill.Folder
+                                icon = EvaIcons.Fill.Folder,
+                                iconSize = mediumIconSize
                             ) {
                                 Tools.openFile(
                                     Defaults.SAVE_FOLDER.string()
@@ -301,7 +312,11 @@ private fun uiWrapper(
                                                 val size = Core.child.downloadList.size
                                                 Core.child.downloadList.clear()
                                                 BoxHelper.shared.downloadBox.removeAll()
-                                                DialogHelper.showMessageSmall("Success", "Deleted $size downloads.")
+                                                DialogHelper.showMessage(
+                                                    "Success",
+                                                    "Deleted $size downloads.",
+                                                    size = smallWindowSize
+                                                )
                                             }
                                         } else {
                                             DialogHelper.showError("You can't clear downloads while things are downloading.")
@@ -338,7 +353,11 @@ private fun uiWrapper(
                                                 }
                                                 Core.child.downloadList.clear()
                                                 BoxHelper.shared.downloadBox.removeAll()
-                                                DialogHelper.showMessageSmall("Success", "Deleted $size downloads.")
+                                                DialogHelper.showMessage(
+                                                    "Success",
+                                                    "Deleted $size downloads.",
+                                                    size = smallWindowSize
+                                                )
                                             }
                                         } else {
                                             DialogHelper.showError("You can't clear downloads while things are downloading.")
@@ -355,6 +374,20 @@ private fun uiWrapper(
                                     ) {
                                         closeMenu()
                                         Tools.openFile(Constants.databasePath)
+                                    }
+                                    defaultDropdownItem(
+                                        "Reset Settings",
+                                        EvaIcons.Fill.Refresh
+                                    ) {
+                                        DialogHelper.showConfirm(
+                                            "Are you sure you want to reset your settings to the default ones?",
+                                            "Reset Settings",
+                                            size = smallWindowSize
+                                        ) {
+                                            BoxHelper.resetSettings()
+                                            Core.settingsView.updateValues()
+                                            windowScope.showToast("Settings have been reset.")
+                                        }
                                     }
                                 }
                             }

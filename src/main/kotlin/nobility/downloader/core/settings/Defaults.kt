@@ -288,6 +288,76 @@ enum class Defaults(
         """.trimIndent(),
         "Enable Random Series Rows"
     ),
+    VIDEO_RETRIES(
+        "vid_retries",
+        15,
+        """
+            This is the amount of retries for each video download process.
+            After this amount of errors, it will skip the video entirely.
+            Increase it if you're experiencing any issues with retries.
+            Minimum: 1 | Maximum: 100
+            Default: 15
+        """.trimIndent()
+    ),
+    FILE_SIZE_RETRIES(
+        "file_size_retries",
+        3,
+        """
+            This is the amount of retries for each videos file size check.
+            After this amount of errors, it will skip the videos selected quality and try a different one.
+            Minimum: 1 | Maximum: 100
+            Default: 3
+        """.trimIndent()
+    ),
+    QUALITY_RETRIES(
+        "quality_retries",
+        5,
+        """
+            This is the amount of retries for each video quality check.
+            Each quality will be checked for a video in a loop.
+            IE: 576, 720, 1080
+            If searching for a quality throws an error, it will retry this amount of times.
+            If it reaches this amount, it will skip that quality and check the next one.
+            Minimum: 1 | Maximum: 100
+            Default: 5
+        """.trimIndent()
+    ),
+    SIMPLE_RETRIES(
+        "simple_retries",
+        5,
+        """
+            This is the amount of Simple Mode retries.
+            Simple Mode is when the program tries to retrieve the pages source code purely using HTTP Requests.
+            This results in a faster download process and is used first.
+            If it throws an error this amount of times, it will move on to trying Full Mode.
+            Minimum: 1 | Maximum: 100
+            Default: 5
+        """.trimIndent()
+    ),
+    FULL_RETRIES(
+        "full_retries",
+        5,
+        """
+            This is the amount of Full Mode retries.
+            Full Mode is when the program tries to retrieve the pages source code using Selenium.
+            This is slower than Simple Mode and is used as a backup option.
+            If it throws an error this amount of times, it will fail and increase the Video Retries.
+            Minimum: 1 | Maximum: 100
+            Default: 5
+        """.trimIndent()
+    ),
+    PREMIUM_RETRIES(
+        "premium_retries",
+        5,
+        """
+            This is the amount of wcopremium.tv download retries.
+            This is used when downloading a movie and you have added your Wco Premium Username/Password
+            If it throws an error this amount of times, it will default to the regular download method.
+            An error can be thrown if the login fails or it fails to load the webpage or video.
+            Minimum: 1 | Maximum: 100
+            Default: 5
+        """.trimIndent()
+    ),
     WCO_GENRES_LAST_UPDATED("wco_genres_last_updated", 0L),
     WCO_RECENT_LAST_UPDATED("wco_recent_last_updated", 0L),
     DB_LAST_SCROLL_POS("db_last_scroll_pos", 0),
@@ -342,7 +412,24 @@ enum class Defaults(
             DISABLE_WCO_URLS_UPDATE,
             WCO_PREMIUM_USERNAME,
             WCO_PREMIUM_PASSWORD,
-            SHOW_WCO_PREMIUM_PASSWORD
+            SHOW_WCO_PREMIUM_PASSWORD,
+            VIDEO_RETRIES,
+            FILE_SIZE_RETRIES,
+            QUALITY_RETRIES,
+            SIMPLE_RETRIES,
+            FULL_RETRIES,
+            PREMIUM_RETRIES
+        )
+
+        val intFields get() = listOf(
+            DOWNLOAD_THREADS,
+            TIMEOUT,
+            VIDEO_RETRIES,
+            FILE_SIZE_RETRIES,
+            QUALITY_RETRIES,
+            SIMPLE_RETRIES,
+            FULL_RETRIES,
+            PREMIUM_RETRIES
         )
 
         val checkBoxes get() = listOf(

@@ -1,6 +1,8 @@
 package nobility.downloader.ui.components
 
 import androidx.compose.foundation.*
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsHoveredAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -112,10 +114,18 @@ fun defaultDropdownItem(
     modifier: Modifier = Modifier,
     onClick: () -> Unit
 ) {
+    val interaction =  remember { MutableInteractionSource() }
+    val hovered by interaction.collectIsHoveredAsState()
     DropdownMenuItem(
         onClick = onClick,
         enabled = enabled,
-        modifier = modifier
+        modifier = modifier.then(
+            Modifier.background(
+                if (hovered) MaterialTheme.colorScheme.surface.tone(35.0)
+                else MaterialTheme.colorScheme.surface
+            )
+        ),
+        interactionSource = interaction
     ) {
         Row(
             horizontalArrangement = Arrangement.spacedBy(7.dp),
@@ -306,7 +316,7 @@ fun pageButton(
     modifier: Modifier = Modifier
 ) {
     defaultButton(
-        page.title + if (page == Page.DOWNLOADS) " (${Core.child.downloadsInQueue.value})" else "",
+        page.title + if (page == Page.DOWNLOADS) " (${Core.child.downloadsInProgress.value})" else "",
         modifier = modifier,
         colors = ButtonDefaults.buttonColors(
             containerColor = if (Core.currentPage == page)
@@ -403,29 +413,11 @@ fun defaultButton(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun defaultCheckbox(
-    checked: MutableState<Boolean>,
-    modifier: Modifier = Modifier,
-    onCheckedChanged: ((Boolean) -> Unit)
-) {
-    val stateChecked by remember { checked }
-    CompositionLocalProvider(LocalMinimumInteractiveComponentEnforcement provides false) {
-        Checkbox(
-            stateChecked,
-            onCheckedChanged,
-            colors = CheckboxDefaults.colors(),
-            modifier = modifier
-        )
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun defaultCheckbox(
     checked: Boolean,
     modifier: Modifier = Modifier,
     onCheckedChanged: ((Boolean) -> Unit)
 ) {
-    CompositionLocalProvider(LocalMinimumInteractiveComponentEnforcement provides false) {
+    CompositionLocalProvider(LocalMinimumInteractiveComponentSize provides 3.dp) {
         Checkbox(
             checked,
             onCheckedChanged,

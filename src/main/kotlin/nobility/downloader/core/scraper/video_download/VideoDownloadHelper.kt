@@ -2,12 +2,14 @@ package nobility.downloader.core.scraper.video_download
 
 import kotlinx.coroutines.*
 import nobility.downloader.core.BoxHelper.Companion.downloadForNameAndQuality
+import nobility.downloader.core.BoxHelper.Companion.int
 import nobility.downloader.core.BoxHelper.Companion.string
 import nobility.downloader.core.Core
 import nobility.downloader.core.entities.Download
 import nobility.downloader.core.scraper.data.ParsedQuality
 import nobility.downloader.core.scraper.data.QualityAndDownload
 import nobility.downloader.core.scraper.video_download.Functions.downloadVideo
+import nobility.downloader.core.scraper.video_download.Functions.fileSize
 import nobility.downloader.core.scraper.video_download.Functions.httpRequestConfig
 import nobility.downloader.core.scraper.video_download.Functions.m3u8Download
 import nobility.downloader.core.scraper.video_download.Functions.readUrlLines
@@ -40,7 +42,7 @@ class VideoDownloadHelper(
         var downloadLink = ""
         var separateAudioLink = ""
         if (data.qualityAndDownloads.isEmpty()) {
-            if (data.resRetries < Constants.maxResRetries) {
+            if (data.resRetries < Defaults.QUALITY_RETRIES.int()) {
                 val result = detectAvailableQualities(slug, qualityOption)
                 if (result.errorCode != -1) {
                     val errorCode = ErrorCode.errorCodeForCode(result.errorCode)
@@ -75,7 +77,7 @@ class VideoDownloadHelper(
                         data.resRetries = 3
                         data.writeMessage("This browser doesn't support JavascriptExecutor.")
                     } else if (errorCode == ErrorCode.M3U8_LINK_FAILED) {
-                        data.m3u8Retries++
+                        data.retries++
                         data.logError(
                             "",
                             errorMessage = result.message
@@ -349,7 +351,7 @@ class VideoDownloadHelper(
                         qualityIndex++
                         continue
                     }
-                    val videoLink = data.driver.currentUrl
+                    val videoLink = data.driver.url()
                     if (videoLink.isNotEmpty()) {
                         qualityAndDownloads.add(
                             QualityAndDownload(quality, videoLink)
@@ -452,7 +454,7 @@ class VideoDownloadHelper(
                             )
                             continue
                         }
-                        val videoLink = data.driver.currentUrl
+                        val videoLink = data.driver.url()
                         if (videoLink.isNotEmpty()) {
                             qualityAndDownloads.add(
                                 QualityAndDownload(quality, videoLink, true)
@@ -757,32 +759,57 @@ class VideoDownloadHelper(
         )
         while (Core.child.isRunning) {
             try {
-                if (retries > Constants.maxRetries) {
+                if (retries > Defaults.VIDEO_RETRIES.int()) {
                     saveFile.delete()
-                    data.writeMessage("Reached max retries of ${Constants.maxRetries}. Skipping 2nd video download.")
+                    data.writeMessage("Reached max retries of ${Defaults.VIDEO_RETRIES.int()}. Skipping 2nd video download.")
                     break
                 }
-                if (qualities.isNotEmpty()) {
-                    qualities.forEach {
-                        if (it.quality == qualityOption) {
-                            downloadLink = it.downloadLink
-                        }
+                qualities.forEach {
+                    if (it.quality == qualityOption) {
+                        downloadLink = it.downloadLink
                     }
                 }
                 if (downloadLink.isNotEmpty()) {
-                    var originalFileSize = Functions.fileSize(downloadLink, data.userAgent)
-                    if (originalFileSize <= 5000) {
-                        if (retries < 2) {
-                            data.writeMessage("(2nd) Failed to determine file size. Retrying...")
-                            retries++
+                    var fileSizeRetries = Defaults.FILE_SIZE_RETRIES.int()
+                    var originalFileSize = 0L
+                    var headMode = true
+                    data.logInfo("(2nd) Checking video file size with $fileSizeRetries retries.")
+                    for (i in 0..fileSizeRetries) {
+                        originalFileSize = fileSize(
+                            downloadLink,
+                            data.userAgent,
+                            headMode
+                        )
+                        if (originalFileSize <= Constants.minFileSize) {
+                            headMode = headMode.not()
+                            if (i == fileSizeRetries / 2) {
+                                data.logError(
+                                    "(2nd) Failed to find video file size. Current retries: $i"
+                                )
+                            }
                             continue
-                        } else if (retries in 2..4) {
-                            data.writeMessage("(2nd) Failed to determine file size. Retrying with a different quality...")
+                        } else {
+                            break
+                        }
+                    }
+                    if (originalFileSize <= Constants.minFileSize) {
+                        if (qualities.isNotEmpty()) {
+                            data.logError(
+                                "(2nd) Failed to find video file size after $fileSizeRetries retries. | Using another quality."
+                            )
                             qualities.remove(
-                                qualities.first { it.downloadLink == downloadLink }
+                                qualities.first {
+                                    it.downloadLink == downloadLink
+                                }
                             )
                             retries++
                             continue
+                        } else {
+                            data.logError(
+                                "(2nd) Failed to find video file size. There are no more qualities to check. | Skipping episode"
+                            )
+                            saveFile.delete()
+                            break
                         }
                     }
                     if (currentDownload != null) {
@@ -815,14 +842,13 @@ class VideoDownloadHelper(
                         currentDownload.dateAdded = System.currentTimeMillis()
                         currentDownload.fileSize = 0
                         currentDownload.queued = true
-                        //todo might have to move this for actual success
                         Core.child.addDownload(currentDownload)
                         data.logInfo("(2nd) Created new download.")
                     } else {
                         data.logInfo("(2nd) Using existing download.")
                     }
                     if (saveFile.exists()) {
-                        if (originalFileSize > 0 && saveFile.length() >= originalFileSize) {
+                        if (saveFile.length() >= originalFileSize) {
                             data.writeMessage("(IO) (2nd) Skipping completed video.")
                             currentDownload.downloadPath = saveFile.absolutePath
                             currentDownload.fileSize = originalFileSize
@@ -835,19 +861,28 @@ class VideoDownloadHelper(
                             break
                         }
                     } else {
-                        try {
-                            val created = saveFile.createNewFile()
-                            if (!created) {
-                                throw Exception("No error thrown.")
+                        var fileRetries = 0
+                        var fileError: Exception? = null
+                        for (i in 0..3) {
+                            try {
+                                val created = saveFile.createNewFile()
+                                if (!created) {
+                                    throw Exception("No error thrown. $i")
+                                }
+                            } catch (e: Exception) {
+                                fileError = e
+                                fileRetries++
+                                continue
                             }
-                        } catch (e: Exception) {
+                        }
+                        if (!saveFile.exists()) {
                             data.logError(
-                                "(2nd) Failed to create second video file. Retrying...",
-                                e,
+                                "(2nd) Failed to create video file after 3 retries. | Skipping episode",
+                                fileError,
                                 true
                             )
-                            retries++
-                            continue
+                            saveFile.delete()
+                            break
                         }
                     }
                     data.writeMessage("(2nd) Starting download with ${qualityOption.tag} quality.")
@@ -872,8 +907,9 @@ class VideoDownloadHelper(
                         break
                     }
                 } else {
-                    data.writeMessage("(2nd) Download link is empty. Retrying...")
-                    retries++
+                    data.writeMessage("(2nd) Download link is empty. There's no more qualities to check. | Skipping episode")
+                    saveFile.delete()
+                    break
                 }
             } catch (e: Exception) {
                 if (currentDownload != null) {
@@ -886,8 +922,7 @@ class VideoDownloadHelper(
                 }
                 data.logError(
                     "(2nd) Failed to download video. Retrying...",
-                    e,
-                    true
+                    e
                 )
                 retries++
             }

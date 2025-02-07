@@ -2,10 +2,12 @@ package nobility.downloader.core.scraper.video_download
 
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import nobility.downloader.core.BoxHelper.Companion.int
 import nobility.downloader.core.Core
 import nobility.downloader.core.scraper.video_download.Functions.downloadVideo
 import nobility.downloader.core.scraper.video_download.Functions.fileSize
 import nobility.downloader.core.scraper.video_download.MovieDownloader.handleMovie
+import nobility.downloader.core.settings.Defaults
 import nobility.downloader.core.settings.Quality
 import nobility.downloader.utils.Constants
 
@@ -23,12 +25,10 @@ class VideoDownloadHandler(
     suspend fun run() = withContext(Dispatchers.IO) {
         while (Core.child.isRunning) {
             if (data.reachedMax()) continue
-            //if (data.reachedMaxSimple()) continue
-            if (data.reachedMaxM3U8()) continue
             if (!data.getNewEpisode()) break
             val slug = data.currentEpisode.slug
             if (slug.isEmpty()) {
-                data.writeMessage("Skipping video with no slug.")
+                data.writeMessage("Skipping episode with no slug.")
                 data.finishEpisode()
                 continue
             }
@@ -62,14 +62,33 @@ class VideoDownloadHandler(
                         saveFile
                     )
                 } else {
-                    var originalFileSize = fileSize(downloadLink, data.userAgent)
-                    if (originalFileSize <= 5000) {
-                        if (data.retries < 2) {
-                            data.writeMessage("Failed to determine file size. Retrying...")
-                            data.retries++
+                    var fileSizeRetries = Defaults.FILE_SIZE_RETRIES.int()
+                    var originalFileSize = 0L
+                    var headMode = true
+                    data.logInfo("Checking video file size with $fileSizeRetries retries.")
+                    for (i in 0..fileSizeRetries) {
+                        originalFileSize = fileSize(
+                            downloadLink,
+                            data.userAgent,
+                            headMode
+                        )
+                        if (originalFileSize <= Constants.minFileSize) {
+                            headMode = headMode.not()
+                            if (i == fileSizeRetries / 2) {
+                                data.logError(
+                                    "Failed to find video file size. Current retries: $i"
+                                )
+                            }
                             continue
-                        } else if (data.retries in 2..Constants.maxRetries - 1) {
-                            data.writeMessage("Failed to determine file size. Retrying with a different quality...")
+                        } else {
+                            break
+                        }
+                    }
+                    if (originalFileSize <= Constants.minFileSize) {
+                        if (data.qualityAndDownloads.isNotEmpty()) {
+                            data.logError(
+                                "Failed to find video file size after $fileSizeRetries retries. | Using another quality."
+                            )
                             data.qualityAndDownloads.remove(
                                 data.qualityAndDownloads.first {
                                     it.downloadLink == downloadLink
@@ -77,10 +96,16 @@ class VideoDownloadHandler(
                             )
                             data.retries++
                             continue
+                        } else {
+                            data.logError(
+                                "Failed to find video file size. There are no more qualities to check. | Skipping episode"
+                            )
+                            data.finishEpisode()
+                            continue
                         }
                     }
                     if (saveFile.exists()) {
-                        if (originalFileSize > 0 && saveFile.length() >= originalFileSize) {
+                        if (saveFile.length() >= originalFileSize) {
                             data.writeMessage("(IO) Skipping completed video.")
                             data.currentDownload.downloadPath = saveFile.absolutePath
                             data.currentDownload.fileSize = originalFileSize
@@ -94,18 +119,26 @@ class VideoDownloadHandler(
                             continue
                         }
                     } else {
-                        try {
-                            val created = saveFile.createNewFile()
-                            if (!created) {
-                                throw Exception("No error thrown.")
+                        var fileRetries = 0
+                        var fileError: Exception? = null
+                        for (i in 0..3) {
+                            try {
+                                val created = saveFile.createNewFile()
+                                if (!created) {
+                                    throw Exception("No error thrown. $i")
+                                }
+                            } catch (e: Exception) {
+                                fileError = e
+                                fileRetries++
+                                continue
                             }
-                        } catch (e: Exception) {
+                        }
+                        if (!saveFile.exists()) {
                             data.logError(
-                                "Failed to create video file. Retrying...",
-                                e,
-                                true
+                                "Failed to create video file after 3 retries. | Skipping episode",
+                                fileError
                             )
-                            data.retries++
+                            data.finishEpisode()
                             continue
                         }
                     }
@@ -121,7 +154,6 @@ class VideoDownloadHandler(
                         saveFile,
                         data
                     )
-                    //originalFileSize = saveFile.length()
                     data.currentDownload.downloading = false
                     //second time to ensure ui update
                     Core.child.updateDownloadInDatabase(

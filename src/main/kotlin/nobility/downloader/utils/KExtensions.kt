@@ -11,7 +11,28 @@ import nobility.downloader.core.Core
 import nobility.downloader.core.settings.Defaults
 import org.apache.commons.io.FileUtils
 import org.apache.commons.lang3.StringUtils
+import org.openqa.selenium.WebDriver
 import java.io.File
+
+//fix the new selenium pageSource being nullable.
+//why?
+fun WebDriver.source(): String {
+    val src = pageSource
+    return if (!src.isNullOrEmpty()) {
+        src
+    } else {
+        ""
+    }
+}
+
+fun WebDriver.url(): String {
+    val url = currentUrl
+    return if (!url.isNullOrEmpty()) {
+        url
+    } else {
+        ""
+    }
+}
 
 fun Color.tone(tone: Double): Color {
     return toHct()

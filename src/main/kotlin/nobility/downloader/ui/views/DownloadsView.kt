@@ -13,7 +13,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.CursorDropdownMenu
 import androidx.compose.material.Icon
-import androidx.compose.material.ripple.rememberRipple
+import androidx.compose.material.ripple
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.VerticalDivider
@@ -36,9 +36,9 @@ import nobility.downloader.core.BoxHelper.Companion.seriesForSlug
 import nobility.downloader.core.Core
 import nobility.downloader.core.entities.Download
 import nobility.downloader.core.scraper.data.ToDownload
+import nobility.downloader.ui.components.FullBox
 import nobility.downloader.ui.components.defaultDropdownItem
 import nobility.downloader.ui.components.dialog.DialogHelper
-import nobility.downloader.ui.components.FullBox
 import nobility.downloader.ui.components.verticalScrollbar
 import nobility.downloader.ui.components.verticalScrollbarEndPadding
 import nobility.downloader.ui.windows.utils.AppWindowScope
@@ -441,7 +441,7 @@ class DownloadsView : ViewPage {
                 ) { showFileMenu = showFileMenu.not() }
                 .clickable(
                     interactionSource = remember { MutableInteractionSource() },
-                    indication = rememberRipple(
+                    indication = ripple(
                         color = MaterialTheme.colorScheme
                             .secondaryContainer.hover()
                     )

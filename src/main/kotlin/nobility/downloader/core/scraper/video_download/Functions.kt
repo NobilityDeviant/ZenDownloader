@@ -8,9 +8,9 @@ import nobility.downloader.core.scraper.video_download.m3u8_downloader.core.M3u8
 import nobility.downloader.core.scraper.video_download.m3u8_downloader.core.M3u8DownloadListener
 import nobility.downloader.core.scraper.video_download.m3u8_downloader.http.config.HttpRequestManagerConfig
 import nobility.downloader.core.settings.Defaults
-import nobility.downloader.utils.Constants
 import nobility.downloader.utils.Resource
 import nobility.downloader.utils.Tools
+import nobility.downloader.utils.source
 import java.io.*
 import java.net.URI
 import javax.net.ssl.HttpsURLConnection
@@ -30,7 +30,7 @@ object Functions {
     ): Resource<StringBuilder> = withContext(Dispatchers.IO) {
         var simpleRetries = 0
         var exception: Exception? = null
-        while (simpleRetries < Constants.maxSimpleRetries) {
+        while (simpleRetries < Defaults.SIMPLE_RETRIES.int()) {
             var con: HttpsURLConnection? = null
             var reader: BufferedReader? = null
             val sb = StringBuilder()
@@ -64,18 +64,18 @@ object Functions {
             exception
         )
         var fullModeRetries = 0
-        while (fullModeRetries <= Constants.maxFullRetries) {
+        while (fullModeRetries <= Defaults.FULL_RETRIES.int()) {
             data.driver.navigate().to(url)
-            if (data.driver.pageSource.contains("404 - Page not Found")) {
+            if (data.driver.source().contains("404 - Page not Found")) {
                 return@withContext Resource.Error("404 Page not found.")
             }
-            if (data.driver.pageSource.contains("Sorry, you have been blocked")) {
+            if (data.driver.source().contains("Sorry, you have been blocked")) {
                 fullModeRetries++
                 delay(500)
                 continue
             }
             val sb = StringBuilder()
-            data.driver.pageSource.lines().forEach {
+            data.driver.source().lines().forEach {
                 sb.appendLine(it)
             }
             return@withContext Resource.Success(sb)
@@ -116,11 +116,14 @@ object Functions {
 
     suspend fun fileSize(
         link: String,
-        userAgent: String
+        userAgent: String,
+        headMode: Boolean
     ): Long = withContext(Dispatchers.IO) {
         val con = wcoConnection(link, userAgent)
-        con.requestMethod = "HEAD"
-        con.useCaches = false
+        if (!headMode) {
+            con.requestMethod = "HEAD"
+            con.useCaches = false
+        }
         return@withContext con.contentLengthLong
     }
 

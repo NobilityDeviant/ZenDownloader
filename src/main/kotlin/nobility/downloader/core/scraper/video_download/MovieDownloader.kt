@@ -3,6 +3,7 @@ package nobility.downloader.core.scraper.video_download
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import nobility.downloader.core.BoxHelper.Companion.downloadForSlugAndQuality
+import nobility.downloader.core.BoxHelper.Companion.int
 import nobility.downloader.core.BoxHelper.Companion.string
 import nobility.downloader.core.Core
 import nobility.downloader.core.entities.Download
@@ -15,6 +16,7 @@ import nobility.downloader.core.settings.Quality
 import nobility.downloader.utils.Constants
 import nobility.downloader.utils.fixForFiles
 import nobility.downloader.utils.slugToLink
+import nobility.downloader.utils.source
 import org.openqa.selenium.By
 import org.openqa.selenium.support.ui.ExpectedConditions
 import org.openqa.selenium.support.ui.WebDriverWait
@@ -53,100 +55,91 @@ object MovieDownloader {
         val premPassword = Defaults.WCO_PREMIUM_PASSWORD.string()
 
         if (premUser.isNotEmpty() && premPassword.isNotEmpty()) {
-            if (data.premRetries < Constants.maxPremRetries) {
-                try {
-                    data.driver.navigate().to(
-                        "https://www.wcopremium.tv/wp-login.php"
-                    )
-                    val usernameField = data.driver.findElement(By.id("user_login"))
-                    val passwordField = data.driver.findElement(By.id("user_pass"))
-                    usernameField.sendKeys(premUser)
-                    passwordField.sendKeys(premPassword)
-                    passwordField.submit()
+            if (data.premRetries < Defaults.PREMIUM_RETRIES.int()) {
+                if (data.qualityAndDownloads.isEmpty()) {
                     try {
-                        //look for an element only found while logged in.
-                        wait.pollingEvery(Duration.ofSeconds(1))
-                            .withTimeout(Duration.ofSeconds(15))
-                            .until(
-                                ExpectedConditions.presenceOfElementLocated(
-                                    By.className("header-top-right")
-                                )
-                            )
-                        //no error. logged in successfully
                         data.driver.navigate().to(
-                            "https://www.wcopremium.tv/${movie.slug}"
+                            "https://www.wcopremium.tv/wp-login.php"
                         )
-                        val movieQualities = mutableListOf<QualityAndDownload>()
-                        val src = data.driver.pageSource.lines()
-                        val hd1080 = """format: "hd1080", src: """"
-                        val hd720 = """format: "hd720", src: """"
-                        val sd576 = """format: "sd576", src: """"
-                        val endTag = """", type: "video/mp4"},"""
-                        src.forEach { line ->
-                            if (line.contains(hd1080)) {
-                                movieQualities.add(
-                                    QualityAndDownload(
-                                        Quality.HIGH,
-                                        line.substringAfter(hd1080).substringBefore(endTag)
+                        val usernameField = data.driver.findElement(By.id("user_login"))
+                        val passwordField = data.driver.findElement(By.id("user_pass"))
+                        usernameField.sendKeys(premUser)
+                        passwordField.sendKeys(premPassword)
+                        passwordField.submit()
+                        try {
+                            //look for an element only found while logged in.
+                            wait.pollingEvery(Duration.ofSeconds(1))
+                                .withTimeout(Duration.ofSeconds(15))
+                                .until(
+                                    ExpectedConditions.presenceOfElementLocated(
+                                        By.className("header-top-right")
                                     )
                                 )
-                                data.logInfo("[PREM] Found ${Quality.HIGH} quality.")
-                            } else if (line.contains(hd720)) {
-                                movieQualities.add(
-                                    QualityAndDownload(
-                                        Quality.MED,
-                                        line.substringAfter(hd720).substringBefore(endTag)
-                                    )
-                                )
-                                data.logInfo("[PREM] Found ${Quality.MED} quality.")
-                            } else if (line.contains(sd576)) {
-                                movieQualities.add(
-                                    QualityAndDownload(
-                                        Quality.LOW,
-                                        line.substringAfter(sd576).substringBefore(endTag)
-                                    )
-                                )
-                                data.logInfo("[PREM] Found ${Quality.LOW} quality.")
-                            }
-                        }
-                        if (movieQualities.isNotEmpty()) {
-                            qualityOption = Quality.bestQuality(
-                                qualityOption,
-                                movieQualities.map { it.quality }
+                            //no error. logged in successfully
+                            data.driver.navigate().to(
+                                "https://www.wcopremium.tv/${movie.slug}"
                             )
-                            movieQualities.forEach {
-                                if (it.quality == qualityOption) {
-                                    downloadLink = it.downloadLink
+                            val src = data.driver.source().lines()
+                            val hd1080 = """format: "hd1080", src: """"
+                            val hd720 = """format: "hd720", src: """"
+                            val sd576 = """format: "sd576", src: """"
+                            val endTag = """", type: "video/mp4"},"""
+                            src.forEach { line ->
+                                if (line.contains(hd1080)) {
+                                    data.qualityAndDownloads.add(
+                                        QualityAndDownload(
+                                            Quality.HIGH,
+                                            line.substringAfter(hd1080).substringBefore(endTag)
+                                        )
+                                    )
+                                    data.logInfo("[PREM] Found ${Quality.HIGH} quality.")
+                                } else if (line.contains(hd720)) {
+                                    data.qualityAndDownloads.add(
+                                        QualityAndDownload(
+                                            Quality.MED,
+                                            line.substringAfter(hd720).substringBefore(endTag)
+                                        )
+                                    )
+                                    data.logInfo("[PREM] Found ${Quality.MED} quality.")
+                                } else if (line.contains(sd576)) {
+                                    data.qualityAndDownloads.add(
+                                        QualityAndDownload(
+                                            Quality.LOW,
+                                            line.substringAfter(sd576).substringBefore(endTag)
+                                        )
+                                    )
+                                    data.logInfo("[PREM] Found ${Quality.LOW} quality.")
                                 }
                             }
-                        }
-                    } catch (_: Exception) {
-                        data.writeMessage(
-                            "Your wcopremium.tv credentials didn't work. | Retrying..."
-                        )
-                        data.premRetries++
-                        return@withContext
-                        /*try {
-                            val loginError = data.driver.findElement(By.id("login_error"))
-                            if (loginError.text.contains("is not registered")) {
-
+                            if (data.qualityAndDownloads.isNotEmpty()) {
+                                qualityOption = Quality.bestQuality(
+                                    qualityOption,
+                                    data.qualityAndDownloads.map { it.quality }
+                                )
+                                data.qualityAndDownloads.forEach {
+                                    if (it.quality == qualityOption) {
+                                        downloadLink = it.downloadLink
+                                    }
+                                }
                             }
-                        } catch (_: Exception) {}*/
-                        //clears the login error
-                        //data.driver.navigate().to(
-                        //  "https://www.wcopremium.tv/wp-login.php?=random"
-                        //)
+                        } catch (_: Exception) {
+                            data.writeMessage(
+                                "Your wcopremium.tv credentials didn't work. | Retrying..."
+                            )
+                            data.premRetries++
+                            return@withContext
+                        }
+                    } catch (e: Exception) {
+                        data.writeMessage(
+                            "Failed to log into wcopremium.tv | Retrying..."
+                        )
+                        data.logError(
+                            "Failed to log into wcopremium.tv",
+                            e
+                        )
+                        data.retries++
+                        return@withContext
                     }
-                } catch (e: Exception) {
-                    data.writeMessage(
-                        "Failed to log into wcopremium.tv | Retrying..."
-                    )
-                    data.logError(
-                        "Failed to log into wcopremium.tv",
-                        e
-                    )
-                    data.retries++
-                    return@withContext
                 }
             } else {
                 data.writeMessage("Reached max premium login retries. Using regular method.")
@@ -162,8 +155,14 @@ object MovieDownloader {
                 wait.pollingEvery(Duration.ofSeconds(1))
                     .withTimeout(Duration.ofSeconds(15))
                     .until(ExpectedConditions.attributeToBeNotEmpty(videoPlayer, "src"))
-                downloadLink = videoPlayer.getAttribute("src")
-                videoLinkError = videoPlayer.getAttribute("innerHTML")
+                val src = videoPlayer.getDomAttribute("src")
+                val videoError = videoPlayer.getDomAttribute("innerHTML")
+                if (src != null) {
+                    downloadLink = src
+                }
+                if (videoError != null) {
+                    videoLinkError = videoError
+                }
                 qualityOption = Quality.LOW
             } catch (e: Exception) {
                 data.writeMessage(
@@ -230,10 +229,45 @@ object MovieDownloader {
                 data.logInfo("Using existing download for movie.")
             }
             data.driver.navigate().to(downloadLink)
-            val originalFileSize = fileSize(downloadLink, data.base.userAgent)
-            if (originalFileSize <= 5000) {
-                data.writeMessage("Failed to determine movie file size. Retrying...")
-                data.retries++
+            var fileSizeRetries = Defaults.FILE_SIZE_RETRIES.int()
+            var originalFileSize = 0L
+            var headMode = true
+            data.logInfo("Checking movie file size with $fileSizeRetries retries.")
+            for (i in 0..fileSizeRetries) {
+                originalFileSize = fileSize(
+                    downloadLink,
+                    data.userAgent,
+                    headMode
+                )
+                if (originalFileSize <= Constants.minFileSize) {
+                    headMode = headMode.not()
+                    if (i == fileSizeRetries / 2) {
+                        data.writeMessage(
+                            "Failed to find movie file size. Current retries: $i"
+                        )
+                    }
+                    continue
+                } else {
+                    break
+                }
+            }
+            if (originalFileSize <= Constants.minFileSize) {
+                if (data.qualityAndDownloads.isNotEmpty()) {
+                    data.logError(
+                        "Failed to find movie file size after $fileSizeRetries retries. | Using another quality."
+                    )
+                    data.qualityAndDownloads.remove(
+                        data.qualityAndDownloads.first {
+                            it.downloadLink == downloadLink
+                        }
+                    )
+                    data.retries++
+                } else {
+                    data.logError(
+                        "Failed to find movie file size after $fileSizeRetries retries. | Skipping movie..."
+                    )
+                    data.finishEpisode()
+                }
                 return@withContext
             }
             if (saveFile.exists()) {
@@ -246,18 +280,27 @@ object MovieDownloader {
                     return@withContext
                 }
             } else {
-                try {
-                    val created = saveFile.createNewFile()
-                    if (!created) {
-                        throw Exception("No error thrown.")
+                var fileRetries = 0
+                var fileError: Exception? = null
+                for (i in 0..3) {
+                    try {
+                        val created = saveFile.createNewFile()
+                        if (!created) {
+                            throw Exception("No error thrown. $i")
+                        }
+                    } catch (e: Exception) {
+                        fileError = e
+                        fileRetries++
+                        continue
                     }
-                } catch (e: Exception) {
+                }
+                if (!saveFile.exists()) {
                     data.logError(
-                        "Failed to create video file.",
-                        e
+                        "Failed to create movie video file after 3 retries. | Skipping movie...",
+                        fileError,
+                        true
                     )
-                    data.writeMessage("Failed to create new video file. Retrying...")
-                    data.retries++
+                    data.finishEpisode()
                     return@withContext
                 }
             }

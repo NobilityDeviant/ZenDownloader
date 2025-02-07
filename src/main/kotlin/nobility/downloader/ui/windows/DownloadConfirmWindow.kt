@@ -12,7 +12,6 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.*
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.ripple.rememberRipple
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.Saver
@@ -497,7 +496,7 @@ class DownloadConfirmWindow(
                 shape = RoundedCornerShape(5.dp)
             ).clickable(
                 interactionSource = remember { MutableInteractionSource() },
-                indication = rememberRipple(
+                indication = ripple(
                     color = if (!highlighted)
                         MaterialTheme.colorScheme.secondaryContainer.hover()
                     else
@@ -591,7 +590,7 @@ class DownloadConfirmWindow(
         Row(modifier = Modifier
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
-                indication = rememberRipple(
+                indication = ripple(
                     color = MaterialTheme.colorScheme.primaryContainer
                 )
             ) { onHeaderClicked() }
@@ -696,7 +695,7 @@ class DownloadConfirmWindow(
         downloadButtonEnabled.value = false
         checkForEpisodesButtonEnabled.value = false
         val result = SeriesUpdater.checkForNewEpisodes(series)
-        if (result.data != null) {
+        return@withContext if (result.data != null) {
             for (e in result.data.newEpisodes) {
                 if (!selectedEpisodes.contains(e)) {
                     selectedEpisodes.add(e)
@@ -795,10 +794,9 @@ class DownloadConfirmWindow(
                                         singleEpisode = result.data > 1
                                     } else {
                                         windowScope.showToast("No new episodes were found.")
-                                        FrogLog.logError(
-                                            "Failed to find new episodes for ${series.name}",
-                                            result.message
-                                        )
+                                        if (!result.message.isNullOrEmpty()) {
+                                            FrogLog.logError(result.message)
+                                        }
                                     }
                                 }
                             }
@@ -841,6 +839,7 @@ class DownloadConfirmWindow(
                                         else
                                             selectedEpisodes.sortedWith(Tools.baseEpisodesComparator)
                                     )
+                                    //todo try to support new threads on new video queues
                                     try {
                                         var threads = if (!Defaults.HEADLESS_MODE.boolean())
                                             1 else Defaults.DOWNLOAD_THREADS.int()
@@ -857,18 +856,22 @@ class DownloadConfirmWindow(
                                                     } catch (e: Exception) {
                                                         downloader.killDriver()
                                                         val error = e.localizedMessage
-                                                        if (error.contains("unknown error: cannot find")
-                                                            || error.contains("Unable to find driver executable")
-                                                            || error.contains("unable to find binary")
-                                                        ) {
-                                                            FrogLog.writeMessage(
-                                                                "[$i] Failed to find Chrome. You must install Chrome before downloading videos."
-                                                            )
+                                                        if (!error.isNullOrEmpty()) {
+                                                            if (error.contains("unknown error: cannot find")
+                                                                || error.contains("Unable to find driver executable")
+                                                                || error.contains("unable to find binary")
+                                                            ) {
+                                                                FrogLog.writeMessage(
+                                                                    "[$i] VideoDownloadHandler failed. You must install Chrome before downloading videos."
+                                                                )
+                                                            } else {
+                                                                FrogLog.logError(
+                                                                    "[$i] VideoDownloadHandler failed.",
+                                                                    e
+                                                                )
+                                                            }
                                                         } else {
-                                                            FrogLog.logError(
-                                                                "[$i] VideoDownloader failed.",
-                                                                e
-                                                            )
+                                                            FrogLog.logError("VideoDownloadHandler failed without a valid error.")
                                                         }
                                                     }
                                                 }
@@ -960,18 +963,22 @@ class DownloadConfirmWindow(
                                                     } catch (e: Exception) {
                                                         downloader.killDriver()
                                                         val error = e.localizedMessage
-                                                        if (error.contains("unknown error: cannot find")
-                                                            || error.contains("Unable to find driver executable")
-                                                            || error.contains("unable to find binary")
-                                                        ) {
-                                                            FrogLog.writeMessage(
-                                                                "[$i] Failed to find Chrome. You must install Chrome before downloading videos."
-                                                            )
+                                                        if (!error.isNullOrEmpty()) {
+                                                            if (error.contains("unknown error: cannot find")
+                                                                || error.contains("Unable to find driver executable")
+                                                                || error.contains("unable to find binary")
+                                                            ) {
+                                                                FrogLog.writeMessage(
+                                                                    "[$i] VideoDownloadHandler failed. You must install Chrome before downloading videos."
+                                                                )
+                                                            } else {
+                                                                FrogLog.logError(
+                                                                    "[$i] VideoDownloadHandler failed.",
+                                                                    e
+                                                                )
+                                                            }
                                                         } else {
-                                                            FrogLog.logError(
-                                                                "[$i] VideoDownloader failed.",
-                                                                e
-                                                            )
+                                                            FrogLog.logError("VideoDownloadHandler failed without a valid error.")
                                                         }
                                                     }
                                                 }

@@ -6,10 +6,13 @@ import nobility.downloader.core.driver.DriverBase
 import nobility.downloader.core.entities.Episode
 import nobility.downloader.core.entities.Series
 import nobility.downloader.core.scraper.data.NewEpisodes
+import nobility.downloader.core.scraper.video_download.Functions
+import nobility.downloader.core.scraper.video_download.VideoDownloadData
 import nobility.downloader.utils.FrogLog
 import nobility.downloader.utils.Resource
 import nobility.downloader.utils.Tools
 import nobility.downloader.utils.slugToLink
+import nobility.downloader.utils.source
 import org.jsoup.Jsoup
 
 object SeriesUpdater {
@@ -18,17 +21,62 @@ object SeriesUpdater {
         series: Series
     ): Resource<NewEpisodes> = withContext(Dispatchers.IO) {
         FrogLog.writeMessage("Looking for new episodes for: ${series.name}")
-        val scraper = EpisodeSlugHelper()
-        val result = scraper.getSeriesEpisodesWithSlug(series.slug)
-        scraper.killDriver()
+        val result = gatherSeriesEpisodes(series)
         if (result.data != null) {
             if (result.data.size > series.episodesSize) {
                 return@withContext Resource.Success(
-                    NewEpisodes(compareForNewEpisodes(series, result.data), result.data)
+                    NewEpisodes(
+                        compareForNewEpisodes(series, result.data), result.data
+                    )
                 )
             }
+        } else {
+            return@withContext Resource.Error(
+                "Failed to find new episodes for ${series.name}",
+                result.message
+            )
         }
-        return@withContext Resource.Error("No new episode have been found for ${series.name}.")
+        return@withContext Resource.Error()
+    }
+
+    private suspend fun gatherSeriesEpisodes(
+        series: Series
+    ): Resource<List<Episode>> = withContext(Dispatchers.IO) {
+        val seriesLink = series.slug.slugToLink()
+        val data = VideoDownloadData(
+            customTag = "New Episodes: ${series.slug}"
+        )
+        val result = Functions.readUrlLines(
+            seriesLink,
+            data
+        )
+        val source = result.data
+        if (source != null) {
+            val doc = Jsoup.parse(source.toString())
+            val existsCheck = doc.getElementsByClass("recent-release")
+            if (existsCheck.text().lowercase().contains("page not found")) {
+                return@withContext Resource.Error("Series not found.")
+            }
+            val seriesEpisodes = doc.getElementsByClass("cat-eps")
+            if (seriesEpisodes.isNotEmpty()) {
+                val episodes = mutableListOf<Episode>()
+                seriesEpisodes.reverse()
+                for (element in seriesEpisodes) {
+                    val episodeTitle = element.select("a").text()
+                    val episodeSlug = Tools.extractSlugFromLink(
+                        element.select("a").attr("href")
+                    )
+                    val episode = Episode(
+                        episodeTitle,
+                        episodeSlug,
+                        series.slug
+                    )
+                    episodes.add(episode)
+                }
+                return@withContext Resource.Success(episodes)
+            }
+        }
+        return@withContext Resource.Error()
     }
 
     private class EpisodeSlugHelper : DriverBase() {
@@ -38,7 +86,7 @@ object SeriesUpdater {
             val seriesLink = seriesSlug.slugToLink()
             try {
                 driver.get(seriesLink)
-                val doc = Jsoup.parse(driver.pageSource)
+                val doc = Jsoup.parse(driver.source())
                 val existsCheck = doc.getElementsByClass("recent-release")
                 if (existsCheck.text().lowercase().contains("page not found")) {
                     return@withContext Resource.Error("Page not found.")

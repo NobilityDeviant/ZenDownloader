@@ -13,7 +13,6 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.CursorDropdownMenu
 import androidx.compose.material.Icon
-import androidx.compose.material.ripple.rememberRipple
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -316,7 +315,7 @@ class RecentView: ViewPage {
                 ) { showFileMenu = showFileMenu.not() }
                 .clickable(
                     interactionSource = remember { MutableInteractionSource() },
-                    indication = rememberRipple(
+                    indication = ripple(
                         color = MaterialTheme.colorScheme
                             .secondaryContainer.hover()
                     )

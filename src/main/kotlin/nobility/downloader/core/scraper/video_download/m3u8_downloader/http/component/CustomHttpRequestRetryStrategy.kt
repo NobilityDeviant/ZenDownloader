@@ -143,7 +143,7 @@ open class CustomHttpRequestRetryStrategy protected constructor(
         context: HttpContext
     ): TimeValue {
         var retryAfter: TimeValue
-        val clientContext = HttpClientContext.adapt(context)
+        val clientContext = HttpClientContext.castOrCreate(context)
         retryAfter = clientContext.getAttribute(retryAfterKey, TimeValue::class.java)
         clientContext.removeAttribute(retryAfterKey)
         if (TimeValue.isPositive(retryAfter)) {
@@ -182,7 +182,7 @@ open class CustomHttpRequestRetryStrategy protected constructor(
     private fun getMaxRetries(context: HttpContext?): Int {
         var maxRetries = 20
         if (null != context) {
-            val clientContext = HttpClientContext.adapt(context)
+            val clientContext = HttpClientContext.castOrCreate(context)
             maxRetries = clientContext.getAttribute(
                 maxRetriesKey, Int::class.javaObjectType
             )
@@ -196,10 +196,10 @@ open class CustomHttpRequestRetryStrategy protected constructor(
 
     companion object {
 
-        @Suppress("warnings")
+        @Suppress("ConstPropertyName")
         const val maxRetriesKey: String = "http.maxRetries"
 
-        @Suppress("warnings")
+        @Suppress("ConstPropertyName")
         const val retryAfterKey: String = "http.retryAfter"
 
         fun setMaxRetries(context: HttpContext, maxRetries: Int) {

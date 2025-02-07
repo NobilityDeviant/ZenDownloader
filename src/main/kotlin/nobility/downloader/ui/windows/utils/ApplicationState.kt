@@ -14,7 +14,7 @@ import androidx.compose.ui.window.rememberWindowState
 import kotlinx.coroutines.launch
 import nobility.downloader.ui.components.toast.ToastHostState
 import nobility.downloader.ui.components.toast.toastHost
-import nobility.downloader.ui.theme.coreTheme
+import nobility.downloader.ui.theme.CoreTheme
 import nobility.downloader.utils.AppInfo
 import org.apache.commons.lang3.SystemUtils
 
@@ -118,7 +118,7 @@ class ApplicationState {
                 if (open) {
                     Window(
                         icon = painterResource(AppInfo.APP_ICON_PATH),
-                        //undecorated windows don't work on windows 7
+                        //undecorated windows don't work on windows 7 & maybe windows 11?
                         undecorated = if (!SystemUtils.IS_OS_WINDOWS_7) undecorated else false,
                         transparent = if (!SystemUtils.IS_OS_WINDOWS_7) transparent else false,
                         resizable = resizable,
@@ -142,7 +142,7 @@ class ApplicationState {
                         ),
                         onKeyEvent = keyEvents ?: { false },
                         content = {
-                            coreTheme {
+                            CoreTheme {
                                 scope.content()
                             }
                         }

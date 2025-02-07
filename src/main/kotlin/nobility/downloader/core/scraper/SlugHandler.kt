@@ -87,7 +87,7 @@ class SlugHandler : DriverBase() {
         val link = slug.slugToLink()
         try {
             driver.navigate().to(link)
-            val doc = Jsoup.parse(driver.pageSource)
+            val doc = Jsoup.parse(driver.source())
             val existsCheck = doc.getElementsByClass("recent-release")
             if (existsCheck.text().lowercase().contains("page not found")) {
                 return@withContext Resource.Error("Page not found.")
@@ -96,7 +96,8 @@ class SlugHandler : DriverBase() {
             return@withContext Resource.Success(categoryEpisodes.isNotEmpty())
         } catch (e: Exception) {
             return@withContext Resource.Error(
-                "Failed to load $link", e
+                "Failed to load $link",
+                e
             )
         }
     }
@@ -113,7 +114,7 @@ class SlugHandler : DriverBase() {
         try {
             val episodes = mutableListOf<Episode>()
             driver.navigate().to(fullLink)
-            var doc = Jsoup.parse(driver.pageSource)
+            var doc = Jsoup.parse(driver.source())
             if (identity == SeriesIdentity.MOVIE) {
                 val category = doc.getElementsByClass("header-tag")
                 val h2 = category[0].select("h2")
@@ -138,7 +139,7 @@ class SlugHandler : DriverBase() {
                     return@withContext Resource.Success(series)
                 } else {
                     driver.navigate().to(categoryLink)
-                    doc = Jsoup.parse(driver.pageSource)
+                    doc = Jsoup.parse(driver.source())
                 }
             }
 
@@ -212,7 +213,7 @@ class SlugHandler : DriverBase() {
         val episodeLink = episodeSlug.slugToLink()
         try {
             driver.navigate().to(episodeLink)
-            val doc = Jsoup.parse(driver.pageSource)
+            val doc = Jsoup.parse(driver.source())
             val episodeTitle = doc.getElementsByClass("video-title")
             val category = doc.getElementsByClass("header-tag") //category is the series
             var seriesSlug = ""

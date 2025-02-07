@@ -71,8 +71,9 @@ private val DarkColors = darkColorScheme(
     scrim = md_theme_dark_scrim,
 )
 
+@Suppress("FunctionName")
 @Composable
-fun coreTheme(
+fun CoreTheme(
     useDarkTheme: Boolean = Core.darkMode.value,
     content: @Composable () -> Unit
 ) {

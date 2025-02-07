@@ -95,7 +95,7 @@ object ImageUtils {
         }
     }
 
-    val noImage get() = useResource(AppInfo.NO_IMAGE_PATH) {
+    private val noImage get() = useResource(AppInfo.NO_IMAGE_PATH) {
         ImageIO.read(it).toComposeImageBitmap()
     }
 }
