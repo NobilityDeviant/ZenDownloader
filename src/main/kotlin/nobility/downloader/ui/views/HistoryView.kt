@@ -20,8 +20,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.input.pointer.PointerButton
-import androidx.compose.ui.input.pointer.PointerIcon
-import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -503,23 +501,14 @@ class HistoryView: ViewPage {
             )
             divider()
             val imagePath = BoxHelper.seriesImagesPath + Tools.titleForImages(seriesData.name)
-            Image(
-                bitmap = ImageUtils.fileImageBitmap(
-                    imagePath,
-                    seriesData.imageLink
-                ),
-                contentDescription = null,
+            defaultImage(
+                imagePath,
+                seriesData.imageLink,
                 contentScale = ContentScale.FillBounds,
                 modifier = Modifier.fillMaxSize()
                     .padding(10.dp)
                     .align(Alignment.CenterVertically)
                     .weight(IMAGE_WEIGHT)
-                    .onClick {
-                        DialogHelper.showLinkPrompt(
-                            seriesData.imageLink,
-                            true
-                        )
-                    }.pointerHoverIcon(PointerIcon.Hand)
             )
         }
     }

@@ -16,8 +16,13 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.FilterQuality
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.graphics.asSkiaBitmap
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.input.pointer.PointerIcon
+import androidx.compose.ui.input.pointer.pointerHoverIcon
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -29,13 +34,95 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil3.asImage
+import coil3.compose.AsyncImage
+import coil3.compose.LocalPlatformContext
+import coil3.compose.rememberAsyncImagePainter
+import coil3.request.ImageRequest
+import coil3.request.crossfade
+import coil3.size.Precision
 import compose.icons.EvaIcons
 import compose.icons.evaicons.Fill
 import compose.icons.evaicons.fill.ArrowDown
+import kotlinx.coroutines.Dispatchers
 import nobility.downloader.Page
 import nobility.downloader.core.Core
+import nobility.downloader.ui.windows.ImagePopoutWindow
+import nobility.downloader.utils.AppInfo
 import nobility.downloader.utils.Constants
+import nobility.downloader.utils.ImageUtils
 import nobility.downloader.utils.tone
+
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+fun defaultImage(
+    imagePath: String,
+    urlBackup: String? = null,
+    contentScale: ContentScale = ContentScale.Fit,
+    modifier: Modifier = Modifier.fillMaxSize(),
+    pointerIcon: PointerIcon? = PointerIcon.Hand,
+    onClick: (() -> Unit)? = null
+) {
+    AsyncImage(
+        model = imageRequest(imagePath, false),
+        contentDescription = null,
+        modifier = modifier.then(
+            Modifier.onClick {
+                if (onClick != null) {
+                    onClick()
+                } else {
+                    ImagePopoutWindow.open(imagePath, urlBackup)
+                }
+            }.then(
+                if (pointerIcon != null)
+                    Modifier.pointerHoverIcon(pointerIcon)
+                else
+                    Modifier
+            )
+        ),
+        contentScale = contentScale,
+        filterQuality = FilterQuality.High,
+        fallback = if (urlBackup != null)
+            rememberAsyncImagePainter(
+                model = imageRequest(urlBackup, true),
+                filterQuality = FilterQuality.High
+            )
+        else rememberAsyncImagePainter(
+            model = AppInfo.NO_IMAGE_PATH_FILE
+        ),
+        error = if (urlBackup != null)
+            rememberAsyncImagePainter(
+                model = imageRequest(urlBackup, true),
+                filterQuality = FilterQuality.High
+            )
+        else rememberAsyncImagePainter(
+            model = AppInfo.NO_IMAGE_PATH_FILE
+        )
+    )
+}
+
+@Composable
+private fun imageRequest(
+    data: String,
+    noImage: Boolean
+): ImageRequest {
+    val builder = ImageRequest.Builder(LocalPlatformContext.current)
+        .data(data)
+        .precision(Precision.EXACT)
+        .crossfade(true)
+        .coroutineContext(Dispatchers.IO)
+    if (noImage) {
+        builder.apply {
+            error {
+                ImageUtils.noImage.asSkiaBitmap().asImage()
+            }
+            fallback {
+                ImageUtils.noImage.asSkiaBitmap().asImage()
+            }
+        }
+    }
+    return builder.build()
+}
 
 data class DropdownOption(
     val title: String,

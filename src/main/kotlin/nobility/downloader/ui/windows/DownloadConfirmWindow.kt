@@ -21,8 +21,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.input.key.isShiftPressed
-import androidx.compose.ui.input.pointer.PointerIcon
-import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -47,7 +45,6 @@ import nobility.downloader.core.scraper.video_download.VideoDownloadHandler
 import nobility.downloader.core.settings.Defaults
 import nobility.downloader.core.settings.Quality
 import nobility.downloader.ui.components.*
-import nobility.downloader.ui.components.dialog.DialogHelper
 import nobility.downloader.ui.windows.utils.AppWindowScope
 import nobility.downloader.ui.windows.utils.ApplicationState
 import nobility.downloader.utils.*
@@ -110,19 +107,13 @@ class DownloadConfirmWindow(
                     overflow = TextOverflow.Ellipsis,
                     fontWeight = FontWeight.Bold
                 )
-                Image(
-                    bitmap = ImageUtils.seriesImageBitmap(series),
-                    contentDescription = "Series Image",
+                defaultImage(
+                    series.imagePath,
+                    series.imageLink,
                     contentScale = ContentScale.FillBounds,
                     modifier = Modifier.size(300.dp, 235.dp)
                         .padding(10.dp)
                         .align(Alignment.CenterHorizontally)
-                        .onClick {
-                            DialogHelper.showLinkPrompt(
-                                series.imageLink,
-                                true
-                            )
-                        }.pointerHoverIcon(PointerIcon.Hand)
                 )
             }
             Column(

@@ -20,8 +20,6 @@ import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onKeyEvent
-import androidx.compose.ui.input.pointer.PointerIcon
-import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -35,12 +33,12 @@ import nobility.downloader.core.Core.Companion.randomSeries
 import nobility.downloader.core.Core.Companion.randomSeries2
 import nobility.downloader.core.entities.data.SeriesIdentity
 import nobility.downloader.ui.components.defaultButton
+import nobility.downloader.ui.components.defaultImage
 import nobility.downloader.ui.components.defaultTextField
 import nobility.downloader.ui.windows.utils.AppWindowScope
 import nobility.downloader.utils.AppInfo
 import nobility.downloader.utils.Constants
 import nobility.downloader.utils.Constants.randomSeriesRowHeight
-import nobility.downloader.utils.ImageUtils
 import nobility.downloader.utils.Tools
 
 class DownloaderView: ViewPage {
@@ -146,19 +144,12 @@ class DownloaderView: ViewPage {
                                     RectangleShape
                                 ).hoverable(interaction)
                             ) {
-                                val bitmap by remember {
-                                    mutableStateOf(
-                                        ImageUtils.fileImageBitmap(it.imagePath)
-                                    )
-                                }
-                                Image(
-                                    bitmap = bitmap,
-                                    contentDescription = it.name,
+                                defaultImage(
+                                    it.imagePath,
                                     contentScale = ContentScale.FillBounds,
-                                    modifier = Modifier.fillMaxSize()
-                                        .onClick {
-                                            Core.openDownloadConfirm(it.asToDownload)
-                                        }.pointerHoverIcon(PointerIcon.Hand)
+                                    onClick = {
+                                        Core.openDownloadConfirm(it.asToDownload)
+                                    }
                                 )
                             }
                         }
@@ -206,19 +197,12 @@ class DownloaderView: ViewPage {
                                     RectangleShape
                                 ).hoverable(interaction)
                             ) {
-                                val bitmap by remember {
-                                    mutableStateOf(
-                                        ImageUtils.fileImageBitmap(it.imagePath)
-                                    )
-                                }
-                                Image(
-                                    bitmap = bitmap,
-                                    contentDescription = it.name,
+                                defaultImage(
+                                    it.imagePath,
                                     contentScale = ContentScale.FillBounds,
-                                    modifier = Modifier.fillMaxSize()
-                                        .onClick {
-                                            Core.openDownloadConfirm(it.asToDownload)
-                                        }.pointerHoverIcon(PointerIcon.Hand)
+                                    onClick = {
+                                        Core.openDownloadConfirm(it.asToDownload)
+                                    }
                                 )
                             }
                         }

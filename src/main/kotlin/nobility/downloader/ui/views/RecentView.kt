@@ -20,8 +20,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.input.pointer.PointerButton
-import androidx.compose.ui.input.pointer.PointerIcon
-import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -44,9 +42,11 @@ import nobility.downloader.core.scraper.RecentScraper
 import nobility.downloader.core.scraper.data.ToDownload
 import nobility.downloader.core.settings.Defaults
 import nobility.downloader.ui.components.*
-import nobility.downloader.ui.components.dialog.DialogHelper
 import nobility.downloader.ui.windows.utils.AppWindowScope
-import nobility.downloader.utils.*
+import nobility.downloader.utils.FrogLog
+import nobility.downloader.utils.Tools
+import nobility.downloader.utils.hover
+import nobility.downloader.utils.linkToSlug
 
 class RecentView: ViewPage {
 
@@ -327,23 +327,14 @@ class RecentView: ViewPage {
             horizontalArrangement = Arrangement.spacedBy(4.dp)
         ) {
             val imagePath = BoxHelper.seriesImagesPath + Tools.titleForImages(recentData.name)
-            Image(
-                bitmap = ImageUtils.fileImageBitmap(
-                    imagePath,
-                    recentData.imagePath
-                ),
-                contentDescription = null,
+            defaultImage(
+                imagePath,
+                recentData.imageLink,
                 contentScale = ContentScale.FillBounds,
                 modifier = Modifier.fillMaxSize()
                     .padding(10.dp)
                     .align(Alignment.CenterVertically)
                     .weight(IMAGE_WEIGHT)
-                    .onClick {
-                        DialogHelper.showLinkPrompt(
-                            recentData.imageLink,
-                            true
-                        )
-                    }.pointerHoverIcon(PointerIcon.Hand)
             )
             divider()
             Text(

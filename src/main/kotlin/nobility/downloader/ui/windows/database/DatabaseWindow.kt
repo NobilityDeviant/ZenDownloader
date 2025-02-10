@@ -19,8 +19,6 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.input.pointer.PointerButton
-import androidx.compose.ui.input.pointer.PointerIcon
-import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.SpanStyle
@@ -629,21 +627,14 @@ class DatabaseWindow {
                 textAlign = TextAlign.Center
             )
             divider()
-            Image(
-                ImageUtils.seriesImageBitmap(series),
-                contentDescription = "Image For ${series.name}",
+            defaultImage(
+                series.imagePath,
+                series.imageLink,
                 contentScale = ContentScale.FillBounds,
                 modifier = Modifier.fillMaxSize()
                     .padding(10.dp)
                     .align(Alignment.CenterVertically)
                     .weight(IMAGE_WEIGHT)
-                    .background(Color.Red)
-                    .onClick {
-                        DialogHelper.showLinkPrompt(
-                            series.imageLink,
-                            true
-                        )
-                    }.pointerHoverIcon(PointerIcon.Hand)
             )
         }
     }

@@ -37,6 +37,7 @@ object ImageUtils {
         return null
     }
 
+    @Suppress("UNUSED")
     fun seriesImageBitmap(
         series: Series
     ): ImageBitmap {
@@ -49,6 +50,7 @@ object ImageUtils {
         }
     }
 
+    @Suppress("UNUSED")
     fun fileImageBitmap(
         filePath: String,
         urlBackup: String? = null
@@ -95,7 +97,7 @@ object ImageUtils {
         }
     }
 
-    private val noImage get() = useResource(AppInfo.NO_IMAGE_PATH) {
+    val noImage get() = useResource(AppInfo.NO_IMAGE_PATH) {
         ImageIO.read(it).toComposeImageBitmap()
     }
 }

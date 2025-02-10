@@ -1,5 +1,7 @@
 package nobility.downloader.utils
 
+import java.io.File
+
 object AppInfo {
 
     const val DEBUG_MODE = false
@@ -7,7 +9,7 @@ object AppInfo {
     const val UPDATE_ASSETS_ON_LAUNCH = true
     const val AUTO_SCROLL_RANDOM_SERIES = false
     private const val NAME = "ZenDownloader"
-    const val VERSION = "1.0.83" //version can only have 3 numbers split by decimals
+    const val VERSION = "1.0.9" //version can only have 3 numbers split by decimals
     const val TITLE = "$NAME v$VERSION"
     const val RELEASES_LINK = "https://github.com/NobilityDeviant/ZenDownloader/releases"
     const val GITHUB_LATEST = "https://api.github.com/repos/NobilityDeviant/ZenDownloader/releases/latest"
@@ -20,4 +22,6 @@ object AppInfo {
     const val WCOFUN_WEBSITE_URLS_LINK = "https://raw.githubusercontent.com/NobilityDeviant/ZenDownloader/master/assets/wco_urls.txt"
     const val WCO_MOVIE_LIST_LINK = "https://raw.githubusercontent.com/NobilityDeviant/ZenDownloader/master/assets/movies.txt"
     const val USER_AGENTS_LINK = "https://raw.githubusercontent.com/NobilityDeviant/ZenDownloader/master/assets/user_agents.txt"
+    val databasePath = "${System.getProperty("user.home")}${File.separator}.zen_database${File.separator}"
+    val NO_IMAGE_PATH_FILE = databasePath + "extra" + File.separator + "no-image.png"
 }

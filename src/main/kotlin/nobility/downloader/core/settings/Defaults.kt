@@ -278,6 +278,7 @@ enum class Defaults(
     ENABLE_PROXY("enable_proxy", false),
     FIRST_LAUNCH("1st-launch", false),
     DARK_MODE("dark_mode", true),
+    ELSE("else", false),
     ENABLE_RANDOM_SERIES(
         "enable_random_series",
         true,

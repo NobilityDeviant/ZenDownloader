@@ -373,7 +373,7 @@ private fun uiWrapper(
                                         EvaIcons.Fill.Folder
                                     ) {
                                         closeMenu()
-                                        Tools.openFile(Constants.databasePath)
+                                        Tools.openFile(AppInfo.databasePath)
                                     }
                                     defaultDropdownItem(
                                         "Reset Settings",

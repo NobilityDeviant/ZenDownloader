@@ -21,7 +21,7 @@ kotlin {
 }
 
 group = "nobility.downloader"
-version = "1.0.83"
+version = "1.0.9"
 
 repositories {
     mavenCentral()
@@ -55,6 +55,8 @@ dependencies {
     implementation(compose.material3)
     implementation("com.materialkolor:material-kolor:2.0.2")
     implementation("br.com.devsrsouza.compose.icons:eva-icons:1.1.1")
+    implementation("io.coil-kt.coil3:coil-compose:3.1.0")
+    implementation("io.coil-kt.coil3:coil-network-okhttp:3.1.0")
     //for unzipping assets
     implementation("net.lingala.zip4j:zip4j:2.11.5")
     //m3u8 downloading

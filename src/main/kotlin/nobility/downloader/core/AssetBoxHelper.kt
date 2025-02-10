@@ -6,6 +6,7 @@ import nobility.downloader.core.entities.MyObjectBox
 import nobility.downloader.core.entities.settings.SettingsMeta
 import nobility.downloader.core.entities.settings.SettingsMeta_
 import nobility.downloader.core.settings.Defaults
+import nobility.downloader.utils.AppInfo
 import nobility.downloader.utils.findUniqueOrFirst
 import java.io.File
 
@@ -18,7 +19,7 @@ class AssetBoxHelper {
 
     //settings data
     private var settingsBoxStore: BoxStore = MyObjectBox.builder()
-        .directory(File(databasePath + "my_data/settings"))
+        .directory(File(AppInfo.databasePath + "my_data/settings"))
         .build()
 
     private val settingsBox: Box<SettingsMeta> = settingsBoxStore.boxFor(SettingsMeta::class.java)
@@ -91,9 +92,5 @@ class AssetBoxHelper {
                 setSetting(it.key, it.value)
             }
         }
-    }
-
-    companion object {
-        val databasePath get() = "${System.getProperty("user.home")}${File.separator}.zen_database${File.separator}"
     }
 }

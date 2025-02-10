@@ -28,7 +28,6 @@ import nobility.downloader.ui.components.defaultButton
 import nobility.downloader.ui.windows.utils.AppWindowScope
 import nobility.downloader.ui.windows.utils.ApplicationState
 import nobility.downloader.utils.AppInfo
-import nobility.downloader.utils.Constants
 import nobility.downloader.utils.Tools
 import nobility.downloader.utils.UserAgents
 import org.jsoup.Jsoup
@@ -382,7 +381,8 @@ class AssetUpdateWindow {
         ),
         WCO_SERIES_LINKS_DISABLE(
             Defaults.DISABLE_WCO_SERIES_LINKS_UPDATE
-        );
+        ),
+        ELSE(Defaults.ELSE);
 
         companion object {
             fun disableForAsset(asset: Asset): AssetDisable {
@@ -394,7 +394,7 @@ class AssetUpdateWindow {
                     Asset.MOVIES -> MOVIES_DISABLE
                     Asset.LINKS -> WCO_SERIES_LINKS_DISABLE
                     Asset.WCO_DATA -> WCO_DATA_DISABLE
-                    else -> USER_AGENTS_DISABLE
+                    else -> ELSE
                 }
             }
         }
@@ -453,13 +453,22 @@ class AssetUpdateWindow {
             AppInfo.USER_AGENTS_LINK,
             userAgentsPath,
             "user_agents.txt"
+        ),
+        //need to download this for now.
+        //coil doesn't allow resources and i can't figure out the new resources api
+        NO_IMAGE(
+            "https://api.github.com/repos/NobilityDeviant/ZenDownloader/commits?path=images/no-image.png&page=1&per_page=1",
+            "https://raw.githubusercontent.com/NobilityDeviant/ZenDownloader/refs/heads/master/images/no-image.png",
+            noImagePath,
+            "no-image.png"
         )
     }
 
     companion object {
-        private val databasePath = Constants.databasePath
+        private val databasePath = AppInfo.databasePath
         private val movieListPath = databasePath + "movies.txt"
         val userAgentsPath = databasePath + "user_agents.txt"
+        val noImagePath = databasePath + File.separator + "extra" + File.separator + "no-image.png"
         private val linksPath = databasePath + "wco" + File.separator + "links" + File.separator
         private val wcoDataPath = databasePath + "wco" + File.separator + "data" + File.separator
         private val seriesPath = databasePath + "series" + File.separator

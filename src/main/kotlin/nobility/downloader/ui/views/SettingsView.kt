@@ -82,7 +82,7 @@ class SettingsView : ViewPage {
             bottomBar = {
                 Column(
                     modifier = Modifier.fillMaxWidth()
-                        .height(bottomBarHeight + 20.dp)
+                        .height(bottomBarHeight)
                         .onClick {
                             focusManager.clearFocus(true)
                         },

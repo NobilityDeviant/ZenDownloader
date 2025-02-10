@@ -27,12 +27,12 @@ class BoxHelper {
 
     //personal data such as downloads & history
     private var dataBoxStore: BoxStore = MyObjectBox.builder()
-        .directory(File(databasePath + "my_data/core"))
+        .directory(File(AppInfo.databasePath + "my_data/core"))
         .build()
 
     //settings data
     private var settingsBoxStore: BoxStore = MyObjectBox.builder()
-        .directory(File(databasePath + "my_data/settings"))
+        .directory(File(AppInfo.databasePath + "my_data/settings"))
         .build()
 
     //cached website series links
@@ -88,10 +88,9 @@ class BoxHelper {
 
         val shared = BoxHelper()
 
-        private val databasePath get() = Constants.databasePath
-        val wcoPath get() = databasePath + File.separator + "wco" + File.separator
-        val seriesPath get() = databasePath + File.separator + "series" + File.separator
-        val seriesImagesPath: String get() = databasePath + "series_images${File.separator}"
+        val wcoPath get() = AppInfo.databasePath + File.separator + "wco" + File.separator
+        val seriesPath get() = AppInfo.databasePath + File.separator + "series" + File.separator
+        val seriesImagesPath: String get() = AppInfo.databasePath + "series_images${File.separator}"
 
         val dubbed get() = shared.dubbedSeriesBox.all.filter { it.name.isNotEmpty() }
         val subbed get() = shared.subbedSeriesBox.all.filter { it.name.isNotEmpty() }

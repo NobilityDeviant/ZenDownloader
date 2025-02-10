@@ -34,12 +34,7 @@ fun main() {
             true
         }
     } else {
-        //initialize the core singleton before anything.
-        //this is the root of the app.
         Core.initialize()
-        /**
-         * The main window is needed to keep the application running.
-         */
         ApplicationState.newWindow(
             AppInfo.TITLE,
             KeyEvents.shared.loadKeyEvents(),
