@@ -7,24 +7,30 @@ import nobility.downloader.core.BoxHelper.Companion.int
 import nobility.downloader.core.BoxHelper.Companion.update
 import nobility.downloader.core.BoxMaker
 import nobility.downloader.core.Core
-import nobility.downloader.core.driver.BasicDriverBase
+import nobility.downloader.core.scraper.video_download.Functions
 import nobility.downloader.core.settings.Defaults
 import nobility.downloader.utils.Resource
 import nobility.downloader.utils.Tools
 import nobility.downloader.utils.Tools.titleForImages
 import nobility.downloader.utils.UserAgents
-import nobility.downloader.utils.source
 import org.jsoup.Jsoup
 import java.io.File
 
 object RecentScraper {
 
     suspend fun run(): Resource<Boolean> = withContext(Dispatchers.IO) {
-        val scraper = BasicDriverBase()
         try {
-            scraper.driver.get(Core.wcoUrl)
-            val doc = Jsoup.parse(scraper.driver.source())
-            scraper.killDriver()
+            val result = Functions.readUrlLines(
+                Core.wcoUrl,
+                "RecentScraper"
+            )
+            val data = result.data
+            if (data == null) {
+                return@withContext Resource.Error(
+                    "Failed to read the websites source code."
+                )
+            }
+            val doc = Jsoup.parse(data.toString())
             val recentEpisodeHolder = doc.getElementById("sidebar_right")
             if (recentEpisodeHolder != null) {
                 val ul = recentEpisodeHolder.select("ul")

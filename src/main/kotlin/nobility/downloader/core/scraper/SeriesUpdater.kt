@@ -2,25 +2,21 @@ package nobility.downloader.core.scraper
 
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import nobility.downloader.core.driver.DriverBase
 import nobility.downloader.core.entities.Episode
 import nobility.downloader.core.entities.Series
 import nobility.downloader.core.scraper.data.NewEpisodes
 import nobility.downloader.core.scraper.video_download.Functions
-import nobility.downloader.core.scraper.video_download.VideoDownloadData
-import nobility.downloader.utils.FrogLog
 import nobility.downloader.utils.Resource
 import nobility.downloader.utils.Tools
 import nobility.downloader.utils.slugToLink
-import nobility.downloader.utils.source
 import org.jsoup.Jsoup
 
 object SeriesUpdater {
 
-    suspend fun checkForNewEpisodes(
+    suspend fun getNewEpisodes(
         series: Series
     ): Resource<NewEpisodes> = withContext(Dispatchers.IO) {
-        FrogLog.writeMessage("Looking for new episodes for: ${series.name}")
+        //FrogLog.writeMessage("Looking for new episodes for: ${series.name}")
         val result = gatherSeriesEpisodes(series)
         if (result.data != null) {
             if (result.data.size > series.episodesSize) {
@@ -43,12 +39,9 @@ object SeriesUpdater {
         series: Series
     ): Resource<List<Episode>> = withContext(Dispatchers.IO) {
         val seriesLink = series.slug.slugToLink()
-        val data = VideoDownloadData(
-            customTag = "New Episodes: ${series.slug}"
-        )
         val result = Functions.readUrlLines(
             seriesLink,
-            data
+            "New Episodes: ${series.slug}"
         )
         val source = result.data
         if (source != null) {
@@ -77,43 +70,6 @@ object SeriesUpdater {
             }
         }
         return@withContext Resource.Error()
-    }
-
-    private class EpisodeSlugHelper : DriverBase() {
-        suspend fun getSeriesEpisodesWithSlug(
-            seriesSlug: String
-        ): Resource<List<Episode>> = withContext(Dispatchers.IO) {
-            val seriesLink = seriesSlug.slugToLink()
-            try {
-                driver.get(seriesLink)
-                val doc = Jsoup.parse(driver.source())
-                val existsCheck = doc.getElementsByClass("recent-release")
-                if (existsCheck.text().lowercase().contains("page not found")) {
-                    return@withContext Resource.Error("Page not found.")
-                }
-                val seriesEpisodes = doc.getElementsByClass("cat-eps")
-                if (seriesEpisodes.isNotEmpty()) {
-                    val episodes = mutableListOf<Episode>()
-                    seriesEpisodes.reverse()
-                    for (element in seriesEpisodes) {
-                        val episodeTitle = element.select("a").text()
-                        val episodeSlug = Tools.extractSlugFromLink(
-                            element.select("a").attr("href")
-                        )
-                        val episode = Episode(
-                            episodeTitle,
-                            episodeSlug,
-                            seriesSlug
-                        )
-                        episodes.add(episode)
-                    }
-                    return@withContext Resource.Success(episodes)
-                }
-            } catch (e: Exception) {
-                return@withContext Resource.Error("Failed to load $seriesLink Error: ${e.localizedMessage}")
-            }
-            return@withContext Resource.Error("Failed to find any episodes for $seriesLink")
-        }
     }
 
     private fun compareForNewEpisodes(

@@ -109,7 +109,7 @@ class SettingsView : ViewPage {
                             width = 150.dp,
                             height = 40.dp
                         ) {
-                            openCheckBoxWindow()
+                            openUpdateOptionsWindow()
                         }
                         defaultButton(
                             "Save Settings",
@@ -637,7 +637,7 @@ class SettingsView : ViewPage {
     }
 
     @OptIn(ExperimentalLayoutApi::class)
-    private fun openCheckBoxWindow() {
+    private fun openUpdateOptionsWindow() {
         ApplicationState.newWindow(
             "Update Options",
             undecorated = false,
@@ -671,9 +671,10 @@ class SettingsView : ViewPage {
                         horizontalArrangement = Arrangement.spacedBy(4.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        if (booleanOptions.map {
-                                Defaults.updateCheckBoxes.contains(it.key)
-                            }.any { it }) {
+                        val updateOptions = booleanOptions.filter {
+                            Defaults.updateCheckBoxes.contains(it.key)
+                        }
+                        if (updateOptions.any { it.value.value }) {
                             defaultButton(
                                 "Enable All Updates",
                                 width = 150.dp,
@@ -684,6 +685,7 @@ class SettingsView : ViewPage {
                                         it.value.value = false
                                     }
                                 }
+                                updateSaveButton()
                             }
                         } else {
                             defaultButton(
@@ -696,6 +698,7 @@ class SettingsView : ViewPage {
                                         it.value.value = true
                                     }
                                 }
+                                updateSaveButton()
                             }
                         }
                         defaultButton(

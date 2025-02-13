@@ -283,7 +283,7 @@ class BoxHelper {
 
         fun addSeries(
             series: Series,
-            identity: SeriesIdentity
+            identity: SeriesIdentity = series.seriesIdentity
         ): Boolean {
             try {
                 when (identity) {
@@ -303,6 +303,7 @@ class BoxHelper {
                                     }
                                     shared.dubbedSeriesBox.remove(queried)
                                 }
+                                series.updateLastUpdated()
                                 shared.dubbedSeriesBox.put(series)
                                 return true
                             }
@@ -323,6 +324,7 @@ class BoxHelper {
                                     }
                                     shared.subbedSeriesBox.remove(queried)
                                 }
+                                series.updateLastUpdated()
                                 shared.subbedSeriesBox.put(series)
                                 return true
                             }
@@ -343,6 +345,7 @@ class BoxHelper {
                                     }
                                     shared.cartoonSeriesBox.remove(queried)
                                 }
+                                series.updateLastUpdated()
                                 shared.cartoonSeriesBox.put(series)
                                 return true
                             }
@@ -363,6 +366,7 @@ class BoxHelper {
                                     }
                                     shared.moviesSeriesBox.remove(queried)
                                 }
+                                series.updateLastUpdated()
                                 shared.moviesSeriesBox.put(series)
                                 return true
                             }
@@ -383,6 +387,7 @@ class BoxHelper {
                                     }
                                     shared.miscSeriesBox.remove(queried)
                                 }
+                                series.updateLastUpdated()
                                 shared.miscSeriesBox.put(series)
                                 return true
                             }
@@ -397,7 +402,7 @@ class BoxHelper {
             return false
         }
 
-        fun seriesForSlug(
+        fun seriesForSlugAndIdentity(
             slug: String,
             identity: SeriesIdentity
         ): Series? {
@@ -436,17 +441,10 @@ class BoxHelper {
         }
 
         fun seriesForSlug(
-            slug: String,
-            identity: Int
-        ): Series? {
-            return seriesForSlug(slug, SeriesIdentity.idForType(identity))
-        }
-
-        fun seriesForSlug(
             slug: String
         ): Series? {
             SeriesIdentity.entries.forEach {
-                val series = seriesForSlug(slug, it)
+                val series = seriesForSlugAndIdentity(slug, it)
                 if (series != null) {
                     return series
                 }
@@ -477,7 +475,7 @@ class BoxHelper {
                     .build().use {
                         val episode = it.findUniqueOrNull()
                         if (episode != null) {
-                            return Pair(seriesForSlug(episode.seriesSlug, identity), episode)
+                            return Pair(seriesForSlugAndIdentity(episode.seriesSlug, identity), episode)
                         }
                     }
             }

@@ -60,6 +60,8 @@ dependencies {
     //for unzipping assets
     implementation("net.lingala.zip4j:zip4j:2.11.5")
     //m3u8 downloading
+    //todo these increase the size of the app way too much.
+    //add ffmpeg as an external option. we don't need all versions just for 1 platform
     implementation("org.bytedeco:ffmpeg:7.1-1.5.11")
     implementation("org.bytedeco:ffmpeg:7.1-1.5.11:windows-x86_64")
     implementation("org.bytedeco:ffmpeg:1.5.11:linux-x86_64")

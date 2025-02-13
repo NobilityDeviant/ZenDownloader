@@ -1,16 +1,13 @@
 package nobility.downloader.core.scraper
 
-import kotlinx.coroutines.*
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import nobility.downloader.core.BoxHelper
 import nobility.downloader.core.BoxHelper.Companion.addIdentityLinkWithSlug
 import nobility.downloader.core.BoxHelper.Companion.addIdentityLinksWithSlug
-import nobility.downloader.core.driver.DriverBase
 import nobility.downloader.core.entities.data.SeriesIdentity
-import nobility.downloader.utils.FrogLog
-import nobility.downloader.utils.Tools
-import nobility.downloader.utils.fixedSlug
-import nobility.downloader.utils.slugToLink
-import nobility.downloader.utils.source
+import nobility.downloader.core.scraper.video_download.Functions
+import nobility.downloader.utils.*
 import org.jsoup.Jsoup
 
 /**
@@ -19,18 +16,25 @@ import org.jsoup.Jsoup
  */
 object IdentityScraper {
 
-    private class Scraper : DriverBase()
-
     private suspend fun scrapeLinksToSlugs(
         identity: SeriesIdentity
     ) = withContext(Dispatchers.Default) {
         val fullIdentityLink = identity.slug.slugToLink()
         val slugs = mutableListOf<String>()
-        val scraper = Scraper()
         try {
-            scraper.driver.navigate().to(fullIdentityLink)
-            val doc = Jsoup.parse(scraper.driver.source())
-            //runs really slow on ubuntu for some reason
+            val result = Functions.readUrlLines(
+                fullIdentityLink,
+                "IdentityScraper"
+            )
+            val data = result.data
+            if (data == null) {
+                FrogLog.logError(
+                    "Failed to find slugs for $identity",
+                    result.message
+                )
+                return@withContext
+            }
+            val doc = Jsoup.parse(data.toString())
             val list = doc.getElementsByClass("ddmcc")
             val uls = list.select("ul")
             for (ul in uls) {
@@ -48,7 +52,10 @@ object IdentityScraper {
                 }
             }
             if (slugs.isEmpty()) {
-                FrogLog.writeMessage("Failed to find link for $identity")
+                FrogLog.logError(
+                    "Failed to find slugs for $identity",
+                    "The slugs list returned empty."
+                )
                 return@withContext
             }
             val added = addIdentityLinksWithSlug(slugs, identity)
@@ -79,8 +86,6 @@ object IdentityScraper {
                 e,
                 true
             )
-        } finally {
-            scraper.killDriver()
         }
     }
 
@@ -105,18 +110,26 @@ object IdentityScraper {
         return@withContext BoxHelper.identityForSeriesSlug(slug)
     }
 
-    fun findIdentityForSlugOnline(
+    suspend fun findIdentityForSlugOnline(
         slug: String
-    ): SeriesIdentity {
+    ): Resource<SeriesIdentity> = withContext(Dispatchers.IO) {
         val fixedSlug = slug.fixedSlug()
         val fullSeriesLink = slug.slugToLink()
         FrogLog.writeMessage("Looking for identity for $fixedSlug online")
         for (identity in SeriesIdentity.filteredValues()) {
             val fullIdentityLink = identity.slug.slugToLink()
-            val scraper = Scraper()
-            scraper.driver.get(fullIdentityLink)
-            val doc = Jsoup.parse(scraper.driver.source())
-            scraper.killDriver()
+            val result = Functions.readUrlLines(
+                fullIdentityLink,
+                "findIdentityForSlugOnline"
+            )
+            val data = result.data
+            if (data == null) {
+                return@withContext Resource.Error(
+                    "Failed to read the source code.",
+                    result.message
+                )
+            }
+            val doc = Jsoup.parse(data.toString())
             val list = doc.getElementsByClass("ddmcc")
             val ul = list.select("ul")
             for (uls in ul) {
@@ -132,7 +145,7 @@ object IdentityScraper {
                     if (s.contains(fixedSlug) || s == fixedSlug) {
                         addIdentityLinkWithSlug(fixedSlug, identity)
                         FrogLog.writeMessage("Successfully labeled $fullSeriesLink as $identity")
-                        return identity
+                        return@withContext Resource.Success(identity)
                     }
                 }
             }
@@ -141,7 +154,7 @@ object IdentityScraper {
         FrogLog.writeMessage("Failed to find identity for $fixedSlug")
         FrogLog.writeMessage("Labeling it as $new")
         addIdentityLinkWithSlug(slug, new)
-        return new
+        return@withContext Resource.Success(new)
     }
 
 }

@@ -20,9 +20,9 @@ import nobility.downloader.core.BoxHelper
 import nobility.downloader.core.BoxHelper.Companion.boolean
 import nobility.downloader.core.BoxHelper.Companion.int
 import nobility.downloader.core.settings.Defaults
+import nobility.downloader.ui.components.FullBox
 import nobility.downloader.ui.components.defaultButton
 import nobility.downloader.ui.components.dialog.DialogHelper
-import nobility.downloader.ui.components.FullBox
 import nobility.downloader.ui.windows.utils.AppWindowScope
 import nobility.downloader.ui.windows.utils.ApplicationState
 import nobility.downloader.utils.Constants.bottomBarHeight
@@ -38,9 +38,9 @@ import javax.net.ssl.HttpsURLConnection
 class ImageUpdaterWindow() {
 
     private val seriesImageUrlTreeUrl =
-        "https://api.github.com/repos/NobilityDeviant/ZenDownloader/git/trees/1ed781a18ce2a02a87720db7661faf7718cb24dc"
+        "https://api.github.com/repos/NobilityDeviant/ZenDownloaderSeriesImages/git/trees/393d8ae0809bed6043eff177ec9ab6d125c6a506"
     private val seriesImageRawUrl =
-        "https://raw.githubusercontent.com/NobilityDeviant/ZenDownloader/master/database/series_images/"
+        "https://raw.githubusercontent.com/NobilityDeviant/ZenDownloaderSeriesImages/master/series_images/"
     private val downloadScope = CoroutineScope(Dispatchers.IO)
     private var appWindowScope: AppWindowScope? = null
     private var cancelled by mutableStateOf(false)
@@ -231,7 +231,7 @@ class ImageUpdaterWindow() {
                 downloading = true
                 downloadProgress = 0f
                 totalImages = tree.size
-                val threads = 5
+                val threads = 15
                 val lists = Lists.partition(tree, tree.size / threads)
                 lists.forEach { list ->
                     jobs.add(launch {

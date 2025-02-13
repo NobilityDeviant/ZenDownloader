@@ -80,12 +80,14 @@ class DownloadConfirmWindow(
     @OptIn(ExperimentalFoundationApi::class)
     @Composable
     fun seriesInfoHeader(
-        scope: AppWindowScope,
+        windowScope: AppWindowScope,
         coroutineScope: CoroutineScope
     ) {
         val genresListState = rememberLazyListState()
         Row(
-            modifier = Modifier.height(235.dp).fillMaxWidth()
+            modifier = Modifier.height(
+                if (!movieMode) 235.dp else 600.dp
+            ).fillMaxWidth()
         ) {
             Column(
                 modifier = Modifier.fillMaxHeight()
@@ -154,7 +156,7 @@ class DownloadConfirmWindow(
                                 width = 120.dp
                             ) {
                                 Core.openWco(it.name)
-                                scope.showToast("Searching for ${it.name} in Database")
+                                windowScope.showToast("Searching for ${it.name} in Database")
                             }
                         }
                     }
@@ -170,14 +172,14 @@ class DownloadConfirmWindow(
                             listOf(
                                 ContextMenuItem("Copy Description") {
                                     Tools.clipboardString = series.description
-                                    scope.showToast("Copied")
+                                    windowScope.showToast("Copied")
                                 }
                             )
                         }
                     ) {
                         var description by remember { mutableStateOf(series.description) }
                         TextField(
-                            value = description,
+                            value = description.ifEmpty { "No Description" },
                             readOnly = true,
                             onValueChange = {
                                 description = it
@@ -229,7 +231,7 @@ class DownloadConfirmWindow(
                         .fillMaxSize()
                 ) {
                     seriesInfoHeader(this@newWindow, scope)
-                    if (!singleEpisode) {
+                    if (!singleEpisode && !movieMode) {
                         Row(
                             modifier = Modifier.align(Alignment.End).padding(end = 5.dp)
                         ) {
@@ -263,45 +265,47 @@ class DownloadConfirmWindow(
                             }
                         }
                     }
-                    FullBox {
-                        val seasonData = filteredEpisodes
-                        val isExpandedMap = rememberSavableSnapshotStateMap {
-                            List(seasonData.size) { index: Int ->
-                                index to seasonData[index].expandOnStart
-                            }.toMutableStateMap()
-                        }
-                        LazyColumn(
-                            verticalArrangement = Arrangement.spacedBy(1.dp),
-                            modifier = Modifier.padding(
-                                top = 5.dp,
-                                bottom = 5.dp,
-                                end = verticalScrollbarEndPadding
-                            ).fillMaxSize().draggable(
-                                state = rememberDraggableState {
-                                    scope.launch {
-                                        episodesListState.scrollBy(-it)
-                                    }
-                                },
-                                orientation = Orientation.Vertical,
-                            ),
-                            state = episodesListState
-                        ) {
-                            seasonData.onEachIndexed { index, seasonData ->
-                                section(
-                                    seasonData = seasonData,
-                                    isExpanded = isExpandedMap[index] == true,
-                                    onHeaderClick = {
-                                        isExpandedMap[index] = isExpandedMap[index] != true
-                                    }
-                                )
+                    if (!movieMode) {
+                        FullBox {
+                            val seasonData = filteredEpisodes
+                            val isExpandedMap = rememberSavableSnapshotStateMap {
+                                List(seasonData.size) { index: Int ->
+                                    index to seasonData[index].expandOnStart
+                                }.toMutableStateMap()
                             }
-                        }
-                        verticalScrollbar(episodesListState)
-                        if (toDownload.episode != null) {
-                            LaunchedEffect(Unit) {
-                                val index = indexForEpisode(toDownload.episode)
-                                if (index != -1) {
-                                    episodesListState.animateScrollToItem(index)
+                            LazyColumn(
+                                verticalArrangement = Arrangement.spacedBy(1.dp),
+                                modifier = Modifier.padding(
+                                    top = 5.dp,
+                                    bottom = 5.dp,
+                                    end = verticalScrollbarEndPadding
+                                ).fillMaxSize().draggable(
+                                    state = rememberDraggableState {
+                                        scope.launch {
+                                            episodesListState.scrollBy(-it)
+                                        }
+                                    },
+                                    orientation = Orientation.Vertical,
+                                ),
+                                state = episodesListState
+                            ) {
+                                seasonData.onEachIndexed { index, seasonData ->
+                                    section(
+                                        seasonData = seasonData,
+                                        isExpanded = isExpandedMap[index] == true,
+                                        onHeaderClick = {
+                                            isExpandedMap[index] = isExpandedMap[index] != true
+                                        }
+                                    )
+                                }
+                            }
+                            verticalScrollbar(episodesListState)
+                            if (toDownload.episode != null) {
+                                LaunchedEffect(Unit) {
+                                    val index = indexForEpisode(toDownload.episode)
+                                    if (index != -1) {
+                                        episodesListState.animateScrollToItem(index)
+                                    }
                                 }
                             }
                         }
@@ -685,7 +689,7 @@ class DownloadConfirmWindow(
     private suspend fun checkForNewEpisodes(): Resource<Int> = withContext(Dispatchers.IO) {
         downloadButtonEnabled.value = false
         checkForEpisodesButtonEnabled.value = false
-        val result = SeriesUpdater.checkForNewEpisodes(series)
+        val result = SeriesUpdater.getNewEpisodes(series)
         return@withContext if (result.data != null) {
             for (e in result.data.newEpisodes) {
                 if (!selectedEpisodes.contains(e)) {
@@ -693,8 +697,6 @@ class DownloadConfirmWindow(
                 }
             }
             val updatedEpisodes = result.data.updatedEpisodes
-            val seriesWco = BoxHelper.seriesForSlug(series.slug)
-            seriesWco?.updateEpisodes(updatedEpisodes)
             series.updateEpisodes(updatedEpisodes)
             downloadButtonEnabled.value = true
             checkForEpisodesButtonEnabled.value = true
@@ -720,7 +722,7 @@ class DownloadConfirmWindow(
                 modifier = Modifier.align(Alignment.CenterHorizontally)
                     .padding(10.dp)
             ) {
-                if (shiftHeld) {
+                if (shiftHeld && (!movieMode && !singleEpisode)) {
                     Column(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalAlignment = Alignment.CenterHorizontally
@@ -739,7 +741,7 @@ class DownloadConfirmWindow(
                         )
                     }
                 } else {
-                    if (highlightedEpisodes.isNotEmpty()) {
+                    if (highlightedEpisodes.isNotEmpty() && (!movieMode && !singleEpisode)) {
                         defaultButton(
                             "Clear Highlighted Episodes",
                             height = bottomBarButtonHeight,
@@ -803,33 +805,28 @@ class DownloadConfirmWindow(
                                 BoxMaker.makeHistory(
                                     series.slug
                                 )
+                                val movieEpisode = Episode()
+                                movieEpisode.name = series.name
+                                movieEpisode.slug = series.slug
+                                movieEpisode.seriesSlug = series.slug
+                                movieEpisode.isMovie = true
+                                movieEpisode.lastUpdated = System.currentTimeMillis()
                                 if (Core.child.isRunning) {
-                                    val added = Core.child.addEpisodesToQueue(
-                                        if (singleEpisode)
-                                            listOf(series.episodes.first())
-                                        else
-                                            selectedEpisodes
+                                    val added = Core.child.addEpisodeToQueue(
+                                        movieEpisode
                                     )
-                                    if (added > 0) {
-                                        windowScope.showToast("Added $added movie(s) to current queue.")
+                                    if (added) {
+                                        windowScope.showToast("Added movie to current queue.")
                                     } else {
                                         windowScope.showToast(
-                                            "No movies have been added to current queue. They have already been added before."
+                                            "Movie wasn't added to current queue. It has already been added before."
                                         )
                                     }
                                     return@defaultButton
                                 }
                                 Core.child.softStart()
-                                //must use an outside scope because closing this window
-                                //will cancel the local coroutine
                                 Core.child.taskScope.launch(Dispatchers.IO) {
-                                    //sort in case the episodes are not in order
-                                    Core.child.addEpisodesToQueue(
-                                        if (singleEpisode)
-                                            listOf(series.episodes.first())
-                                        else
-                                            selectedEpisodes.sortedWith(Tools.baseEpisodesComparator)
-                                    )
+                                    Core.child.addEpisodeToQueue(movieEpisode)
                                     //todo try to support new threads on new video queues
                                     try {
                                         var threads = if (!Defaults.HEADLESS_MODE.boolean())

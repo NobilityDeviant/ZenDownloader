@@ -257,32 +257,6 @@ class DatabaseWindow {
                                 }
                             }
                         }
-                        /*Row(
-                            horizontalArrangement = Arrangement.spacedBy(7.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            val type by databaseType.collectAsState()
-                            DatabaseType.entries.forEach {
-                                defaultButton(
-                                    it.title,
-                                    height = 35.dp,
-                                    width = 100.dp,
-                                    //padding = 10.dp,
-                                    enabled = !loading,
-                                    colors = ButtonDefaults.buttonColors(
-                                        containerColor = if (type == it)
-                                            MaterialTheme.colorScheme.tertiary
-                                        else MaterialTheme.colorScheme.primary,
-                                        contentColor = if (type == it)
-                                            MaterialTheme.colorScheme.onTertiary
-                                        else MaterialTheme.colorScheme.onPrimary
-                                    )
-                                ) {
-                                    mDatabaseType.value = it
-                                    Defaults.DB_LAST_TYPE_USED.update(mDatabaseType.value.id)
-                                }
-                            }
-                        }*/
                     }
                 }
             ) { padding ->
@@ -312,7 +286,7 @@ class DatabaseWindow {
                         ) {
                             items(
                                 series,
-                                key = { it.slug }
+                                key = { it.slug + it.id }
                             ) {
                                 seriesRow(it, this@newWindow)
                             }
@@ -421,51 +395,54 @@ class DatabaseWindow {
                 fontSize = MaterialTheme.typography.bodySmall.fontSize,
                 textAlign = TextAlign.Center
             )
-            divider()
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier.weight(EPISODES_WEIGHT)
-                    .align(Alignment.CenterVertically).onClick {
-                        mDatabaseSort.value = when (databaseSort.value) {
-                            DatabaseSort.EPISODES -> {
-                                DatabaseSort.EPISODES_DESC
-                            }
+            val type by databaseType.collectAsState()
+            if (type != DatabaseType.MOVIE) {
+                divider()
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier.weight(EPISODES_WEIGHT)
+                        .align(Alignment.CenterVertically).onClick {
+                            mDatabaseSort.value = when (databaseSort.value) {
+                                DatabaseSort.EPISODES -> {
+                                    DatabaseSort.EPISODES_DESC
+                                }
 
-                            DatabaseSort.EPISODES_DESC -> {
-                                DatabaseSort.EPISODES
-                            }
+                                DatabaseSort.EPISODES_DESC -> {
+                                    DatabaseSort.EPISODES
+                                }
 
-                            else -> {
-                                DatabaseSort.EPISODES_DESC
+                                else -> {
+                                    DatabaseSort.EPISODES_DESC
+                                }
                             }
+                            Defaults.DB_LAST_SORT_USED.update(databaseSort.value.id)
                         }
-                        Defaults.DB_LAST_SORT_USED.update(databaseSort.value.id)
-                    }
-            ) {
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(spaceBetweenNameAndIcon),
-                    verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Text(
-                        text = "Episodes",
-                        modifier = Modifier
-                            .padding(4.dp)
-                            .align(Alignment.CenterVertically),
-                        color = MaterialTheme.colorScheme.onPrimaryContainer,
-                        fontSize = MaterialTheme.typography.bodySmall.fontSize,
-                        textAlign = TextAlign.Center
-                    )
-                    val dbSort by databaseSort.collectAsState()
-                    if (dbSort == DatabaseSort.EPISODES || dbSort == DatabaseSort.EPISODES_DESC) {
-                        Icon(
-                            if (dbSort == DatabaseSort.EPISODES_DESC)
-                                EvaIcons.Fill.ArrowIosDownward
-                            else
-                                EvaIcons.Fill.ArrowIosUpward,
-                            "",
-                            modifier = Modifier.size(18.dp),
-                            tint = MaterialTheme.colorScheme.onPrimaryContainer
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(spaceBetweenNameAndIcon),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(
+                            text = "Episodes",
+                            modifier = Modifier
+                                .padding(4.dp)
+                                .align(Alignment.CenterVertically),
+                            color = MaterialTheme.colorScheme.onPrimaryContainer,
+                            fontSize = MaterialTheme.typography.bodySmall.fontSize,
+                            textAlign = TextAlign.Center
                         )
+                        val dbSort by databaseSort.collectAsState()
+                        if (dbSort == DatabaseSort.EPISODES || dbSort == DatabaseSort.EPISODES_DESC) {
+                            Icon(
+                                if (dbSort == DatabaseSort.EPISODES_DESC)
+                                    EvaIcons.Fill.ArrowIosDownward
+                                else
+                                    EvaIcons.Fill.ArrowIosUpward,
+                                "",
+                                modifier = Modifier.size(18.dp),
+                                tint = MaterialTheme.colorScheme.onPrimaryContainer
+                            )
+                        }
                     }
                 }
             }
@@ -615,17 +592,21 @@ class DatabaseWindow {
                     .align(Alignment.CenterVertically)
                     .weight(GENRES_WEIGHT)
             )
-            divider()
-            Text(
-                text = series.episodesSize.toString(),
-                modifier = Modifier
-                    .padding(4.dp)
-                    .align(Alignment.CenterVertically)
-                    .weight(EPISODES_WEIGHT),
-                color = MaterialTheme.colorScheme.onSecondaryContainer,
-                fontSize = MaterialTheme.typography.bodySmall.fontSize,
-                textAlign = TextAlign.Center
-            )
+            val type by databaseType.collectAsState()
+            if (type != DatabaseType.MOVIE) {
+                divider()
+                Text(
+                    text = if (series.seriesIdentity != SeriesIdentity.MOVIE)
+                        series.episodesSize.toString() else "Movie",
+                    modifier = Modifier
+                        .padding(4.dp)
+                        .align(Alignment.CenterVertically)
+                        .weight(EPISODES_WEIGHT),
+                    color = MaterialTheme.colorScheme.onSecondaryContainer,
+                    fontSize = MaterialTheme.typography.bodyLarge.fontSize,
+                    textAlign = TextAlign.Center
+                )
+            }
             divider()
             defaultImage(
                 series.imagePath,
@@ -871,7 +852,7 @@ class DatabaseWindow {
         private val rowHeight = 150.dp
         private const val NAME_WEIGHT = 3f
         private const val DESC_WEIGHT = 2.5f
-        private const val EPISODES_WEIGHT = 1.3f
+        private const val EPISODES_WEIGHT = 1.1f
         private const val GENRES_WEIGHT = 2f
         private const val IMAGE_WEIGHT = 2.5f
     }

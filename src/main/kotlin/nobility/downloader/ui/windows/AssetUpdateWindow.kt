@@ -27,9 +27,7 @@ import nobility.downloader.core.settings.Defaults
 import nobility.downloader.ui.components.defaultButton
 import nobility.downloader.ui.windows.utils.AppWindowScope
 import nobility.downloader.ui.windows.utils.ApplicationState
-import nobility.downloader.utils.AppInfo
-import nobility.downloader.utils.Tools
-import nobility.downloader.utils.UserAgents
+import nobility.downloader.utils.*
 import org.jsoup.Jsoup
 import java.io.*
 import java.net.URI
@@ -118,14 +116,15 @@ class AssetUpdateWindow {
                             coroutineScope.launch {
                                 downloading = true
                                 Asset.entries.forEach { asset ->
-                                    if (!assetBoxHelper.booleanSetting(
-                                            AssetDisable.disableForAsset(asset).setting
-                                        )
-                                    ) {
+                                    if ((asset.path.isDirectory() && asset.path.folderIsEmpty()) || !asset.path.fileExists()) {
                                         downloadAsset(asset)
                                     } else {
-                                        started[asset.fileName] = true
-                                        completed[asset.fileName] = true
+                                        if (!assetBoxHelper.booleanSetting(AssetDisable.disableForAsset(asset).setting)) {
+                                            downloadAsset(asset)
+                                        } else {
+                                            started[asset.fileName] = true
+                                            completed[asset.fileName] = true
+                                        }
                                     }
                                 }
                                 if (!shuttingDown) {
@@ -194,14 +193,15 @@ class AssetUpdateWindow {
                 LaunchedEffect(Unit) {
                     downloading = true
                     Asset.entries.forEach { asset ->
-                        if (!assetBoxHelper.booleanSetting(
-                                AssetDisable.disableForAsset(asset).setting
-                            )
-                        ) {
+                        if ((asset.path.isDirectory() && asset.path.folderIsEmpty()) || !asset.path.fileExists()) {
                             downloadAsset(asset)
                         } else {
-                            started[asset.fileName] = true
-                            completed[asset.fileName] = true
+                            if (!assetBoxHelper.booleanSetting(AssetDisable.disableForAsset(asset).setting)) {
+                                downloadAsset(asset)
+                            } else {
+                                started[asset.fileName] = true
+                                completed[asset.fileName] = true
+                            }
                         }
                     }
                     if (!shuttingDown) {

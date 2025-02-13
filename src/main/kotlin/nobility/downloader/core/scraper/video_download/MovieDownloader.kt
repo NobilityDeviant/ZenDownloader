@@ -13,10 +13,7 @@ import nobility.downloader.core.scraper.video_download.Functions.downloadVideo
 import nobility.downloader.core.scraper.video_download.Functions.fileSize
 import nobility.downloader.core.settings.Defaults
 import nobility.downloader.core.settings.Quality
-import nobility.downloader.utils.Constants
-import nobility.downloader.utils.fixForFiles
-import nobility.downloader.utils.slugToLink
-import nobility.downloader.utils.source
+import nobility.downloader.utils.*
 import org.openqa.selenium.By
 import org.openqa.selenium.support.ui.ExpectedConditions
 import org.openqa.selenium.support.ui.WebDriverWait
@@ -275,7 +272,7 @@ object MovieDownloader {
                     data.writeMessage("[IO] Skipping completed movie.")
                     data.currentDownload.downloadPath = saveFile.absolutePath
                     data.currentDownload.fileSize = originalFileSize
-                    Core.child.updateDownloadInDatabase(data.currentDownload, true)
+                    data.currentDownload.update()
                     data.finishEpisode()
                     return@withContext
                 }
@@ -309,13 +306,13 @@ object MovieDownloader {
             data.currentDownload.downloading = true
             data.currentDownload.fileSize = originalFileSize
             Core.child.addDownload(data.currentDownload)
-            Core.child.updateDownloadInDatabase(data.currentDownload, true)
+            data.currentDownload.update()
             //data.driver.navigate().back()
             data.undriver.blank()
             downloadVideo(downloadLink, saveFile, data)
             data.currentDownload.downloading = false
             //second time to ensure ui update
-            Core.child.updateDownloadInDatabase(data.currentDownload, true)
+            data.currentDownload.update()
             if (saveFile.exists() && saveFile.length() >= originalFileSize) {
                 Core.child.incrementDownloadsFinished()
                 data.writeMessage("Successfully downloaded movie.")
@@ -324,7 +321,7 @@ object MovieDownloader {
         } catch (e: Exception) {
             data.currentDownload.queued = true
             data.currentDownload.downloading = false
-            Core.child.updateDownloadInDatabase(data.currentDownload, true)
+            data.currentDownload.update()
             data.writeMessage(
                 "Failed to download movie. | Retrying..."
             )

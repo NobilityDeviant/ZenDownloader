@@ -10,6 +10,7 @@ import nobility.downloader.core.scraper.video_download.MovieDownloader.handleMov
 import nobility.downloader.core.settings.Defaults
 import nobility.downloader.core.settings.Quality
 import nobility.downloader.utils.Constants
+import nobility.downloader.utils.update
 
 /**
  * The core handler of video downloading.
@@ -111,10 +112,7 @@ class VideoDownloadHandler(
                             data.currentDownload.fileSize = originalFileSize
                             data.currentDownload.downloading = false
                             data.currentDownload.queued = false
-                            Core.child.updateDownloadInDatabase(
-                                data.currentDownload,
-                                true
-                            )
+                            data.currentDownload.update()
                             data.finishEpisode()
                             continue
                         }
@@ -147,7 +145,7 @@ class VideoDownloadHandler(
                     data.currentDownload.downloading = true
                     data.currentDownload.fileSize = originalFileSize
                     Core.child.addDownload(data.currentDownload)
-                    Core.child.updateDownloadInDatabase(data.currentDownload, true)
+                    data.currentDownload.update()
                     data.undriver.blank()
                     downloadVideo(
                         downloadLink,
@@ -156,10 +154,7 @@ class VideoDownloadHandler(
                     )
                     data.currentDownload.downloading = false
                     //second time to ensure ui update
-                    Core.child.updateDownloadInDatabase(
-                        data.currentDownload,
-                        true
-                    )
+                    data.currentDownload.update()
                     if (saveFile.exists() && saveFile.length() >= originalFileSize) {
                         Core.child.incrementDownloadsFinished()
                         data.writeMessage("Successfully downloaded with ${qualityOption.tag} quality.")
@@ -170,10 +165,7 @@ class VideoDownloadHandler(
             } catch (e: Exception) {
                 data.currentDownload.queued = true
                 data.currentDownload.downloading = false
-                Core.child.updateDownloadInDatabase(
-                    data.currentDownload,
-                    true
-                )
+                data.currentDownload.update()
                 if (e.message?.contains("Connection reset", true) == false) {
                     data.logError(
                         "Failed to download video. Retrying...",

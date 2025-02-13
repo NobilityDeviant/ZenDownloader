@@ -4,20 +4,20 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 import nobility.downloader.core.BoxHelper.Companion.addSeries
-import nobility.downloader.core.BoxHelper.Companion.seriesForSlug
+import nobility.downloader.core.BoxHelper.Companion.seriesForSlugAndIdentity
 import nobility.downloader.core.BoxMaker
 import nobility.downloader.core.Core
-import nobility.downloader.core.driver.DriverBase
 import nobility.downloader.core.entities.Episode
 import nobility.downloader.core.entities.Genre
 import nobility.downloader.core.entities.Series
 import nobility.downloader.core.entities.data.SeriesIdentity
 import nobility.downloader.core.scraper.data.ToDownload
+import nobility.downloader.core.scraper.video_download.Functions
 import nobility.downloader.utils.*
 import org.jsoup.Jsoup
 import java.util.*
 
-class SlugHandler : DriverBase() {
+class SlugHandler {
 
     suspend fun handleSlug(
         slug: String,
@@ -86,8 +86,17 @@ class SlugHandler : DriverBase() {
     ): Resource<Boolean> = withContext(Dispatchers.IO) {
         val link = slug.slugToLink()
         try {
-            driver.navigate().to(link)
-            val doc = Jsoup.parse(driver.source())
+            val result = Functions.readUrlLines(
+                link,
+                "isSeriesOrEpisodeWithSlug"
+            )
+            if (result.data == null) {
+                return@withContext Resource.Error(
+                    "Failed to read source code.",
+                    result.message
+                )
+            }
+            val doc = Jsoup.parse(result.data.toString())
             val existsCheck = doc.getElementsByClass("recent-release")
             if (existsCheck.text().lowercase().contains("page not found")) {
                 return@withContext Resource.Error("Page not found.")
@@ -107,14 +116,30 @@ class SlugHandler : DriverBase() {
         identityType: Int = -1
     ): Resource<Series> = withContext(Dispatchers.IO) {
         val identity = if (identityType == -1)
-            findIdentityForSlug(seriesSlug).identity
+            findIdentityForSlug(seriesSlug)?.identity
         else
             SeriesIdentity.idForType(identityType)
+        //TODO im rushing here. make sure to use the Resource class properly and use the error messages.
+        //it's fine for now, but hopefully i remember later.
+        if (identity == null) {
+            return@withContext Resource.Error(
+                "Failed to find identity for $seriesSlug"
+            )
+        }
         val fullLink = seriesSlug.slugToLink()
         try {
             val episodes = mutableListOf<Episode>()
-            driver.navigate().to(fullLink)
-            var doc = Jsoup.parse(driver.source())
+            val result = Functions.readUrlLines(
+                fullLink,
+                "scrapeSeriesWithSlug"
+            )
+            if (result.data == null) {
+                return@withContext Resource.Error(
+                    "Failed to read source code.",
+                    result.message
+                )
+            }
+            var doc = Jsoup.parse(result.data.toString())
             if (identity == SeriesIdentity.MOVIE) {
                 val category = doc.getElementsByClass("header-tag")
                 val h2 = category[0].select("h2")
@@ -138,8 +163,17 @@ class SlugHandler : DriverBase() {
                     )
                     return@withContext Resource.Success(series)
                 } else {
-                    driver.navigate().to(categoryLink)
-                    doc = Jsoup.parse(driver.source())
+                    val result = Functions.readUrlLines(
+                        categoryLink,
+                        "scrapeSeriesWithSlug-else-category"
+                    )
+                    if (result.data == null) {
+                        return@withContext Resource.Error(
+                            "Failed to read source code.",
+                            result.message
+                        )
+                    }
+                    doc = Jsoup.parse(result.data.toString())
                 }
             }
 
@@ -207,13 +241,23 @@ class SlugHandler : DriverBase() {
         }
     }
 
+    //todo if the episode doesn't exist but the series does, check for new episodes first
     private suspend fun scrapeEpisodeWithSlug(
         episodeSlug: String
     ): Resource<ToDownload> = withContext(Dispatchers.IO) {
         val episodeLink = episodeSlug.slugToLink()
         try {
-            driver.navigate().to(episodeLink)
-            val doc = Jsoup.parse(driver.source())
+            val result = Functions.readUrlLines(
+                episodeLink,
+                "scrapeEpisodeWithSlug"
+            )
+            if (result.data == null) {
+                return@withContext Resource.Error(
+                    "Failed to read source code.",
+                    result.message
+                )
+            }
+            val doc = Jsoup.parse(result.data.toString())
             val episodeTitle = doc.getElementsByClass("video-title")
             val category = doc.getElementsByClass("header-tag") //category is the series
             var seriesSlug = ""
@@ -247,7 +291,12 @@ class SlugHandler : DriverBase() {
                         }
                     }
                     val identityResult = findIdentityForSlug(seriesSlug)
-                    val cachedSeries = seriesForSlug(
+                    if (identityResult == null) {
+                        return@withContext Resource.Error(
+                            "Failed to find identity for $episodeSlug"
+                        )
+                    }
+                    val cachedSeries = seriesForSlugAndIdentity(
                         seriesSlug,
                         identityResult.identity
                     )
@@ -354,11 +403,15 @@ class SlugHandler : DriverBase() {
 
     private suspend fun findIdentityForSlug(
         slug: String
-    ): IdentityResult {
+    ): IdentityResult? {
         val checkedIdentity = IdentityScraper.findIdentityForSlugLocally(slug)
         return if (SeriesIdentity.isEmpty(checkedIdentity)) {
-            val foundIdentity = IdentityScraper.findIdentityForSlugOnline(slug)
-            IdentityResult(foundIdentity)
+            val result = IdentityScraper.findIdentityForSlugOnline(slug)
+            return if (result.data != null) {
+                IdentityResult(result.data)
+            } else {
+                null
+            }
         } else {
             IdentityResult(
                 checkedIdentity,

@@ -6,7 +6,7 @@ import nobility.downloader.core.BoxHelper.Companion.int
 import nobility.downloader.core.BoxHelper.Companion.seriesForSlug
 import nobility.downloader.core.BoxHelper.Companion.string
 import nobility.downloader.core.Core
-import nobility.downloader.core.driver.BasicDriverBase
+import nobility.downloader.core.driver.DriverBaseImpl
 import nobility.downloader.core.entities.Download
 import nobility.downloader.core.entities.Episode
 import nobility.downloader.core.scraper.data.QualityAndDownload
@@ -15,6 +15,7 @@ import nobility.downloader.core.settings.Quality
 import nobility.downloader.utils.FrogLog
 import nobility.downloader.utils.Tools
 import nobility.downloader.utils.fixForFiles
+import nobility.downloader.utils.update
 import java.io.File
 
 /**
@@ -26,11 +27,12 @@ class VideoDownloadData(
     private val customTag: String? = null
 ) {
 
-    val base = BasicDriverBase()
-    val driver get() = base.driver
-    val undriver get() = base.undriver
-    val userAgent get() = base.userAgent
-    //val taskScope = CoroutineScope(Dispatchers.Default)
+    //todo these dont help.
+    //move somewhere else.
+    val base by lazy { DriverBaseImpl() }
+    val driver by lazy { base.driver }
+    val undriver by lazy { base.undriver }
+    val userAgent by lazy { base.userAgent }
     val pageChangeWaitTime = 5_000L //in milliseconds
     var mCurrentEpisode: Episode? = null
     var mCurrentDownload: Download? = null
@@ -122,10 +124,7 @@ class VideoDownloadData(
                 writeMessage("(DB) Skipping completed video.")
                 tempDownload.downloading = false
                 tempDownload.queued = false
-                Core.child.updateDownloadInDatabase(
-                    tempDownload,
-                    true
-                )
+                tempDownload.update()
                 finishEpisode()
                 return true
             }
@@ -166,9 +165,7 @@ class VideoDownloadData(
         if (mCurrentDownload != null) {
             currentDownload.queued = false
             currentDownload.downloading = false
-            Core.child.updateDownloadInDatabase(
-                currentDownload
-            )
+            currentDownload.update()
             mCurrentDownload = null
         }
         if (mCurrentEpisode != null) {

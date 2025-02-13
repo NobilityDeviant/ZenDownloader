@@ -72,8 +72,6 @@ class Core {
                 System.setOut(PrintStream(console))
                 if (AppInfo.USE_CUSTOM_ERROR_PS) {
                     errorPrintStream = PrintStream(errorConsole)
-                } else {
-                    System.setErr(PrintStream(errorConsole))
                 }
             }
             if (!Defaults.FIRST_LAUNCH.boolean()) {

@@ -542,11 +542,12 @@ class HistoryView: ViewPage {
         checkForEpisodesButtonEnabled.value = false
         val series = BoxHelper.seriesForSlug(seriesData.slug)
             ?: return@withContext Resource.Error("Failed to find local series.")
-        val result = SeriesUpdater.checkForNewEpisodes(series)
+        val result = SeriesUpdater.getNewEpisodes(series)
         return@withContext if (result.data != null) {
             val updatedEpisodes = result.data.updatedEpisodes
-            val seriesWco = BoxHelper.seriesForSlug(series.slug)
-            seriesWco?.updateEpisodes(updatedEpisodes)
+            //val seriesWco = BoxHelper.seriesForSlug(series.slug)
+            //seriesWco?.updateEpisodes(updatedEpisodes)
+            series.updateEpisodes(updatedEpisodes)
             clearHistoryEnabled.value = true
             checkForEpisodesButtonEnabled.value = true
             Resource.Success(result.data.newEpisodes.size)
@@ -573,13 +574,14 @@ class HistoryView: ViewPage {
         var seriesUpdated = 0
         var episodesUpdated = 0
         seriesHistory.forEach { series ->
-            val result = SeriesUpdater.checkForNewEpisodes(series)
+            val result = SeriesUpdater.getNewEpisodes(series)
             if (result.data != null) {
                 seriesUpdated++
                 episodesUpdated += result.data.newEpisodes.size
                 val updatedEpisodes = result.data.updatedEpisodes
-                val seriesWco = BoxHelper.seriesForSlug(series.slug)
-                seriesWco?.updateEpisodes(updatedEpisodes)
+                series.updateEpisodes(updatedEpisodes)
+                //val seriesWco = BoxHelper.seriesForSlug(series.slug)
+                //seriesWco?.updateEpisodes(updatedEpisodes)
             }
         }
         clearHistoryEnabled.value = true

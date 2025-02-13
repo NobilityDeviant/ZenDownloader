@@ -514,9 +514,7 @@ class VideoDownloadHelper(
                 data.currentDownload.manualProgress = true
                 data.currentDownload.downloading = false
                 data.currentDownload.queued = false
-                Core.child.updateDownloadInDatabase(
-                    data.currentDownload
-                )
+                data.currentDownload.update()
                 data.finishEpisode()
                 return@withContext false
             }
@@ -529,10 +527,7 @@ class VideoDownloadHelper(
                 data.currentDownload.queued = false
                 data.currentDownload.downloading = true
                 data.currentDownload.manualProgress = true
-                Core.child.updateDownloadInDatabase(
-                    data.currentDownload,
-                    true
-                )
+                data.currentDownload.update()
             },
             downloadFinished = { download, success ->
                 if (!success) {
@@ -542,10 +537,7 @@ class VideoDownloadHelper(
                 data.logInfo("Finished m3u8 video download.")
                 if (!hasSeparateAudio) {
                     data.currentDownload.downloading = false
-                    Core.child.updateDownloadInDatabase(
-                        data.currentDownload,
-                        true
-                    )
+                    data.currentDownload.update()
                 }
             },
             downloadProgress = { progress, seconds ->
@@ -558,10 +550,7 @@ class VideoDownloadHelper(
             },
             downloadSizeUpdated = {
                 data.currentDownload.fileSize = it
-                Core.child.updateDownloadInDatabase(
-                    data.currentDownload,
-                    true
-                )
+                data.currentDownload.update()
             },
             onMergeStarted = {
                 Core.child.m3u8UpdateDownloadProgress(
@@ -580,17 +569,11 @@ class VideoDownloadHelper(
                         0
                     )
                     data.currentDownload.fileSize = saveFile.length()
-                    Core.child.updateDownloadInDatabase(
-                        data.currentDownload,
-                        true
-                    )
+                    data.currentDownload.update()
                     if (saveFile.exists() && saveFile.length() >= 5000) {
                         if (!hasSeparateAudio) {
                             data.currentDownload.downloading = false
-                            Core.child.updateDownloadInDatabase(
-                                data.currentDownload,
-                                true
-                            )
+                            data.currentDownload.update()
                             Core.child.incrementDownloadsFinished()
                             data.writeMessage("Successfully downloaded with ${parsedQuality.quality.tag} quality.")
                             data.finishEpisode()
@@ -824,11 +807,11 @@ class VideoDownloadHelper(
                             data.writeMessage("(DB) (2nd) Skipping completed video.")
                             currentDownload.downloading = false
                             currentDownload.queued = false
-                            Core.child.updateDownloadInDatabase(currentDownload, true)
+                            currentDownload.update()
                             break
                         } else {
                             currentDownload.queued = true
-                            Core.child.updateDownloadInDatabase(currentDownload, true)
+                            currentDownload.update()
                         }
                     }
                     data.logInfo("(2nd) Successfully found video link with $retries retries.")
@@ -854,10 +837,7 @@ class VideoDownloadHelper(
                             currentDownload.fileSize = originalFileSize
                             currentDownload.downloading = false
                             currentDownload.queued = false
-                            Core.child.updateDownloadInDatabase(
-                                currentDownload,
-                                true
-                            )
+                            currentDownload.update()
                             break
                         }
                     } else {
@@ -890,7 +870,7 @@ class VideoDownloadHelper(
                     currentDownload.downloading = true
                     currentDownload.fileSize = originalFileSize
                     Core.child.addDownload(currentDownload)
-                    Core.child.updateDownloadInDatabase(currentDownload, true)
+                    currentDownload.update()
                     downloadVideo(
                         downloadLink,
                         saveFile,
@@ -900,7 +880,7 @@ class VideoDownloadHelper(
                     originalFileSize = saveFile.length()
                     currentDownload.downloading = false
                     //second time to ensure ui update
-                    Core.child.updateDownloadInDatabase(currentDownload, true)
+                    currentDownload.update()
                     if (saveFile.exists() && saveFile.length() >= originalFileSize) {
                         Core.child.incrementDownloadsFinished()
                         data.writeMessage("(2nd) Successfully downloaded with ${qualityOption.tag} quality.")
@@ -915,10 +895,7 @@ class VideoDownloadHelper(
                 if (currentDownload != null) {
                     currentDownload.queued = true
                     currentDownload.downloading = false
-                    Core.child.updateDownloadInDatabase(
-                        currentDownload,
-                        true
-                    )
+                    currentDownload.update()
                 }
                 data.logError(
                     "(2nd) Failed to download video. Retrying...",

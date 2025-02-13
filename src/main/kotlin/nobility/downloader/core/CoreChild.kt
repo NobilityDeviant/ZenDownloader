@@ -21,6 +21,7 @@ import nobility.downloader.core.updates.UrlUpdater
 import nobility.downloader.ui.components.dialog.DialogHelper
 import nobility.downloader.ui.components.dialog.DialogHelper.showError
 import nobility.downloader.utils.Constants
+import nobility.downloader.utils.update
 import org.openqa.selenium.WebDriver
 import java.io.File
 import java.net.URI
@@ -98,6 +99,7 @@ class CoreChild {
                                Failed to read episodes from $url"
                                Error: Failed to find Chrome on your PC.
                                Make sure Chrome is installed. If this problem persists, there might be permission issues with your folders.
+                               Try running this program as admin or with superuser permissions.
                             """.trimIndent()
                         )
                     } else {
@@ -211,7 +213,7 @@ class CoreChild {
                     """
                        The download folder in your settings doesn't allow write permissions.
                        If this is a USB or SD Card then disable write protection.
-                       You can try selecting a folder in the user or home folder. Those are usually not restricted.
+                       You can try selecting a folder in the user or home folder or running the app as admin or with superuser permissions..
                     """.trimIndent()
                 )
                 Core.changePage(Page.SETTINGS)
@@ -245,7 +247,6 @@ class CoreChild {
             return false
         }
         if (isRunning) {
-            //showError("Failed to start the downloader because it's already running.")
             Core.openWco(url)
             return false
         }
@@ -253,7 +254,6 @@ class CoreChild {
             URI(url).toURL()
         } catch (_: Exception) {
             Core.openWco(url)
-            //showError("This is not a valid URL.")
             return false
         }
         val threads = Defaults.DOWNLOAD_THREADS.int()
@@ -345,7 +345,7 @@ class CoreChild {
         } else {
             //push it to the top of the list
             download.dateAdded = System.currentTimeMillis()
-            updateDownloadInDatabase(download)
+            download.update()
         }
     }
 
@@ -405,12 +405,6 @@ class CoreChild {
                 )
             }
         }
-    }
-
-    fun Download.update(
-        updateProperties: Boolean = true
-    ) {
-        updateDownloadInDatabase(this, updateProperties)
     }
 
     fun updateDownloadInDatabase(

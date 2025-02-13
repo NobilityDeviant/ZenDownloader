@@ -8,6 +8,7 @@ import io.objectbox.exception.NonUniqueResultException
 import io.objectbox.query.Query
 import nobility.downloader.core.BoxHelper.Companion.boolean
 import nobility.downloader.core.Core
+import nobility.downloader.core.entities.Download
 import nobility.downloader.core.settings.Defaults
 import org.apache.commons.io.FileUtils
 import org.apache.commons.lang3.StringUtils
@@ -92,6 +93,25 @@ fun String.fileExists(): Boolean {
     return File(this).exists()
 }
 
+fun String.fileIsNotZero(): Boolean {
+    val file = File(this)
+    return file.exists() && file.length() > 50L
+}
+
+fun String.folderIsEmpty(): Boolean {
+    val file = File(this)
+    if (file.exists() && file.isDirectory) {
+        val files = file.listFiles()
+        return files?.isEmpty() == true
+    }
+    return true
+}
+
+fun String.isDirectory(): Boolean {
+    val file = File(this)
+    return file.exists() && file.isDirectory
+}
+
 fun <T> Query<T>.findUniqueOrFirst(): T? {
     return try {
         findUnique()
@@ -106,6 +126,12 @@ fun <T> Query<T>.findUniqueOrNull(): T? {
     } catch (_: NonUniqueResultException) {
         null
     }
+}
+
+fun Download.update(
+    updateProperties: Boolean = true
+) {
+    Core.child.updateDownloadInDatabase(this, updateProperties)
 }
 
 @Suppress("UNUSED")

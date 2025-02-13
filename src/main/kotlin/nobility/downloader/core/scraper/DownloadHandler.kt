@@ -62,7 +62,6 @@ class DownloadHandler {
         val scraper = SlugHandler()
         val result = scraper.handleSlug(slug)
         val resultData = result.data
-        scraper.killDriver()
         if (resultData != null) {
             if (resultData.series != null) {
                 toDownload = resultData

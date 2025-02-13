@@ -261,7 +261,7 @@ class Console(
 
     companion object {
         private val filters = listOf<String>(
-            "Hint: use closeThreadResources() to avoid finalizing recycled transactions (initial commit count: 0)."
+            "Hint: use closeThreadResources() to avoid finalizing recycled transactions"
         )
     }
 }

@@ -4,6 +4,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import nobility.downloader.core.BoxHelper.Companion.int
 import nobility.downloader.core.entities.Episode
+import nobility.downloader.core.scraper.video_download.Functions
 import nobility.downloader.core.settings.Defaults
 import nobility.downloader.ui.components.dialog.DialogHelper
 import nobility.downloader.ui.windows.utils.AppWindowScope
@@ -349,6 +350,32 @@ object Tools {
         return 0
     }
 
+    suspend fun downloadFileWithRetries(
+        link: String,
+        output: File,
+        timeout: Int = Defaults.TIMEOUT.int() * 1000,
+        userAgent: String = UserAgents.random,
+        retries: Int = 5
+    ) = withContext(Dispatchers.IO) {
+        var headMode = true
+        for (i in 0..retries) {
+            try {
+                Functions.fileSize(link, userAgent, headMode)
+                downloadFile(
+                    link,
+                    output,
+                    timeout,
+                    userAgent
+                )
+                i
+            } catch (_: Exception) {}
+            if (output.length() > 50L) {
+                break
+            } else {
+                headMode = headMode.not()
+            }
+        }
+    }
 
     suspend fun downloadFile(
         link: String,

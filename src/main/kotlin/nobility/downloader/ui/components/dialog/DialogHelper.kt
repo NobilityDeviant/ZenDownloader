@@ -2,6 +2,10 @@ package nobility.downloader.ui.components.dialog
 
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.type
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
@@ -120,6 +124,13 @@ object DialogHelper {
             resizable = false,
             transparent = true,
             alwaysOnTop = true,
+            keyEvents = {
+                if (it.key == Key.Enter && it.type == KeyEventType.KeyUp) {
+                    ApplicationState.removeWindowWithId(title)
+                    onConfirm()
+                }
+                false
+            },
             size = size
         ) {
             dialogWrapper(

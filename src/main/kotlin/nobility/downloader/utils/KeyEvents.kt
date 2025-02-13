@@ -112,7 +112,9 @@ class KeyEvents {
 
             shortcuts.forEachIndexed { i, s ->
                 keyGuide += """
-                    ${s.name} = ${AwtKey.getKeyText(s.key.keyCode.toInt())} ${if (s.ctrl) " + CTRL" else ""}
+                    ${s.name} = ${AwtKey.getKeyText(s.key.keyCode.toInt())} ${
+                        if (s.ctrl && Defaults.CTRL_FOR_HOTKEYS.boolean()) " + CTRL" else ""
+                    }
                 """.trimIndent()
                 if (i != shortcuts.lastIndex) {
                     keyGuide += "\n"

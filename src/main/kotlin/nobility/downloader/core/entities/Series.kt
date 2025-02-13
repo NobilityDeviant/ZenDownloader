@@ -1,5 +1,6 @@
 package nobility.downloader.core.entities
 
+import io.objectbox.Box
 import io.objectbox.BoxStore
 import io.objectbox.annotation.Entity
 import io.objectbox.annotation.Id
@@ -28,13 +29,14 @@ data class Series(
     var genreNames = mutableListOf<String>()
     var episodes: ToMany<Episode> = ToMany(this, Series_.episodes)
 
-    val episodesSize: Int get() {
-        return try {
-            episodes.size
-        } catch (e: Exception) {
-            0
+    val episodesSize: Int
+        get() {
+            return try {
+                episodes.size
+            } catch (_: Exception) {
+                0
+            }
         }
-    }
 
     fun update(series: Series) {
         slug = series.slug
@@ -46,45 +48,58 @@ data class Series(
     }
 
     fun updateEpisodes(
-        episodes: List<Episode>,
-        updateDb: Boolean = true
+        episodes: List<Episode>
     ) {
-        val seriesIdentity = SeriesIdentity.idForType(identity)
         FrogLog.logDebug(
             "Updating episodes for $name."
         )
         FrogLog.logDebug(
             "Old episodes: ${this.episodes.size} New episodes: ${episodes.size}"
         )
+        val seriesBox: Box<Series> = when (seriesIdentity) {
+            SeriesIdentity.DUBBED -> BoxHelper.shared.dubbedSeriesBox
+            SeriesIdentity.SUBBED -> BoxHelper.shared.subbedSeriesBox
+            SeriesIdentity.CARTOON -> BoxHelper.shared.cartoonSeriesBox
+            SeriesIdentity.MOVIE -> BoxHelper.shared.moviesSeriesBox
+            SeriesIdentity.NEW -> BoxHelper.shared.miscSeriesBox
+        }
+        val episodeBox: Box<Episode> = when (seriesIdentity) {
+            SeriesIdentity.DUBBED -> BoxHelper.shared.dubbedEpisodeBox
+            SeriesIdentity.SUBBED -> BoxHelper.shared.subbedEpisodeBox
+            SeriesIdentity.CARTOON -> BoxHelper.shared.cartoonEpisodeBox
+            SeriesIdentity.MOVIE -> BoxHelper.shared.moviesEpisodeBox
+            SeriesIdentity.NEW -> BoxHelper.shared.miscEpisodeBox
+        }
         if (this.episodes.size < episodes.size) {
-            when (seriesIdentity) {
-                SeriesIdentity.DUBBED ->
-                    BoxHelper.shared.dubbedSeriesBox.attach(this)
-                SeriesIdentity.SUBBED ->
-                    BoxHelper.shared.subbedSeriesBox.attach(this)
-                SeriesIdentity.MOVIE ->
-                    BoxHelper.shared.moviesSeriesBox.attach(this)
-                SeriesIdentity.CARTOON ->
-                    BoxHelper.shared.cartoonSeriesBox.attach(this)
-                else -> BoxHelper.shared.miscSeriesBox.attach(this)
-            }
+            seriesBox.attach(this)
+            episodeBox.remove(this.episodes)
             this.episodes.clear()
             this.episodes.addAll(episodes)
-            if (updateDb) {
-                when (seriesIdentity) {
-                    SeriesIdentity.DUBBED ->
-                        BoxHelper.shared.dubbedEpisodeBox.put(episodes)
-                    SeriesIdentity.SUBBED ->
-                        BoxHelper.shared.subbedEpisodeBox.put(episodes)
-                    SeriesIdentity.MOVIE ->
-                        BoxHelper.shared.moviesEpisodeBox.put(episodes)
-                    SeriesIdentity.CARTOON ->
-                        BoxHelper.shared.cartoonEpisodeBox.put(episodes)
-                    else -> BoxHelper.shared.miscEpisodeBox.put(episodes)
-                }
-                this.episodes.applyChangesToDb()
-            }
+            episodeBox.put(episodes)
+            this.episodes.applyChangesToDb()
+            updateLastUpdated()
+            BoxHelper.addSeries(this)
         }
+    }
+
+    fun deleteEpisodes() {
+        val seriesBox: Box<Series> = when (seriesIdentity) {
+            SeriesIdentity.DUBBED -> BoxHelper.shared.dubbedSeriesBox
+            SeriesIdentity.SUBBED -> BoxHelper.shared.subbedSeriesBox
+            SeriesIdentity.CARTOON -> BoxHelper.shared.cartoonSeriesBox
+            SeriesIdentity.MOVIE -> BoxHelper.shared.moviesSeriesBox
+            SeriesIdentity.NEW -> BoxHelper.shared.miscSeriesBox
+        }
+        val episodeBox: Box<Episode> = when (seriesIdentity) {
+            SeriesIdentity.DUBBED -> BoxHelper.shared.dubbedEpisodeBox
+            SeriesIdentity.SUBBED -> BoxHelper.shared.subbedEpisodeBox
+            SeriesIdentity.CARTOON -> BoxHelper.shared.cartoonEpisodeBox
+            SeriesIdentity.MOVIE -> BoxHelper.shared.moviesEpisodeBox
+            SeriesIdentity.NEW -> BoxHelper.shared.miscEpisodeBox
+        }
+        seriesBox.attach(this)
+        episodeBox.remove(this.episodes)
+        this.episodes.applyChangesToDb()
     }
 
     fun updateGenres(
@@ -99,6 +114,7 @@ data class Series(
     ) {
         this.genreNames.clear()
         this.genreNames.addAll(genres)
+        updateLastUpdated()
         if (updateDb) {
             val seriesIdentity = SeriesIdentity.idForType(identity)
             when (seriesIdentity) {
@@ -117,6 +133,10 @@ data class Series(
                 else -> BoxHelper.shared.miscSeriesBox.put(this)
             }
         }
+    }
+
+    fun updateLastUpdated() {
+        lastUpdated = System.currentTimeMillis()
     }
 
     fun matches(series: Series): Boolean {
@@ -156,13 +176,14 @@ data class Series(
 
     val imagePath get() = BoxHelper.seriesImagesPath + Tools.titleForImages(name)
     val seriesIdentity get() = SeriesIdentity.idForType(identity)
-    val genreNamesString: String get() {
-        var s = ""
-        genreNames.forEachIndexed { index, genre ->
-            s += genre + if (index != genreNames.lastIndex) ", " else ""
+    val genreNamesString: String
+        get() {
+            var s = ""
+            genreNames.forEachIndexed { index, genre ->
+                s += genre + if (index != genreNames.lastIndex) ", " else ""
+            }
+            return s
         }
-        return s
-    }
 
     val asToDownload get() = ToDownload(series = this)
 

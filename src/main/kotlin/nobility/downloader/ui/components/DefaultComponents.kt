@@ -90,6 +90,7 @@ fun defaultImage(
         else rememberAsyncImagePainter(
             model = AppInfo.NO_IMAGE_PATH_FILE
         ),
+        //todo download the images
         error = if (urlBackup != null)
             rememberAsyncImagePainter(
                 model = imageRequest(urlBackup, true),

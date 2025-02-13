@@ -77,21 +77,18 @@ object ImageUtils {
             FrogLog.writeMessage("Failed to download series image: ${series.imageLink}. Save folder was unable to be created.")
             return
         }
-        val saveFile = File(
-            "${saveFolder.absolutePath}${File.separator}" +
-                    Tools.titleForImages(series.name)
-        )
-        if (!saveFile.exists()) {
+        val saveFile = File(series.imagePath)
+        if (!saveFile.exists() || saveFile.length() <= 50L) {
             try {
-                Tools.downloadFile(
+                println("Downloading image: ${series.imageLink}")
+                Tools.downloadFileWithRetries(
                     series.imageLink,
                     saveFile
                 )
             } catch (e: Exception) {
                 FrogLog.logError(
                     "Failed to download image for ${series.imageLink}",
-                    e,
-                    true
+                    e
                 )
             }
         }

@@ -3,14 +3,13 @@ package nobility.downloader.core.scraper.video_download
 import kotlinx.coroutines.*
 import nobility.downloader.core.BoxHelper.Companion.int
 import nobility.downloader.core.Core
+import nobility.downloader.core.driver.DriverBaseImpl
 import nobility.downloader.core.entities.Download
 import nobility.downloader.core.scraper.video_download.m3u8_downloader.core.M3u8Download
 import nobility.downloader.core.scraper.video_download.m3u8_downloader.core.M3u8DownloadListener
 import nobility.downloader.core.scraper.video_download.m3u8_downloader.http.config.HttpRequestManagerConfig
 import nobility.downloader.core.settings.Defaults
-import nobility.downloader.utils.Resource
-import nobility.downloader.utils.Tools
-import nobility.downloader.utils.source
+import nobility.downloader.utils.*
 import java.io.*
 import java.net.URI
 import javax.net.ssl.HttpsURLConnection
@@ -64,23 +63,110 @@ object Functions {
             exception
         )
         var fullModeRetries = 0
+        var fullModeException: Exception? = null
         while (fullModeRetries <= Defaults.FULL_RETRIES.int()) {
-            data.driver.navigate().to(url)
-            if (data.driver.source().contains("404 - Page not Found")) {
-                return@withContext Resource.Error("404 Page not found.")
-            }
-            if (data.driver.source().contains("Sorry, you have been blocked")) {
+            try {
+                data.driver.navigate().to(url)
+                if (data.driver.source().contains("404 - Page not Found")) {
+                    return@withContext Resource.Error("404 Page not found.")
+                }
+                if (data.driver.source().contains("Sorry, you have been blocked")) {
+                    fullModeRetries++
+                    delay(500)
+                    continue
+                }
+                val sb = StringBuilder()
+                data.driver.source().lines().forEach {
+                    sb.appendLine(it)
+                }
+                return@withContext Resource.Success(sb)
+            } catch (e: Exception) {
+                fullModeException = e
                 fullModeRetries++
-                delay(500)
                 continue
             }
-            val sb = StringBuilder()
-            data.driver.source().lines().forEach {
-                sb.appendLine(it)
-            }
-            return@withContext Resource.Success(sb)
         }
-        return@withContext Resource.Error("Failed to read lines with selenium.")
+        return@withContext Resource.Error(
+            "Failed to read lines with selenium.",
+            fullModeException
+        )
+    }
+
+    /**
+     * Created as to not initialize WDM early.
+     */
+    suspend fun readUrlLines(
+        url: String,
+        customTag: String = "readUrlLines",
+        addReferer: Boolean = true
+    ): Resource<StringBuilder> = withContext(Dispatchers.IO) {
+        val userAgent = UserAgents.random
+        var simpleRetries = 0
+        var exception: Exception? = null
+        while (simpleRetries < Defaults.SIMPLE_RETRIES.int()) {
+            var con: HttpsURLConnection? = null
+            var reader: BufferedReader? = null
+            val sb = StringBuilder()
+            try {
+                con = wcoConnection(
+                    url,
+                    userAgent,
+                    false,
+                    addReferer
+                )
+                reader = con.inputStream.bufferedReader()
+                reader.readLines().forEach {
+                    sb.appendLine(it)
+                }
+                return@withContext Resource.Success(sb)
+            } catch (e: Exception) {
+                exception = e
+                simpleRetries++
+                delay(500)
+                continue
+            } finally {
+                try {
+                    con?.disconnect()
+                    reader?.close()
+                } catch (_: Exception) {
+                }
+            }
+        }
+        FrogLog.logError(
+            "[$customTag] Failed to read webpage with simple mode. Moving on to full mode.",
+            exception
+        )
+        val driverBase = DriverBaseImpl(userAgent = userAgent)
+        var fullModeRetries = 0
+        var fullModeException: Exception? = null
+        while (fullModeRetries <= Defaults.FULL_RETRIES.int()) {
+            try {
+                driverBase.driver.navigate().to(url)
+                if (driverBase.driver.source().contains("404 - Page not Found")) {
+                    return@withContext Resource.Error("404 Page not found.")
+                }
+                if (driverBase.driver.source().contains("Sorry, you have been blocked")) {
+                    fullModeRetries++
+                    delay(500)
+                    continue
+                }
+                val sb = StringBuilder()
+                driverBase.driver.source().lines().forEach {
+                    sb.appendLine(it)
+                }
+                return@withContext Resource.Success(sb)
+            } catch (e: Exception) {
+                fullModeException = e
+                fullModeRetries++
+                continue
+            } finally {
+                driverBase.killDriver()
+            }
+        }
+        return@withContext Resource.Error(
+            "[$customTag] Failed to read lines with selenium.",
+            fullModeException
+        )
     }
 
     suspend fun wcoConnection(
