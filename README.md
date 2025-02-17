@@ -86,7 +86,7 @@ Replacing `zendownloader.deb` with the file name.
 
 Input your password and you're done.
 
-If you wish to uninstall it, then you can use the command:
+If you wish to uninstall it, you can use the command:
 
 `sudo apt-get remove zendownloader`
 
@@ -273,7 +273,9 @@ Click the error in the console and you'll be greeted with this window:
 
 Under **Gradle JVM** select it and select **Download JDK**
 
-For the version you will want to select **17**
+For the version you will want to select **21**
+
+*The Java Version has recently been upgraded to 21*
 
 Press **Download**, press **Apply** and press **Ok**
 
