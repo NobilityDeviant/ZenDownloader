@@ -33,13 +33,16 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import compose.icons.EvaIcons
 import compose.icons.evaicons.Fill
+import compose.icons.evaicons.Outline
 import compose.icons.evaicons.fill.*
+import compose.icons.evaicons.outline.Star
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import nobility.downloader.core.BoxHelper
 import nobility.downloader.core.BoxHelper.Companion.boolean
 import nobility.downloader.core.BoxHelper.Companion.int
 import nobility.downloader.core.BoxHelper.Companion.update
+import nobility.downloader.core.BoxMaker
 import nobility.downloader.core.Core
 import nobility.downloader.core.entities.Series
 import nobility.downloader.core.entities.data.SeriesIdentity
@@ -63,6 +66,9 @@ class DatabaseWindow {
     private var loading by mutableStateOf(false)
     private var resultText by mutableStateOf("")
 
+    private val mShowFavorites = MutableStateFlow(false)
+    private val showFavorites = mShowFavorites.asStateFlow()
+
     private val mSearchByGenre = MutableStateFlow(
         Defaults.DB_SEARCH_GENRE.boolean()
     )
@@ -82,40 +88,58 @@ class DatabaseWindow {
         DatabaseSort.sortForId(Defaults.DB_LAST_SORT_USED.int())
     )
     private val databaseSort = mDatabaseSort.asStateFlow()
-    
-    private val searchText = Core.genreSearchText.asStateFlow()
 
+    private val searchText = Core.databaseSearchText.asStateFlow()
+
+    @Suppress("TYPE_INTERSECTION_AS_REIFIED_WARNING")
     private val series = combine(
         databaseType,
         databaseSort,
         searchText,
         searchByGenre,
-        searchByDesc
-    ) { type, sort, search, byGenre, byDesc ->
-            if (search.isBlank()) {
-                sortedSeries
-            } else {
+        searchByDesc,
+        showFavorites
+    ) {
+        //val type = it[0] as DatabaseType
+        //val sort = it[1] as DatabaseSort
+        val search = it[2] as String
+        val byGenre = it[3] as Boolean
+        val byDesc = it[4] as Boolean
+        val favorite = it[5] as Boolean
+        if (search.isBlank()) {
+            if (favorite) {
                 sortedSeries.filter {
-                    var foundGenre = false
-                    if (byGenre) {
-                        for (genre in it.genreNames) {
-                            if (genre.equals(search, true)) {
-                                foundGenre = true
-                                break
-                            }
+                    BoxHelper.isSeriesFavorited(it)
+                }
+            } else {
+                sortedSeries
+            }
+        } else {
+            sortedSeries.filter {
+                var foundGenre = false
+                if (byGenre) {
+                    for (genre in it.genreNames) {
+                        if (genre.equals(search, true)) {
+                            foundGenre = true
+                            break
                         }
                     }
-                    it.name.contains(search, true)
-                            || it.slug == search.linkToSlug()
-                            || (byDesc && it.description.contains(search, true))
-                            || foundGenre
                 }
+                if (favorite) {
+                    BoxHelper.isSeriesFavorited(it)
+                } else {
+                    true
+                } && it.name.contains(search, true)
+                        || it.slug == search.linkToSlug()
+                        || (byDesc && it.description.contains(search, true))
+                        || foundGenre
             }
-        }.stateIn(
-            Core.child.taskScope,
-            SharingStarted.WhileSubscribed(5000),
-            sortedSeries
-        )
+        }
+    }.stateIn(
+        Core.child.taskScope,
+        SharingStarted.WhileSubscribed(5000),
+        sortedSeries
+    )
 
     private val databaseByType: List<Series>
         get() {
@@ -143,7 +167,7 @@ class DatabaseWindow {
     fun open(
         initialSearch: String = ""
     ) {
-        Core.genreSearchText.value = initialSearch
+        Core.databaseSearchText.value = initialSearch
         ApplicationState.newWindow(
             "Database"
         ) {
@@ -161,6 +185,17 @@ class DatabaseWindow {
                             horizontalArrangement = Arrangement.spacedBy(5.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
+                            val favorite by showFavorites.collectAsState()
+                            tooltipIconButton(
+                                if (favorite)
+                                    "Show Only Favorites On"
+                                else "Show Only Favorites Off",
+                                EvaIcons.Fill.Star,
+                                iconColor = if (favorite)
+                                    Color.Yellow else MaterialTheme.colorScheme.onSurface
+                            ) {
+                                mShowFavorites.value = showFavorites.value.not()
+                            }
                             tooltipIconButton(
                                 "Genres",
                                 EvaIcons.Fill.BookOpen,
@@ -172,7 +207,7 @@ class DatabaseWindow {
                             defaultSettingsTextField(
                                 search,
                                 onValueChanged = {
-                                    Core.genreSearchText.value = it
+                                    Core.databaseSearchText.value = it
                                 },
                                 hint = randomSearchHint,
                                 textStyle = MaterialTheme.typography.labelLarge,
@@ -486,6 +521,24 @@ class DatabaseWindow {
                     ToDownload(series)
                 )
             }
+            val favorited by remember {
+                mutableStateOf(BoxHelper.isSeriesFavorited(series))
+            }
+            defaultDropdownItem(
+                if (favorited)
+                    "Remove From Favorite" else "Add To Favorite",
+                if (favorited)
+                    EvaIcons.Fill.Star else EvaIcons.Outline.Star,
+                iconColor = if (favorited)
+                    Color.Yellow else LocalContentColor.current
+            ) {
+                closeMenu()
+                if (favorited) {
+                    BoxHelper.removeSeriesFavorite(series.slug)
+                } else {
+                    BoxMaker.makeFavorite(series.slug)
+                }
+            }
             defaultDropdownItem(
                 "Copy Name",
                 EvaIcons.Fill.Copy
@@ -532,15 +585,29 @@ class DatabaseWindow {
                 ).height(rowHeight).fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(4.dp)
         ) {
-            Text(
-                text = series.name,
-                color = MaterialTheme.colorScheme.onSecondaryContainer,
-                fontSize = MaterialTheme.typography.bodyMedium.fontSize,
-                modifier = Modifier
-                    .padding(4.dp)
-                    .align(Alignment.CenterVertically)
+            val favorited = BoxHelper.isSeriesFavorited(series)
+            Box(
+                modifier = Modifier.fillMaxSize()
                     .weight(NAME_WEIGHT)
-            )
+            ) {
+                if (favorited) {
+                    defaultIcon(
+                        EvaIcons.Fill.Star,
+                        iconColor = Color.Yellow,
+                        iconModifier = Modifier
+                            .padding(4.dp)
+                            .align(Alignment.TopStart)
+                    )
+                }
+                Text(
+                    text = series.name,
+                    color = MaterialTheme.colorScheme.onSecondaryContainer,
+                    fontSize = MaterialTheme.typography.bodyMedium.fontSize,
+                    modifier = Modifier
+                        .padding(4.dp)
+                        .align(Alignment.CenterStart)
+                )
+            }
             divider()
             Text(
                 text = series.description.ifEmpty { "No Description" },
@@ -694,7 +761,7 @@ class DatabaseWindow {
                                         options = listOf(
                                             Option("Cancel"),
                                             Option("Search For Genre") {
-                                                Core.genreSearchText.value = genre.name
+                                                Core.databaseSearchText.value = genre.name
                                             },
                                             Option("Open Genre Link") {
                                                 if (genre.slug.isNotEmpty()) {
@@ -761,7 +828,7 @@ class DatabaseWindow {
         get() =
             BoxHelper.allSeries.map { it.name }.plus(
                 BoxHelper.shared.wcoGenreBox.all.map { it.name }
-            ).random().lines().firstOrNull()?: ""
+            ).random().lines().firstOrNull() ?: ""
 
     @OptIn(ExperimentalFoundationApi::class)
     private fun openGenresWindow() {
@@ -810,14 +877,14 @@ class DatabaseWindow {
                                 modifier = Modifier.fillMaxWidth().height(35.dp)
                                     .onClick(
                                         matcher = PointerMatcher.mouse(PointerButton.Secondary)
-                                    ) { Core.genreSearchText.value = genre.name }
+                                    ) { Core.databaseSearchText.value = genre.name }
                                     .clickable(
                                         interactionSource = remember { MutableInteractionSource() },
                                         indication = ripple(
                                             color = MaterialTheme.colorScheme
                                                 .secondaryContainer.hover()
                                         )
-                                    ) { Core.genreSearchText.value = genre.name }
+                                    ) { Core.databaseSearchText.value = genre.name }
                                     .background(
                                         color = MaterialTheme.colorScheme.secondaryContainer,
                                         shape = RoundedCornerShape(5.dp)

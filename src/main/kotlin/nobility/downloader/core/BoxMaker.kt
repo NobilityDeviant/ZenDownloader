@@ -71,7 +71,7 @@ object BoxMaker {
     }
 
     fun makeHistory(
-        seriesSlug: String = "",
+        seriesSlug: String,
         dateAdded: Long = Date().time,
         website: String = Website.WCOFUN.name
     ) {
@@ -93,6 +93,31 @@ object BoxMaker {
                     )
                 }
                 BoxHelper.shared.historyBox.put(history)
+            }
+    }
+
+    fun makeFavorite(
+        seriesSlug: String,
+        episodeSlugs: List<String> = mutableListOf(),
+        website: String = Website.WCOFUN.name
+    ) {
+        BoxHelper.shared.favoriteBox.query()
+            .equal(Favorite_.seriesSlug, seriesSlug, QueryBuilder.StringOrder.CASE_SENSITIVE)
+            .build().use {
+                var favorite = it.findUniqueOrNull()
+                if (favorite != null) {
+                    favorite.lastUpdated = System.currentTimeMillis()
+                    favorite.website = website
+                    favorite.updateEpisodes(episodeSlugs)
+                } else {
+                    favorite = Favorite(
+                        seriesSlug = seriesSlug,
+                        website = website,
+                        lastUpdated = System.currentTimeMillis()
+                    )
+                    favorite.updateEpisodes(episodeSlugs)
+                }
+                BoxHelper.shared.favoriteBox.put(favorite)
             }
     }
 

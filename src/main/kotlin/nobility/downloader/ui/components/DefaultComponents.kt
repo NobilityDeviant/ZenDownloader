@@ -200,6 +200,7 @@ fun defaultDropdownItem(
     endIcon: ImageVector? = null,
     enabled: Boolean = true,
     modifier: Modifier = Modifier,
+    iconColor: Color = LocalContentColor.current,
     onClick: () -> Unit
 ) {
     val interaction =  remember { MutableInteractionSource() }
@@ -223,7 +224,8 @@ fun defaultDropdownItem(
                 Icon(
                     startIcon,
                     "",
-                    modifier = Modifier.size(24.dp)
+                    modifier = Modifier.size(24.dp),
+                    iconColor
                 )
             }
             Text(
@@ -235,7 +237,8 @@ fun defaultDropdownItem(
                 Icon(
                     endIcon,
                     "",
-                    modifier = Modifier.size(24.dp)
+                    modifier = Modifier.size(24.dp),
+                    iconColor
                 )
             }
         }
@@ -571,7 +574,7 @@ fun tooltipIconButton(
     contentDescription: String = "",
     spacePosition: SpacePosition? = null,
     space: Dp = 0.dp,
-    onClick: () -> Unit
+    onClick: () -> Unit = {}
 ) {
     val modifier = Modifier
     if (spacePosition != null) {

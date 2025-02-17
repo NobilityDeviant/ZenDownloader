@@ -20,6 +20,7 @@ import androidx.compose.runtime.snapshots.SnapshotStateMap
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.key.isShiftPressed
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
@@ -30,6 +31,7 @@ import androidx.compose.ui.unit.sp
 import compose.icons.EvaIcons
 import compose.icons.evaicons.Fill
 import compose.icons.evaicons.fill.ChevronDown
+import compose.icons.evaicons.fill.Star
 import kotlinx.coroutines.*
 import nobility.downloader.core.BoxHelper
 import nobility.downloader.core.BoxHelper.Companion.boolean
@@ -70,6 +72,7 @@ class DownloadConfirmWindow(
     private var singleEpisode by mutableStateOf(false)
     private var shiftHeld by mutableStateOf(false)
     private var searchText by mutableStateOf("")
+    private var favorited by mutableStateOf(BoxHelper.isSeriesFavorited(series))
 
     init {
         if (toDownload.episode != null) {
@@ -332,9 +335,17 @@ class DownloadConfirmWindow(
                         true,
                         searchMode = true
                     )
+                }.sortedWith { data1, data2 ->
+                    val num1 = data1.seasonTitle.filter { it.isDigit() }.toIntOrNull() ?: -1
+                    val num2 = data2.seasonTitle.filter { it.isDigit() }.toIntOrNull() ?: -1
+                    num1.compareTo(num2)
                 }
             } else {
-                seasonData()
+                seasonData().sortedWith { data1, data2 ->
+                        val num1 = data1.seasonTitle.filter { it.isDigit() }.toIntOrNull() ?: -1
+                        val num2 = data2.seasonTitle.filter { it.isDigit() }.toIntOrNull() ?: -1
+                        num1.compareTo(num2)
+                    }
             }
         }
 
@@ -358,7 +369,7 @@ class DownloadConfirmWindow(
             if (movies.isNotEmpty()) {
                 seasonDataList.add(
                     SeasonData(
-                        "${series.name} Movies (${movies.size})",
+                        "${series.name} Movies",
                         movies,
                         false
                     )
@@ -371,7 +382,7 @@ class DownloadConfirmWindow(
             if (ovas.isNotEmpty()) {
                 seasonDataList.add(
                     SeasonData(
-                        "${series.name} OVA (${ovas.size})",
+                        "${series.name} OVA",
                         ovas,
                         false
                     )
@@ -381,7 +392,7 @@ class DownloadConfirmWindow(
         } else {
             return listOf(
                 SeasonData(
-                    "Movies (${episodes.size})",
+                    "Movies",
                     episodes,
                     true
                 )
@@ -401,7 +412,7 @@ class DownloadConfirmWindow(
             return seasonDataList.plus(subLists.map {
                 val seasonNumber = it.key.toString().toInt()
                 SeasonData(
-                    "${series.name} Season $seasonNumber (${it.value.size})",
+                    "${series.name} Season $seasonNumber",
                     it.value,
                     it.value.contains(toDownload.episode)
                 )
@@ -414,7 +425,7 @@ class DownloadConfirmWindow(
             if (episodes.isNotEmpty()) {
                 seasonDataList.add(
                     SeasonData(
-                        "${series.name} (${episodes.size})",
+                        series.name,
                         episodes,
                         true
                     )
@@ -593,7 +604,7 @@ class DownloadConfirmWindow(
             .height(seasonDataHeaderHeight)
             .padding(vertical = 1.dp)) {
             Text(
-                text = seasonData.seasonTitle,
+                text = seasonData.seasonTitle + " (${seasonData.episodes.size})",
                 style = MaterialTheme.typography.headlineSmall,
                 modifier = Modifier.weight(1.0f)
                     .align(Alignment.CenterVertically).padding(start = 4.dp),
@@ -768,6 +779,22 @@ class DownloadConfirmWindow(
                             updateSelectedText()
                         }
                     } else {
+                        tooltipIconButton(
+                            if (favorited)
+                                "Remove From Favorite"
+                            else "Add To Favorite",
+                            EvaIcons.Fill.Star,
+                            iconColor = if (favorited)
+                                Color.Yellow else MaterialTheme.colorScheme.onSurface
+                        ) {
+                            if (favorited) {
+                                BoxHelper.removeSeriesFavorite(series.slug)
+                                favorited = false
+                            } else {
+                                BoxMaker.makeFavorite(series.slug)
+                                favorited = true
+                            }
+                        }
                         if (!movieMode) {
                             defaultButton(
                                 "Check For New Episodes",

@@ -30,7 +30,7 @@ import java.io.PrintStream
  * A class used to represent the global singleton for the application.
  * Any class can access this class without needing to pass it as a parameter.
  */
-class Core {
+class Core private constructor() {
 
     companion object {
 
@@ -55,7 +55,7 @@ class Core {
         var stopButtonEnabled by mutableStateOf(false)
         var currentUrlFocused = false
         var settingsFieldFocused = false
-        val genreSearchText = MutableStateFlow("")
+        val databaseSearchText = MutableStateFlow("")
         var darkMode = mutableStateOf(false)
         val randomSeries = mutableStateListOf<Series>()
         val randomSeries2 = mutableStateListOf<Series>()

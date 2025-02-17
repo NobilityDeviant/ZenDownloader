@@ -35,6 +35,10 @@ class BoxHelper {
         .directory(File(AppInfo.databasePath + "my_data/settings"))
         .build()
 
+    private var favoriteBoxStore: BoxStore = MyObjectBox.builder()
+        .directory(File(AppInfo.databasePath + "my_data/favorites"))
+        .build()
+
     //cached website series links
     private var linksBoxStore: BoxStore = MyObjectBox.builder()
         .directory(File(wcoPath + "links"))
@@ -69,6 +73,7 @@ class BoxHelper {
     val settingsBox: Box<SettingsMeta> = settingsBoxStore.boxFor(SettingsMeta::class.java)
     val downloadBox: Box<Download> = dataBoxStore.boxFor(Download::class.java)
     val historyBox: Box<SeriesHistory> = dataBoxStore.boxFor(SeriesHistory::class.java)
+    val favoriteBox: Box<Favorite> = favoriteBoxStore.boxFor(Favorite::class.java)
     val dubbedSeriesBox: Box<Series> = dubbedBoxStore.boxFor(Series::class.java)
     val dubbedEpisodeBox: Box<Episode> = dubbedBoxStore.boxFor(Episode::class.java)
     val subbedSeriesBox: Box<Series> = subbedBoxStore.boxFor(Series::class.java)
@@ -562,6 +567,26 @@ class BoxHelper {
                 .build().use {
                     val genre = it.findUniqueOrNull()
                     return genre ?: Genre("Null")
+                }
+        }
+
+        fun isSeriesFavorited(series: Series): Boolean {
+            shared.favoriteBox.query()
+                .equal(Favorite_.seriesSlug, series.slug, QueryBuilder.StringOrder.CASE_SENSITIVE)
+                .build().use {
+                    return it.findUniqueOrNull() != null
+                }
+            return false
+        }
+
+        fun removeSeriesFavorite(slug: String) {
+            shared.favoriteBox.query()
+                .equal(Favorite_.seriesSlug, slug, QueryBuilder.StringOrder.CASE_SENSITIVE)
+                .build().use {
+                    val favorite = it.findUniqueOrNull()
+                    if (favorite != null) {
+                        shared.favoriteBox.remove(favorite)
+                    }
                 }
         }
     }

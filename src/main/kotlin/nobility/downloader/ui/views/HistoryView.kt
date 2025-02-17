@@ -25,24 +25,28 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import compose.icons.EvaIcons
 import compose.icons.evaicons.Fill
-import compose.icons.evaicons.fill.ArrowIosDownward
-import compose.icons.evaicons.fill.ArrowIosUpward
-import compose.icons.evaicons.fill.Info
-import compose.icons.evaicons.fill.Search
+import compose.icons.evaicons.Outline
+import compose.icons.evaicons.fill.*
+import compose.icons.evaicons.outline.Star
 import kotlinx.coroutines.*
 import nobility.downloader.Page
 import nobility.downloader.core.BoxHelper
+import nobility.downloader.core.BoxMaker
 import nobility.downloader.core.Core
 import nobility.downloader.core.entities.Series
+import nobility.downloader.core.entities.SeriesHistory
 import nobility.downloader.core.scraper.SeriesUpdater
 import nobility.downloader.core.scraper.data.ToDownload
 import nobility.downloader.ui.components.*
 import nobility.downloader.ui.components.dialog.DialogHelper
 import nobility.downloader.ui.windows.utils.AppWindowScope
-import nobility.downloader.utils.*
 import nobility.downloader.utils.Constants.bottomBarHeight
+import nobility.downloader.utils.FrogLog
+import nobility.downloader.utils.Resource
+import nobility.downloader.utils.Tools
+import nobility.downloader.utils.hover
 
-class HistoryView: ViewPage {
+class HistoryView : ViewPage {
 
     override val page = Page.HISTORY
 
@@ -53,51 +57,44 @@ class HistoryView: ViewPage {
     private var loading by mutableStateOf(false)
 
     data class SeriesData(
-        val slug: String,
-        val name: String,
-        val dateAdded: Long,
-        val episodeCount: Int,
-        val imageLink: String
+        val series: Series,
+        val history: SeriesHistory
     )
 
-    private val historyData = mutableStateListOf<SeriesData>()
+    private val seriesDatas = mutableStateListOf<SeriesData>()
 
-    private val sortedHistoryData: List<SeriesData>
+    private val sortedSeriesDataData: List<SeriesData>
         get() {
             return when (sort) {
-                Sort.NAME -> historyData.sortedBy { it.name }
-                Sort.NAME_DESC -> historyData.sortedByDescending { it.name }
-                Sort.DATE -> historyData.sortedBy { it.dateAdded }
-                Sort.DATE_DESC -> historyData.sortedByDescending { it.dateAdded }
-                Sort.EPISODES -> historyData.sortedBy { it.episodeCount }
-                Sort.EPISODES_DESC -> historyData.sortedByDescending { it.episodeCount }
+                Sort.NAME -> seriesDatas.sortedBy { it.series.name }
+                Sort.NAME_DESC -> seriesDatas.sortedByDescending { it.series.name }
+                Sort.DATE -> seriesDatas.sortedBy { it.history.dateAdded }
+                Sort.DATE_DESC -> seriesDatas.sortedByDescending { it.history.dateAdded }
+                Sort.EPISODES -> seriesDatas.sortedBy { it.series.episodesSize }
+                Sort.EPISODES_DESC -> seriesDatas.sortedByDescending { it.series.episodesSize }
             }
         }
 
     private fun loadHistoryData() {
+        //todo use this more often
         BoxHelper.shared.wcoBoxStore.callInReadTx {
             BoxHelper.shared.historyBox.all.forEach {
                 val series = BoxHelper.seriesForSlug(it.seriesSlug)
                 if (series != null) {
-                    downloadScope.launch {
-                        ImageUtils.downloadSeriesImage(series)
-                    }
-                    historyData.add(
+                    seriesDatas.add(
                         SeriesData(
-                            series.slug,
-                            series.name,
-                            it.dateAdded,
-                            series.episodesSize,
-                            series.imageLink
+                            series,
+                            it
                         )
                     )
                 }
             }
         }
+        BoxHelper.shared.wcoBoxStore.closeThreadResources()
     }
 
     override fun onClose() {
-        historyData.clear()
+        seriesDatas.clear()
         downloadScope.cancel()
     }
 
@@ -126,27 +123,27 @@ class HistoryView: ViewPage {
                                 "Are you sure you would like to delete your download history?",
                                 onConfirmTitle = "Clear History"
                             ) {
-                                if (historyData.isEmpty()) {
+                                if (seriesDatas.isEmpty()) {
                                     windowScope.showToast("There's no history to clear.")
                                     return@showConfirm
                                 }
                                 BoxHelper.shared.historyBox.removeAll()
-                                historyData.clear()
+                                seriesDatas.clear()
                                 windowScope.showToast("History successfully cleared.")
                             }
                         }
                         defaultButton(
-                            "Check For New Episodes",
+                            "Check All For New Episodes",
                             height = 40.dp,
                             width = 150.dp,
                             enabled = checkForEpisodesButtonEnabled
                         ) {
-                            if (historyData.isEmpty()) {
+                            if (seriesDatas.isEmpty()) {
                                 windowScope.showToast("There's no history to check.")
                                 return@defaultButton
                             }
                             scope.launch {
-                                windowScope.showToast("Checking ${historyData.size} series for new episodes...")
+                                windowScope.showToast("Checking ${seriesDatas.size} series for new episodes...")
                                 val result = checkAllHistoryForNewEpisodes()
                                 val data = result.data
                                 if (data != null) {
@@ -205,8 +202,8 @@ class HistoryView: ViewPage {
                         state = seasonsListState
                     ) {
                         items(
-                            sortedHistoryData,
-                            key = { it.slug }
+                            sortedSeriesDataData,
+                            key = { it.series.slug + it.series.id }
                         ) {
                             seriesDataRow(
                                 it,
@@ -221,8 +218,6 @@ class HistoryView: ViewPage {
         }
         LaunchedEffect(Unit) {
             loading = true
-            //windowScope.showToast("Loading series data...")
-            //delay(2000)
             loadHistoryData()
             loading = false
         }
@@ -412,19 +407,9 @@ class HistoryView: ViewPage {
                 EvaIcons.Fill.Info
             ) {
                 closeMenu()
-                val slug = seriesData.slug
-                if (slug.isNotEmpty()) {
-                    val series = BoxHelper.seriesForSlug(slug)
-                    if (series != null) {
-                        Core.openDownloadConfirm(
-                            ToDownload(series)
-                        )
-                    } else {
-                        windowScope.showToast("Failed to find local series.")
-                    }
-                } else {
-                    windowScope.showToast("There is no series slug for this download.")
-                }
+                Core.openDownloadConfirm(
+                    ToDownload(seriesData.series)
+                )
             }
             defaultDropdownItem(
                 "Check For New Episodes",
@@ -436,18 +421,46 @@ class HistoryView: ViewPage {
                     val data = result.data
                     if (data != null) {
                         windowScope.showToast(
-                            "Found ${result.data} new episode(s) for: ${seriesData.name}"
+                            "Found ${result.data} new episode(s) for: ${seriesData.series.name}"
                         )
                     } else {
-                        windowScope.showToast("No new episodes were found for: ${seriesData.name}")
+                        windowScope.showToast("No new episodes were found for: ${seriesData.series.name}")
                         if (!result.message.isNullOrEmpty()) {
                             FrogLog.logError(
-                                "Failed to find new episodes for ${seriesData.name}",
+                                "Failed to find new episodes for ${seriesData.series.name}",
                                 result.message
                             )
                         }
                     }
                 }
+            }
+
+            val favorited by remember {
+                mutableStateOf(BoxHelper.isSeriesFavorited(seriesData.series))
+            }
+            defaultDropdownItem(
+                if (favorited)
+                    "Remove From Favorite" else "Add To Favorite",
+                if (favorited)
+                    EvaIcons.Fill.Star else EvaIcons.Outline.Star,
+                iconColor = if (favorited)
+                    Color.Yellow else LocalContentColor.current
+            ) {
+                closeMenu()
+                if (favorited) {
+                    BoxHelper.removeSeriesFavorite(seriesData.series.slug)
+                } else {
+                    BoxMaker.makeFavorite(seriesData.series.slug)
+                }
+            }
+
+            defaultDropdownItem(
+                "Remove From History",
+                EvaIcons.Fill.Trash
+            ) {
+                closeMenu()
+                BoxHelper.shared.historyBox.remove(seriesData.history)
+                this@HistoryView.seriesDatas.remove(seriesData)
             }
         }
         Row(
@@ -468,18 +481,32 @@ class HistoryView: ViewPage {
                 ).height(rowHeight).fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(4.dp)
         ) {
-            Text(
-                text = seriesData.name,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                fontSize = MaterialTheme.typography.headlineSmall.fontSize,
-                modifier = Modifier
-                    .padding(4.dp)
-                    .align(Alignment.CenterVertically)
+            Box(
+                modifier = Modifier.fillMaxSize()
                     .weight(NAME_WEIGHT)
-            )
+            ) {
+                val favorited = BoxHelper.isSeriesFavorited(seriesData.series)
+                if (favorited) {
+                    defaultIcon(
+                        EvaIcons.Fill.Star,
+                        iconColor = Color.Yellow,
+                        iconModifier = Modifier
+                            .padding(start = 4.dp, top = 8.dp)
+                            .align(Alignment.TopStart)
+                    )
+                }
+                Text(
+                    text = seriesData.series.name,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontSize = MaterialTheme.typography.headlineSmall.fontSize,
+                    modifier = Modifier
+                        .padding(4.dp)
+                        .align(Alignment.CenterStart)
+                )
+            }
             divider()
             Text(
-                text = Tools.dateFormatted(seriesData.dateAdded),
+                text = Tools.dateFormatted(seriesData.history.dateAdded),
                 modifier = Modifier
                     .padding(4.dp)
                     .align(Alignment.CenterVertically)
@@ -490,7 +517,7 @@ class HistoryView: ViewPage {
             )
             divider()
             Text(
-                text = seriesData.episodeCount.toString(),
+                text = seriesData.series.episodesSize.toString(),
                 modifier = Modifier
                     .padding(4.dp)
                     .align(Alignment.CenterVertically)
@@ -500,10 +527,9 @@ class HistoryView: ViewPage {
                 textAlign = TextAlign.Center
             )
             divider()
-            val imagePath = BoxHelper.seriesImagesPath + Tools.titleForImages(seriesData.name)
             defaultImage(
-                imagePath,
-                seriesData.imageLink,
+                seriesData.series.imagePath,
+                seriesData.series.imageLink,
                 contentScale = ContentScale.FillBounds,
                 modifier = Modifier.fillMaxSize()
                     .padding(10.dp)
@@ -540,13 +566,11 @@ class HistoryView: ViewPage {
     ): Resource<Int> = withContext(Dispatchers.IO) {
         clearHistoryEnabled.value = false
         checkForEpisodesButtonEnabled.value = false
-        val series = BoxHelper.seriesForSlug(seriesData.slug)
+        val series = BoxHelper.seriesForSlug(seriesData.series.slug)
             ?: return@withContext Resource.Error("Failed to find local series.")
         val result = SeriesUpdater.getNewEpisodes(series)
         return@withContext if (result.data != null) {
             val updatedEpisodes = result.data.updatedEpisodes
-            //val seriesWco = BoxHelper.seriesForSlug(series.slug)
-            //seriesWco?.updateEpisodes(updatedEpisodes)
             series.updateEpisodes(updatedEpisodes)
             clearHistoryEnabled.value = true
             checkForEpisodesButtonEnabled.value = true

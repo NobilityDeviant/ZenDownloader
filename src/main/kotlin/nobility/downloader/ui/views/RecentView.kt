@@ -141,34 +141,36 @@ class RecentView: ViewPage {
                 ).fillMaxSize()
             ) {
                 header()
-                FullBox {
-                    LazyColumn(
-                        verticalArrangement = Arrangement.spacedBy(4.dp),
-                        modifier = Modifier.padding(
-                            top = 5.dp,
-                            bottom = 5.dp,
-                            end = verticalScrollbarEndPadding
-                        ).fillMaxSize().draggable(
-                            state = rememberDraggableState {
-                                scope.launch {
-                                    seasonsListState.scrollBy(-it)
-                                }
-                            },
-                            orientation = Orientation.Vertical,
-                        ),
-                        state = seasonsListState
-                    ) {
-                        items(
-                            sortedRecentData,
-                            key = { it.name }
+                if (!loading) {
+                    FullBox {
+                        LazyColumn(
+                            verticalArrangement = Arrangement.spacedBy(4.dp),
+                            modifier = Modifier.padding(
+                                top = 5.dp,
+                                bottom = 5.dp,
+                                end = verticalScrollbarEndPadding
+                            ).fillMaxSize().draggable(
+                                state = rememberDraggableState {
+                                    scope.launch {
+                                        seasonsListState.scrollBy(-it)
+                                    }
+                                },
+                                orientation = Orientation.Vertical,
+                            ),
+                            state = seasonsListState
                         ) {
-                            recentDataRow(
-                                it,
-                                windowScope
-                            )
+                            items(
+                                sortedRecentData,
+                                key = { it.name }
+                            ) {
+                                recentDataRow(
+                                    it,
+                                    windowScope
+                                )
+                            }
                         }
+                        verticalScrollbar(seasonsListState)
                     }
-                    verticalScrollbar(seasonsListState)
                 }
             }
         }
