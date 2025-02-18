@@ -80,7 +80,7 @@ object ImageUtils {
         val saveFile = File(series.imagePath)
         if (!saveFile.exists() || saveFile.length() <= 50L) {
             try {
-                println("Downloading image: ${series.imageLink}")
+                //println("Downloading image: ${series.imageLink}")
                 Tools.downloadFileWithRetries(
                     series.imageLink,
                     saveFile
