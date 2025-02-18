@@ -40,6 +40,34 @@ You will also need to install Chrome. This version doesn't support any other bro
 
 You won't need to download the JRE because it comes pre-packaged.
 
+# Ffmpeg
+
+M3U8 video files require ffmpeg to be installed in order to merge the ts files and merge the audio with the video.
+
+**For Windows:** 
+
+Download the release build from: [https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-full.7z](https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-full.7z)
+
+Extract it, open the `bin` folder and copy `ffmpeg.exe` into the database folder.
+
+Example of path: `C:\Users\CuratedDev\.zen_database\ffmpeg.exe`
+
+You can find the database folder in this guide: [https://github.com/NobilityDeviant/ZenDownloader/tree/master/database#manual-download](https://github.com/NobilityDeviant/ZenDownloader/tree/master/database#manual-download)
+
+**If you know how to set up ffmpeg as an environment variable, that will work too.**
+
+**For Linux:**
+
+Open the terminal and run the command:
+
+`sudo apt install ffmpeg`
+
+Input your password and you're good.
+
+You can verify it's been installed with the command:
+
+`ffmpeg -version`
+
 # Windows
 
 **Download & Install Chrome:** [Download](https://www.google.com/chrome/?platform=windows)
@@ -88,7 +116,7 @@ Replacing `zendownloader.deb` with the file name.
 
 Input your password and you're done.
 
-If you wish to uninstall it, then you can use the command:
+If you wish to uninstall it, you can use the command:
 
 `sudo apt-get remove zendownloader`
 
@@ -275,7 +303,9 @@ Click the error in the console and you'll be greeted with this window:
 
 Under **Gradle JVM** select it and select **Download JDK**
 
-For the version you will want to select **17**
+For the version you will want to select **21**
+
+*The Java Version has recently been upgraded to 21*
 
 Press **Download**, press **Apply** and press **Ok**
 
