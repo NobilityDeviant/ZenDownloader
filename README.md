@@ -38,6 +38,34 @@ You will also need to install Chrome. This version doesn't support any other bro
 
 You won't need to download the JRE because it comes pre-packaged.
 
+# Ffmpeg
+
+M3U8 video files require ffmpeg to be installed in order to merge the ts files and merge the audio with the video.
+
+**For Windows:** 
+
+Download the release build from: [https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-full.7z](https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-full.7z)
+
+Extract it, open the `bin` folder and copy `ffmpeg.exe` into the database folder.
+
+Example of path: `C:\Users\CuratedDev\.zen_database\ffmpeg.exe`
+
+You can find the database folder in this guide: [https://github.com/NobilityDeviant/ZenDownloader/tree/master/database#manual-download](https://github.com/NobilityDeviant/ZenDownloader/tree/master/database#manual-download)
+
+**If you know how to set up ffmpeg as an environment variable, that will work too.**
+
+**For Linux:**
+
+Open the terminal and run the command:
+
+`sudo apt install ffmpeg`
+
+Input your password and you're good.
+
+You can verify it's been installed with the command:
+
+`ffmpeg -version`
+
 # Windows
 
 **Download & Install Chrome:** [Download](https://www.google.com/chrome/?platform=windows)
