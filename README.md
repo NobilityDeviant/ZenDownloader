@@ -24,7 +24,9 @@ If you enjoy this project then please consider donating.
 
 I would greatly appreciate it. :)
 
-[Donate](https://buymeacoffee.com/nobilitydeviant)
+I have changed the donations to a custom Stripe page.
+
+[Donate](https://donate.stripe.com/6oEeV1aGb9lZgCIfYY)
 
 # Requirements
 

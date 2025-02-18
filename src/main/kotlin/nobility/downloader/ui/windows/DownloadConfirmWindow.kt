@@ -164,11 +164,11 @@ class DownloadConfirmWindow(
                         }
                     }
                 }
-                val contextMenuRepresentation = if (isSystemInDarkTheme()) {
-                    DarkDefaultContextMenuRepresentation
-                } else {
-                    LightDefaultContextMenuRepresentation
-                }
+                val contextMenuRepresentation = DefaultContextMenuRepresentation(
+                    backgroundColor = if (isSystemInDarkTheme()) Color.DarkGray else Color.LightGray,
+                    textColor = if (isSystemInDarkTheme()) Color.White else Color.Black,
+                    itemHoverColor = (if (isSystemInDarkTheme()) Color.DarkGray else Color.LightGray).hover(),
+                )
                 CompositionLocalProvider(LocalContextMenuRepresentation provides contextMenuRepresentation) {
                     ContextMenuDataProvider(
                         items = {
@@ -253,7 +253,7 @@ class DownloadConfirmWindow(
                                 selectText,
                                 height = 35.dp,
                                 width = 120.dp,
-                                padding = 10.dp,
+                                padding = PaddingValues(10.dp),
                             ) {
                                 if (allSelected) {
                                     allSelected = false
@@ -757,7 +757,7 @@ class DownloadConfirmWindow(
                             "Clear Highlighted Episodes",
                             height = bottomBarButtonHeight,
                             width = 175.dp,
-                            padding = 0.dp
+                            padding = PaddingValues(0.dp)
                         ) {
                             highlightedEpisodes.clear()
                         }
@@ -765,7 +765,7 @@ class DownloadConfirmWindow(
                             "Select ${highlightedEpisodes.size} Highlighted Episode(s)",
                             height = bottomBarButtonHeight,
                             width = 200.dp,
-                            padding = 0.dp,
+                            padding = PaddingValues(0.dp),
                         ) {
                             highlightedEpisodes.forEach {
                                 val episode = episodeForIndex(it)

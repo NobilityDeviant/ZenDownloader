@@ -6,8 +6,7 @@ import nobility.downloader.core.BoxHelper.Companion.int
 import nobility.downloader.core.BoxHelper.Companion.string
 import nobility.downloader.core.Core
 import nobility.downloader.core.entities.Download
-import nobility.downloader.core.scraper.data.ParsedQuality
-import nobility.downloader.core.scraper.data.QualityAndDownload
+import nobility.downloader.core.scraper.data.DownloadData
 import nobility.downloader.core.scraper.video_download.Functions.downloadVideo
 import nobility.downloader.core.scraper.video_download.Functions.fileSize
 import nobility.downloader.core.scraper.video_download.Functions.httpRequestConfig
@@ -35,15 +34,14 @@ class VideoDownloadHelper(
 
     suspend fun parseQualities(
         slug: String
-    ): Resource<ParsedQuality> {
+    ): Resource<DownloadData> {
         var qualityOption = temporaryQuality ?: Quality.qualityForTag(
             Defaults.QUALITY.string()
         )
-        var downloadLink = ""
-        var separateAudioLink = ""
-        if (data.qualityAndDownloads.isEmpty()) {
+        var preferredDownload: DownloadData? = null
+        if (data.downloadDatas.isEmpty()) {
             if (data.resRetries < Defaults.QUALITY_RETRIES.int()) {
-                val result = detectAvailableQualities(slug, qualityOption)
+                val result = detectAvailableQualities(slug)
                 if (result.errorCode != -1) {
                     val errorCode = ErrorCode.errorCodeForCode(result.errorCode)
                     if (errorCode == ErrorCode.NO_FRAME) {
@@ -76,6 +74,7 @@ class VideoDownloadHelper(
                     } else if (errorCode == ErrorCode.NO_JS) {
                         data.resRetries = 3
                         data.writeMessage("This browser doesn't support JavascriptExecutor.")
+                        return Resource.Error()
                     } else if (errorCode == ErrorCode.M3U8_LINK_FAILED) {
                         data.retries++
                         data.logError(
@@ -89,10 +88,17 @@ class VideoDownloadHelper(
                             "Failed to read webpage."
                         )
                         return Resource.Error()
+                    } else if (errorCode == ErrorCode.FFMPEG_NOT_INSTALLED) {
+                        //todo redo these errors when everything isnt so chaotic lol
+                        return Resource.Error(
+                            "Critical error | Skipping episode",
+                            result.message
+                        )
                     }
                 }
                 if (result.data != null) {
-                    data.qualityAndDownloads.addAll(result.data)
+                    data.downloadDatas.clear()
+                    data.downloadDatas.addAll(result.data)
                     val firstQualities = result.data.filter { !it.secondFrame }
                     qualityOption = Quality.bestQuality(
                         qualityOption,
@@ -100,8 +106,7 @@ class VideoDownloadHelper(
                     )
                     firstQualities.forEach {
                         if (it.quality == qualityOption) {
-                            downloadLink = it.downloadLink
-                            separateAudioLink = it.separateAudioLink
+                            preferredDownload = it
                         }
                     }
                 } else {
@@ -112,48 +117,41 @@ class VideoDownloadHelper(
                 }
             }
         } else {
-            val firstQualities = data.qualityAndDownloads.filter { !it.secondFrame }
+            data.logDebug("Using existing qualities. Size: ${data.downloadDatas.size}")
+            val firstQualities = data.downloadDatas.filter { !it.secondFrame }
             qualityOption = Quality.bestQuality(
                 qualityOption,
                 firstQualities.map { it.quality }
             )
             firstQualities.forEach {
                 if (it.quality == qualityOption) {
-                    downloadLink = it.downloadLink
-                    separateAudioLink = it.separateAudioLink
+                    preferredDownload = it
                 }
             }
         }
-        if (downloadLink.isEmpty()) {
+        if (preferredDownload == null || preferredDownload.downloadLink.isEmpty()) {
             data.retries++
-            data.logInfo("The download link is empty. Retrying...")
+            data.logInfo("Failed to find the preferredDownload. | Retrying...")
             return Resource.Error()
         }
-        return Resource.Success(
-            ParsedQuality(
-                qualityOption,
-                downloadLink,
-                separateAudioLink
-            )
-        )
+        return Resource.Success(preferredDownload)
     }
 
     suspend fun detectAvailableQualities(
-        slug: String,
-        priorityQuality: Quality
-    ): Resource<List<QualityAndDownload>> = withContext(Dispatchers.IO) {
+        slug: String
+    ): Resource<List<DownloadData>> = withContext(Dispatchers.IO) {
         if (data.driver !is JavascriptExecutor) {
             return@withContext Resource.ErrorCode(ErrorCode.NO_JS.code)
         }
         val frameIds = listOf(
             "anime-js-0",
-            "cizgi-js-0",
-            "anime-js-1"
+            "anime-js-1",
+            "cizgi-js-0"
         )
         val secondFrameId = "cizgi-js-1"
         var m3u8Mode = false
         val fullLink = slug.slugToLink()
-        val qualityAndDownloads = mutableListOf<QualityAndDownload>()
+        val downloadDatas = mutableListOf<DownloadData>()
 
         data.logInfo("Scraping quality links from $fullLink")
         data.logInfo("Using UserAgent: ${data.userAgent}")
@@ -223,6 +221,12 @@ class VideoDownloadHelper(
                 )
             }
             if (m3u8Mode) {
+                if (VideoUtil.FfmpegPathHolder.ffmpegPath.isEmpty()) {
+                    return@withContext Resource.ErrorCode(
+                        "Found an m3u8 but ffmpeg isn't installed. Visit: ${AppInfo.FFMPEG_GUIDE_URL}",
+                        ErrorCode.FFMPEG_NOT_INSTALLED.code
+                    )
+                }
                 var hslLink = ""
                 var domain = ""
                 val frameString = sbFrame.toString()
@@ -243,6 +247,16 @@ class VideoDownloadHelper(
                     }
                 }
                 if (hslLink.isEmpty() || domain.isEmpty()) {
+                    val linkKey = "getRedirectedUrl(\""
+                    val endLinkKey = "\").then(data => {"
+                    for (line in sbFrame.lines()) {
+                        if (line.contains(linkKey)) {
+                            hslLink = line.substringAfter(linkKey).substringBefore(endLinkKey)
+                            domain = hslLink.substringBeforeLast("/")
+                        }
+                    }
+                }
+                if (hslLink.isEmpty() || domain.isEmpty()) {
                     return@withContext Resource.ErrorCode(
                         "Failed to find m3u8 link in the source.",
                         ErrorCode.M3U8_LINK_FAILED.code
@@ -258,14 +272,19 @@ class VideoDownloadHelper(
                                     var separateAudio = false
                                     hslLines.forEach { t ->
                                         if (t.startsWith("#EXT-X-MEDIA:TYPE=AUDIO")) {
-                                            if (t.contains("LANGUAGE=\"eng\"")) {
-                                                val last = t.split(",").last()
-                                                val audioUrl =
-                                                    domain + "/" + last.substringAfter("\"").substringBeforeLast("\"")
-                                                //FrogLog.logInfo("Found separate english audio for m3u8.")
+                                            if (t.contains("LANGUAGE=\"eng\"") || t.contains("LANGUAGE=\"eng_2\"")) {
+                                                val split = t.split(",")
+                                                var audioSplit = ""
+                                                split.forEach { splitLine ->
+                                                    if (splitLine.contains("URI=\"")) {
+                                                        audioSplit = splitLine.substringAfter("URI=\"").substringBeforeLast("\"")
+                                                    }
+                                                }
+                                                val audioUrl = "$domain/$audioSplit"
+                                                FrogLog.logInfo("Found separate english audio for m3u8. t: $t audio url: $audioUrl quality: $quality")
                                                 separateAudio = true
-                                                qualityAndDownloads.add(
-                                                    QualityAndDownload(
+                                                downloadDatas.add(
+                                                    DownloadData(
                                                         quality,
                                                         domain + "/" + hslLines[index + 1],
                                                         separateAudioLink = audioUrl
@@ -276,8 +295,8 @@ class VideoDownloadHelper(
                                         }
                                     }
                                     if (!separateAudio) {
-                                        qualityAndDownloads.add(
-                                            QualityAndDownload(
+                                        downloadDatas.add(
+                                            DownloadData(
                                                 quality,
                                                 domain + "/" + hslLines[index + 1]
                                             )
@@ -288,145 +307,83 @@ class VideoDownloadHelper(
                         }
                     }
                 }
-                if (qualityAndDownloads.isEmpty()) {
+                if (downloadDatas.isEmpty()) {
                     return@withContext Resource.ErrorCode(
                         "Failed to find m3u8 qualities.",
                         ErrorCode.M3U8_LINK_FAILED.code
                     )
                 } else {
                     data.logInfo("Successfully found m3u8 qualities.")
-                    return@withContext Resource.Success(qualityAndDownloads)
+                    return@withContext Resource.Success(downloadDatas)
                 }
             }
             val src = sbFrame.toString()
-            val linkKey1 = "\$.getJSON(\""
+            val linkKey1 = "$.getJSON(\""
             val linkKey2 = "\", function(response){"
             val linkIndex1 = src.indexOf(linkKey1)
             val linkIndex2 = src.indexOf(linkKey2)
             val functionLink = src.substring(
                 linkIndex1 + linkKey1.length, linkIndex2
             )
-            //idk how to execute the js, so we still have to use selenium.
+            //IDK how to execute the js, so we still have to use selenium.
             data.undriver.go(fullLink)
-            val has720 = src.contains("obj720")
-            val has1080 = src.contains("obj1080")
-            var qualityIndex = 0
-            var qualityRetry = mutableMapOf<String, Int>()
-            val qualityList = Quality.qualityList(has720, has1080)
-            while (qualityIndex < qualityList.size) {
-                val quality = qualityList[qualityIndex]
+            data.logDebug("Checking qualities with a timeout of ${Defaults.TIMEOUT.int()} seconds")
+            var qualityRetry = 0
+            while (qualityRetry <= Defaults.QUALITY_RETRIES.int()) {
                 try {
                     data.base.executeJs(
                         JavascriptHelper.changeUrlToVideoFunction(
-                            functionLink,
-                            quality
+                            functionLink
                         )
                     )
                     delay(data.pageChangeWaitTime)
-                    //a new way to check if the javascript script threw an error.
-                    //JavascriptHelper will change the url to blank.org on a jquery error.
-                    //idk how to show the error, but we can at least do this
-                    if (data.driver.currentUrl == "https://blank.org") {
-                        val retry = qualityRetry[quality.tag]
-                        if (retry != null) {
-                            if (retry > 3) {
-                                data.logError(
-                                    "Failed to find ${quality.tag} quality after 3 retries. | Skipping quality"
-                                )
-                                qualityIndex++
-                                continue
-                            }
-                            qualityRetry.put(quality.tag, retry + 1)
-                            data.logError("The script has failed for quality: ${quality.tag} | Retrying... ($retry)")
-                        } else {
-                            qualityRetry.put(quality.tag, 1)
-                            data.logError("The script has failed for quality: ${quality.tag} | Retrying... (1)")
+                    val scriptError = data.base.findLinkError()
+                    if (scriptError.isNotEmpty()) {
+                        qualityRetry++
+                        if (qualityRetry == Defaults.QUALITY_RETRIES.int() / 2) {
+                            data.logError(
+                                "The script has failed to find qualities. | Retrying... ($qualityRetry)",
+                                scriptError
+                            )
                         }
+                        data.base.clearLogs()
                         continue
                     }
                     if (src.contains("404 Not Found") || src.contains("404 - Page not Found")) {
                         data.logError(
-                            "(404) Failed to find $quality quality. | Skipping quality"
+                            "(404) Failed to find qualities. | Retrying..."
                         )
-                        qualityIndex++
+                        qualityRetry++
+                        data.base.clearLogs()
                         continue
                     }
-                    val videoLink = data.driver.url()
-                    if (videoLink.isNotEmpty()) {
-                        qualityAndDownloads.add(
-                            QualityAndDownload(quality, videoLink)
-                        )
-                        data.logInfo(
-                            "Found $quality quality."
-                        )
-                        if (quality == priorityQuality) {
-                            break
+                    val links = data.base.findLinks()
+                    if (links.isNotEmpty()) {
+                        links.forEach { link ->
+                            val dlData = DownloadData(link.quality, link.url)
+                            if (!downloadDatas.contains(dlData)) {
+                                downloadDatas.add(dlData)
+                                data.logInfo(
+                                    "Found ${link.quality} quality."
+                                )
+                            }
                         }
+                        break
                     }
-                    data.driver.navigate().back()
-                    qualityIndex++
+                    delay(2000)
                 } catch (e: Exception) {
-                    val retry = qualityRetry[quality.tag]
-                    if (retry != null) {
-                        if (retry > 3) {
-                            data.logError(
-                                "An exception was thrown when looking for quality links after 3 retries. | Skipping quality",
-                                e
-                            )
-                            qualityIndex++
-                            continue
-                        }
-                        qualityRetry.put(quality.tag, retry + 1)
+                    qualityRetry++
+                    if (qualityRetry == Defaults.QUALITY_RETRIES.int() / 2) {
                         data.logError(
-                            "An exception was thrown when looking for quality links. | Retrying... ($retry)",
-                            e.localizedMessage
-                        )
-                    } else {
-                        qualityRetry.put(quality.tag, 1)
-                        data.logError(
-                            "An exception was thrown when looking for quality links. | Retrying... (1)",
+                            "An exception was thrown when looking for quality links. | Retrying... ($qualityRetry)",
                             e.localizedMessage
                         )
                     }
                     continue
                 }
             }
-            /*for (quality in Quality.qualityList(has720, has1080)) {
-                try {
-                    data.base.executeJs(
-                        JavascriptHelper.changeUrlToVideoFunction(
-                            functionLink,
-                            quality
-                        )
-                    )
-                    delay(data.pageChangeWaitTime)
-                    if (src.contains("404 Not Found") || src.contains("404 - Page not Found")) {
-                        data.logInfo(
-                            "(404) Failed to find $quality quality link for $slug"
-                        )
-                        continue
-                    }
-                    val videoLink = data.driver.currentUrl
-                    if (videoLink.isNotEmpty()) {
-                        qualityAndDownloads.add(
-                            QualityAndDownload(quality, videoLink)
-                        )
-                        data.logInfo(
-                            "Found $quality quality."
-                        )
-                        if (quality == priorityQuality) {
-                            break
-                        }
-                    }
-                    data.driver.navigate().back()
-                } catch (e: Exception) {
-                    data.logError(
-                        "An exception was thrown when looking for quality links.",
-                        e
-                    )
-                    continue
-                }
-            }*/
+            data.base.clearLogs()
+            qualityRetry = 0
             if (sbFrame2.isNotEmpty()) {
                 val src2 = sbFrame2.toString()
                 val secondLinkIndex1 = src2.indexOf(linkKey1)
@@ -435,56 +392,71 @@ class VideoDownloadHelper(
                     secondLinkIndex1 + linkKey1.length, secondLinkIndex2
                 )
                 data.driver.navigate().to(fullLink)
-                val secondHas720 = src2.contains("obj720")
-                val secondHas1080 = src2.contains("obj1080")
-                //timeout just in case it hangs for too long.
-                //withTimeout((Defaults.TIMEOUT.int() * 1000).toLong() * 3) {
-                for (quality in Quality.qualityList(secondHas720, secondHas1080)) {
+                while (qualityRetry <= Defaults.QUALITY_RETRIES.int()) {
                     try {
                         data.base.executeJs(
                             JavascriptHelper.changeUrlToVideoFunction(
-                                secondFunctionLink,
-                                quality
+                                secondFunctionLink
                             )
                         )
                         delay(data.pageChangeWaitTime)
-                        if (src.contains("404 Not Found") || src.contains("404 - Page not Found")) {
-                            data.logInfo(
-                                "(2nd) (404) Failed to find $quality quality link for $slug"
-                            )
+                        val scriptError = data.base.findLinkError()
+                        if (scriptError.isNotEmpty()) {
+                            qualityRetry++
+                            if (qualityRetry == Defaults.QUALITY_RETRIES.int() / 2) {
+                                data.logError(
+                                    "(2nd) The script has failed to find qualities. | Retrying... ($qualityRetry)",
+                                    scriptError
+                                )
+                            }
+                            data.base.clearLogs()
                             continue
                         }
-                        val videoLink = data.driver.url()
-                        if (videoLink.isNotEmpty()) {
-                            qualityAndDownloads.add(
-                                QualityAndDownload(quality, videoLink, true)
+                        if (src.contains("404 Not Found") || src.contains("404 - Page not Found")) {
+                            data.logError(
+                                "(2nd) (404) Failed to find qualities. | Retrying..."
                             )
-                            data.logInfo(
-                                "(2nd) Found $quality link for $slug"
-                            )
-                            if (quality == priorityQuality) {
-                                break
-                            }
+                            qualityRetry++
+                            data.base.clearLogs()
+                            continue
                         }
-                        data.driver.navigate().back()
-                        //delay(2000)
+                        val links = data.base.findLinks()
+                        if (links.isNotEmpty()) {
+                            links.forEach { link ->
+                                val dlData = DownloadData(
+                                    link.quality,
+                                    link.url,
+                                    true
+                                )
+                                if (!downloadDatas.contains(dlData)) {
+                                    downloadDatas.add(dlData)
+                                    data.logInfo(
+                                        "(2nd) Found ${link.quality} quality."
+                                    )
+                                }
+                            }
+                            break
+                        }
+                        delay(2000)
                     } catch (e: Exception) {
-                        data.logError(
-                            "(2nd) An exception was thrown when looking for quality links.",
-                            e
-                        )
+                        qualityRetry++
+                        if (qualityRetry == Defaults.QUALITY_RETRIES.int() / 2) {
+                            data.logError(
+                                "(2nd) An exception was thrown when looking for quality links. | Retrying... ($qualityRetry)",
+                                e.localizedMessage
+                            )
+                        }
                         continue
                     }
                 }
             }
-            //}
-            if (qualityAndDownloads.isEmpty()) {
+            if (downloadDatas.isEmpty()) {
                 return@withContext Resource.Error(
-                    "Failed to find qualities."
+                    "Failed to find quality links after ${Defaults.QUALITY_RETRIES.int()} retries.",
                 )
             } else {
-                data.logInfo("Successfully found qualities.")
-                return@withContext Resource.Success(qualityAndDownloads)
+                data.logInfo("Successfully found qualities. Size: ${downloadDatas.size}")
+                return@withContext Resource.Success(downloadDatas)
             }
         } catch (e: Exception) {
             return@withContext Resource.Error(e)
@@ -492,7 +464,7 @@ class VideoDownloadHelper(
     }
 
     suspend fun handleM3U8(
-        parsedQuality: ParsedQuality,
+        downloadData: DownloadData,
         saveFile: File
     ): Boolean = withContext(Dispatchers.IO) {
         //we have to listen to the exception this way.
@@ -508,6 +480,9 @@ class VideoDownloadHelper(
         val m3u8Path = System.getProperty("user.home") + "/.m3u8_files/${saveFile.nameWithoutExtension}/"
         if (saveFile.exists()) {
             if (saveFile.length() >= 5000) {
+                if (job.isActive) {
+                    job.cancel()
+                }
                 data.writeMessage("(IO) Skipping completed video.")
                 data.currentDownload.downloadPath = saveFile.absolutePath
                 data.currentDownload.fileSize = saveFile.length()
@@ -519,11 +494,10 @@ class VideoDownloadHelper(
                 return@withContext false
             }
         }
-        val hasSeparateAudio = parsedQuality.separateAudioLink.isNotEmpty()
-        val downloads = mutableListOf<M3u8Download>()
+        val hasSeparateAudio = downloadData.separateAudioLink.isNotEmpty()
         val videoListener = M3u8DownloadListener(
             downloadStarted = {
-                data.writeMessage("Starting m3u8 video download with ${parsedQuality.quality.tag} quality.")
+                data.writeMessage("Starting m3u8 video download with ${downloadData.quality.tag} quality.")
                 data.currentDownload.queued = false
                 data.currentDownload.downloading = true
                 data.currentDownload.manualProgress = true
@@ -575,7 +549,7 @@ class VideoDownloadHelper(
                             data.currentDownload.downloading = false
                             data.currentDownload.update()
                             Core.child.incrementDownloadsFinished()
-                            data.writeMessage("Successfully downloaded with ${parsedQuality.quality.tag} quality.")
+                            data.writeMessage("Successfully downloaded with ${downloadData.quality.tag} quality.")
                             data.finishEpisode()
                             if (job.isActive) {
                                 job.cancel()
@@ -590,13 +564,12 @@ class VideoDownloadHelper(
                 }
             }
         )
-        downloads.add(
-            m3u8Download(
-                parsedQuality.downloadLink,
-                saveFile,
-                videoListener
-            )
+        val m3u8VideoDownload = m3u8Download(
+            downloadData.downloadLink,
+            saveFile,
+            videoListener
         )
+        var m3u8AudioDownload: M3u8Download? = null
         val audioSaveFile = File(
             saveFile.parent,
             saveFile.nameWithoutExtension + ".m4a"
@@ -614,7 +587,7 @@ class VideoDownloadHelper(
                         return@M3u8DownloadListener
                     }
                     if (!success) {
-                        exx = Exception("Failed to download m3u8 audio.")
+                        exx = Exception("Failed to download m3u8 audio file.")
                         return@M3u8DownloadListener
                     }
                     data.logInfo("Finished downloading audio file.")
@@ -649,80 +622,95 @@ class VideoDownloadHelper(
                         0
                     )
                     if (ex != null) {
-                        exx = Exception("Failed to merge video and audio.")
+                        exx = Exception("Failed to merge audio file. Error: ${ex.localizedMessage}")
                         audioSaveFile.delete()
                     }
                 }
             )
-            downloads.add(
-                m3u8Download(
-                    parsedQuality.separateAudioLink,
-                    audioSaveFile,
-                    audioListener
-                )
+            m3u8AudioDownload = m3u8Download(
+                downloadData.separateAudioLink,
+                audioSaveFile,
+                audioListener
             )
         }
-        val newFile = File(
+        val mergedVideoAndAudioFile = File(
             m3u8Path,
             saveFile.name
         )
         try {
             val stopped = M3u8Downloads.download(
                 httpRequestConfig(data.userAgent),
-                downloads
+                m3u8VideoDownload
             )
             if (hasSeparateAudio && exx == null) {
                 if (stopped) {
                     throw Exception("Stopped download manually.")
                 }
-                newFile.parentFile.mkdirs()
-                data.logInfo("Finished merging audio file. Attempting to merge video & audio...")
-                val success = VideoUtil.mergeVideoAndAudio(
-                    saveFile,
-                    audioSaveFile,
-                    newFile
+                if (m3u8AudioDownload == null) {
+                    throw Exception("Failed to create seperate audio download.")
+                }
+                val stoppedAudio = M3u8Downloads.download(
+                    httpRequestConfig(data.userAgent),
+                    m3u8AudioDownload
                 )
-                Core.child.finalizeM3u8DownloadProgress(
-                    data.currentDownload,
-                    newFile.length(),
-                    success
-                )
-                if (success) {
-                    data.writeMessage("Successfully merged video and audio.")
-                    newFile.copyTo(
+                if (stoppedAudio) {
+                    throw Exception("Stopped audio download manually.")
+                }
+                if (audioSaveFile.exists()) {
+                    mergedVideoAndAudioFile.parentFile.mkdirs()
+                    data.logInfo("Finished merging audio ts files. Attempting to merge video & audio...")
+                    val success = VideoUtil.mergeVideoAndAudio(
                         saveFile,
-                        true
+                        audioSaveFile,
+                        mergedVideoAndAudioFile
                     )
-                    audioSaveFile.delete()
-                    newFile.parentFile.deleteRecursively()
-                    Core.child.incrementDownloadsFinished()
-                    data.writeMessage("Successfully downloaded with ${parsedQuality.quality.tag} quality.")
-                    data.finishEpisode()
-                    if (job.isActive) {
-                        job.cancel()
+                    Core.child.finalizeM3u8DownloadProgress(
+                        data.currentDownload,
+                        mergedVideoAndAudioFile.length(),
+                        success
+                    )
+                    if (success) {
+                        data.writeMessage("Successfully merged video and audio.")
+                        mergedVideoAndAudioFile.copyTo(
+                            saveFile,
+                            true
+                        )
+                        audioSaveFile.delete()
+                        mergedVideoAndAudioFile.parentFile.deleteRecursively()
+                        Core.child.incrementDownloadsFinished()
+                        data.writeMessage("Successfully downloaded with ${downloadData.quality.tag} quality.")
+                        data.finishEpisode()
+                    } else {
+                        mergedVideoAndAudioFile.delete()
+                        saveFile.delete()
+                        audioSaveFile.delete()
+                        throw Exception("Failed to merge video and audio.")
                     }
                 } else {
-                    newFile.delete()
-                    saveFile.delete()
-                    audioSaveFile.delete()
-                    throw Exception("Failed to merge video and audio.")
+                    throw (Exception("The audio file doesn't exist."))
                 }
+            } else if (exx != null) {
+                throw (exx)
             }
         } catch (e: Exception) {
-            newFile.delete()
+            mergedVideoAndAudioFile.delete()
             audioSaveFile.delete()
             data.retries++
             data.logError(
-                "Failed to download m3u8 video. Retrying...",
+                "Failed to download m3u8 video. | Retrying...",
                 e
             )
             return@withContext false
+        } finally {
+            if (job.isActive) {
+                job.cancel()
+            }
         }
         return@withContext true
     }
 
     suspend fun handleSecondVideo() = withContext(Dispatchers.IO) {
-        val qualities = data.qualityAndDownloads.filter {
+        val qualities = data.downloadDatas.filter {
             it.secondFrame
         }.toMutableList()
         if (qualities.isEmpty()) {
@@ -730,7 +718,7 @@ class VideoDownloadHelper(
         }
         data.writeMessage("First video download is complete. Now downloading the second video.")
         var retries = 0
-        var downloadLink = ""
+        var preferredDownload: DownloadData? = null
         var qualityOption = temporaryQuality ?: Quality.qualityForTag(
             Defaults.QUALITY.string()
         )
@@ -749,17 +737,17 @@ class VideoDownloadHelper(
                 }
                 qualities.forEach {
                     if (it.quality == qualityOption) {
-                        downloadLink = it.downloadLink
+                        preferredDownload = it
                     }
                 }
-                if (downloadLink.isNotEmpty()) {
+                if (preferredDownload != null && preferredDownload.downloadLink.isNotEmpty()) {
                     var fileSizeRetries = Defaults.FILE_SIZE_RETRIES.int()
                     var originalFileSize = 0L
                     var headMode = true
-                    data.logInfo("(2nd) Checking video file size with $fileSizeRetries retries.")
+                    data.logDebug("(2nd) Checking video file size with $fileSizeRetries max retries.")
                     for (i in 0..fileSizeRetries) {
                         originalFileSize = fileSize(
-                            downloadLink,
+                            preferredDownload.downloadLink,
                             data.userAgent,
                             headMode
                         )
@@ -767,6 +755,9 @@ class VideoDownloadHelper(
                             headMode = headMode.not()
                             if (i == fileSizeRetries / 2) {
                                 data.logError(
+                                    "(2nd) Failed to find video file size. Current retries: $i"
+                                )
+                                data.writeMessage(
                                     "(2nd) Failed to find video file size. Current retries: $i"
                                 )
                             }
@@ -780,12 +771,15 @@ class VideoDownloadHelper(
                             data.logError(
                                 "(2nd) Failed to find video file size after $fileSizeRetries retries. | Using another quality."
                             )
-                            qualities.remove(
-                                qualities.first {
-                                    it.downloadLink == downloadLink
-                                }
-                            )
+                            qualities.remove(preferredDownload)
                             retries++
+                            if (qualities.isEmpty()) {
+                                data.logError(
+                                    "(2nd) Failed to find video file size. There are no more qualities to check. | Skipping episode"
+                                )
+                                saveFile.delete()
+                                break
+                            }
                             continue
                         } else {
                             data.logError(
@@ -795,6 +789,7 @@ class VideoDownloadHelper(
                             break
                         }
                     }
+                    data.logDebug("(2nd) Successfully found video file size of: ${Tools.bytesToString(originalFileSize)}")
                     if (currentDownload != null) {
                         if (currentDownload.downloadPath.isEmpty()
                             || !File(currentDownload.downloadPath).exists()
@@ -872,7 +867,7 @@ class VideoDownloadHelper(
                     Core.child.addDownload(currentDownload)
                     currentDownload.update()
                     downloadVideo(
-                        downloadLink,
+                        preferredDownload.downloadLink,
                         saveFile,
                         data,
                         currentDownload

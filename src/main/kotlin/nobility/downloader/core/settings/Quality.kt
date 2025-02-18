@@ -50,6 +50,14 @@ enum class Quality(
             }
             return qualities
         }
+        fun qualityForHtml(htmlText: String): Quality {
+            entries.forEach {
+                if (it.htmlText == htmlText) {
+                    return it
+                }
+            }
+            return LOW
+        }
         fun qualityForTag(tag: String): Quality {
             entries.forEach {
                 if (it.tag == tag) {

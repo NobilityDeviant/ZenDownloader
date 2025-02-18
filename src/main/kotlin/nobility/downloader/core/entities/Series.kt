@@ -99,6 +99,7 @@ data class Series(
         }
         seriesBox.attach(this)
         episodeBox.remove(this.episodes)
+        this.episodes.clear()
         this.episodes.applyChangesToDb()
     }
 

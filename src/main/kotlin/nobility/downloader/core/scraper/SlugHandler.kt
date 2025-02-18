@@ -27,8 +27,7 @@ class SlugHandler {
         if (slug == "anime/movies") {
             FrogLog.writeMessage(
                 """
-                    You can't scrape the movies series at the moment.
-                    Soon there will be a movies window for easy searching.
+                    You can't scrape the movies series.
                 """.trimIndent()
             )
             return Resource.Error("Failed to read series.")
@@ -119,8 +118,6 @@ class SlugHandler {
             findIdentityForSlug(seriesSlug)?.identity
         else
             SeriesIdentity.idForType(identityType)
-        //TODO im rushing here. make sure to use the Resource class properly and use the error messages.
-        //it's fine for now, but hopefully i remember later.
         if (identity == null) {
             return@withContext Resource.Error(
                 "Failed to find identity for $seriesSlug"
@@ -145,7 +142,6 @@ class SlugHandler {
                 val h2 = category[0].select("h2")
                 val categoryLink = h2.select("a").attr("href")
                 val categoryName = h2.text()
-                //todo
                 if (categoryName.lowercase(Locale.getDefault()) == "movies") {
                     val videoTitle = doc.getElementsByClass("video-title")
                     val series = BoxMaker.makeSeries(
@@ -241,7 +237,7 @@ class SlugHandler {
         }
     }
 
-    //todo if the episode doesn't exist but the series does, check for new episodes first
+    //todo fully implement updater next update
     private suspend fun scrapeEpisodeWithSlug(
         episodeSlug: String
     ): Resource<ToDownload> = withContext(Dispatchers.IO) {
@@ -301,6 +297,12 @@ class SlugHandler {
                         identityResult.identity
                     )
                     if (cachedSeries != null) {
+                        val newEpisodesResult = SeriesUpdater.getNewEpisodes(cachedSeries)
+                        if (newEpisodesResult.data != null) {
+                            cachedSeries.updateEpisodes(
+                                newEpisodesResult.data.updatedEpisodes
+                            )
+                        }
                         if (identityResult.alreadyExists) {
                             cachedSeries.identity = identityResult.identity.type
                             addSeries(
@@ -362,21 +364,17 @@ class SlugHandler {
                             }
                         } else {
                             FrogLog.logInfo(
-                                "Failed to find series for ($episodeLink). Error: ${result.message}"
+                                "Failed to find series for $episodeLink. Error: ${result.message}"
                             )
                         }
                     } catch (e: Exception) {
-                        e.printStackTrace()
-                        FrogLog.writeMessage("Failed to find series for ($episodeLink). Error: ${e.localizedMessage}")
+                        FrogLog.logError(
+                            "Failed to find series for $episodeLink.",
+                            e
+                        )
                     }
                 }
             }
-            //this should never happen. here just in case.
-            /**
-             * Future Nobility: This does happen sometimes. It seems like the
-             * websites throws an error which causes the website to fail.
-             * Most likely due to Cloudflare.
-             */
             FrogLog.writeMessage(
                 "Failed to find series for episode ($episodeLink)" +
                         " Just downloading episode..."

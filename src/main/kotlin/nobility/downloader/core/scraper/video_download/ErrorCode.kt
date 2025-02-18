@@ -1,7 +1,5 @@
 package nobility.downloader.core.scraper.video_download
 
-import nobility.downloader.core.scraper.video_download.ErrorCode.entries
-
 
 enum class ErrorCode(val code: Int) {
     NO_FRAME(0),
@@ -12,7 +10,8 @@ enum class ErrorCode(val code: Int) {
     SIMPLE_MODE_FAILED(5),
     M3U8_LINK_FAILED(6),
     EMPTY_FRAME(7),
-    FAILED_PAGE_READ(8);
+    FAILED_PAGE_READ(8),
+    FFMPEG_NOT_INSTALLED(9);
 
     companion object {
         fun errorCodeForCode(code: Int?): ErrorCode? {

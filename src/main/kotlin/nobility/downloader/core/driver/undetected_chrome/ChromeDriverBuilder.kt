@@ -469,7 +469,7 @@ class ChromeDriverBuilder {
             try {
                 val br = process.inputStream.bufferedReader()
                 br.readLines().forEach {
-                    FrogLog.writeMessage(it)
+                    FrogLog.logDebug("[BROWSER] $it")
                 }
                 br.close()
             } catch (e: Exception) {
@@ -481,7 +481,7 @@ class ChromeDriverBuilder {
             try {
                 val er = process.errorStream.bufferedReader()
                 er.readLines().forEach {
-                    FrogLog.writeMessage(it)
+                    FrogLog.logError("[BROWSER] $it")
                 }
                 er.close()
             } catch (e: Exception) {

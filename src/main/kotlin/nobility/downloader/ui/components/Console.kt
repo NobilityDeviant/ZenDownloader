@@ -8,6 +8,7 @@ import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.PointerButton
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
@@ -27,6 +28,7 @@ import nobility.downloader.ui.windows.utils.AppWindowScope
 import nobility.downloader.ui.windows.utils.ApplicationState
 import nobility.downloader.utils.AppInfo
 import nobility.downloader.utils.Tools
+import nobility.downloader.utils.hover
 import nobility.downloader.utils.tone
 import java.io.OutputStream
 import java.util.*
@@ -123,15 +125,16 @@ class Console(
     ) {
         val scrollState = rememberScrollState(size)
         val scope = rememberCoroutineScope()
-        val contextMenuRepresentation = if (isSystemInDarkTheme()) {
-            DarkDefaultContextMenuRepresentation
-        } else {
-            LightDefaultContextMenuRepresentation
-        }
+        val contextMenuRepresentation = DefaultContextMenuRepresentation(
+            backgroundColor = if (isSystemInDarkTheme()) Color.DarkGray else Color.LightGray,
+            textColor = if (isSystemInDarkTheme()) Color.White else Color.Black,
+            itemHoverColor = (if (isSystemInDarkTheme()) Color.DarkGray else Color.LightGray).hover(),
+        )
         CompositionLocalProvider(LocalContextMenuRepresentation provides contextMenuRepresentation) {
             ContextMenuDataProvider(
                 items = {
-                    listOf(
+                    //use mutable list or it can't add copy
+                    mutableListOf(
                         ContextMenuItem("Scroll To Top") {
                             scope.launch {
                                 scrollState.scrollTo(0)
@@ -141,6 +144,9 @@ class Console(
                             scope.launch {
                                 scrollState.scrollTo(scrollState.maxValue)
                             }
+                        },
+                        ContextMenuItem("Clear Console") {
+                            clear()
                         }
                     )
                 }

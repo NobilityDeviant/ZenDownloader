@@ -1,7 +1,10 @@
 package nobility.downloader.core.scraper.video_download.m3u8_downloader.util
 
 import nobility.downloader.core.scraper.video_download.m3u8_downloader.util.CollUtil.newArrayListWithCapacity
+import nobility.downloader.utils.AppInfo
 import nobility.downloader.utils.FrogLog
+import nobility.downloader.utils.fileExists
+import org.apache.commons.lang3.SystemUtils
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.io.BufferedReader
@@ -15,14 +18,22 @@ object VideoUtil {
 
     private val log: Logger = LoggerFactory.getLogger(VideoUtil::class.java)
 
+    @Suppress("KotlinConstantConditions")
     private fun loadFfmpegPath(): String {
         if (FfmpegPathHolder.useLocalFfmpeg) {
-            if (execCommand(mutableListOf("ffmpeg", "-version"))) {
+            if (SystemUtils.IS_OS_WINDOWS) {
+                val path = AppInfo.databasePath + "ffmpeg.exe"
+                if (path.fileExists()) {
+                    FrogLog.logInfo("Found ffmpeg.exe for windows.")
+                    return path
+                }
+            }
+            if (execCommand(listOf("ffmpeg", "-version"))) {
+                FrogLog.logInfo("Found ffmpeg installed.")
                 return "ffmpeg"
             }
-            throw RuntimeException("use Local ffmpeg, can not find ffmpeg tool")
+            return ""
         }
-
         try {
             // try load from lib
             val ffmpegClazz = Class.forName("org.bytedeco.ffmpeg.ffmpeg")
@@ -34,15 +45,21 @@ object VideoUtil {
                 return result
             }
         } catch (_: ClassNotFoundException) {
-            // try use ffmpeg from env:PATH
-            if (execCommand(mutableListOf("ffmpeg", "-version"))) {
+            if (SystemUtils.IS_OS_WINDOWS) {
+                val path = AppInfo.databasePath + "ffmpeg.exe"
+                if (path.fileExists()) {
+                    FrogLog.logInfo("Found ffmpeg.exe for windows.")
+                    return path
+                }
+            }
+            if (execCommand(listOf("ffmpeg", "-version"))) {
+                FrogLog.logInfo("Found ffmpeg installed.")
                 return "ffmpeg"
             }
-        } catch (e: Exception) {
-            throw RuntimeException(e)
+        } catch (_: Exception) {
+            return ""
         }
-
-        throw RuntimeException("can't find ffmpeg tool")
+        return ""
     }
 
     fun convertToMp4(
@@ -50,6 +67,10 @@ object VideoUtil {
         sourceVideoPaths: List<Path>
     ): Boolean {
         val ffmpegPath = FfmpegPathHolder.ffmpegPath
+        if (ffmpegPath.isEmpty()) {
+            log.error("ffmpeg not found.")
+            return false
+        }
         Preconditions.checkNotBlank(ffmpegPath, "ffmpeg path")
         if (sourceVideoPaths.isEmpty()) {
             log.error("sourceVideoPaths are empty.")
@@ -144,10 +165,12 @@ object VideoUtil {
         destVideoFile: File
     ): Boolean {
         val ffmpegPath = FfmpegPathHolder.ffmpegPath
-        //Preconditions.checkNotBlank(ffmpegPath, "ffmpeg path")
+        if (ffmpegPath.isEmpty()) {
+            log.error("ffmpeg not found..")
+            return false
+        }
         val startTime = System.currentTimeMillis()
         //ffmpeg -i video.mp4 -i audio.m4a -acodec copy -vcodec copy output.mp4
-
         val command = mutableListOf<String>()
         command.add(ffmpegPath)
         command.add("-i")
@@ -192,7 +215,6 @@ object VideoUtil {
             while ((stdInput.readLine().also { s = it }) != null) {
                 log.warn(s)
             }
-
             val code = videoProcess.waitFor()
             FrogLog.logInfo("execCommand code=$code")
             return code == 0
@@ -205,12 +227,9 @@ object VideoUtil {
         }
     }
 
-    private object FfmpegPathHolder {
-        val useLocalFfmpeg: Boolean =
-            java.lang.Boolean.getBoolean(
-                "nobility.downloader.core.scraper.video_download.m3u8_downloader.util.VideoUtil.useLocalFfmpeg"
-            )
-
-        val ffmpegPath: String = loadFfmpegPath()
+    @Suppress("ConstPropertyName")
+    object FfmpegPathHolder {
+        const val useLocalFfmpeg = true
+        val ffmpegPath = loadFfmpegPath()
     }
 }

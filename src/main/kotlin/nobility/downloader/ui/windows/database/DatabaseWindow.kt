@@ -15,6 +15,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
@@ -169,7 +170,8 @@ class DatabaseWindow {
     ) {
         Core.databaseSearchText.value = initialSearch
         ApplicationState.newWindow(
-            "Database"
+            "Database",
+            maximized = true
         ) {
             val scope = rememberCoroutineScope()
             val seasonsListState = rememberLazyListState()
@@ -203,6 +205,7 @@ class DatabaseWindow {
                             ) {
                                 openGenresWindow()
                             }
+                            val focusRequester = remember { FocusRequester() }
                             val search by searchText.collectAsState()
                             defaultSettingsTextField(
                                 search,
@@ -213,7 +216,20 @@ class DatabaseWindow {
                                 textStyle = MaterialTheme.typography.labelLarge,
                                 modifier = Modifier.fillMaxWidth(0.50f)
                                     .padding(end = 10.dp).height(40.dp),
-                                requestFocus = true
+                                requestFocus = true,
+                                focusRequester = focusRequester,
+                                trailingIcon = {
+                                    if (search.isNotEmpty()) {
+                                        tooltipIconButton(
+                                            "",
+                                            EvaIcons.Fill.Close,
+                                            iconColor = MaterialTheme.colorScheme.primary
+                                        ) {
+                                            Core.databaseSearchText.value = ""
+                                            focusRequester.requestFocus()
+                                        }
+                                    }
+                                }
                             )
                             val searchByGenre by searchByGenre.collectAsState()
                             val searchByDesc by searchByDesc.collectAsState()

@@ -108,7 +108,7 @@ class RecentView: ViewPage {
                                 "Update Recent Series",
                                 height = 35.dp,
                                 width = 170.dp,
-                                padding = 0.dp
+                                padding = PaddingValues(0.dp)
                             ) {
                                 scope.launch {
                                     reloadRecentData()

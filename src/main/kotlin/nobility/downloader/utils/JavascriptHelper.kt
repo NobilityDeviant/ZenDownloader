@@ -1,64 +1,53 @@
+@file:Suppress("ConstPropertyName")
+
 package nobility.downloader.utils
-
-import nobility.downloader.core.settings.Quality
-
-private const val LINK_KEY = "(link)"
-private const val RES_KEY = "(res)"
 
 object JavascriptHelper {
 
-    fun changeUrlToVideoFunction(
-        functionChildLink: String,
-        quality: Quality
-    ): String {
-        return X
-            .replace(LINK_KEY, functionChildLink)
-            .replace(RES_KEY, quality.htmlText)
-    }
+    const val LINK_RESPONSE_KEY = "LINKX"
+    const val ERR_RESPONSE_KEY = "[ERR0R]"
 
-    fun changeUrl(
-        newUrl: String
+    private const val LINK_KEY = "(link)"
+
+    fun changeUrlToVideoFunction(
+        functionChildLink: String
     ): String {
-        return Y.replace(RES_KEY, newUrl)
+        return X.replace(LINK_KEY, functionChildLink)
     }
 
     /**
      * Get all video links using an edited version of a function found inside
      * the video frames source code.
-     * Queries the url and redirects to that url so we can extract it with Selenium.
+     * Queries the url $LINK_KEY and prints the final response url so we can read it in the console
+     * Selenium only shows the warn, error and severe levels by default.
      */
     private const val X = """
-                $.getJSON("$LINK_KEY", function(response) {
-                    vsd = response.enc;
-                    vhd = response.hd;
-                    vfhd = response.fhd;
-                    cdn = response.cdn;
-                    server = response.server;
-                    location.href = server + '/getvid?evid=' + $RES_KEY
-                })
-                .fail(function() { location.href = 'https://blank.org' });
-            """
-
-    @Suppress("UNUSED")
-    private const val xx = """
-                fetch("$LINK_KEY")
-                    .then(res => res.json())
-                    .then(function (response) {
-                        vsd = response.enc;
-                        vhd = response.hd;
-                        vfhd = response.fhd;
-                        cdn = response.cdn;
-                        server = response.server;
-                        location.href = server + '/getvid?evid=' + $RES_KEY
+                    $.getJSON("$LINK_KEY", function(response) {
+                        const vsd = response.enc;
+                        const vhd = response.hd;
+                        const vfhd = response.fhd;
+                        const cdn = response.cdn;
+                        const server = response.server;
+                        if (vsd) {
+                            console.warn('[$LINK_RESPONSE_KEY|vsd]' + server + '/getvid?evid=' + vsd)    
+                        }
+                        if (vhd) {
+                            console.warn('[$LINK_RESPONSE_KEY|vhd]' + server + '/getvid?evid=' + vhd)    
+                        }
+                        if (vfhd) {
+                            console.warn('[$LINK_RESPONSE_KEY|vfhd]' + server + '/getvid?evid=' + vfhd)    
+                        }
                     })
-                    .catch(function() {
-                        
+                    .fail(function(jqXHR, textStatus, errorThrown) {
+                        console.warn('$ERR_RESPONSE_KEY | ' + errorThrown)
                     });
+                
             """
 
     /**
      * Redirect to another link internally so certain blocking methods won't work.
      */
+    @Suppress("UNUSED")
     private const val Y = """
                 window.goToThis = function(url) {
                     var link = document.createElement("a");
@@ -67,7 +56,7 @@ object JavascriptHelper {
                     document.body.appendChild(link);
                     link.click();
                 }
-                goToThis('$RES_KEY');
+                goToThis('$LINK_KEY');
             """
 
 }

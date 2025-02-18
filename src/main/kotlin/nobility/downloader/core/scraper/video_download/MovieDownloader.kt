@@ -8,7 +8,7 @@ import nobility.downloader.core.BoxHelper.Companion.string
 import nobility.downloader.core.Core
 import nobility.downloader.core.entities.Download
 import nobility.downloader.core.scraper.MovieHandler
-import nobility.downloader.core.scraper.data.QualityAndDownload
+import nobility.downloader.core.scraper.data.DownloadData
 import nobility.downloader.core.scraper.video_download.Functions.downloadVideo
 import nobility.downloader.core.scraper.video_download.Functions.fileSize
 import nobility.downloader.core.settings.Defaults
@@ -31,6 +31,7 @@ object MovieDownloader {
         var qualityOption = data.temporaryQuality ?: Quality.qualityForTag(
             Defaults.QUALITY.string()
         )
+        var preferredDownload: DownloadData? = null
         var downloadLink = ""
         var videoLinkError = ""
         val downloadFolderPath = Defaults.SAVE_FOLDER.string()
@@ -53,7 +54,7 @@ object MovieDownloader {
 
         if (premUser.isNotEmpty() && premPassword.isNotEmpty()) {
             if (data.premRetries < Defaults.PREMIUM_RETRIES.int()) {
-                if (data.qualityAndDownloads.isEmpty()) {
+                if (data.downloadDatas.isEmpty()) {
                     try {
                         data.driver.navigate().to(
                             "https://www.wcopremium.tv/wp-login.php"
@@ -83,24 +84,24 @@ object MovieDownloader {
                             val endTag = """", type: "video/mp4"},"""
                             src.forEach { line ->
                                 if (line.contains(hd1080)) {
-                                    data.qualityAndDownloads.add(
-                                        QualityAndDownload(
+                                    data.downloadDatas.add(
+                                        DownloadData(
                                             Quality.HIGH,
                                             line.substringAfter(hd1080).substringBefore(endTag)
                                         )
                                     )
                                     data.logInfo("[PREM] Found ${Quality.HIGH} quality.")
                                 } else if (line.contains(hd720)) {
-                                    data.qualityAndDownloads.add(
-                                        QualityAndDownload(
+                                    data.downloadDatas.add(
+                                        DownloadData(
                                             Quality.MED,
                                             line.substringAfter(hd720).substringBefore(endTag)
                                         )
                                     )
                                     data.logInfo("[PREM] Found ${Quality.MED} quality.")
                                 } else if (line.contains(sd576)) {
-                                    data.qualityAndDownloads.add(
-                                        QualityAndDownload(
+                                    data.downloadDatas.add(
+                                        DownloadData(
                                             Quality.LOW,
                                             line.substringAfter(sd576).substringBefore(endTag)
                                         )
@@ -108,13 +109,14 @@ object MovieDownloader {
                                     data.logInfo("[PREM] Found ${Quality.LOW} quality.")
                                 }
                             }
-                            if (data.qualityAndDownloads.isNotEmpty()) {
+                            if (data.downloadDatas.isNotEmpty()) {
                                 qualityOption = Quality.bestQuality(
                                     qualityOption,
-                                    data.qualityAndDownloads.map { it.quality }
+                                    data.downloadDatas.map { it.quality }
                                 )
-                                data.qualityAndDownloads.forEach {
+                                data.downloadDatas.forEach {
                                     if (it.quality == qualityOption) {
+                                        preferredDownload = it
                                         downloadLink = it.downloadLink
                                     }
                                 }
@@ -249,15 +251,15 @@ object MovieDownloader {
                 }
             }
             if (originalFileSize <= Constants.minFileSize) {
-                if (data.qualityAndDownloads.isNotEmpty()) {
+                if (data.downloadDatas.isNotEmpty()) {
                     data.logError(
                         "Failed to find movie file size after $fileSizeRetries retries. | Using another quality."
                     )
-                    data.qualityAndDownloads.remove(
-                        data.qualityAndDownloads.first {
-                            it.downloadLink == downloadLink
-                        }
-                    )
+                    if (preferredDownload != null) {
+                        data.downloadDatas.remove(
+                            preferredDownload
+                        )
+                    }
                     data.retries++
                 } else {
                     data.logError(
@@ -267,6 +269,7 @@ object MovieDownloader {
                 }
                 return@withContext
             }
+            data.logDebug("Successfully found movie file size of: ${Tools.bytesToString(originalFileSize)}")
             if (saveFile.exists()) {
                 if (saveFile.length() >= originalFileSize) {
                     data.writeMessage("[IO] Skipping completed movie.")

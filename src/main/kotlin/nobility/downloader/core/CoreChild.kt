@@ -6,6 +6,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
+import io.github.bonigarcia.wdm.WebDriverManager
 import kotlinx.coroutines.*
 import nobility.downloader.Page
 import nobility.downloader.core.BoxHelper.Companion.int
@@ -36,7 +37,8 @@ class CoreChild {
         private set
     var isUpdating by mutableStateOf(false)
     var shutdownExecuted by mutableStateOf(false)
-    var shutdownProgress by mutableStateOf(Pair(0, 0))
+    var shutdownProgressIndex by mutableStateOf(0)
+    var shutdownProgressTotal by mutableStateOf(0)
     val runningDrivers: MutableMap<String, WebDriver> = Collections.synchronizedMap(mutableMapOf())
     //val runningDrivers: MutableList<WebDriver> = Collections.synchronizedList(mutableListOf())
     val currentEpisodes: MutableList<Episode> = Collections.synchronizedList(mutableListOf())
@@ -69,6 +71,7 @@ class CoreChild {
                 UrlUpdater.updateWcoUrl()
             }
             movieHandler.loadMovies()
+            WebDriverManager.chromedriver().setup()
         }
     }
 
@@ -174,7 +177,7 @@ class CoreChild {
         }
         val tasks = mutableListOf<Job>()
         val copyRunningDrivers = HashMap(runningDrivers)
-        shutdownProgress = Pair(0, copyRunningDrivers.size)
+        shutdownProgressTotal = copyRunningDrivers.size
         var index = 0
         copyRunningDrivers.forEach { _, driver ->
             tasks.add(launch {
@@ -187,7 +190,7 @@ class CoreChild {
                     }
                 } catch (_: Exception) {
                 }
-                shutdownProgress = Pair(index, copyRunningDrivers.size)
+                shutdownProgressIndex = index
             })
         }
         tasks.joinAll()

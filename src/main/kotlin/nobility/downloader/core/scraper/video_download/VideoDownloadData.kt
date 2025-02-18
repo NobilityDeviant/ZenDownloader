@@ -7,15 +7,17 @@ import nobility.downloader.core.BoxHelper.Companion.seriesForSlug
 import nobility.downloader.core.BoxHelper.Companion.string
 import nobility.downloader.core.Core
 import nobility.downloader.core.driver.DriverBaseImpl
+import nobility.downloader.core.driver.undetected_chrome.UndetectedChromeDriver
 import nobility.downloader.core.entities.Download
 import nobility.downloader.core.entities.Episode
-import nobility.downloader.core.scraper.data.QualityAndDownload
+import nobility.downloader.core.scraper.data.DownloadData
 import nobility.downloader.core.settings.Defaults
 import nobility.downloader.core.settings.Quality
 import nobility.downloader.utils.FrogLog
 import nobility.downloader.utils.Tools
 import nobility.downloader.utils.fixForFiles
 import nobility.downloader.utils.update
+import org.openqa.selenium.WebDriver
 import java.io.File
 
 /**
@@ -27,12 +29,10 @@ class VideoDownloadData(
     private val customTag: String? = null
 ) {
 
-    //todo these dont help.
-    //move somewhere else.
-    val base by lazy { DriverBaseImpl() }
-    val driver by lazy { base.driver }
-    val undriver by lazy { base.undriver }
-    val userAgent by lazy { base.userAgent }
+    val base = DriverBaseImpl()
+    val driver: WebDriver get() = base.driver
+    val undriver: UndetectedChromeDriver get() = base.undriver
+    val userAgent = base.userAgent
     val pageChangeWaitTime = 5_000L //in milliseconds
     var mCurrentEpisode: Episode? = null
     var mCurrentDownload: Download? = null
@@ -41,7 +41,7 @@ class VideoDownloadData(
     var retries = 0
     var resRetries = 0
     var premRetries = 0
-    val qualityAndDownloads = mutableListOf<QualityAndDownload>()
+    val downloadDatas = mutableListOf<DownloadData>()
 
     fun createDownload(
         slug: String,
@@ -134,7 +134,7 @@ class VideoDownloadData(
 
     fun getNewEpisode(): Boolean {
         if (mCurrentEpisode == null) {
-            qualityAndDownloads.clear()
+            downloadDatas.clear()
             mCurrentEpisode = Core.child.nextEpisode
             if (mCurrentEpisode == null) {
                 return false
@@ -180,6 +180,12 @@ class VideoDownloadData(
 
     fun logInfo(s: String) {
         FrogLog.logInfo(
+            "$tag $s"
+        )
+    }
+
+    fun logDebug(s: String) {
+        FrogLog.logDebug(
             "$tag $s"
         )
     }

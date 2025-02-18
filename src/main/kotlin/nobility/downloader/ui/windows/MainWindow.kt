@@ -26,6 +26,8 @@ import androidx.compose.ui.zIndex
 import compose.icons.EvaIcons
 import compose.icons.evaicons.Fill
 import compose.icons.evaicons.fill.*
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import nobility.downloader.Page
 import nobility.downloader.core.BoxHelper
@@ -42,6 +44,7 @@ import nobility.downloader.ui.windows.utils.AppWindowScope
 import nobility.downloader.ui.windows.utils.ApplicationState
 import nobility.downloader.utils.*
 import nobility.downloader.utils.Constants.mediumIconSize
+import kotlin.system.exitProcess
 
 @Composable
 fun mainWindow(scope: AppWindowScope) {
@@ -236,12 +239,12 @@ private fun uiWrapper(
                                         EvaIcons.Fill.Gift
                                     ) {
                                         DialogHelper.showLinkPrompt(
-                                            "https://buymeacoffee.com/nobilitydeviant",
+                                            "https://donate.stripe.com/6oEeV1aGb9lZgCIfYY",
                                             """
                                                 If you feel like this program has helped you, I'd appreciate it!
                                                 
                                                 Do you want to open:
-                                                https://buymeacoffee.com/nobilitydeviant
+                                                https://donate.stripe.com/6oEeV1aGb9lZgCIfYY
                                                 in your default browser?
                                             """.trimIndent()
                                         )
@@ -458,18 +461,39 @@ private fun uiWrapper(
                                     .padding(top = 15.dp, bottom = 15.dp),
                                 color = MaterialTheme.colorScheme.error
                             )
+                            var time by remember { mutableStateOf(0) }
+                            scope.launch(Dispatchers.Default) {
+                                time++
+                                delay(1000)
+                            }
                             Text(
                                 """
                                         Shutdown Executed.
                                         Please wait patiently while the program kills all running drivers.
                                         
-                                        Drivers Killed: ${Core.child.shutdownProgress.first}/${Core.child.shutdownProgress.second}
+                                        Drivers Killed: ${Core.child.shutdownProgressIndex}/${Core.child.shutdownProgressTotal}
                                     """.trimIndent(),
                                 fontSize = 12.sp,
                                 color = MaterialTheme.colorScheme.onSurface,
                                 textAlign = TextAlign.Center,
-                                modifier = Modifier.padding(20.dp)
+                                modifier = Modifier.padding(10.dp)
                             )
+                            defaultButton(
+                                "Force Shutdown",
+                                height = 40.dp,
+                                width = 140.dp,
+                                padding = PaddingValues(
+                                    top = 10.dp,
+                                    bottom = 10.dp
+                                ),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = MaterialTheme.colorScheme.error
+                                ),
+                                fontColor = MaterialTheme.colorScheme.onError,
+                                enabled = time >= 10
+                            ) {
+                                exitProcess(2)
+                            }
                         }
                     }
                 }

@@ -10,6 +10,7 @@ import nobility.downloader.core.scraper.video_download.MovieDownloader.handleMov
 import nobility.downloader.core.settings.Defaults
 import nobility.downloader.core.settings.Quality
 import nobility.downloader.utils.Constants
+import nobility.downloader.utils.Tools
 import nobility.downloader.utils.update
 
 /**
@@ -41,11 +42,14 @@ class VideoDownloadHandler(
             }
             val parsedResult = help.parseQualities(slug)
             if (parsedResult.isFailed) {
+                if (parsedResult.errorCode == ErrorCode.FFMPEG_NOT_INSTALLED.code) {
+                    data.finishEpisode()
+                }
                 continue
             }
-            val parsedData = parsedResult.data!!
-            val downloadLink = parsedData.downloadLink
-            val qualityOption = parsedData.quality
+            val preferredDownload = parsedResult.data!!
+            val downloadLink = preferredDownload.downloadLink
+            val qualityOption = preferredDownload.quality
             val saveFile = data.generateEpisodeSaveFile(qualityOption)
             val created = data.createDownload(
                 slug,
@@ -59,14 +63,14 @@ class VideoDownloadHandler(
             try {
                 if (downloadLink.endsWith(".m3u8")) {
                     help.handleM3U8(
-                        parsedData,
+                        preferredDownload,
                         saveFile
                     )
                 } else {
                     var fileSizeRetries = Defaults.FILE_SIZE_RETRIES.int()
                     var originalFileSize = 0L
                     var headMode = true
-                    data.logInfo("Checking video file size with $fileSizeRetries retries.")
+                    data.logDebug("Checking video file size with $fileSizeRetries max retries.")
                     for (i in 0..fileSizeRetries) {
                         originalFileSize = fileSize(
                             downloadLink,
@@ -79,6 +83,9 @@ class VideoDownloadHandler(
                                 data.logError(
                                     "Failed to find video file size. Current retries: $i"
                                 )
+                                data.writeMessage(
+                                    "Failed to find video file size. Current retries: $i"
+                                )
                             }
                             continue
                         } else {
@@ -86,16 +93,18 @@ class VideoDownloadHandler(
                         }
                     }
                     if (originalFileSize <= Constants.minFileSize) {
-                        if (data.qualityAndDownloads.isNotEmpty()) {
+                        if (data.downloadDatas.isNotEmpty()) {
                             data.logError(
                                 "Failed to find video file size after $fileSizeRetries retries. | Using another quality."
                             )
-                            data.qualityAndDownloads.remove(
-                                data.qualityAndDownloads.first {
-                                    it.downloadLink == downloadLink
-                                }
-                            )
+                            data.downloadDatas.remove(preferredDownload)
                             data.retries++
+                            if (data.downloadDatas.isEmpty()) {
+                                data.logError(
+                                    "Failed to find video file size. There are no more qualities to check. | Skipping episode"
+                                )
+                                data.finishEpisode()
+                            }
                             continue
                         } else {
                             data.logError(
@@ -105,6 +114,7 @@ class VideoDownloadHandler(
                             continue
                         }
                     }
+                    data.logDebug("Successfully found video file size of: ${Tools.bytesToString(originalFileSize)}")
                     if (saveFile.exists()) {
                         if (saveFile.length() >= originalFileSize) {
                             data.writeMessage("(IO) Skipping completed video.")
@@ -168,7 +178,7 @@ class VideoDownloadHandler(
                 data.currentDownload.update()
                 if (e.message?.contains("Connection reset", true) == false) {
                     data.logError(
-                        "Failed to download video. Retrying...",
+                        "Failed to download video. | Retrying...",
                         e,
                         true
                     )

@@ -48,10 +48,8 @@ import kotlinx.coroutines.Dispatchers
 import nobility.downloader.Page
 import nobility.downloader.core.Core
 import nobility.downloader.ui.windows.ImagePopoutWindow
-import nobility.downloader.utils.AppInfo
-import nobility.downloader.utils.Constants
-import nobility.downloader.utils.ImageUtils
-import nobility.downloader.utils.tone
+import nobility.downloader.utils.*
+import java.io.File
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -63,6 +61,14 @@ fun defaultImage(
     pointerIcon: PointerIcon? = PointerIcon.Hand,
     onClick: (() -> Unit)? = null
 ) {
+    if (!imagePath.fileExists() && urlBackup != null) {
+        LaunchedEffect(Unit) {
+            Tools.downloadFileWithRetries(
+                urlBackup,
+                File(imagePath)
+            )
+        }
+    }
     AsyncImage(
         model = imageRequest(imagePath, false),
         contentDescription = null,
@@ -90,7 +96,6 @@ fun defaultImage(
         else rememberAsyncImagePainter(
             model = AppInfo.NO_IMAGE_PATH_FILE
         ),
-        //todo download the images
         error = if (urlBackup != null)
             rememberAsyncImagePainter(
                 model = imageRequest(urlBackup, true),
@@ -259,11 +264,11 @@ fun defaultTextField(
     modifier: Modifier = Modifier,
     contextMenuItems: () -> List<ContextMenuItem> = { listOf() }
 ) {
-    val contextMenuRepresentation = if (isSystemInDarkTheme()) {
-        DarkDefaultContextMenuRepresentation
-    } else {
-        LightDefaultContextMenuRepresentation
-    }
+    val contextMenuRepresentation = DefaultContextMenuRepresentation(
+        backgroundColor = if (isSystemInDarkTheme()) Color.DarkGray else Color.LightGray,
+        textColor = if (isSystemInDarkTheme()) Color.White else Color.Black,
+        itemHoverColor = (if (isSystemInDarkTheme()) Color.DarkGray else Color.LightGray).hover(),
+    )
     CompositionLocalProvider(LocalContextMenuRepresentation provides contextMenuRepresentation) {
         ContextMenuDataProvider(
             items = contextMenuItems
@@ -303,16 +308,17 @@ fun defaultSettingsTextField(
     settingsDescription: String = "",
     textStyle: TextStyle = MaterialTheme.typography.labelSmall,
     requestFocus: Boolean = false,
+    focusRequester: FocusRequester = remember { FocusRequester() },
     passwordMode: Boolean = false,
-    contextMenuItems: () -> List<ContextMenuItem> = { listOf() }
+    trailingIcon: @Composable (() -> Unit)? = null,
+    contextMenuItems: () -> List<ContextMenuItem> = { mutableListOf() }
 ) {
-    val focusRequester = remember { FocusRequester() }
     val stateEnabled by remember { enabled }
-    val contextMenuRepresentation = if (isSystemInDarkTheme()) {
-        DarkDefaultContextMenuRepresentation
-    } else {
-        LightDefaultContextMenuRepresentation
-    }
+    val contextMenuRepresentation = DefaultContextMenuRepresentation(
+        backgroundColor = if (isSystemInDarkTheme()) Color.DarkGray else Color.LightGray,
+        textColor = if (isSystemInDarkTheme()) Color.White else Color.Black,
+        itemHoverColor = (if (isSystemInDarkTheme()) Color.DarkGray else Color.LightGray).hover(),
+    )
     tooltip(
         tooltipText = settingsDescription
     ) {
@@ -337,6 +343,7 @@ fun defaultSettingsTextField(
                         else
                             KeyboardType.Text
                     ),
+                    trailingIcon = trailingIcon,
                     placeholder = {
                         if (hint.isNotEmpty()) {
                             Text(
@@ -421,7 +428,7 @@ fun pageButton(
         ),
         height = 35.dp,
         width = 110.dp,
-        padding = 0.dp,
+        padding = PaddingValues(0.dp),
         fontColor = if (Core.currentPage == page)
             MaterialTheme.colorScheme.onSurface
         else
@@ -450,7 +457,7 @@ fun tabButton(
         ),
         height = 35.dp,
         width = 110.dp,
-        padding = 0.dp,
+        padding = PaddingValues(0.dp),
         fontColor = MaterialTheme.colorScheme.onTertiaryContainer,
         fontSize = 11.sp
     ) {
@@ -468,7 +475,7 @@ fun defaultButton(
     colors: ButtonColors = ButtonDefaults.buttonColors(),
     shape: Shape = RoundedCornerShape(4.dp),
     border: BorderStroke? = null,
-    padding: Dp = 5.dp,
+    padding: PaddingValues = PaddingValues(5.dp),
     fontSize: TextUnit = 11.sp,
     fontColor: Color = MaterialTheme.typography.bodyLarge.color,
     onClick: () -> Unit
@@ -483,7 +490,7 @@ fun defaultButton(
         border = border,
         colors = colors,
         enabled = enabled,
-        contentPadding = PaddingValues(5.dp)
+        contentPadding = padding
     ) {
         Column(
             modifier = Modifier.align(Alignment.CenterVertically)
