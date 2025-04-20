@@ -116,7 +116,7 @@ class HistoryView : ViewPage {
                         DefaultButton(
                             "Clear History",
                             height = 40.dp,
-                            width = 150.dp,
+                            width = 200.dp,
                             enabled = clearHistoryEnabled
                         ) {
                             DialogHelper.showConfirm(
@@ -132,10 +132,11 @@ class HistoryView : ViewPage {
                                 windowScope.showToast("History successfully cleared.")
                             }
                         }
+                        //todo add a progress bar
                         DefaultButton(
                             "Check All For New Episodes",
                             height = 40.dp,
-                            width = 150.dp,
+                            width = 200.dp,
                             enabled = checkForEpisodesButtonEnabled
                         ) {
                             if (seriesDatas.isEmpty()) {

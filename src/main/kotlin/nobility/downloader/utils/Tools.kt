@@ -449,4 +449,22 @@ object Tools {
             DialogHelper.showError("Failed to open file.", e)
         }
     }
+
+    fun removeDuplicateWord(
+        input: String,
+        targetWord: String
+    ): String {
+        val regex = "\\b${Regex.escape(targetWord)}\\b".toRegex(RegexOption.IGNORE_CASE)
+        var found = false
+
+        val result = regex.replace(input) { matchResult ->
+            if (!found) {
+                found = true
+                matchResult.value
+            } else {
+                ""
+            }
+        }
+        return result.replace("\\s{2,}".toRegex(), " ").trim()
+    }
 }

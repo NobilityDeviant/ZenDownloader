@@ -174,6 +174,14 @@ class VideoDownloadData(
         }
     }
 
+    fun resetDownload() {
+        if (mCurrentDownload != null) {
+            currentDownload.queued = false
+            currentDownload.downloading = false
+            currentDownload.update()
+        }
+    }
+
     fun writeMessage(s: String) {
         FrogLog.writeMessage("$tag $s")
     }

@@ -44,6 +44,21 @@ object Functions {
                 reader.readLines().forEach {
                     sb.appendLine(it)
                 }
+                if (sb.contains("404 - Page not Found")) {
+                    return@withContext Resource.Error("404 Page not found.")
+                }
+                if (sb.contains("403 Forbidden")) {
+                    simpleRetries++
+                    delay(500)
+                    exception = Exception("403 Forbidden")
+                    continue
+                }
+                if (sb.contains("Sorry, you have been blocked")) {
+                    simpleRetries++
+                    delay(500)
+                    exception = Exception("Blocked by Cloudflare")
+                    continue
+                }
                 return@withContext Resource.Success(sb)
             } catch (e: Exception) {
                 exception = e
@@ -58,17 +73,27 @@ object Functions {
                 }
             }
         }
-        //data.logError(
-          //  "Failed to read webpage with simple mode. Moving on to full mode.",
-            //exception
-        //)
+        @Suppress("KotlinConstantConditions")
+        if (AppInfo.DEBUG_MODE) {
+            data.logDebug(
+                "Failed to find source code with simple mode. Moving onto full mode. " +
+                        "Exception: ${exception?.localizedMessage}"
+            )
+        }
         var fullModeRetries = 0
         var fullModeException: Exception? = null
         while (fullModeRetries <= Defaults.FULL_RETRIES.int()) {
             try {
-                data.driver.navigate().to(url)
+                data.base.executeJs(
+                    JavascriptHelper.changeUrlInternally(url)
+                )
+                delay(2000)
+                //data.driver.navigate().to(url)
                 if (data.driver.source().contains("404 - Page not Found")) {
-                    return@withContext Resource.Error("404 Page not found.")
+                    return@withContext Resource.Error("[Selenium] 404 Page not found.")
+                }
+                if (data.driver.source().contains("403 Forbidden")) {
+                    return@withContext Resource.Error("[Selenium] 403 Forbidden")
                 }
                 if (data.driver.source().contains("Sorry, you have been blocked")) {
                     fullModeRetries++
@@ -118,6 +143,21 @@ object Functions {
                 reader.readLines().forEach {
                     sb.appendLine(it)
                 }
+                if (sb.contains("404 - Page not Found")) {
+                    return@withContext Resource.Error("404 Page not found.")
+                }
+                if (sb.contains("403 Forbidden")) {
+                    simpleRetries++
+                    delay(500)
+                    exception = Exception("403 Forbidden")
+                    continue
+                }
+                if (sb.contains("Sorry, you have been blocked")) {
+                    simpleRetries++
+                    delay(500)
+                    exception = Exception("Blocked by Cloudflare")
+                    continue
+                }
                 return@withContext Resource.Success(sb)
             } catch (e: Exception) {
                 exception = e
@@ -132,18 +172,28 @@ object Functions {
                 }
             }
         }
-        FrogLog.logError(
-            "[$customTag] Failed to read webpage with simple mode. Moving on to full mode.",
-            exception
-        )
+        @Suppress("KotlinConstantConditions")
+        if (AppInfo.DEBUG_MODE) {
+            FrogLog.logError(
+                "[$customTag] Failed to read webpage with simple mode. Moving on to full mode.",
+                exception
+            )
+        }
         val driverBase = DriverBaseImpl(userAgent = userAgent)
         var fullModeRetries = 0
         var fullModeException: Exception? = null
         while (fullModeRetries <= Defaults.FULL_RETRIES.int()) {
             try {
-                driverBase.driver.navigate().to(url)
+                driverBase.executeJs(
+                    JavascriptHelper.changeUrlInternally(url)
+                )
+                delay(2000)
+                //driverBase.driver.navigate().to(url)
                 if (driverBase.driver.source().contains("404 - Page not Found")) {
-                    return@withContext Resource.Error("404 Page not found.")
+                    return@withContext Resource.Error("[Selenium] 404 Page not found.")
+                }
+                if (driverBase.driver.source().contains("403 Forbidden")) {
+                    return@withContext Resource.Error("[Selenium] 403 Forbidden")
                 }
                 if (driverBase.driver.source().contains("Sorry, you have been blocked")) {
                     fullModeRetries++
@@ -305,7 +355,7 @@ object Functions {
         saveFile: File,
         downloadListener: M3u8DownloadListener
     ): M3u8Download {
-        var builder = M3u8Download.builder()
+        val builder = M3u8Download.builder()
             .setUri(URI(downloadLink))
             .setFileName(saveFile.name)
             .setWorkHome(System.getProperty("user.home") + "/.m3u8_files/${saveFile.nameWithoutExtension}/")

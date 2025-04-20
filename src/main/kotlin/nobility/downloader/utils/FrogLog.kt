@@ -3,6 +3,8 @@ package nobility.downloader.utils
 import nobility.downloader.core.BoxHelper.Companion.boolean
 import nobility.downloader.core.Core
 import nobility.downloader.core.settings.Defaults
+import java.io.File
+import java.nio.file.Files
 
 object FrogLog {
 
@@ -11,11 +13,15 @@ object FrogLog {
         errorMessage: String? = null,
         important: Boolean = false
     ) {
-        val fullMessage = "[${callerClassName()}] [E] $message" +
+        var fullMessage = "[${callerClassName()}] [E] $message" +
                 if (!errorMessage.isNullOrEmpty())
                     "\nError: $errorMessage"
                 else
                     ""
+        fullMessage = Tools.removeDuplicateWord(
+            fullMessage,
+            "Error:"
+        )
         if (important) {
             println(fullMessage)
         } else {
@@ -33,11 +39,15 @@ object FrogLog {
         exception: Throwable?,
         important: Boolean = false
     ) {
-        val fullMessage = "[${callerClassName()}] [E] $message" +
+        var fullMessage = "[${callerClassName()}] [E] $message" +
                 if (exception?.localizedMessage.isNullOrEmpty())
                     "\nError: Invalid exception."
                 else
                     ""
+        fullMessage = Tools.removeDuplicateWord(
+            fullMessage,
+            "Error:"
+        )
         if (important) {
             println(fullMessage)
         } else {
@@ -136,6 +146,43 @@ object FrogLog {
                 enteredOurCode = true
                 true
             } else enteredOurCode
+        }
+    }
+
+    fun writeErrorToTxt(
+        name: String,
+        error: String,
+        headerInfo: String = ""
+    ) {
+        val date = Tools.dateFormatted
+        val title = Tools.fixTitle("error_${name.replace(" ", "_")}_$date.txt")
+        val folderName = AppInfo.databasePath + File.separator + "errors" + File.separator
+        File(folderName).mkdirs()
+        val file = File(folderName + title)
+        if (!file.exists() && !file.createNewFile()) {
+            logDebug(
+                "Failed to create error log file: ${file.absolutePath}"
+            )
+            return
+        }
+        val sb = StringBuilder()
+        sb.appendLine("Name: $name")
+        sb.appendLine("Date: $date")
+        if (headerInfo.isNotEmpty()) {
+            sb.appendLine()
+            sb.appendLine("Additional Info: $headerInfo")
+        }
+        sb.appendLine()
+        sb.appendLine()
+        sb.appendLine(error)
+        Files.writeString(
+            file.toPath(),
+            sb.toString()
+        )
+        if (file.exists()) {
+            logDebug("Wrote error log ($name) to ${file.absolutePath}")
+        } else {
+            logDebug("Failed to write error log ($name) to ${file.absolutePath}")
         }
     }
 

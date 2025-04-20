@@ -8,6 +8,7 @@ object JavascriptHelper {
     const val ERR_RESPONSE_KEY = "[ERR0R]"
 
     private const val LINK_KEY = "(link)"
+    private const val CHANGE_KEY = "(change)"
 
     fun changeUrlToVideoFunction(
         functionChildLink: String
@@ -47,7 +48,6 @@ object JavascriptHelper {
     /**
      * Redirect to another link internally so certain blocking methods won't work.
      */
-    @Suppress("UNUSED")
     private const val Y = """
                 window.goToThis = function(url) {
                     var link = document.createElement("a");
@@ -56,7 +56,13 @@ object JavascriptHelper {
                     document.body.appendChild(link);
                     link.click();
                 }
-                goToThis('$LINK_KEY');
+                goToThis('$CHANGE_KEY');
             """
+
+    fun changeUrlInternally(
+        link: String
+    ): String {
+        return Y.replace(CHANGE_KEY, link)
+    }
 
 }

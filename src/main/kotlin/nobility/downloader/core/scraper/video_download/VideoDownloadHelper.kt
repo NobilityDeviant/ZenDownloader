@@ -81,6 +81,7 @@ class VideoDownloadHelper(
                         } else if (errorCode == ErrorCode.M3U8_LINK_FAILED) {
                             data.retries++
                             return Resource.Error(
+                                "m3u8 link has failed.",
                                 result.message
                             )
                         } else if (errorCode == ErrorCode.FAILED_PAGE_READ) {
@@ -139,8 +140,9 @@ class VideoDownloadHelper(
         }
         if (preferredDownload == null || preferredDownload.downloadLink.isEmpty()) {
             data.retries++
-            data.logInfo("Failed to find the preferredDownload. | Retrying...")
-            return Resource.Error()
+            return Resource.Error(
+                //"Failed to find the preferredDownload. | Retrying..."
+            )
         }
         return Resource.Success(preferredDownload)
     }
@@ -161,8 +163,8 @@ class VideoDownloadHelper(
         val fullLink = slug.slugToLink()
         val downloadDatas = mutableListOf<DownloadData>()
 
-        data.logInfo("Scraping quality links from $fullLink")
-        data.logInfo("Using UserAgent: ${data.userAgent}")
+        data.logDebug("Scraping quality links from $fullLink")
+        data.logDebug("Using UserAgent: ${data.userAgent}")
 
         try {
             val source = readUrlLines(fullLink, data, false)
@@ -199,11 +201,14 @@ class VideoDownloadHelper(
                 )
             }
             var sbFrame = StringBuilder()
+            var sbFrameMessage: String? = ""
             @Suppress("UNUSED")
             for (i in 1..5) {
                 val frameSource = readUrlLines(frameLink, data)
                 if (frameSource.data != null) {
                     sbFrame = frameSource.data
+                } else {
+                    sbFrameMessage = frameSource.message
                 }
                 if (sbFrame.isNotEmpty()) {
                     break
@@ -223,9 +228,12 @@ class VideoDownloadHelper(
                 }
             }
             if (sbFrame.isEmpty()) {
-                return@withContext Resource.ErrorCode(
+                //ok this happens sometimes with
+                //selenium 403 error. konosuba.
+                //i think we need to use the js redirect.
+                return@withContext Resource.Error(
                     "Failed to read frame source.",
-                    ErrorCode.EMPTY_FRAME.code
+                    sbFrameMessage
                 )
             }
             if (m3u8Mode) {
@@ -329,13 +337,33 @@ class VideoDownloadHelper(
             val linkKey1 = "$.getJSON(\""
             val linkKey2 = "\", function(response){"
             if (!src.contains(linkKey1)) {
+                if (src.contains("<title>403 Forbidden</title>")) {
+                    return@withContext Resource.Error(
+                        "Webpage returned a 403 Forbidden error. UserAgent: ${data.userAgent}"
+                    )
+                }
+                FrogLog.writeErrorToTxt(
+                    "Missing linkKey1",
+                    src,
+                    "User Agent: ${data.userAgent}"
+                )
                 return@withContext Resource.Error(
-                    "Source code doesn't contain linKey1."
+                    "Source code doesn't contain linkKey1. UserAgent: ${data.userAgent}"
                 )
             }
             if (!src.contains(linkKey2)) {
+                if (src.contains("<title>403 Forbidden</title>")) {
+                    return@withContext Resource.Error(
+                        "Webpage returned a 403 Forbidden error. UserAgent: ${data.userAgent}"
+                    )
+                }
+                FrogLog.writeErrorToTxt(
+                    "Missing linkKey2",
+                    src,
+                    "User Agent: ${data.userAgent}"
+                )
                 return@withContext Resource.Error(
-                    "Source code doesn't contain linKey2."
+                    "Source code doesn't contain linkKey2. UserAgent: ${data.userAgent}"
                 )
             }
             val linkIndex1 = src.indexOf(linkKey1)

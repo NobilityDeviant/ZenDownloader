@@ -127,7 +127,7 @@ abstract class DriverBase(
     fun executeJs(script: String) {
         if (!isSetup) {
             FrogLog.logError(
-                "Failed the execute Javascript. The driver isn't set up properly."
+                "Failed to execute Javascript. The driver isn't set up properly."
             )
             return
         }

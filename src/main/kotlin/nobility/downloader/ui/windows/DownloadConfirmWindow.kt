@@ -227,7 +227,7 @@ class DownloadConfirmWindow(
             Scaffold(
                 modifier = Modifier.fillMaxSize(50f),
                 bottomBar = {
-                    bottomBar(this, scope)
+                    BottomBar(this, scope)
                 }
             ) { it ->
                 Column(
@@ -311,7 +311,8 @@ class DownloadConfirmWindow(
                                 LaunchedEffect(Unit) {
                                     val index = indexForEpisode(toDownload.episode)
                                     if (index != -1) {
-                                        episodesListState.animateScrollToItem(index)
+                                        //-1 due to sticky headers
+                                        episodesListState.animateScrollToItem(index - 1)
                                     }
                                 }
                             }
@@ -655,13 +656,14 @@ class DownloadConfirmWindow(
         }
     }
 
+    @OptIn(ExperimentalFoundationApi::class)
     private fun LazyListScope.section(
         seasonData: SeasonData,
         isExpanded: Boolean,
         onHeaderClick: () -> Unit
     ) {
         if (!seasonData.searchMode) {
-            item(UUID.randomUUID().toString()) {
+            stickyHeader(UUID.randomUUID().toString()) {
                 seasonHeader(
                     seasonData = seasonData,
                     expanded = isExpanded,
@@ -724,7 +726,7 @@ class DownloadConfirmWindow(
     }
 
     @Composable
-    private fun bottomBar(
+    private fun BottomBar(
         windowScope: AppWindowScope,
         coroutineScope: CoroutineScope
     ) {
