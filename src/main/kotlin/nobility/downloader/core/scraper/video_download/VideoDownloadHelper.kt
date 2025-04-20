@@ -80,11 +80,9 @@ class VideoDownloadHelper(
                             )
                         } else if (errorCode == ErrorCode.M3U8_LINK_FAILED) {
                             data.retries++
-                            data.logError(
-                                "",
-                                errorMessage = result.message
+                            return Resource.Error(
+                                result.message
                             )
-                            return Resource.Error()
                         } else if (errorCode == ErrorCode.FAILED_PAGE_READ) {
                             data.retries++
                             return Resource.Error(
