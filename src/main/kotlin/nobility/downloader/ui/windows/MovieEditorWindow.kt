@@ -15,7 +15,7 @@ import nobility.downloader.core.BoxHelper
 import nobility.downloader.core.entities.Series
 import nobility.downloader.core.entities.data.SeriesIdentity
 import nobility.downloader.ui.components.defaultButton
-import nobility.downloader.ui.components.defaultTextField
+import nobility.downloader.ui.components.DefaultTextField
 import nobility.downloader.ui.windows.utils.ApplicationState
 import nobility.downloader.utils.ImageUtils
 
@@ -79,7 +79,7 @@ object MovieEditorWindow {
                         fontSize = 16.sp,
                         modifier = Modifier.padding(5.dp)
                     )
-                    defaultTextField(
+                    DefaultTextField(
                         name,
                         onValueChanged = { name = it },
                         modifier = Modifier.fillMaxWidth().padding(10.dp)
@@ -89,7 +89,7 @@ object MovieEditorWindow {
                         fontSize = 16.sp,
                         modifier = Modifier.padding(5.dp)
                     )
-                    defaultTextField(
+                    DefaultTextField(
                         description,
                         onValueChanged = { description = it },
                         modifier = Modifier.fillMaxWidth().height(250.dp).padding(10.dp),
@@ -100,7 +100,7 @@ object MovieEditorWindow {
                         fontSize = 16.sp,
                         modifier = Modifier.padding(5.dp)
                     )
-                    defaultTextField(
+                    DefaultTextField(
                         genres,
                         onValueChanged = { genres = it },
                         modifier = Modifier.fillMaxWidth().padding(10.dp)
@@ -110,7 +110,7 @@ object MovieEditorWindow {
                         fontSize = 16.sp,
                         modifier = Modifier.padding(5.dp)
                     )
-                    defaultTextField(
+                    DefaultTextField(
                         imageLink,
                         onValueChanged = { imageLink = it },
                         modifier = Modifier.fillMaxWidth().padding(10.dp)

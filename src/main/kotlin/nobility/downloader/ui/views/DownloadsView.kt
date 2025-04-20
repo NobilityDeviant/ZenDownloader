@@ -37,7 +37,7 @@ import nobility.downloader.core.Core
 import nobility.downloader.core.entities.Download
 import nobility.downloader.core.scraper.data.ToDownload
 import nobility.downloader.ui.components.FullBox
-import nobility.downloader.ui.components.defaultDropdownItem
+import nobility.downloader.ui.components.DefaultDropdownItem
 import nobility.downloader.ui.components.dialog.DialogHelper
 import nobility.downloader.ui.components.verticalScrollbar
 import nobility.downloader.ui.components.verticalScrollbarEndPadding
@@ -304,7 +304,7 @@ class DownloadsView : ViewPage {
         ) {
             if (!download.isComplete) {
                 if (!download.downloading) {
-                    defaultDropdownItem(
+                    DefaultDropdownItem(
                         "Resume",
                         EvaIcons.Fill.Download
                     ) {
@@ -331,7 +331,7 @@ class DownloadsView : ViewPage {
                     }
                 }*/
             }
-            defaultDropdownItem(
+            DefaultDropdownItem(
                 "Series Details",
                 EvaIcons.Fill.Info
             ) {
@@ -365,7 +365,7 @@ class DownloadsView : ViewPage {
                     windowScope.showToast("There is no series slug for this download.")
                 }
             }
-            defaultDropdownItem(
+            DefaultDropdownItem(
                 "Open Folder",
                 EvaIcons.Fill.Folder
             ) {
@@ -376,7 +376,7 @@ class DownloadsView : ViewPage {
                 )
             }
             if (download.isComplete) {
-                defaultDropdownItem(
+                DefaultDropdownItem(
                     "Play Video",
                     EvaIcons.Fill.Video
                 ) {
@@ -385,7 +385,7 @@ class DownloadsView : ViewPage {
                 }
             }
             if (!download.downloading) {
-                defaultDropdownItem(
+                DefaultDropdownItem(
                     "Remove From Downloads",
                     EvaIcons.Fill.Trash
                 ) {
@@ -397,7 +397,7 @@ class DownloadsView : ViewPage {
                         Core.child.removeDownload(download)
                     }
                 }
-                defaultDropdownItem(
+                DefaultDropdownItem(
                     "Delete FIle",
                     EvaIcons.Fill.FileRemove
                 ) {

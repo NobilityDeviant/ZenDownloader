@@ -191,17 +191,6 @@ class RecentView: ViewPage {
             ).height(40.dp).fillMaxWidth().padding(end = verticalScrollbarEndPadding),
             horizontalArrangement = Arrangement.spacedBy(4.dp)
         ) {
-            Text(
-                text = "Image",
-                modifier = Modifier
-                    .padding(4.dp)
-                    .align(Alignment.CenterVertically)
-                    .weight(IMAGE_WEIGHT),
-                color = MaterialTheme.colorScheme.onPrimaryContainer,
-                fontSize = MaterialTheme.typography.bodySmall.fontSize,
-                textAlign = TextAlign.Center
-            )
-            divider(true)
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 modifier = Modifier.weight(NAME_WEIGHT)
@@ -244,6 +233,17 @@ class RecentView: ViewPage {
                     }
                 }
             }
+            divider(true)
+            Text(
+                text = "Image",
+                modifier = Modifier
+                    .padding(4.dp)
+                    .align(Alignment.CenterVertically)
+                    .weight(IMAGE_WEIGHT),
+                color = MaterialTheme.colorScheme.onPrimaryContainer,
+                fontSize = MaterialTheme.typography.bodySmall.fontSize,
+                textAlign = TextAlign.Center
+            )
         }
     }
 
@@ -264,7 +264,7 @@ class RecentView: ViewPage {
                 MaterialTheme.colorScheme.background
             )
         ) {
-            defaultDropdownItem(
+            DefaultDropdownItem(
                 "Download ${type(recentData)}",
                 EvaIcons.Fill.Info
             ) {
@@ -328,17 +328,6 @@ class RecentView: ViewPage {
                 ).height(rowHeight).fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(4.dp)
         ) {
-            val imagePath = BoxHelper.seriesImagesPath + Tools.titleForImages(recentData.name)
-            defaultImage(
-                imagePath,
-                recentData.imageLink,
-                contentScale = ContentScale.FillBounds,
-                modifier = Modifier.fillMaxSize()
-                    .padding(10.dp)
-                    .align(Alignment.CenterVertically)
-                    .weight(IMAGE_WEIGHT)
-            )
-            divider()
             Text(
                 text = recentData.name,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -347,6 +336,17 @@ class RecentView: ViewPage {
                     .padding(4.dp)
                     .align(Alignment.CenterVertically)
                     .weight(NAME_WEIGHT)
+            )
+            divider()
+            val imagePath = BoxHelper.seriesImagesPath + Tools.titleForImages(recentData.name)
+            DefaultImage(
+                imagePath,
+                recentData.imageLink,
+                contentScale = ContentScale.FillBounds,
+                modifier = Modifier.fillMaxSize()
+                    .padding(10.dp)
+                    .align(Alignment.CenterVertically)
+                    .weight(IMAGE_WEIGHT)
             )
         }
     }

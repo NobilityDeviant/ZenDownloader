@@ -6,6 +6,7 @@ buildscript {
     }
     dependencies {
         //4.1.0 breaks the jvm
+        //default to 4.0.3 if it breaks
         classpath("io.objectbox:objectbox-gradle-plugin:4.0.3")
     }
 }
@@ -21,7 +22,7 @@ kotlin {
 }
 
 group = "nobility.downloader"
-version = "1.1.0"
+version = "1.1.1"
 
 repositories {
     mavenCentral()
@@ -33,12 +34,12 @@ repositories {
 dependencies {
     implementation(compose.desktop.currentOs)
     //network
-    implementation("org.jsoup:jsoup:1.18.3")
-    implementation("org.seleniumhq.selenium:selenium-java:4.28.1")
-    implementation("io.github.bonigarcia:webdrivermanager:5.9.2")
-    implementation("ch.qos.logback:logback-classic:1.5.16")
-    runtimeOnly("org.jetbrains.kotlinx:kotlinx-coroutines-swing:1.10.1")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.1")
+    implementation("org.jsoup:jsoup:1.19.1")
+    implementation("org.seleniumhq.selenium:selenium-java:4.31.0")
+    implementation("io.github.bonigarcia:webdrivermanager:6.0.1")
+    implementation("ch.qos.logback:logback-classic:1.5.18")
+    runtimeOnly("org.jetbrains.kotlinx:kotlinx-coroutines-swing:1.10.2")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
     //database
     val objectBox = "4.0.3"
     implementation("io.objectbox:objectbox-linux:$objectBox")
@@ -48,33 +49,25 @@ dependencies {
     implementation("io.objectbox:objectbox-linux-armv7:$objectBox")
     implementation("com.darkrockstudios:mpfilepicker:3.1.0")
     //for url updating.
-    implementation("com.google.http-client:google-http-client:1.46.0")
+    implementation("com.google.http-client:google-http-client:1.46.3")
     //for undetected chrome
-    implementation("com.alibaba:fastjson:2.0.54")
+    implementation("com.alibaba:fastjson:2.0.57")
     //ui
     implementation(compose.material3)
-    implementation("com.materialkolor:material-kolor:2.0.2")
+    implementation("com.materialkolor:material-kolor:2.1.1")
     implementation("br.com.devsrsouza.compose.icons:eva-icons:1.1.1")
     implementation("io.coil-kt.coil3:coil-compose:3.1.0")
     implementation("io.coil-kt.coil3:coil-network-okhttp:3.1.0")
     //for unzipping assets
     implementation("net.lingala.zip4j:zip4j:2.11.5")
     //m3u8 downloading
-
-    //using local ffmpeg from now on.
-    //implementation("org.bytedeco:ffmpeg:7.1-1.5.11")
-    //implementation("org.bytedeco:ffmpeg:7.1-1.5.11:windows-x86_64")
-    //implementation("org.bytedeco:ffmpeg:1.5.11:linux-x86_64")
-    //implementation("org.bytedeco:javacpp:1.5.11:windows-x86_64")
-    //implementation("org.bytedeco:javacpp:1.5.11:linux-x86_64")
     implementation("org.apache.commons:commons-lang3:3.17.0")
     implementation("org.apache.commons:commons-collections4:4.4")
     implementation("org.bouncycastle:bcprov-jdk18on:1.80")
-    implementation("org.apache.httpcomponents.client5:httpclient5:5.4.2")
-    implementation("io.netty:netty-common:4.1.117.Final")
+    implementation("org.apache.httpcomponents.client5:httpclient5:5.4.3")
+    implementation("io.netty:netty-common:4.2.0.Final")
     implementation("org.jctools:jctools-core:4.0.5")
-
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.8.0-RC")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.8.1")
 }
 
 apply(plugin = "io.objectbox")

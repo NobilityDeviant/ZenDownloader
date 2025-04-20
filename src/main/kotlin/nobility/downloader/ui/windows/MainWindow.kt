@@ -11,6 +11,7 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.CursorDropdownMenu
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -131,7 +132,7 @@ private fun uiWrapper(
                                                 }
                                             }
                                         ) {
-                                            pageButton(page)
+                                            PageButton(page)
                                         }
                                     } else if (page == Page.ERROR_CONSOLE) {
                                         BadgedBox(
@@ -144,14 +145,14 @@ private fun uiWrapper(
                                                 }
                                             }
                                         ) {
-                                            pageButton(page)
+                                            PageButton(page)
                                         }
                                     } else {
-                                        pageButton(page)
+                                        PageButton(page)
                                     }
                                 }
                                 item(key = {"database-button"}) {
-                                    tabButton("Video Database") {
+                                    TabButton("Video Database") {
                                         Core.openWco()
                                     }
                                 }
@@ -160,7 +161,7 @@ private fun uiWrapper(
                     },
                     actions = {
                         if (Core.currentPage == Page.SETTINGS) {
-                            tooltipIconButton(
+                            TooltipIconButton(
                                 "Hover over each settings title to see it's description.",
                                 icon = EvaIcons.Fill.QuestionMarkCircle,
                                 iconSize = mediumIconSize,
@@ -169,7 +170,7 @@ private fun uiWrapper(
                             ) {}
                         }
                         if (Core.currentPage == Page.DOWNLOADS) {
-                            tooltipIconButton(
+                            TooltipIconButton(
                                 "Open Download Folder",
                                 icon = EvaIcons.Fill.Folder,
                                 iconSize = mediumIconSize
@@ -179,7 +180,7 @@ private fun uiWrapper(
                                 )
                             }
                         } else if (Core.currentPage == Page.SETTINGS) {
-                            tooltipIconButton(
+                            TooltipIconButton(
                                 if (!Core.darkMode.value) "Dark Mode" else "Light Mode",
                                 if (!Core.darkMode.value) EvaIcons.Fill.Moon else EvaIcons.Fill.Sun,
                                 mediumIconSize,
@@ -199,7 +200,7 @@ private fun uiWrapper(
                         when (Core.currentPage) {
                             Page.DOWNLOADER -> {
                                 options.add {
-                                    defaultDropdownItem(
+                                    DefaultDropdownItem(
                                         "Check For Updates",
                                         EvaIcons.Fill.CloudDownload
                                     ) {
@@ -208,7 +209,7 @@ private fun uiWrapper(
                                     }
                                 }
                                 options.add {
-                                    defaultDropdownItem(
+                                    DefaultDropdownItem(
                                         "How To Use",
                                         EvaIcons.Fill.Book
                                     ) {
@@ -221,7 +222,7 @@ private fun uiWrapper(
                                     }
                                 }
                                 options.add {
-                                    defaultDropdownItem(
+                                    DefaultDropdownItem(
                                         "Key Combinations",
                                         EvaIcons.Fill.Keypad
                                     ) {
@@ -234,7 +235,7 @@ private fun uiWrapper(
                                     }
                                 }
                                 options.add {
-                                    defaultDropdownItem(
+                                    DefaultDropdownItem(
                                         "Donate",
                                         EvaIcons.Fill.Gift
                                     ) {
@@ -251,7 +252,7 @@ private fun uiWrapper(
                                     }
                                 }
                                 options.add {
-                                    defaultDropdownItem(
+                                    DefaultDropdownItem(
                                         "About",
                                         EvaIcons.Fill.Info
                                     ) {
@@ -283,7 +284,7 @@ private fun uiWrapper(
                             Page.DOWNLOADS -> {
                                 if (Core.child.isRunning) {
                                     options.add {
-                                        defaultDropdownItem(
+                                        DefaultDropdownItem(
                                             "Stop Downloads",
                                             EvaIcons.Fill.Close
                                         ) {
@@ -294,13 +295,13 @@ private fun uiWrapper(
                                     }
                                 }
                                 options.add {
-                                    defaultDropdownItem(
+                                    DefaultDropdownItem(
                                         "Clear All Downloads",
                                         EvaIcons.Fill.Trash
                                     ) {
                                         closeMenu()
                                         if (Core.child.downloadList.isEmpty()) {
-                                            return@defaultDropdownItem
+                                            return@DefaultDropdownItem
                                         }
                                         if (!Core.child.isRunning) {
                                             DialogHelper.showConfirm(
@@ -327,13 +328,13 @@ private fun uiWrapper(
                                     }
                                 }
                                 options.add {
-                                    defaultDropdownItem(
+                                    DefaultDropdownItem(
                                         "Clear Downloads & Delete Incomplete Files",
                                         EvaIcons.Fill.Trash
                                     ) {
                                         closeMenu()
                                         if (Core.child.downloadList.isEmpty()) {
-                                            return@defaultDropdownItem
+                                            return@DefaultDropdownItem
                                         }
                                         if (!Core.child.isRunning) {
                                             DialogHelper.showConfirm(
@@ -371,14 +372,14 @@ private fun uiWrapper(
 
                             Page.SETTINGS -> {
                                 options.add {
-                                    defaultDropdownItem(
+                                    DefaultDropdownItem(
                                         "Open Database Folder",
                                         EvaIcons.Fill.Folder
                                     ) {
                                         closeMenu()
                                         Tools.openFile(AppInfo.databasePath)
                                     }
-                                    defaultDropdownItem(
+                                    DefaultDropdownItem(
                                         "Reset Settings",
                                         EvaIcons.Fill.Refresh
                                     ) {
@@ -397,7 +398,7 @@ private fun uiWrapper(
 
                             Page.RECENT -> {
                                 options.add {
-                                    defaultDropdownItem(
+                                    DefaultDropdownItem(
                                         "Download Recent Data",
                                         EvaIcons.Fill.Download
                                     ) {
@@ -413,7 +414,7 @@ private fun uiWrapper(
                         }
 
                         if (options.isNotEmpty()) {
-                            tooltipIconButton(
+                            TooltipIconButton(
                                 "Options",
                                 EvaIcons.Fill.MoreVertical,
                                 mediumIconSize - 2.dp,
@@ -421,9 +422,12 @@ private fun uiWrapper(
                                 spacePosition = SpacePosition.START,
                                 space = 10.dp
                             )
-                            DropdownMenu(
+                            CursorDropdownMenu(
                                 expanded = showFileMenu,
-                                onDismissRequest = { closeMenu() }
+                                onDismissRequest = { closeMenu() },
+                                modifier = Modifier.background(
+                                    MaterialTheme.colorScheme.background
+                                )
                             ) {
                                 options.forEach { o ->
                                     o.invoke()

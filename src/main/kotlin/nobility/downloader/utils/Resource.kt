@@ -14,23 +14,19 @@ sealed class Resource<T>(
         Resource<T>(message = message) {
         constructor(message: String?, exception: Throwable?):
                 this(
-                    message = "${
-                        if (!message.isNullOrEmpty())
-                            "$message | "
-                        else ""
-                    }Error: " + if (exception != null)
-                        exception.localizedMessage else ""//"No error found."
+                    message = (if (!message.isNullOrEmpty())
+                        "$message | "
+                    else "") + if (exception != null)
+                        "Error: " + exception.localizedMessage else ""//"No error found."
                 )
         constructor(ex: Throwable?) : this("", exception = ex)
         constructor() : this("")
         constructor(message: String?, errorMessage: String?) :
                 this(
-                    message = "${
-                        if (!message.isNullOrEmpty())
-                            "$message | "
-                        else ""
-                    }Error: " + if (!errorMessage.isNullOrEmpty())
-                        errorMessage else "No error found."
+                    message = (if (!message.isNullOrEmpty())
+                        "$message | "
+                    else "") + if (!errorMessage.isNullOrEmpty())
+                        "Error: $errorMessage" else "No error found."
                 )
     }
 
@@ -41,7 +37,7 @@ sealed class Resource<T>(
         constructor(errorCode: Int) : this("", errorCode)
     }
 
-    val isFailed: Boolean get() = !message.isNullOrEmpty()
+    val isFailed: Boolean get() = !message.isNullOrEmpty() || this is Error || this is ErrorCode
     val isSuccess: Boolean get() = !isFailed
 
 }

@@ -165,7 +165,7 @@ class Console(
                         modifier = Modifier.align(Alignment.End)
                     ) {
                         if ((!popoutMode && !consolePoppedOut) || popoutMode) {
-                            tooltipIconButton(
+                            TooltipIconButton(
                                 "Copy Console Text",
                                 EvaIcons.Fill.Copy,
                                 iconColor = MaterialTheme.colorScheme.primary
@@ -175,7 +175,7 @@ class Console(
                             }
                         }
                         if ((!popoutMode && !consolePoppedOut) || popoutMode) {
-                            tooltipIconButton(
+                            TooltipIconButton(
                                 "Clear Console",
                                 EvaIcons.Fill.Trash,
                                 iconColor = MaterialTheme.colorScheme.primary
@@ -183,7 +183,7 @@ class Console(
                                 clear()
                             }
                         }
-                        tooltipIconButton(
+                        TooltipIconButton(
                             if (consolePoppedOut)
                                 "Close Console Window" else "Pop out Console",
                             if (consolePoppedOut)

@@ -58,10 +58,10 @@ object Functions {
                 }
             }
         }
-        data.logError(
-            "Failed to read webpage with simple mode. Moving on to full mode.",
-            exception
-        )
+        //data.logError(
+          //  "Failed to read webpage with simple mode. Moving on to full mode.",
+            //exception
+        //)
         var fullModeRetries = 0
         var fullModeException: Exception? = null
         while (fullModeRetries <= Defaults.FULL_RETRIES.int()) {

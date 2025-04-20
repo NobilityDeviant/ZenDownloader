@@ -111,7 +111,7 @@ class SettingsView : ViewPage {
                         ) {
                             openUpdateOptionsWindow()
                         }
-                        defaultButton(
+                        DefaultButton(
                             "Save Settings",
                             enabled = saveButtonEnabled,
                             width = 150.dp,
@@ -193,7 +193,7 @@ class SettingsView : ViewPage {
                 Defaults.WCO_PREMIUM_PASSWORD -> {
                     val showOption = booleanOptions[Defaults.SHOW_WCO_PREMIUM_PASSWORD]
                     if (showOption != null) {
-                        defaultSettingsTextField(
+                        DefaultSettingsTextField(
                             option.value,
                             { text ->
                                 option.value = text
@@ -202,7 +202,7 @@ class SettingsView : ViewPage {
                             passwordMode = !showOption.value,
                             modifier = modifier
                         )
-                        defaultCheckbox(
+                        DefaultCheckbox(
                             showOption.value,
                             modifier = Modifier.height(30.dp)
                         ) {
@@ -221,7 +221,7 @@ class SettingsView : ViewPage {
                 }
 
                 Defaults.SAVE_FOLDER -> {
-                    defaultSettingsTextField(
+                    DefaultSettingsTextField(
                         option.value,
                         { text ->
                             option.value = text
@@ -251,7 +251,7 @@ class SettingsView : ViewPage {
                 }
 
                 Defaults.CHROME_BROWSER_PATH -> {
-                    defaultSettingsTextField(
+                    DefaultSettingsTextField(
                         option.value,
                         { text ->
                             option.value = text
@@ -281,7 +281,7 @@ class SettingsView : ViewPage {
                 }
 
                 Defaults.CHROME_DRIVER_PATH -> {
-                    defaultSettingsTextField(
+                    DefaultSettingsTextField(
                         option.value,
                         { text ->
                             option.value = text
@@ -311,7 +311,7 @@ class SettingsView : ViewPage {
                 }
 
                 else -> {
-                    defaultSettingsTextField(
+                    DefaultSettingsTextField(
                         option.value,
                         {
                             option.value = it
@@ -349,7 +349,7 @@ class SettingsView : ViewPage {
             }
             when (setting) {
                 Defaults.DOWNLOAD_THREADS -> {
-                    defaultSettingsTextField(
+                    DefaultSettingsTextField(
                         if (option.value == -1) "" else option.value.toString(),
                         { text ->
                             option.value = textToDigits(FieldType.THREADS, text)
@@ -362,7 +362,7 @@ class SettingsView : ViewPage {
                 }
 
                 Defaults.TIMEOUT -> {
-                    defaultSettingsTextField(
+                    DefaultSettingsTextField(
                         if (option.value == -1) "" else option.value.toString(),
                         { text ->
                             option.value = textToDigits(FieldType.TIMEOUT, text)
@@ -375,7 +375,7 @@ class SettingsView : ViewPage {
                 }
 
                 else -> {
-                    defaultSettingsTextField(
+                    DefaultSettingsTextField(
                         if (option.value == -1) "" else option.value.toString(),
                         { text ->
                             option.value = textToDigits(FieldType.RETRY, text)
@@ -420,7 +420,7 @@ class SettingsView : ViewPage {
                     }
                 }
                 tooltip(setting.description) {
-                    defaultDropdown(
+                    DefaultDropdown(
                         option.value,
                         expanded,
                         options,
@@ -457,7 +457,7 @@ class SettingsView : ViewPage {
                 )
             }
             tooltip(setting.description) {
-                defaultCheckbox(
+                DefaultCheckbox(
                     option.value,
                     modifier = Modifier.height(30.dp)
                 ) {

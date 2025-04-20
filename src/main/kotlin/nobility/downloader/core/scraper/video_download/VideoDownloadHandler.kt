@@ -45,6 +45,10 @@ class VideoDownloadHandler(
                 if (parsedResult.errorCode == ErrorCode.FFMPEG_NOT_INSTALLED.code) {
                     data.finishEpisode()
                 }
+                help.data.logError(
+                    "Failed to parse qualities.",
+                    parsedResult.message
+                )
                 continue
             }
             val preferredDownload = parsedResult.data!!
@@ -67,7 +71,7 @@ class VideoDownloadHandler(
                         saveFile
                     )
                 } else {
-                    var fileSizeRetries = Defaults.FILE_SIZE_RETRIES.int()
+                    val fileSizeRetries = Defaults.FILE_SIZE_RETRIES.int()
                     var originalFileSize = 0L
                     var headMode = true
                     data.logDebug("Checking video file size with $fileSizeRetries max retries.")

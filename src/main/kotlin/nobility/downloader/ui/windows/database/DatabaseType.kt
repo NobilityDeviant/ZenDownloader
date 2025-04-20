@@ -1,7 +1,5 @@
 package nobility.downloader.ui.windows.database
 
-import nobility.downloader.ui.windows.database.DatabaseType.entries
-
 
 enum class DatabaseType(val title: String, val id: Int) {
     ALL("All", 0),

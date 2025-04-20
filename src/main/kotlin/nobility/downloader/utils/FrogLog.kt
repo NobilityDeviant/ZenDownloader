@@ -38,10 +38,6 @@ object FrogLog {
                     "\nError: Invalid exception."
                 else
                     ""
-                //if (!exception?.localizedMessage.isNullOrEmpty())
-                  //  "\nError: ${exception.localizedMessage}"
-                //else
-
         if (important) {
             println(fullMessage)
         } else {

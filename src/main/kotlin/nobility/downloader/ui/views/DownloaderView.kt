@@ -9,6 +9,7 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsHoveredAsState
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.*
+import androidx.compose.material.CursorDropdownMenu
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.*
@@ -21,9 +22,11 @@ import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import compose.icons.EvaIcons
+import compose.icons.evaicons.Fill
+import compose.icons.evaicons.fill.Refresh
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
@@ -32,12 +35,12 @@ import nobility.downloader.core.Core
 import nobility.downloader.core.Core.Companion.randomSeries
 import nobility.downloader.core.Core.Companion.randomSeries2
 import nobility.downloader.core.entities.data.SeriesIdentity
-import nobility.downloader.ui.components.defaultButton
-import nobility.downloader.ui.components.defaultImage
-import nobility.downloader.ui.components.defaultTextField
+import nobility.downloader.ui.components.DefaultButton
+import nobility.downloader.ui.components.DefaultDropdownItem
+import nobility.downloader.ui.components.DefaultImage
+import nobility.downloader.ui.components.DefaultTextField
 import nobility.downloader.ui.windows.utils.AppWindowScope
 import nobility.downloader.utils.AppInfo
-import nobility.downloader.utils.Constants
 import nobility.downloader.utils.Constants.randomSeriesRowHeight
 import nobility.downloader.utils.Tools
 
@@ -54,7 +57,7 @@ class DownloaderView: ViewPage {
                 Column(
                     modifier = Modifier.padding(top = 10.dp)
                 ) {
-                    defaultTextField(
+                    DefaultTextField(
                         Core.currentUrl,
                         onValueChanged = {
                             Core.currentUrl = it
@@ -97,6 +100,27 @@ class DownloaderView: ViewPage {
                     .padding(padding)
                     .verticalScroll(rememberScrollState(0))
             ) {
+
+                var showMenu by remember {
+                    mutableStateOf(false)
+                }
+                val closeMenu = { showMenu = false }
+                //todo add favorite option later
+                CursorDropdownMenu(
+                    expanded = showMenu,
+                    onDismissRequest = { closeMenu() },
+                    modifier = Modifier.background(
+                        MaterialTheme.colorScheme.background
+                    )
+                ) {
+                    DefaultDropdownItem(
+                        "Reload Random Series",
+                        EvaIcons.Fill.Refresh
+                    ) {
+                        Core.reloadRandomSeries()
+                        closeMenu()
+                    }
+                }
                 if (randomSeries.isNotEmpty() && randomSeries2.isNotEmpty()) {
                     val seriesStateList = rememberScrollState()
                     val seriesStateList2 = rememberScrollState()
@@ -144,11 +168,14 @@ class DownloaderView: ViewPage {
                                     RectangleShape
                                 ).hoverable(interaction)
                             ) {
-                                defaultImage(
+                                DefaultImage(
                                     it.imagePath,
                                     contentScale = ContentScale.FillBounds,
                                     onClick = {
                                         Core.openDownloadConfirm(it.asToDownload)
+                                    },
+                                    onRightClick = {
+                                        showMenu = true
                                     }
                                 )
                             }
@@ -197,11 +224,14 @@ class DownloaderView: ViewPage {
                                     RectangleShape
                                 ).hoverable(interaction)
                             ) {
-                                defaultImage(
+                                DefaultImage(
                                     it.imagePath,
                                     contentScale = ContentScale.FillBounds,
                                     onClick = {
                                         Core.openDownloadConfirm(it.asToDownload)
+                                    },
+                                    onRightClick = {
+                                        showMenu = true
                                     }
                                 )
                             }
@@ -242,43 +272,31 @@ class DownloaderView: ViewPage {
                     }
                 }
                 Spacer(Modifier.weight(1f))
-                Box(
-                    modifier = Modifier.fillMaxWidth()
+                Row(
+                    Modifier.align(Alignment.CenterHorizontally)
                         .padding(bottom = 4.dp)
+                        .fillMaxWidth(0.5f),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(5.dp),
-                        modifier = Modifier.align(Alignment.Center)
-                            .offset(y = Constants.mediumIconSize + 10.dp)
+                    DefaultButton(
+                        "Start",
+                        Modifier.weight(1f)
+                            .height(60.dp),
+                        fontSize = 16.sp,
+                        enabled = Core.startButtonEnabled
                     ) {
-                        val buttonWidth = 150.dp
-                        val buttonHeight = 50.dp
-                        defaultButton(
-                            "Start",
-                            width = Dp.Unspecified,
-                            height = Dp.Unspecified,
-                            modifier = Modifier.defaultMinSize(
-                                minWidth = buttonWidth,
-                                minHeight = buttonHeight
-                            ),
-                            fontSize = 13.sp,
-                            enabled = Core.startButtonEnabled
-                        ) {
-                            Core.child.start()
-                        }
-                        defaultButton(
-                            "Stop",
-                            width = Dp.Unspecified,
-                            height = Dp.Unspecified,
-                            modifier = Modifier.defaultMinSize(
-                                minWidth = buttonWidth,
-                                minHeight = buttonHeight
-                            ),
-                            fontSize = 13.sp,
-                            enabled = Core.stopButtonEnabled
-                        ) {
-                            Core.child.stop()
-                        }
+                        Core.child.start()
+                    }
+                    Spacer(Modifier.width(8.dp))
+                    DefaultButton(
+                        "Stop",
+                        Modifier.weight(1f)
+                            .height(60.dp),
+                        fontSize = 16.sp,
+                        enabled = Core.stopButtonEnabled
+                    ) {
+                        Core.child.stop()
+                        Core.child.forceStopped = true
                     }
                 }
                 Core.console.textField(windowScope)

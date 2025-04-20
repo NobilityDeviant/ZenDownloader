@@ -8,7 +8,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import nobility.downloader.ui.components.defaultImage
+import nobility.downloader.ui.components.DefaultImage
 import nobility.downloader.ui.windows.utils.ApplicationState
 import nobility.downloader.utils.fileExists
 
@@ -30,7 +30,7 @@ object ImagePopoutWindow {
                 verticalArrangement = Arrangement.spacedBy(4.dp),
                 modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surface)
             ) {
-                defaultImage(
+                DefaultImage(
                     imagePath,
                     urlBackup,
                     pointerIcon = null

@@ -100,13 +100,13 @@ class DatabaseWindow {
         searchByGenre,
         searchByDesc,
         showFavorites
-    ) {
+    ) { seriesData ->
         //val type = it[0] as DatabaseType
         //val sort = it[1] as DatabaseSort
-        val search = it[2] as String
-        val byGenre = it[3] as Boolean
-        val byDesc = it[4] as Boolean
-        val favorite = it[5] as Boolean
+        val search = seriesData[2] as String
+        val byGenre = seriesData[3] as Boolean
+        val byDesc = seriesData[4] as Boolean
+        val favorite = seriesData[5] as Boolean
         if (search.isBlank()) {
             if (favorite) {
                 sortedSeries.filter {
@@ -188,7 +188,7 @@ class DatabaseWindow {
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             val favorite by showFavorites.collectAsState()
-                            tooltipIconButton(
+                            TooltipIconButton(
                                 if (favorite)
                                     "Show Only Favorites On"
                                 else "Show Only Favorites Off",
@@ -198,7 +198,7 @@ class DatabaseWindow {
                             ) {
                                 mShowFavorites.value = showFavorites.value.not()
                             }
-                            tooltipIconButton(
+                            TooltipIconButton(
                                 "Genres",
                                 EvaIcons.Fill.BookOpen,
                                 iconColor = MaterialTheme.colorScheme.primary
@@ -207,7 +207,7 @@ class DatabaseWindow {
                             }
                             val focusRequester = remember { FocusRequester() }
                             val search by searchText.collectAsState()
-                            defaultSettingsTextField(
+                            DefaultSettingsTextField(
                                 search,
                                 onValueChanged = {
                                     Core.databaseSearchText.value = it
@@ -220,7 +220,7 @@ class DatabaseWindow {
                                 focusRequester = focusRequester,
                                 trailingIcon = {
                                     if (search.isNotEmpty()) {
-                                        tooltipIconButton(
+                                        TooltipIconButton(
                                             "",
                                             EvaIcons.Fill.Close,
                                             iconColor = MaterialTheme.colorScheme.primary
@@ -235,7 +235,7 @@ class DatabaseWindow {
                             val searchByDesc by searchByDesc.collectAsState()
                             val genreTooltip = "Enables searching by genre. Search by genre is case sensitive."
                             tooltip(genreTooltip) {
-                                defaultCheckbox(
+                                DefaultCheckbox(
                                     searchByGenre,
                                     modifier = Modifier.padding(top = 10.dp, bottom = 10.dp)
                                 ) {
@@ -255,7 +255,7 @@ class DatabaseWindow {
                             }
                             val descTooltip = "Enables searching by description keywords."
                             tooltip(descTooltip) {
-                                defaultCheckbox(
+                                DefaultCheckbox(
                                     searchByDesc,
                                     modifier = Modifier.padding(top = 10.dp, bottom = 10.dp)
                                 ) {
@@ -528,7 +528,7 @@ class DatabaseWindow {
                 MaterialTheme.colorScheme.background
             )
         ) {
-            defaultDropdownItem(
+            DefaultDropdownItem(
                 "Series Details",
                 EvaIcons.Fill.Info
             ) {
@@ -540,7 +540,7 @@ class DatabaseWindow {
             val favorited by remember {
                 mutableStateOf(BoxHelper.isSeriesFavorited(series))
             }
-            defaultDropdownItem(
+            DefaultDropdownItem(
                 if (favorited)
                     "Remove From Favorite" else "Add To Favorite",
                 if (favorited)
@@ -555,7 +555,7 @@ class DatabaseWindow {
                     BoxMaker.makeFavorite(series.slug)
                 }
             }
-            defaultDropdownItem(
+            DefaultDropdownItem(
                 "Copy Name",
                 EvaIcons.Fill.Copy
             ) {
@@ -564,7 +564,7 @@ class DatabaseWindow {
                 windowScope.showToast("Copied Name")
             }
             if (series.description.isNotEmpty()) {
-                defaultDropdownItem(
+                DefaultDropdownItem(
                     "Copy Description",
                     EvaIcons.Fill.Copy
                 ) {
@@ -574,7 +574,7 @@ class DatabaseWindow {
                 }
             }
             if (series.seriesIdentity == SeriesIdentity.MOVIE) {
-                defaultDropdownItem(
+                DefaultDropdownItem(
                     "Edit Movie",
                     EvaIcons.Fill.Edit
                 ) {
@@ -607,10 +607,10 @@ class DatabaseWindow {
                     .weight(NAME_WEIGHT)
             ) {
                 if (favorited) {
-                    defaultIcon(
+                    DefaultIcon(
                         EvaIcons.Fill.Star,
                         iconColor = Color.Yellow,
-                        iconModifier = Modifier
+                        modifier = Modifier
                             .padding(4.dp)
                             .align(Alignment.TopStart)
                     )
@@ -691,7 +691,7 @@ class DatabaseWindow {
                 )
             }
             divider()
-            defaultImage(
+            DefaultImage(
                 series.imagePath,
                 series.imageLink,
                 contentScale = ContentScale.FillBounds,

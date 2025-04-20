@@ -42,56 +42,66 @@ class VideoDownloadHelper(
         if (data.downloadDatas.isEmpty()) {
             if (data.resRetries < Defaults.QUALITY_RETRIES.int()) {
                 val result = detectAvailableQualities(slug)
-                if (result.errorCode != -1) {
-                    val errorCode = ErrorCode.errorCodeForCode(result.errorCode)
-                    if (errorCode == ErrorCode.NO_FRAME) {
-                        data.resRetries++
-                        data.logError(
-                            "Failed to find frame for quality check. Retrying..."
-                        )
-                        return Resource.Error()
-                    } else if (errorCode == ErrorCode.CLOUDFLARE_FUCK) {
-                        data.logError(
-                            """
+                if (result.isFailed) {
+                    if (result.errorCode != -1) {
+                        val errorCode = ErrorCode.errorCodeForCode(result.errorCode)
+                        if (errorCode == ErrorCode.NO_FRAME) {
+                            data.resRetries++
+                            return Resource.Error(
+                                "Failed to find frame for quality check. Retrying...",
+                                result.message
+                            )
+                        } else if (errorCode == ErrorCode.CLOUDFLARE_FUCK) {
+                            return Resource.Error(
+                                """
                                Cloudflare has blocked our request.
                                Unfortunately that means we can't proceed, but well continue anyways...
-                            """.trimIndent()
-                        )
-                        return Resource.Error()
-                    } else if (errorCode == ErrorCode.IFRAME_FORBIDDEN || errorCode == ErrorCode.EMPTY_FRAME) {
-                        data.resRetries = 3
-                        data.logError(
-                            "Failed to find video frame for: $slug" +
-                                    "\nPlease report this in github issues with the video you are trying to download."
-                        )
-                        return Resource.Error()
-                    } else if (errorCode == ErrorCode.FAILED_EXTRACT_RES) {
-                        data.resRetries = 3
-                        data.logError(
-                            "Failed to extract quality links. Returned an empty list."
-                        )
-                        return Resource.Error()
-                    } else if (errorCode == ErrorCode.NO_JS) {
-                        data.resRetries = 3
-                        data.writeMessage("This browser doesn't support JavascriptExecutor.")
-                        return Resource.Error()
-                    } else if (errorCode == ErrorCode.M3U8_LINK_FAILED) {
+                            """.trimIndent(),
+                                result.message
+                            )
+                        } else if (errorCode == ErrorCode.IFRAME_FORBIDDEN || errorCode == ErrorCode.EMPTY_FRAME) {
+                            data.resRetries = 3
+                            return Resource.Error(
+                                "Failed to find video frame for: $slug" +
+                                        "\nPlease report this in github issues with the video you are trying to download.",
+                                result.message
+                            )
+                        } else if (errorCode == ErrorCode.FAILED_EXTRACT_RES) {
+                            data.resRetries = 3
+                            return Resource.Error(
+                                "Failed to extract quality links. Returned an empty list.",
+                                result.message
+                            )
+                        } else if (errorCode == ErrorCode.NO_JS) {
+                            data.resRetries = 3
+                            return Resource.Error(
+                                "This browser doesn't support JavascriptExecutor.",
+                                result.message
+                            )
+                        } else if (errorCode == ErrorCode.M3U8_LINK_FAILED) {
+                            data.retries++
+                            data.logError(
+                                "",
+                                errorMessage = result.message
+                            )
+                            return Resource.Error()
+                        } else if (errorCode == ErrorCode.FAILED_PAGE_READ) {
+                            data.retries++
+                            return Resource.Error(
+                                "Failed to read webpage.",
+                                result.message
+                            )
+                        } else if (errorCode == ErrorCode.FFMPEG_NOT_INSTALLED) {
+                            //no retry needed, we finish the episode
+                            return Resource.Error(
+                                "Critical error | Skipping episode",
+                                result.message
+                            )
+                        }
+                    } else {
                         data.retries++
-                        data.logError(
-                            "",
-                            errorMessage = result.message
-                        )
-                        return Resource.Error()
-                    } else if (errorCode == ErrorCode.FAILED_PAGE_READ) {
-                        data.retries++
-                        data.logError(
-                            "Failed to read webpage."
-                        )
-                        return Resource.Error()
-                    } else if (errorCode == ErrorCode.FFMPEG_NOT_INSTALLED) {
-                        //todo redo these errors when everything isnt so chaotic lol
                         return Resource.Error(
-                            "Critical error | Skipping episode",
+                            "Error without ErrorCode.",
                             result.message
                         )
                     }
@@ -109,12 +119,12 @@ class VideoDownloadHelper(
                             preferredDownload = it
                         }
                     }
-                } else {
+                }/* else {
                     data.logInfo(
                         "Failed to find quality download links. Defaulting to ${Quality.LOW.tag} quality."
                     )
                     qualityOption = Quality.LOW
-                }
+                }*/
             }
         } else {
             data.logDebug("Using existing qualities. Size: ${data.downloadDatas.size}")
@@ -320,6 +330,16 @@ class VideoDownloadHelper(
             val src = sbFrame.toString()
             val linkKey1 = "$.getJSON(\""
             val linkKey2 = "\", function(response){"
+            if (!src.contains(linkKey1)) {
+                return@withContext Resource.Error(
+                    "Source code doesn't contain linKey1."
+                )
+            }
+            if (!src.contains(linkKey2)) {
+                return@withContext Resource.Error(
+                    "Source code doesn't contain linKey2."
+                )
+            }
             val linkIndex1 = src.indexOf(linkKey1)
             val linkIndex2 = src.indexOf(linkKey2)
             val functionLink = src.substring(
@@ -459,6 +479,7 @@ class VideoDownloadHelper(
                 return@withContext Resource.Success(downloadDatas)
             }
         } catch (e: Exception) {
+            e.printStackTrace()
             return@withContext Resource.Error(e)
         }
     }
@@ -719,7 +740,7 @@ class VideoDownloadHelper(
         data.writeMessage("First video download is complete. Now downloading the second video.")
         var retries = 0
         var preferredDownload: DownloadData? = null
-        var qualityOption = temporaryQuality ?: Quality.qualityForTag(
+        val qualityOption = temporaryQuality ?: Quality.qualityForTag(
             Defaults.QUALITY.string()
         )
         val episodeName = data.currentEpisode.name.fixForFiles() + "-01"
@@ -741,7 +762,7 @@ class VideoDownloadHelper(
                     }
                 }
                 if (preferredDownload != null && preferredDownload.downloadLink.isNotEmpty()) {
-                    var fileSizeRetries = Defaults.FILE_SIZE_RETRIES.int()
+                    val fileSizeRetries = Defaults.FILE_SIZE_RETRIES.int()
                     var originalFileSize = 0L
                     var headMode = true
                     data.logDebug("(2nd) Checking video file size with $fileSizeRetries max retries.")

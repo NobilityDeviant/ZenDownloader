@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.CursorDropdownMenu
 import androidx.compose.material.DropdownMenuItem
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -16,13 +17,9 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.FilterQuality
 import androidx.compose.ui.graphics.Shape
-import androidx.compose.ui.graphics.asSkiaBitmap
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.input.pointer.PointerIcon
-import androidx.compose.ui.input.pointer.pointerHoverIcon
-import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -34,101 +31,14 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import coil3.asImage
-import coil3.compose.AsyncImage
-import coil3.compose.LocalPlatformContext
-import coil3.compose.rememberAsyncImagePainter
-import coil3.request.ImageRequest
-import coil3.request.crossfade
-import coil3.size.Precision
 import compose.icons.EvaIcons
 import compose.icons.evaicons.Fill
 import compose.icons.evaicons.fill.ArrowDown
-import kotlinx.coroutines.Dispatchers
 import nobility.downloader.Page
 import nobility.downloader.core.Core
-import nobility.downloader.ui.windows.ImagePopoutWindow
-import nobility.downloader.utils.*
-import java.io.File
-
-@OptIn(ExperimentalFoundationApi::class)
-@Composable
-fun defaultImage(
-    imagePath: String,
-    urlBackup: String? = null,
-    contentScale: ContentScale = ContentScale.Fit,
-    modifier: Modifier = Modifier.fillMaxSize(),
-    pointerIcon: PointerIcon? = PointerIcon.Hand,
-    onClick: (() -> Unit)? = null
-) {
-    if (!imagePath.fileExists() && urlBackup != null) {
-        LaunchedEffect(Unit) {
-            Tools.downloadFileWithRetries(
-                urlBackup,
-                File(imagePath)
-            )
-        }
-    }
-    AsyncImage(
-        model = imageRequest(imagePath, false),
-        contentDescription = null,
-        modifier = modifier.then(
-            Modifier.onClick {
-                if (onClick != null) {
-                    onClick()
-                } else {
-                    ImagePopoutWindow.open(imagePath, urlBackup)
-                }
-            }.then(
-                if (pointerIcon != null)
-                    Modifier.pointerHoverIcon(pointerIcon)
-                else
-                    Modifier
-            )
-        ),
-        contentScale = contentScale,
-        filterQuality = FilterQuality.High,
-        fallback = if (urlBackup != null)
-            rememberAsyncImagePainter(
-                model = imageRequest(urlBackup, true),
-                filterQuality = FilterQuality.High
-            )
-        else rememberAsyncImagePainter(
-            model = AppInfo.NO_IMAGE_PATH_FILE
-        ),
-        error = if (urlBackup != null)
-            rememberAsyncImagePainter(
-                model = imageRequest(urlBackup, true),
-                filterQuality = FilterQuality.High
-            )
-        else rememberAsyncImagePainter(
-            model = AppInfo.NO_IMAGE_PATH_FILE
-        )
-    )
-}
-
-@Composable
-private fun imageRequest(
-    data: String,
-    noImage: Boolean
-): ImageRequest {
-    val builder = ImageRequest.Builder(LocalPlatformContext.current)
-        .data(data)
-        .precision(Precision.EXACT)
-        .crossfade(true)
-        .coroutineContext(Dispatchers.IO)
-    if (noImage) {
-        builder.apply {
-            error {
-                ImageUtils.noImage.asSkiaBitmap().asImage()
-            }
-            fallback {
-                ImageUtils.noImage.asSkiaBitmap().asImage()
-            }
-        }
-    }
-    return builder.build()
-}
+import nobility.downloader.utils.Constants
+import nobility.downloader.utils.hover
+import nobility.downloader.utils.tone
 
 data class DropdownOption(
     val title: String,
@@ -138,7 +48,7 @@ data class DropdownOption(
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun defaultDropdown(
+fun DefaultDropdown(
     label: String,
     expanded: Boolean,
     dropdownOptions: List<DropdownOption>,
@@ -182,13 +92,15 @@ fun defaultDropdown(
                 tint = boxTextColor
             )
         }
-        DropdownMenu(
+        CursorDropdownMenu(
             expanded,
             onDismissRequest,
-            modifier = dropdownModifier
+            modifier = Modifier.background(
+                MaterialTheme.colorScheme.background
+            ).then(dropdownModifier)
         ) {
             dropdownOptions.forEach {
-                defaultDropdownItem(
+                DefaultDropdownItem(
                     it.title
                 ) {
                     it.onClick()
@@ -199,7 +111,7 @@ fun defaultDropdown(
 }
 
 @Composable
-fun defaultDropdownItem(
+fun DefaultDropdownItem(
     text: String,
     startIcon: ImageVector? = null,
     endIcon: ImageVector? = null,
@@ -251,7 +163,7 @@ fun defaultDropdownItem(
 }
 
 @Composable
-fun defaultTextField(
+fun DefaultTextField(
     value: String,
     onValueChanged: (String) -> Unit,
     hint: String = "",
@@ -297,7 +209,7 @@ fun defaultTextField(
 }
 
 @Composable
-fun defaultSettingsTextField(
+fun DefaultSettingsTextField(
     value: String,
     onValueChanged: (String) -> Unit,
     hint: String = "",
@@ -372,7 +284,7 @@ fun defaultSettingsTextField(
 }
 
 @Composable
-fun defaultButton(
+fun DefaultButton(
     text: String,
     modifier: Modifier = Modifier,
     enabled: MutableState<Boolean>,
@@ -409,7 +321,7 @@ fun defaultButton(
 }
 
 @Composable
-fun pageButton(
+fun PageButton(
     page: Page,
     modifier: Modifier = Modifier
 ) {
@@ -440,7 +352,7 @@ fun pageButton(
 }
 
 @Composable
-fun tabButton(
+fun TabButton(
     title: String,
     modifier: Modifier = Modifier,
     onClick: () -> Unit
@@ -462,6 +374,56 @@ fun tabButton(
         fontSize = 11.sp
     ) {
         onClick.invoke()
+    }
+}
+
+@Composable
+fun DefaultButton(
+    text: String,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    colors: ButtonColors = ButtonDefaults.buttonColors(),
+    shape: Shape = RoundedCornerShape(4.dp),
+    border: BorderStroke? = null,
+    contentPadding: PaddingValues = PaddingValues(4.dp),
+    fontSize: TextUnit = 11.sp,
+    fontColor: Color = MaterialTheme.typography.bodyLarge.color,
+    startIcon: ImageVector? = null,
+    startIconColor: Color = Color.Unspecified,
+    onClick: () -> Unit
+) {
+    Button(
+        onClick = onClick,
+        modifier = modifier,
+        shape = shape,
+        border = border,
+        colors = colors,
+        enabled = enabled,
+        contentPadding = contentPadding
+    ) {
+        if (startIcon != null) {
+            val density = LocalDensity.current
+            val iconSize = with(density) {
+                (fontSize * 1.35f).toDp()
+            }
+            DefaultIcon(
+                startIcon,
+                Modifier.size(iconSize)
+                    .align(Alignment.CenterVertically),
+                iconColor = startIconColor
+            )
+            Spacer(Modifier.width(4.dp))
+        }
+        Text(
+            text,
+            fontSize = fontSize,
+            color = fontColor,
+            fontWeight = FontWeight.Bold,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.padding(2.dp)
+                .align(Alignment.CenterVertically),
+            overflow = TextOverflow.Ellipsis
+        )
     }
 }
 
@@ -492,25 +454,22 @@ fun defaultButton(
         enabled = enabled,
         contentPadding = padding
     ) {
-        Column(
-            modifier = Modifier.align(Alignment.CenterVertically)
-        ) {
-            Text(
-                text,
-                fontSize = fontSize,
-                color = fontColor,
-                fontWeight = FontWeight.Bold,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.align(Alignment.CenterHorizontally),
-                overflow = TextOverflow.Ellipsis
-            )
-        }
+        Text(
+            text,
+            fontSize = fontSize,
+            color = fontColor,
+            fontWeight = FontWeight.Bold,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.fillMaxWidth()
+                .padding(2.dp),
+            overflow = TextOverflow.Ellipsis
+        )
     }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun defaultCheckbox(
+fun DefaultCheckbox(
     checked: Boolean,
     modifier: Modifier = Modifier,
     onCheckedChanged: ((Boolean) -> Unit)
@@ -525,25 +484,9 @@ fun defaultCheckbox(
     }
 }
 
-@Composable
-fun defaultIcon(
-    icon: ImageVector,
-    iconSize: Dp = Constants.mediumIconSize,
-    iconColor: Color = MaterialTheme.colorScheme.onPrimary,
-    iconModifier: Modifier = Modifier,
-    contentDescription: String = "",
-) {
-    Icon(
-        icon,
-        contentDescription,
-        tint = iconColor,
-        modifier = iconModifier.size(iconSize)
-    )
-}
-
 @Suppress("UNUSED")
 @Composable
-fun tooltipIconButton(
+fun TooltipIconButton(
     tooltipText: String,
     icon: ImageVector,
     iconSize: Dp = Constants.mediumIconSize,
@@ -573,7 +516,7 @@ fun tooltipIconButton(
 }
 
 @Composable
-fun tooltipIconButton(
+fun TooltipIconButton(
     tooltipText: String,
     icon: ImageVector,
     iconSize: Dp = Constants.mediumIconSize,

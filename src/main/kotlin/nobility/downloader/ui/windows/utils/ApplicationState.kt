@@ -11,7 +11,6 @@ import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.WindowPlacement
 import androidx.compose.ui.window.WindowPosition
 import androidx.compose.ui.window.rememberWindowState
-import kotlinx.coroutines.launch
 import nobility.downloader.ui.components.toast.ToastHostState
 import nobility.downloader.ui.components.toast.toastHost
 import nobility.downloader.ui.theme.CoreTheme
@@ -70,7 +69,7 @@ class ApplicationState {
         @Composable
         fun addToastToWindow(scope: AppWindowScope) {
             val toastHostState = remember { ToastHostState() }
-            val coScope = rememberCoroutineScope()
+            //val coScope = rememberCoroutineScope()
             Box(
                 contentAlignment = Alignment.Center
             ) {
@@ -78,14 +77,22 @@ class ApplicationState {
                     hostState = toastHostState
                 )
             }
-            if (scope.toastContent.value.isNotEmpty()) {
-                coScope.launch {
+            LaunchedEffect(scope.toastContent.value) {
+                if (scope.toastContent.value.isNotEmpty()) {
                     toastHostState.showToast(
                         scope.toastContent.value
                     )
                     scope.toastContent.value = ""
                 }
             }
+            /*if (scope.toastContent.value.isNotEmpty()) {
+                coScope.launch {
+                    toastHostState.showToast(
+                        scope.toastContent.value
+                    )
+                    scope.toastContent.value = ""
+                }
+            }*/
         }
 
         fun newWindow(

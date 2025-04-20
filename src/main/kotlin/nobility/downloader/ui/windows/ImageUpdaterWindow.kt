@@ -21,7 +21,7 @@ import nobility.downloader.core.BoxHelper.Companion.boolean
 import nobility.downloader.core.BoxHelper.Companion.int
 import nobility.downloader.core.settings.Defaults
 import nobility.downloader.ui.components.FullBox
-import nobility.downloader.ui.components.defaultButton
+import nobility.downloader.ui.components.DefaultButton
 import nobility.downloader.ui.components.dialog.DialogHelper
 import nobility.downloader.ui.windows.utils.AppWindowScope
 import nobility.downloader.ui.windows.utils.ApplicationState
@@ -92,7 +92,7 @@ class ImageUpdaterWindow() {
                             modifier = Modifier.align(Alignment.CenterHorizontally)
                                 .padding(10.dp)
                         ) {
-                            defaultButton(
+                            DefaultButton(
                                 "Update Images",
                                 height = 40.dp,
                                 width = 150.dp,
@@ -102,7 +102,7 @@ class ImageUpdaterWindow() {
                                     downloadUpdate()
                                 }
                             }
-                            defaultButton(
+                            DefaultButton(
                                 "Cancel",
                                 height = 40.dp,
                                 width = 150.dp,

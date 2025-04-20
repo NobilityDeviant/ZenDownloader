@@ -29,6 +29,7 @@ import nobility.downloader.core.driver.undetected_chrome.SysUtil
 import nobility.downloader.core.settings.Defaults
 import nobility.downloader.core.updates.Update
 import nobility.downloader.ui.components.defaultButton
+import nobility.downloader.ui.components.DefaultButton
 import nobility.downloader.ui.components.dialog.DialogHelper
 import nobility.downloader.ui.components.FullBox
 import nobility.downloader.ui.components.linkifyText
@@ -116,7 +117,7 @@ class UpdateWindow(
                                         close()
                                     }
                                 }
-                                defaultButton(
+                                DefaultButton(
                                     "Update",
                                     height = 40.dp,
                                     width = 150.dp,
@@ -125,7 +126,7 @@ class UpdateWindow(
                                     downloadUpdate()
                                 }
                                 if (Core.child.isUpdating) {
-                                    defaultButton(
+                                    DefaultButton(
                                         "Cancel",
                                         height = 40.dp,
                                         width = 150.dp,

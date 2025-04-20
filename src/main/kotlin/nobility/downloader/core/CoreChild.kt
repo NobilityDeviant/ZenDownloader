@@ -44,6 +44,7 @@ class CoreChild {
     val currentEpisodes: MutableList<Episode> = Collections.synchronizedList(mutableListOf())
     val downloadList: MutableList<Download> = Collections.synchronizedList(mutableStateListOf<Download>())
     lateinit var movieHandler: MovieHandler
+    var forceStopped = false
 
     @Volatile
     var downloadsFinishedForSession = 0
@@ -116,6 +117,7 @@ class CoreChild {
     }
 
     fun softStart() {
+        forceStopped = false
         currentEpisodes.clear()
         Core.startButtonEnabled = false
         Core.stopButtonEnabled = true
@@ -191,6 +193,7 @@ class CoreChild {
                 } catch (_: Exception) {
                 }
                 shutdownProgressIndex = index
+                index++
             })
         }
         tasks.joinAll()

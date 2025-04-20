@@ -112,7 +112,7 @@ class DownloadConfirmWindow(
                     overflow = TextOverflow.Ellipsis,
                     fontWeight = FontWeight.Bold
                 )
-                defaultImage(
+                DefaultImage(
                     series.imagePath,
                     series.imageLink,
                     contentScale = ContentScale.FillBounds,
@@ -153,10 +153,11 @@ class DownloadConfirmWindow(
                             }.distinct(),
                             key = { it.id }
                         ) {
-                            defaultButton(
+                            DefaultButton(
                                 it.name,
-                                height = 30.dp,
-                                width = 120.dp
+                                Modifier.height(35.dp)
+                                    .width(120.dp),
+                                fontSize = 10.sp
                             ) {
                                 Core.openWco(it.name)
                                 windowScope.showToast("Searching for ${it.name} in Database")
@@ -236,9 +237,11 @@ class DownloadConfirmWindow(
                     seriesInfoHeader(this@newWindow, scope)
                     if (!singleEpisode && !movieMode) {
                         Row(
-                            modifier = Modifier.align(Alignment.End).padding(end = 5.dp)
+                            modifier = Modifier.align(Alignment.End)
+                                .padding(end = 4.dp)
+                                .height(45.dp)
                         ) {
-                            defaultSettingsTextField(
+                            DefaultSettingsTextField(
                                 searchText,
                                 onValueChanged = {
                                     searchText = it
@@ -246,14 +249,15 @@ class DownloadConfirmWindow(
                                 hint = "Search By Name",
                                 textStyle = MaterialTheme.typography.labelLarge,
                                 modifier = Modifier.fillMaxWidth(0.50f)
-                                    .padding(10.dp).height(40.dp),
+                                    .fillMaxHeight()
+                                    .padding(4.dp),
                                 requestFocus = true
                             )
-                            defaultButton(
+                            DefaultButton(
                                 selectText,
-                                height = 35.dp,
-                                width = 120.dp,
-                                padding = PaddingValues(10.dp),
+                                Modifier.fillMaxHeight()
+                                    .width(120.dp)
+                                    .padding(4.dp)
                             ) {
                                 if (allSelected) {
                                     allSelected = false
@@ -612,7 +616,7 @@ class DownloadConfirmWindow(
             )
             if (!singleEpisode) {
                 var checked by mutableStateOf(selectedEpisodes.containsOne(seasonData.episodes))
-                var selectedCount = selectedEpisodes.filter { episode ->
+                val selectedCount = selectedEpisodes.filter { episode ->
                     seasonData.episodes.contains(episode)
                 }.size
                 defaultButton(
@@ -641,12 +645,12 @@ class DownloadConfirmWindow(
                 targetValue = if (!expanded) 540f else 0f,
                 animationSpec = tween(500, easing = FastOutSlowInEasing)
             )
-            defaultIcon(
+            DefaultIcon(
                 EvaIcons.Fill.ChevronDown,
-                iconSize = Constants.largeIconSize,
                 iconColor = MaterialTheme.colorScheme.onPrimary,
-                iconModifier = Modifier.align(Alignment.CenterVertically)
+                modifier = Modifier.align(Alignment.CenterVertically)
                     .rotate(expandAnimation.value)
+                    .size(Constants.largeIconSize)
             )
         }
     }
@@ -779,7 +783,7 @@ class DownloadConfirmWindow(
                             updateSelectedText()
                         }
                     } else {
-                        tooltipIconButton(
+                        TooltipIconButton(
                             if (favorited)
                                 "Remove From Favorite"
                             else "Add To Favorite",
@@ -796,7 +800,7 @@ class DownloadConfirmWindow(
                             }
                         }
                         if (!movieMode) {
-                            defaultButton(
+                            DefaultButton(
                                 "Check For New Episodes",
                                 height = bottomBarButtonHeight,
                                 width = 150.dp,
@@ -822,7 +826,7 @@ class DownloadConfirmWindow(
                             }
                         }
                         if (movieMode) {
-                            defaultButton(
+                            DefaultButton(
                                 "Download Movie",
                                 height = bottomBarButtonHeight,
                                 width = 175.dp,
@@ -849,7 +853,7 @@ class DownloadConfirmWindow(
                                             "Movie wasn't added to current queue. It has already been added before."
                                         )
                                     }
-                                    return@defaultButton
+                                    return@DefaultButton
                                 }
                                 Core.child.softStart()
                                 Core.child.taskScope.launch(Dispatchers.IO) {
@@ -886,7 +890,10 @@ class DownloadConfirmWindow(
                                                                 )
                                                             }
                                                         } else {
-                                                            FrogLog.logError("VideoDownloadHandler failed without a valid error.")
+                                                            FrogLog.logError(
+                                                                "VideoDownloadHandler failed without a valid error.",
+                                                                e
+                                                            )
                                                         }
                                                     }
                                                 }
@@ -912,7 +919,7 @@ class DownloadConfirmWindow(
                                 windowScope.closeWindow()
                             }
                         } else {
-                            defaultButton(
+                            DefaultButton(
                                 if (singleEpisode)
                                     "Download Episode"
                                 else if (selectedEpisodes.isNotEmpty())
@@ -926,11 +933,11 @@ class DownloadConfirmWindow(
                             ) {
                                 if (series.episodes.isEmpty()) {
                                     windowScope.showToast("There's no episodes to download.")
-                                    return@defaultButton
+                                    return@DefaultButton
                                 }
                                 if (!singleEpisode && selectedEpisodes.isEmpty()) {
                                     windowScope.showToast("You must select at least 1 episode.")
-                                    return@defaultButton
+                                    return@DefaultButton
                                 }
                                 BoxMaker.makeHistory(
                                     series.slug
@@ -949,7 +956,7 @@ class DownloadConfirmWindow(
                                             "No episodes have been added to current queue. They have already been added before."
                                         )
                                     }
-                                    return@defaultButton
+                                    return@DefaultButton
                                 }
                                 if (singleEpisode) {
                                     selectedEpisodes.add(series.episodes.first())
@@ -993,7 +1000,10 @@ class DownloadConfirmWindow(
                                                                 )
                                                             }
                                                         } else {
-                                                            FrogLog.logError("VideoDownloadHandler failed without a valid error.")
+                                                            FrogLog.logError(
+                                                                "VideoDownloadHandler failed without a valid error.",
+                                                                e
+                                                            )
                                                         }
                                                     }
                                                 }
@@ -1002,11 +1012,11 @@ class DownloadConfirmWindow(
                                         tasks.joinAll()
                                         if (Core.child.downloadsFinishedForSession > 0) {
                                             FrogLog.writeMessage(
-                                                "Gracefully finished downloading ${Core.child.downloadsFinishedForSession} video(s)."
+                                                "Gracefully finished downloading ${Core.child.downloadsFinishedForSession} video(s)." + if (Core.child.forceStopped) " | Force Stopped" else ""
                                             )
                                         } else {
                                             FrogLog.writeMessage(
-                                                "Gracefully finished. No downloads have been made."
+                                                "Gracefully finished. No downloads have been made." + if (Core.child.forceStopped) " | Force Stopped" else ""
                                             )
                                         }
                                         Core.child.stop()
@@ -1024,7 +1034,7 @@ class DownloadConfirmWindow(
                             var openQuality by remember { mutableStateOf(false) }
                             var qualityName by remember { mutableStateOf(temporaryQuality.tag) }
 
-                            defaultDropdown(
+                            DefaultDropdown(
                                 "Quality: $qualityName",
                                 openQuality,
                                 Quality.entries.map {

@@ -113,7 +113,7 @@ class HistoryView : ViewPage {
                         modifier = Modifier.align(Alignment.CenterHorizontally)
                             .padding(10.dp)
                     ) {
-                        defaultButton(
+                        DefaultButton(
                             "Clear History",
                             height = 40.dp,
                             width = 150.dp,
@@ -132,7 +132,7 @@ class HistoryView : ViewPage {
                                 windowScope.showToast("History successfully cleared.")
                             }
                         }
-                        defaultButton(
+                        DefaultButton(
                             "Check All For New Episodes",
                             height = 40.dp,
                             width = 150.dp,
@@ -140,7 +140,7 @@ class HistoryView : ViewPage {
                         ) {
                             if (seriesDatas.isEmpty()) {
                                 windowScope.showToast("There's no history to check.")
-                                return@defaultButton
+                                return@DefaultButton
                             }
                             scope.launch {
                                 windowScope.showToast("Checking ${seriesDatas.size} series for new episodes...")
@@ -402,7 +402,7 @@ class HistoryView : ViewPage {
                 MaterialTheme.colorScheme.background
             )
         ) {
-            defaultDropdownItem(
+            DefaultDropdownItem(
                 "Series Details",
                 EvaIcons.Fill.Info
             ) {
@@ -411,7 +411,7 @@ class HistoryView : ViewPage {
                     ToDownload(seriesData.series)
                 )
             }
-            defaultDropdownItem(
+            DefaultDropdownItem(
                 "Check For New Episodes",
                 EvaIcons.Fill.Search
             ) {
@@ -438,7 +438,7 @@ class HistoryView : ViewPage {
             val favorited by remember {
                 mutableStateOf(BoxHelper.isSeriesFavorited(seriesData.series))
             }
-            defaultDropdownItem(
+            DefaultDropdownItem(
                 if (favorited)
                     "Remove From Favorite" else "Add To Favorite",
                 if (favorited)
@@ -454,7 +454,7 @@ class HistoryView : ViewPage {
                 }
             }
 
-            defaultDropdownItem(
+            DefaultDropdownItem(
                 "Remove From History",
                 EvaIcons.Fill.Trash
             ) {
@@ -487,10 +487,10 @@ class HistoryView : ViewPage {
             ) {
                 val favorited = BoxHelper.isSeriesFavorited(seriesData.series)
                 if (favorited) {
-                    defaultIcon(
+                    DefaultIcon(
                         EvaIcons.Fill.Star,
                         iconColor = Color.Yellow,
-                        iconModifier = Modifier
+                        modifier = Modifier
                             .padding(start = 4.dp, top = 8.dp)
                             .align(Alignment.TopStart)
                     )
@@ -527,7 +527,7 @@ class HistoryView : ViewPage {
                 textAlign = TextAlign.Center
             )
             divider()
-            defaultImage(
+            DefaultImage(
                 seriesData.series.imagePath,
                 seriesData.series.imageLink,
                 contentScale = ContentScale.FillBounds,
