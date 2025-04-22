@@ -52,7 +52,7 @@ Extract it, open the `bin` folder and copy `ffmpeg.exe` into the database folder
 
 Example of path: `C:\Users\CuratedDev\.zen_database\ffmpeg.exe`
 
-You can find the database folder in this guide: ([https://github.com/NobilityDeviant/ZenDownloader/tree/master/database#manual-download](https://github.com/NobilityDeviant/ZenDownloader/blob/master/database/README.md#database-folder))
+You can find the database folder in this guide: ([https://github.com/NobilityDeviant/ZenDownloader/blob/master/database/README.md#database-folder](https://github.com/NobilityDeviant/ZenDownloader/blob/master/database/README.md#database-folder))
 
 **If you know how to set up ffmpeg as an environment variable, that will work too.**
 
