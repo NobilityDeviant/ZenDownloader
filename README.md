@@ -118,6 +118,12 @@ Replacing `chrome.deb` with the file name.
 
 Input your password and you're done.
 
+You should also be able to install through the Terminal with the commands:
+
+`sudo apt update`
+
+`sudo apt install google-chrome-stable`
+
 # Linux (Red Hat Enterprise)
 
 **Download & Install Chrome:**
@@ -152,7 +158,7 @@ Input your password and you're done.
 
 If you wish to uninstall it, you can use the command:
 
-`sudo dnf remove zendownloader`
+`sudo dnf remove zendownloader` or `sudo dnf remove ZenDownloader` if it complains about casing.
 
 # First Run
 
@@ -248,7 +254,9 @@ All videos get downloaded/converted to MP4 and I don't have intentions to allow 
 
 Make sure you have the correct codecs to watch mp4s.
 
-Most operating systems do come with them, but some don't. Search Engines are your friends.
+Most operating systems do come with them, but some don't. 
+
+Search Engines are your friends.
 
 # UI
 
@@ -317,6 +325,18 @@ This project is built using JDK 21.
 
 Download IntelliJ: [Download](https://www.jetbrains.com/idea/)
 
+Press the **Download** button, Scroll down and download the **Community Edition**.
+
+For Windows & Mac, it should be as simple as opening the downloaded file.
+
+For Linux, you have to extract the tar ball. 
+
+Either right click it in the file and select **Extract Here** or find the terminal command for extracting tar balls.
+
+Open the extracted folder, go into `bin`, right click an empty spot in the folder, open the Terminal and use the command:
+
+`./idea`
+
 In order to import the project through VCS, `Git` is needed as well.
 *Git is recommended for to easy updating*
 
@@ -346,8 +366,6 @@ Under **Gradle JVM** select it and select **Download JDK**
 
 For the version you will want to select **21**
 
-*The Java Version has recently been upgraded to 21*
-
 Press **Download**, press **Apply** and press **Ok**
 
 Once that's been downloaded, go to File > Close Project
@@ -356,7 +374,13 @@ Once that's been downloaded, go to File > Close Project
 
 and then reopen it and you should be good to go.
 
-If there's a warning on top of IntelliJ to install Java accept it.
+If there's a warning on top of IntelliJ to install Java, you have to accept it.
+
+Now once everything is imported and downloaded, open the project tree on the left (Folder Icon) and look for: 
+
+`src > main > kotlin > nobility.downloader > Main.kt`
+
+Right click **Main.kt** and select `Run MainKt`
 
 If you want to make the `.deb` or the `.rpm` file, you need to install a couple extra things:
 
