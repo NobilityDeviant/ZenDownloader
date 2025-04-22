@@ -378,7 +378,7 @@ To create the distribution files, you have to use the gradle task on the right:
 
 Choose your respective extenstion to build by double-clicking **packageExe**, **packageDeb** or **packageRpm** under the **Tasks** section.
 
-After everything is set up for the first time, all you'd have to is update the project files for any major commit.
+After everything is set up for the first time, all you'd have to do is update the project files for any major commit.
 
 ![Update Project](guide/update_project.png?raw=true "Update Project")
 
