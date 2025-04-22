@@ -32,7 +32,7 @@ I have changed the donations to a custom Stripe page.
 
 **ZenDownloader** currently only supports Windows and Debian based Linux. x64 Only.
 
-It has been tested on Windows 7, Windows 10, Windows 11 and Ubuntu 22.04.04
+It has been tested on Windows 7, Windows 10, Windows 11, Ubuntu 22.04.04 and Fedora 42.
 
 You will also need to install Chrome. This version doesn't support any other browsers right now.
 
@@ -52,13 +52,17 @@ Extract it, open the `bin` folder and copy `ffmpeg.exe` into the database folder
 
 Example of path: `C:\Users\CuratedDev\.zen_database\ffmpeg.exe`
 
-You can find the database folder in this guide: [https://github.com/NobilityDeviant/ZenDownloader/tree/master/database#manual-download](https://github.com/NobilityDeviant/ZenDownloader/tree/master/database#manual-download)
+You can find the database folder in this guide: ([https://github.com/NobilityDeviant/ZenDownloader/blob/master/database/README.md#database-folder](https://github.com/NobilityDeviant/ZenDownloader/blob/master/database/README.md#database-folder))
 
 **If you know how to set up ffmpeg as an environment variable, that will work too.**
 
 **For Linux:**
 
-Open the terminal and run the command:
+**Debian:**
+
+Open the terminal and run the commanda:
+
+`sudo apt update`
 
 `sudo apt install ffmpeg`
 
@@ -67,6 +71,18 @@ Input your password and you're good.
 You can verify it's been installed with the command:
 
 `ffmpeg -version`
+
+**Red Hat Enterprise:**
+
+`sudo dnf update`
+
+`sudo dnf install -y ffmpeg`
+
+Input your password and you're good.
+
+You can verify it's been installed with the command:
+
+`ffmpeg --help`
 
 # Windows
 
@@ -94,36 +110,47 @@ Once downloaded, go to the folder it's been downloaded to, right click an empty 
 
 Now inside the terminal you will type:
 
-`sudo apt-get install ./chrome.deb`
+`sudo apt install ./chrome.deb`
 
 Replacing `chrome.deb` with the file name.
 
 Input your password and you're done.
 
+# Linux (Red Hat Enterprise)
+
+**Download & Install Chrome:**
+
+Run these commands in the terminal:
+
+`sudo dnf config-manager setopt google-chrome.enabled=1`
+
+`sudo dnf install -y google-chrome-stable`
+
+Input your password and you're done.
+
+*If you already have Chrome installed, make sure it's version 108 or higher with:*
+
+`google-chrome-stable --version`
+
 **Download & Install The Latest Release:**
 
 Download The Latest Release Here: [Releases](https://github.com/NobilityDeviant/ZenDownloader/releases)
 
-For Debian it'll be the with the `.deb` extension.
+For Red Hat Enterprise it'll be the with the `.rpm` extension.
 
-Like Chrome, go to the folder it's been downloaded to, right click an empty space in the window an open the **Terminal** app.
+Go to the folder it's been downloaded to, right click an empty space in the window an open the **Terminal** app.
 
 Now inside the terminal you will type:
 
-`sudo apt-get install ./zendownloader.deb`
+`sudo dnf install -y ./zendownloader.rpm`
 
-Replacing `zendownloader.deb` with the file name.
+Replacing `zendownloader.rpm` with the file name.
 
 Input your password and you're done.
 
 If you wish to uninstall it, you can use the command:
 
-`sudo apt-get remove zendownloader`
-
-Once opened, if you use a keyring, it will ask for the password.
-After denying it I have found no issues, so this isn't needed afaik.
-
-Learn more about the keyring here: https://wiki.gnome.org/action/show/Projects/GnomeKeyring?action=show&redirect=GnomeKeyring
+`sudo dnf remove zendownloader`
 
 # First Run
 
@@ -131,7 +158,7 @@ For your first run, you will be greeted with the **Asset Updater**
 
 This will download all the files (besides images) from the [Database Folder](https://github.com/NobilityDeviant/ZenDownloader/tree/master/database)
 
-If you want a better User Experience with the **Database Window**, you should also download the images.
+If you want a better User Experience with the **Database Window** or if you want to see **Random Series**, you should also download the images.
 
 A guide for that can be found here: [Download Images](https://github.com/NobilityDeviant/ZenDownloader/tree/master/database#series-images)
 
@@ -205,13 +232,21 @@ The executable for Linux will be different as well. I have no clue where that wo
 Wco is now using cloudflare. Most VPNs and public proxies won't work anymore!
 I will also have to keep track and update the useragents every now and then.
 
-If you encounter any cloudflare errors, just keep trying or report it.
+If you encounter any cloudflare error, just keep trying or report it.
 
 Don't worry too much though. 
 
 **ZenDownloader** comes equipped with a Kotlin version of Undetected ChromeDriver which bypasses all basic cloudflare blocking.
 
 The only way cloudflare would work is if wco pays for their premium package, which is expensive.
+
+# MP4 Video Format
+
+All videos get downloaded/converted to MP4 and I don't have intentions to allow different formats atm.
+
+Make sure you have the correct codecs to watch mp4s.
+
+Most operating systems do come with them, but some don't. Search Engines are your friends.
 
 # UI
 
@@ -273,11 +308,12 @@ The timeout option effects everything related to timeouts and should help if you
 # Building
 
 I 100% recommend using IDEA. Don't use Eclipse or Netbeans because they're not fully supported.
-This project is built using JDK 17, though I'm sure higher versions work as well.
+This project is built using JDK 21.
 
 Download IntelliJ: [Download](https://www.jetbrains.com/idea/)
 
 In order to import the project through VCS, `Git` is needed as well.
+*Git is recommended for to easy updating*
 
 Download Git: [Download](https://git-scm.com/downloads)
 
@@ -315,10 +351,23 @@ Once that's been downloaded, go to File > Close Project
 
 and then reopen it and you should be good to go.
 
-Also if you want to make the `.deb` or the `.rpm` file, you need to install a couple extra things:
+If there's a warning on top of IntelliJ to install Java accept it.
+
+If you want to make the `.deb` or the `.rpm` file, you need to install a couple extra things:
+
+Debian:
 
 `sudo apt-get install binutils`
 
 `sudo apt-get install fakeroot`
+
+Red Hat Enterprise:
+
+`sudo dnf install binutils`
+
+`sudo dnf install fakeroot`
+
+`sudo dnf install rpm-build`
+
 
 That's it! If you have any issues, please create an issue in Github and i'll get right on it.

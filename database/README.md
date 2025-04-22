@@ -89,13 +89,17 @@ Example of path: `C:\Users\CuratedDev\.zen_database\series_images\`
 # Download Series Images (Last Updated: 2/13/2025)
 
 Series Images have been moved to a different repository.
-When you download it, be sure to extra it and only move the `series_images` folder.
+When you download it, be sure to extract it and only move the `series_images` folder.
 
 [Download Images (300MB)](https://github.com/NobilityDeviant/ZenDownloaderSeriesImages/archive/refs/heads/main.zip)
 
--------------------------------------------------------------------------------------
+# Database Folder
 
-You can also access the database folder with this button inside the Settings page.
+You can access the database folder with this button inside the Settings page.
 You will have to close the program in order to edit in database files.
 
 ![Database Folder Button](images/database_folder.png)
+
+Since the database folder starts with a `.` it will be hidden in Linux by default.
+
+There will usually be a hamburger (menu) icon to show an option to view hidden files.
