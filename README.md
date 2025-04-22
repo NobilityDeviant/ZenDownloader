@@ -31,6 +31,7 @@ I have changed the donations to a custom Stripe page.
 # Requirements
 
 **ZenDownloader** currently only supports Windows and Debian/RHEL based Linux.
+
 *You can still try to run it with IntelliJ if your OS supports it: [Building](https://github.com/NobilityDeviant/ZenDownloader/blob/master/README.md#building)*
 
 It has been tested on Windows 7, Windows 10, Windows 11, Ubuntu 22.04.04, Pop!_OS 22.04 and Fedora 42.
@@ -384,3 +385,5 @@ After everything is set up for the first time, all you'd have to do is update th
 ![Update Project](guide/update_project.png?raw=true "Update Project")
 
 That's it! If you have any issues, please create an issue in Github and i'll get right on it. (Will be delayed due to other projects atm)
+
+So much readme commits.. Sorry about that.
