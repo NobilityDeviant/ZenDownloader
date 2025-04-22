@@ -95,7 +95,7 @@ When you download it, be sure to extract it and only move the `series_images` fo
 
 # Database Folder
 
-You can also access the database folder with this button inside the Settings page.
+You can access the database folder with this button inside the Settings page.
 You will have to close the program in order to edit in database files.
 
 ![Database Folder Button](images/database_folder.png)
