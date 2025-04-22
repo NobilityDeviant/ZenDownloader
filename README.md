@@ -60,7 +60,9 @@ You can find the database folder in this guide: [https://github.com/NobilityDevi
 
 **Debian:**
 
-Open the terminal and run the command:
+Open the terminal and run the commanda:
+
+`sudo apt update`
 
 `sudo apt install ffmpeg`
 
@@ -72,7 +74,11 @@ You can verify it's been installed with the command:
 
 **Red Hat Enterprise:**
 
+`sudo dnf update`
+
 `sudo dnf install -y ffmpeg`
+
+Input your password and you're good.
 
 You can verify it's been installed with the command:
 
@@ -104,7 +110,7 @@ Once downloaded, go to the folder it's been downloaded to, right click an empty 
 
 Now inside the terminal you will type:
 
-`sudo apt-get install ./chrome.deb`
+`sudo apt install ./chrome.deb`
 
 Replacing `chrome.deb` with the file name.
 
@@ -229,6 +235,14 @@ I will also have to keep track and update the useragents every now and then.
 If you encounter any cloudflare errors, just keep trying or report it.
 
 Don't worry too much though. 
+
+# MP4 Video Format
+
+All videos get downloaded/converted to MP4 and I don't have intentions to allow different formats atm.
+
+Make sure you have the correct codecs to watch mp4s.
+
+Most operating systems do come with them, but some don't. Search Engines are your friends.
 
 **ZenDownloader** comes equipped with a Kotlin version of Undetected ChromeDriver which bypasses all basic cloudflare blocking.
 
