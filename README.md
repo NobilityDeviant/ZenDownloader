@@ -58,6 +58,8 @@ You can find the database folder in this guide: [https://github.com/NobilityDevi
 
 **For Linux:**
 
+**Debian:**
+
 Open the terminal and run the command:
 
 `sudo apt install ffmpeg`
@@ -67,6 +69,14 @@ Input your password and you're good.
 You can verify it's been installed with the command:
 
 `ffmpeg -version`
+
+**Red Hat Enterprise:**
+
+`sudo dnf install -y ffmpeg`
+
+You can verify it's been installed with the command:
+
+`ffmpeg --help`
 
 # Windows
 
@@ -100,30 +110,41 @@ Replacing `chrome.deb` with the file name.
 
 Input your password and you're done.
 
+# Linux (Red Hat Enterprise)
+
+**Download & Install Chrome:**
+
+Run these commands in the terminal:
+
+`sudo dnf config-manager setopt google-chrome.enabled=1`
+
+`sudo dnf install -y google-chrome-stable`
+
+Input your password and you're done.
+
+*If you already have Chrome installed, make sure it's version 108 or higher with:*
+
+`google-chrome-stable --version`
+
 **Download & Install The Latest Release:**
 
 Download The Latest Release Here: [Releases](https://github.com/NobilityDeviant/ZenDownloader/releases)
 
-For Debian it'll be the with the `.deb` extension.
+For Red Hat Enterprise it'll be the with the `.rpm` extension.
 
-Like Chrome, go to the folder it's been downloaded to, right click an empty space in the window an open the **Terminal** app.
+Go to the folder it's been downloaded to, right click an empty space in the window an open the **Terminal** app.
 
 Now inside the terminal you will type:
 
-`sudo apt-get install ./zendownloader.deb`
+`sudo dnf install -y ./zendownloader.rpm`
 
-Replacing `zendownloader.deb` with the file name.
+Replacing `zendownloader.rpm` with the file name.
 
 Input your password and you're done.
 
 If you wish to uninstall it, you can use the command:
 
-`sudo apt-get remove zendownloader`
-
-Once opened, if you use a keyring, it will ask for the password.
-After denying it I have found no issues, so this isn't needed afaik.
-
-Learn more about the keyring here: https://wiki.gnome.org/action/show/Projects/GnomeKeyring?action=show&redirect=GnomeKeyring
+`sudo dnf remove zendownloader`
 
 # First Run
 
@@ -131,7 +152,7 @@ For your first run, you will be greeted with the **Asset Updater**
 
 This will download all the files (besides images) from the [Database Folder](https://github.com/NobilityDeviant/ZenDownloader/tree/master/database)
 
-If you want a better User Experience with the **Database Window**, you should also download the images.
+If you want a better User Experience with the **Database Window** or if you want to see **Random Series**, you should also download the images.
 
 A guide for that can be found here: [Download Images](https://github.com/NobilityDeviant/ZenDownloader/tree/master/database#series-images)
 
