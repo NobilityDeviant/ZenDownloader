@@ -232,9 +232,13 @@ The executable for Linux will be different as well. I have no clue where that wo
 Wco is now using cloudflare. Most VPNs and public proxies won't work anymore!
 I will also have to keep track and update the useragents every now and then.
 
-If you encounter any cloudflare errors, just keep trying or report it.
+If you encounter any cloudflare error, just keep trying or report it.
 
 Don't worry too much though. 
+
+**ZenDownloader** comes equipped with a Kotlin version of Undetected ChromeDriver which bypasses all basic cloudflare blocking.
+
+The only way cloudflare would work is if wco pays for their premium package, which is expensive.
 
 # MP4 Video Format
 
@@ -243,10 +247,6 @@ All videos get downloaded/converted to MP4 and I don't have intentions to allow 
 Make sure you have the correct codecs to watch mp4s.
 
 Most operating systems do come with them, but some don't. Search Engines are your friends.
-
-**ZenDownloader** comes equipped with a Kotlin version of Undetected ChromeDriver which bypasses all basic cloudflare blocking.
-
-The only way cloudflare would work is if wco pays for their premium package, which is expensive.
 
 # UI
 
