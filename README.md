@@ -32,7 +32,7 @@ I have changed the donations to a custom Stripe page.
 
 **ZenDownloader** currently only supports Windows and Debian based Linux. x64 Only.
 
-It has been tested on Windows 7, Windows 10, Windows 11, Ubuntu 22.04.04 and Fedora 42.
+It has been tested on Windows 7, Windows 10, Windows 11, Ubuntu 22.04.04, Pop!_OS 22.04 and Fedora 42.
 
 You will also need to install Chrome. This version doesn't support any other browsers right now.
 
