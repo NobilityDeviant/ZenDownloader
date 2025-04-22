@@ -214,9 +214,9 @@ fun DefaultSettingsTextField(
     onValueChanged: (String) -> Unit,
     hint: String = "",
     singleLine: Boolean = true,
-    enabled: MutableState<Boolean> = mutableStateOf(true),
+    enabled: Boolean = true,
     numbersOnly: Boolean = false,
-    modifier: Modifier = Modifier.height(30.dp),
+    modifier: Modifier = Modifier.height(40.dp),
     settingsDescription: String = "",
     textStyle: TextStyle = MaterialTheme.typography.labelSmall,
     requestFocus: Boolean = false,
@@ -225,7 +225,6 @@ fun DefaultSettingsTextField(
     trailingIcon: @Composable (() -> Unit)? = null,
     contextMenuItems: () -> List<ContextMenuItem> = { mutableListOf() }
 ) {
-    val stateEnabled by remember { enabled }
     val contextMenuRepresentation = DefaultContextMenuRepresentation(
         backgroundColor = if (isSystemInDarkTheme()) Color.DarkGray else Color.LightGray,
         textColor = if (isSystemInDarkTheme()) Color.White else Color.Black,
@@ -242,7 +241,7 @@ fun DefaultSettingsTextField(
             ) {
                 FixedTextField(
                     value,
-                    enabled = stateEnabled,
+                    enabled = enabled,
                     onValueChange = onValueChanged,
                     singleLine = singleLine,
                     modifier = if (requestFocus)

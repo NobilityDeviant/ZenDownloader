@@ -289,6 +289,14 @@ enum class Defaults(
         """.trimIndent(),
         "Enable Random Series Rows"
     ),
+    AUTO_SCROLL_RANDOM_SERIES(
+        "auto_scroll_random_series",
+        true,
+        """
+            Used to toggle random series auto scroll.
+            Default: On
+        """.trimIndent()
+    ),
     VIDEO_RETRIES(
         "vid_retries",
         15,
@@ -371,18 +379,30 @@ enum class Defaults(
 
         @Suppress("UNUSED")
         fun Defaults.savedValue(): Any {
-            return if (value is String) {
-                string()
-            } else if (value is Boolean) {
-                boolean()
-            } else if (value is Int) {
-                int()
-            } else if (value is Long) {
-                long()
-            } else if (value is Float) {
-                float()
-            } else {
-                value
+            return when (value) {
+                is String -> {
+                    string()
+                }
+
+                is Boolean -> {
+                    boolean()
+                }
+
+                is Int -> {
+                    int()
+                }
+
+                is Long -> {
+                    long()
+                }
+
+                is Float -> {
+                    float()
+                }
+
+                else -> {
+                    value
+                }
             }
         }
 
@@ -403,6 +423,7 @@ enum class Defaults(
             AUTO_SCROLL_CONSOLES,
             CTRL_FOR_HOTKEYS,
             ENABLE_RANDOM_SERIES,
+            AUTO_SCROLL_RANDOM_SERIES,
             DISABLE_CARTOON_UPDATE,
             DISABLE_DUBBED_UPDATE,
             DISABLE_MOVIES_UPDATE,
@@ -441,7 +462,8 @@ enum class Defaults(
             AUTO_SCROLL_CONSOLES,
             HEADLESS_MODE,
             SHOW_DEBUG_MESSAGES,
-            ENABLE_RANDOM_SERIES
+            ENABLE_RANDOM_SERIES,
+            AUTO_SCROLL_RANDOM_SERIES
         )
 
         val updateCheckBoxes get() = listOf(

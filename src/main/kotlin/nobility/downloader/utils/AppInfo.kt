@@ -7,7 +7,6 @@ object AppInfo {
     const val DEBUG_MODE = false
     const val USE_CUSTOM_ERROR_PS = true
     const val UPDATE_ASSETS_ON_LAUNCH = true
-    const val AUTO_SCROLL_RANDOM_SERIES = false
     private const val NAME = "ZenDownloader"
     const val VERSION = "1.1.1" //version can only have 3 numbers split by decimals
     const val TITLE = "$NAME v$VERSION"

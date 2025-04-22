@@ -20,12 +20,12 @@ import nobility.downloader.core.BoxHelper
 import nobility.downloader.core.BoxHelper.Companion.boolean
 import nobility.downloader.core.BoxHelper.Companion.int
 import nobility.downloader.core.settings.Defaults
-import nobility.downloader.ui.components.FullBox
 import nobility.downloader.ui.components.DefaultButton
+import nobility.downloader.ui.components.DefaultSettingsTextField
+import nobility.downloader.ui.components.FullBox
 import nobility.downloader.ui.components.dialog.DialogHelper
 import nobility.downloader.ui.windows.utils.AppWindowScope
 import nobility.downloader.ui.windows.utils.ApplicationState
-import nobility.downloader.utils.Constants.bottomBarHeight
 import nobility.downloader.utils.Resource
 import nobility.downloader.utils.Tools
 import java.io.BufferedReader
@@ -50,6 +50,7 @@ class ImageUpdaterWindow() {
     private var downloadProgressText by mutableStateOf("0/0")
     private var downloading by mutableStateOf(false)
     private var consoleText by mutableStateOf("")
+    private var threads by mutableStateOf(20)
 
     fun open() {
         ApplicationState.newWindow(
@@ -76,21 +77,22 @@ class ImageUpdaterWindow() {
                 }
             },
             size = DpSize(450.dp, 400.dp),
-            resizable = false
+            resizable = true
         ) {
             appWindowScope = this
             Scaffold(
                 modifier = Modifier.fillMaxSize(),
                 bottomBar = {
                     Column(
-                        modifier = Modifier.fillMaxWidth().height(bottomBarHeight)
+                        modifier = Modifier.fillMaxWidth()
+                            .height(120.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         HorizontalDivider()
                         Row(
                             horizontalArrangement = Arrangement.spacedBy(4.dp),
                             verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.align(Alignment.CenterHorizontally)
-                                .padding(10.dp)
+                            modifier = Modifier.padding(4.dp)
                         ) {
                             DefaultButton(
                                 "Update Images",
@@ -110,6 +112,35 @@ class ImageUpdaterWindow() {
                             ) {
                                 cancelDownload()
                             }
+                        }
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(4.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.padding(4.dp)
+                        ) {
+
+                            Text(
+                                "Threads: ",
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            DefaultSettingsTextField(
+                                threads.toString(),
+                                {
+                                    threads = it.toIntOrNull() ?: 20
+                                    if (threads > 200) {
+                                        threads = 200
+                                    } else if (threads <= 0) {
+                                        threads = 1
+                                    }
+                                },
+                                numbersOnly = true,
+                                modifier = Modifier
+                                    .height(40.dp)
+                                    .width(100.dp)
+                                    .padding(4.dp),
+                                enabled = !downloading
+                            )
+
                         }
                     }
                 }
@@ -195,10 +226,10 @@ class ImageUpdaterWindow() {
         updateButtonEnabled.value = false
         consoleText = ""
         message("Starting download process...")
-        var finished = false
-        var downloaded = AtomicInteger()
-        var failed = AtomicInteger()
-        var skipped = AtomicInteger()
+        var finished: Boolean
+        val downloaded = AtomicInteger()
+        val failed = AtomicInteger()
+        val skipped = AtomicInteger()
         var totalImages = 0
         var updateJob: Job? = null
         val jobs = mutableListOf<Job>()
@@ -231,7 +262,6 @@ class ImageUpdaterWindow() {
                 downloading = true
                 downloadProgress = 0f
                 totalImages = tree.size
-                val threads = 15
                 val lists = Lists.partition(tree, tree.size / threads)
                 lists.forEach { list ->
                     jobs.add(launch {

@@ -27,8 +27,6 @@ import androidx.compose.ui.zIndex
 import compose.icons.EvaIcons
 import compose.icons.evaicons.Fill
 import compose.icons.evaicons.fill.*
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import nobility.downloader.Page
 import nobility.downloader.core.BoxHelper
@@ -465,11 +463,6 @@ private fun uiWrapper(
                                     .padding(top = 15.dp, bottom = 15.dp),
                                 color = MaterialTheme.colorScheme.error
                             )
-                            var time by remember { mutableStateOf(0) }
-                            scope.launch(Dispatchers.Default) {
-                                time++
-                                delay(1000)
-                            }
                             Text(
                                 """
                                         Shutdown Executed.
@@ -493,8 +486,7 @@ private fun uiWrapper(
                                 colors = ButtonDefaults.buttonColors(
                                     containerColor = MaterialTheme.colorScheme.error
                                 ),
-                                fontColor = MaterialTheme.colorScheme.onError,
-                                enabled = time >= 10
+                                fontColor = MaterialTheme.colorScheme.onError
                             ) {
                                 exitProcess(2)
                             }

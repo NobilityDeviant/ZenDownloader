@@ -265,9 +265,23 @@ class ChromeDriverBuilder {
             try {
                 mBinaryLocation = chromePath()
             } catch (_: Exception) {
+                FrogLog.logError(
+                    """
+                        Chrome isn't installed. Install it and restart the app.
+                        For some help visit: https://github.com/NobilityDeviant/ZenDownloader/#download--install
+                    """.trimIndent(),
+                    important = true
+                )
                 throw RuntimeException("Failed to find chrome binary.")
             }
             if (mBinaryLocation.isEmpty()) {
+                FrogLog.logError(
+                    """
+                        Chrome isn't installed. Install it and restart the app.
+                        For some help visit: https://github.com/NobilityDeviant/ZenDownloader/#download--install
+                    """.trimIndent(),
+                    important = true
+                )
                 throw RuntimeException("Failed to find chrome binary.")
             }
             chromeOptions.setBinary(mBinaryLocation)

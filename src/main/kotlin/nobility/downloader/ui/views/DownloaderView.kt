@@ -9,19 +9,27 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsHoveredAsState
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.CursorDropdownMenu
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onKeyEvent
+import androidx.compose.ui.input.pointer.pointerMoveFilter
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import compose.icons.EvaIcons
@@ -31,24 +39,26 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import nobility.downloader.Page
+import nobility.downloader.core.BoxHelper.Companion.boolean
 import nobility.downloader.core.Core
 import nobility.downloader.core.Core.Companion.randomSeries
 import nobility.downloader.core.Core.Companion.randomSeries2
+import nobility.downloader.core.entities.Series
 import nobility.downloader.core.entities.data.SeriesIdentity
+import nobility.downloader.core.settings.Defaults
 import nobility.downloader.ui.components.DefaultButton
 import nobility.downloader.ui.components.DefaultDropdownItem
 import nobility.downloader.ui.components.DefaultImage
 import nobility.downloader.ui.components.DefaultTextField
 import nobility.downloader.ui.windows.utils.AppWindowScope
-import nobility.downloader.utils.AppInfo
 import nobility.downloader.utils.Constants.randomSeriesRowHeight
 import nobility.downloader.utils.Tools
 
-class DownloaderView: ViewPage {
+class DownloaderView : ViewPage {
 
     override val page = Page.DOWNLOADER
 
-    @OptIn(ExperimentalFoundationApi::class)
+    @OptIn(ExperimentalFoundationApi::class, ExperimentalComposeUiApi::class)
     @Composable
     override fun ui(windowScope: AppWindowScope) {
         Scaffold(
@@ -92,56 +102,101 @@ class DownloaderView: ViewPage {
                 }
             }
         ) { padding ->
-            val rowInteraction = remember { MutableInteractionSource() }
-            val isHovering by rowInteraction.collectIsHoveredAsState()
+
+            val containerPosition = remember {
+                mutableStateOf(Offset.Zero)
+            }
 
             Column(
                 modifier = Modifier.fillMaxSize()
                     .padding(padding)
                     .verticalScroll(rememberScrollState(0))
+                    .onGloballyPositioned {
+                        val pos = it.localToWindow(Offset.Zero)
+                        containerPosition.value = pos
+                    }
             ) {
-
-                var showMenu by remember {
-                    mutableStateOf(false)
-                }
-                val closeMenu = { showMenu = false }
-                //todo add favorite option later
-                CursorDropdownMenu(
-                    expanded = showMenu,
-                    onDismissRequest = { closeMenu() },
-                    modifier = Modifier.background(
-                        MaterialTheme.colorScheme.background
-                    )
-                ) {
-                    DefaultDropdownItem(
-                        "Reload Random Series",
-                        EvaIcons.Fill.Refresh
-                    ) {
-                        Core.reloadRandomSeries()
-                        closeMenu()
-                    }
-                }
                 if (randomSeries.isNotEmpty() && randomSeries2.isNotEmpty()) {
-                    val seriesStateList = rememberScrollState()
-                    val seriesStateList2 = rememberScrollState()
+
+                    val hoveredItem = remember { mutableStateOf<Series?>(null) }
+                    val popupOffset = remember { mutableStateOf(IntOffset.Zero) }
+
+                    val rowInteraction = remember { MutableInteractionSource() }
+                    val isHovering by rowInteraction.collectIsHoveredAsState()
+
+                    var showMenu by remember {
+                        mutableStateOf(false)
+                    }
+                    val closeMenu = { showMenu = false }
+                    //todo add favorite option later
+                    //todo experiment with a hover box for random series
+                    CursorDropdownMenu(
+                        expanded = showMenu,
+                        onDismissRequest = { closeMenu() },
+                        modifier = Modifier.background(
+                            MaterialTheme.colorScheme.background
+                        )
+                    ) {
+                        DefaultDropdownItem(
+                            "Reload Random Series",
+                            EvaIcons.Fill.Refresh
+                        ) {
+                            Core.reloadRandomSeries()
+                            closeMenu()
+                        }
+                    }
+
+                    /*hoveredItem.value?.let { item ->
+                        Popup(
+                            alignment = Alignment.TopStart,
+                            offset = popupOffset.value,
+                            onDismissRequest = {}
+                        ) {
+                            Column(
+                                Modifier.size(300.dp)
+                                    .background(
+                                        MaterialTheme.colorScheme.surface,
+                                        RoundedCornerShape(8.dp)
+                                    )
+                                    .border(
+                                        1.dp,
+                                        MaterialTheme.colorScheme.primary,
+                                        RoundedCornerShape(8.dp)
+                                    )
+                            ) {
+
+                                Text(
+                                    text = "(${popupOffset.value.x}, ${popupOffset.value.y})",
+                                    color = Color.Red
+                                )
+
+                            }
+                        }
+                    }*/
+
+                    val seriesStateList = rememberLazyListState()
+                    val seriesStateList2 = rememberLazyListState()
                     val coroutineScope = rememberCoroutineScope()
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(1.dp),
-                        modifier = Modifier.fillMaxWidth()
+
+                    LazyRow(
+                        Modifier.fillMaxWidth()
                             .height(randomSeriesRowHeight)
-                            .padding(top = 10.dp)
+                            .padding(top = 8.dp)
                             .draggable(
-                                state = rememberDraggableState {
+                                rememberDraggableState {
                                     coroutineScope.launch {
                                         seriesStateList.scrollBy(-it)
                                         seriesStateList2.scrollBy(-it)
                                     }
                                 },
                                 orientation = Orientation.Horizontal
-                            ).hoverable(rowInteraction)
-                            .horizontalScroll(seriesStateList)
+                            ).hoverable(rowInteraction),
+                        state = seriesStateList
                     ) {
-                        randomSeries.forEach {
+                        items(
+                            randomSeries,
+                            key = { it.name + it.id }
+                        ) { series ->
                             val interaction = remember { MutableInteractionSource() }
                             val hovered by interaction.collectIsHoveredAsState()
                             val clicked by interaction.collectIsPressedAsState()
@@ -154,25 +209,43 @@ class DownloaderView: ViewPage {
                                 modifier = Modifier.size(
                                     animateDpAsState(
                                         size,
-                                        spring(0.7f, Spring.StiffnessMediumLow)
+                                        spring(
+                                            0.7f,
+                                            Spring.StiffnessMediumLow
+                                        )
                                     ).value
                                 ).background(
                                     Color.Transparent,
                                     RectangleShape
                                 ).border(
                                     1.dp,
-                                    color = if (it.seriesIdentity == SeriesIdentity.CARTOON)
+                                    color = if (series.seriesIdentity == SeriesIdentity.CARTOON)
                                         MaterialTheme.colorScheme.onSurface
                                     else
                                         MaterialTheme.colorScheme.primary,
                                     RectangleShape
                                 ).hoverable(interaction)
+                                    .pointerMoveFilter(
+                                        onMove = { offset ->
+                                            popupOffset.value = IntOffset(
+                                                (containerPosition.value.x + offset.x + 16).toInt(),
+                                                (containerPosition.value.y + offset.y - 100).toInt()
+                                            )
+                                            hoveredItem.value = series
+                                            false
+                                        },
+                                        onExit = {
+                                            hoveredItem.value = null
+                                            false
+                                        }
+                                    )
+
                             ) {
                                 DefaultImage(
-                                    it.imagePath,
+                                    series.imagePath,
                                     contentScale = ContentScale.FillBounds,
                                     onClick = {
-                                        Core.openDownloadConfirm(it.asToDownload)
+                                        Core.openDownloadConfirm(series.asToDownload)
                                     },
                                     onRightClick = {
                                         showMenu = true
@@ -181,23 +254,25 @@ class DownloaderView: ViewPage {
                             }
                         }
                     }
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(1.dp),
-                        modifier = Modifier.fillMaxWidth()
+
+                    LazyRow(
+                        Modifier.fillMaxWidth()
                             .height(randomSeriesRowHeight)
-                            .padding(top = 1.dp, bottom = 10.dp)
                             .draggable(
-                                state = rememberDraggableState {
+                                rememberDraggableState {
                                     coroutineScope.launch {
                                         seriesStateList.scrollBy(-it)
                                         seriesStateList2.scrollBy(-it)
                                     }
                                 },
                                 orientation = Orientation.Horizontal
-                            ).hoverable(rowInteraction)
-                            .horizontalScroll(seriesStateList2)
+                            ).hoverable(rowInteraction),
+                        state = seriesStateList2
                     ) {
-                        randomSeries2.forEach {
+                        items(
+                            randomSeries2,
+                            key = { it.name + it.id }
+                        ) { series ->
                             val interaction = remember { MutableInteractionSource() }
                             val hovered by interaction.collectIsHoveredAsState()
                             val clicked by interaction.collectIsPressedAsState()
@@ -210,25 +285,43 @@ class DownloaderView: ViewPage {
                                 modifier = Modifier.size(
                                     animateDpAsState(
                                         size,
-                                        spring(0.7f, Spring.StiffnessMediumLow)
+                                        spring(
+                                            0.7f,
+                                            Spring.StiffnessMediumLow
+                                        )
                                     ).value
                                 ).background(
                                     Color.Transparent,
                                     RectangleShape
                                 ).border(
                                     1.dp,
-                                    color = if (it.seriesIdentity == SeriesIdentity.CARTOON)
+                                    color = if (series.seriesIdentity == SeriesIdentity.CARTOON)
                                         MaterialTheme.colorScheme.onSurface
                                     else
                                         MaterialTheme.colorScheme.primary,
                                     RectangleShape
                                 ).hoverable(interaction)
+                                    .pointerMoveFilter(
+                                        onMove = { offset ->
+                                            popupOffset.value = IntOffset(
+                                                (containerPosition.value.x + offset.x + 16).toInt(),
+                                                (containerPosition.value.y + offset.y - 100).toInt()
+                                            )
+                                            hoveredItem.value = series
+                                            false
+                                        },
+                                        onExit = {
+                                            hoveredItem.value = null
+                                            false
+                                        }
+                                    )
+
                             ) {
                                 DefaultImage(
-                                    it.imagePath,
+                                    series.imagePath,
                                     contentScale = ContentScale.FillBounds,
                                     onClick = {
-                                        Core.openDownloadConfirm(it.asToDownload)
+                                        Core.openDownloadConfirm(series.asToDownload)
                                     },
                                     onRightClick = {
                                         showMenu = true
@@ -237,37 +330,33 @@ class DownloaderView: ViewPage {
                             }
                         }
                     }
-                    @Suppress("KotlinConstantConditions")
-                    if (AppInfo.AUTO_SCROLL_RANDOM_SERIES) {
-                        LaunchedEffect(Unit) {
-                            delay(5000)
-                            while (isActive) {
-                                if (isHovering) {
-                                    delay(5000)
-                                    continue
-                                }
+
+                    LaunchedEffect(Unit) {
+                        delay(5000)
+                        while (isActive) {
+                            if (!Defaults.AUTO_SCROLL_RANDOM_SERIES.boolean()) {
+                                delay(5000)
+                                continue
+                            }
+                            if (isHovering) {
+                                delay(5000)
+                                continue
+                            }
+                            launch {
                                 if (seriesStateList.canScrollForward) {
-                                    seriesStateList.animateScrollBy(150f)
+                                    seriesStateList.animateScrollBy(200f)
                                 } else if (seriesStateList.canScrollBackward) {
-                                    seriesStateList.animateScrollTo(0)
+                                    seriesStateList.animateScrollToItem(0)
                                 }
-                                delay(3000)
                             }
-                        }
-                        LaunchedEffect(Unit) {
-                            delay(6000)
-                            while (isActive) {
-                                if (isHovering) {
-                                    delay(5000)
-                                    continue
-                                }
+                            launch {
                                 if (seriesStateList2.canScrollForward) {
-                                    seriesStateList2.animateScrollBy(150f)
+                                    seriesStateList2.animateScrollBy(200f)
                                 } else if (seriesStateList2.canScrollBackward) {
-                                    seriesStateList2.animateScrollTo(0)
+                                    seriesStateList2.animateScrollToItem(0)
                                 }
-                                delay(4000)
                             }
+                            delay(3500)
                         }
                     }
                 }
@@ -307,5 +396,4 @@ class DownloaderView: ViewPage {
     override fun onClose() {
 
     }
-
 }

@@ -146,6 +146,7 @@ class CoreChild {
                 killAllDrivers()
                 exitProcess(-1)
             }
+            return
         }
         if (isRunning) {
             DialogHelper.showConfirm(

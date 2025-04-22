@@ -35,6 +35,7 @@ import nobility.downloader.utils.Constants.minThreads
 import nobility.downloader.utils.Constants.minTimeout
 import nobility.downloader.utils.fileExists
 import nobility.downloader.utils.normalizeEnumName
+import java.io.File
 
 
 class SettingsView : ViewPage {
@@ -143,7 +144,7 @@ class SettingsView : ViewPage {
                     FlowRow(
                         verticalArrangement = Arrangement.spacedBy(5.dp),
                         horizontalArrangement = Arrangement.spacedBy(5.dp),
-                        maxItemsInEachRow = 4
+                        maxItemsInEachRow = 10
                     ) {
                         Defaults.intFields.forEach {
                             fieldRowInt(it)
@@ -152,7 +153,7 @@ class SettingsView : ViewPage {
                     FlowRow(
                         verticalArrangement = Arrangement.spacedBy(5.dp),
                         horizontalArrangement = Arrangement.spacedBy(5.dp),
-                        maxItemsInEachRow = 4
+                        maxItemsInEachRow = 10
                     ) {
                         Defaults.checkBoxes.forEach {
                             fieldCheckbox(it)
@@ -241,10 +242,11 @@ class SettingsView : ViewPage {
                         }
                         showFilePicker = false
                     }
-                    defaultButton(
+                    DefaultButton(
                         "Set Folder",
-                        height = 30.dp,
-                        width = 80.dp
+                        Modifier.height(30.dp)
+                            .width(80.dp),
+                        contentPadding = PaddingValues(0.dp)
                     ) {
                         showFilePicker = true
                     }
@@ -271,10 +273,11 @@ class SettingsView : ViewPage {
                         }
                         showFilePicker = false
                     }
-                    defaultButton(
-                        "Set File",
-                        height = 30.dp,
-                        width = 80.dp
+                    DefaultButton(
+                        "Set Folder",
+                        Modifier.height(30.dp)
+                            .width(80.dp),
+                        contentPadding = PaddingValues(0.dp)
                     ) {
                         showFilePicker = true
                     }
@@ -301,10 +304,11 @@ class SettingsView : ViewPage {
                         }
                         showFilePicker = false
                     }
-                    defaultButton(
+                    DefaultButton(
                         "Set File",
-                        height = 30.dp,
-                        width = 80.dp
+                        Modifier.height(30.dp)
+                            .width(80.dp),
+                        contentPadding = PaddingValues(0.dp)
                     ) {
                         showFilePicker = true
                     }
@@ -540,8 +544,9 @@ class SettingsView : ViewPage {
             if (saveFolder.value.isEmpty()) {
                 saveFolder.value = Defaults.SAVE_FOLDER.string()
             }
-            if (!saveFolder.value.fileExists()) {
-                windowScope.showToast("The download folder doesn't exist.")
+            val file = File(saveFolder.value)
+            if (!file.exists() && !file.mkdirs()) {
+                windowScope.showToast("The download folder doesn't exist and couldn't be created.")
                 return false
             }
         }

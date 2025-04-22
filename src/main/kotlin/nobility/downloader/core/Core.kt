@@ -176,9 +176,9 @@ class Core private constructor() {
                 try {
                     var tries = 0
                     val series = BoxHelper.allSeriesNoMovies
-                    if (series.size >= 30) {
+                    if (series.size >= 100) {
                         val randoms = mutableListOf<Series>()
-                        while (randoms.size < 31) {
+                        while (randoms.size < 101) {
                             val random = series.random()
                             if (!randoms.contains(random) && random.imagePath.fileExists()) {
                                 randoms.add(random)
@@ -188,8 +188,8 @@ class Core private constructor() {
                             }
                             tries++
                         }
-                        randomSeries.addAll(randoms.subList(0, 15))
-                        randomSeries2.addAll(randoms.subList(15, 30))
+                        randomSeries.addAll(randoms.subList(0, 49))
+                        randomSeries2.addAll(randoms.subList(50, 99))
                     }
                 } catch (_: Exception) {
                 }
