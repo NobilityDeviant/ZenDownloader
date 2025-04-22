@@ -273,11 +273,12 @@ The timeout option effects everything related to timeouts and should help if you
 # Building
 
 I 100% recommend using IDEA. Don't use Eclipse or Netbeans because they're not fully supported.
-This project is built using JDK 17, though I'm sure higher versions work as well.
+This project is built using JDK 21.
 
 Download IntelliJ: [Download](https://www.jetbrains.com/idea/)
 
 In order to import the project through VCS, `Git` is needed as well.
+*Git is recommended for to easy updating*
 
 Download Git: [Download](https://git-scm.com/downloads)
 
@@ -315,10 +316,23 @@ Once that's been downloaded, go to File > Close Project
 
 and then reopen it and you should be good to go.
 
-Also if you want to make the `.deb` or the `.rpm` file, you need to install a couple extra things:
+If there's a warning on top of IntelliJ to install Java accept it.
+
+If you want to make the `.deb` or the `.rpm` file, you need to install a couple extra things:
+
+Debian:
 
 `sudo apt-get install binutils`
 
 `sudo apt-get install fakeroot`
+
+Red Hat Enterprise:
+
+`sudo dnf install binutils`
+
+`sudo dnf install fakeroot`
+
+`sudo dnf install rpm-build`
+
 
 That's it! If you have any issues, please create an issue in Github and i'll get right on it.
