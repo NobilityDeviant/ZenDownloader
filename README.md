@@ -307,6 +307,9 @@ The timeout option effects everything related to timeouts and should help if you
 
 # Building
 
+You can also use this section if there isn't a distribution for your operating system.
+As long as you can use IntelliJ, you're good to go.
+
 I 100% recommend using IDEA. Don't use Eclipse or Netbeans because they're not fully supported.
 This project is built using JDK 21.
 
@@ -369,5 +372,14 @@ Red Hat Enterprise:
 
 `sudo dnf install rpm-build`
 
+To create the distribution files, you have to use the gradle task on the right:
 
-That's it! If you have any issues, please create an issue in Github and i'll get right on it.
+![Gradle Distribution](guide/gradle_build_distribution.png?raw=true "Gradle Distribution")
+
+Choose your respective extenstion to build by double-clicking **packageExe**, **packageDeb** or **packageRpm** under the **Tasks** section.
+
+After everything is set up for the first time, all you'd have to is update the project files for any major commit.
+
+![Update Project](guide/update_project.png?raw=true "Update Project")
+
+That's it! If you have any issues, please create an issue in Github and i'll get right on it. (Will be delayed due to other projects atm)
