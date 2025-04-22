@@ -93,7 +93,7 @@ When you download it, be sure to extract it and only move the `series_images` fo
 
 [Download Images (300MB)](https://github.com/NobilityDeviant/ZenDownloaderSeriesImages/archive/refs/heads/main.zip)
 
--------------------------------------------------------------------------------------
+# Database Folder
 
 You can also access the database folder with this button inside the Settings page.
 You will have to close the program in order to edit in database files.
