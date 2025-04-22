@@ -32,7 +32,7 @@ I have changed the donations to a custom Stripe page.
 
 **ZenDownloader** currently only supports Windows and Debian based Linux. x64 Only.
 
-It has been tested on Windows 7, Windows 10, Windows 11 and Ubuntu 22.04.04
+It has been tested on Windows 7, Windows 10, Windows 11, Ubuntu 22.04.04 and Fedora 42.
 
 You will also need to install Chrome. This version doesn't support any other browsers right now.
 
@@ -52,7 +52,7 @@ Extract it, open the `bin` folder and copy `ffmpeg.exe` into the database folder
 
 Example of path: `C:\Users\CuratedDev\.zen_database\ffmpeg.exe`
 
-You can find the database folder in this guide: [https://github.com/NobilityDeviant/ZenDownloader/tree/master/database#manual-download](https://github.com/NobilityDeviant/ZenDownloader/tree/master/database#manual-download)
+You can find the database folder in this guide: ([https://github.com/NobilityDeviant/ZenDownloader/tree/master/database#manual-download](https://github.com/NobilityDeviant/ZenDownloader/blob/master/database/README.md#database-folder))
 
 **If you know how to set up ffmpeg as an environment variable, that will work too.**
 
