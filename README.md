@@ -30,9 +30,11 @@ I have changed the donations to a custom Stripe page.
 
 # Requirements
 
-**ZenDownloader** currently only supports Windows and Debian based Linux. x64 Only.
+**ZenDownloader** currently only supports Windows and Debian/RHEL based Linux.
 
-It has been tested on Windows 7, Windows 10, Windows 11, Ubuntu 22.04.04 and Fedora 42.
+*You can still try to run it with IntelliJ if your OS supports it: [Building](https://github.com/NobilityDeviant/ZenDownloader/blob/master/README.md#building)*
+
+It has been tested on Windows 7, Windows 10, Windows 11, Ubuntu 22.04.04, Pop!_OS 22.04 and Fedora 42.
 
 You will also need to install Chrome. This version doesn't support any other browsers right now.
 
@@ -116,6 +118,12 @@ Replacing `chrome.deb` with the file name.
 
 Input your password and you're done.
 
+You should also be able to install through the Terminal with the commands:
+
+`sudo apt update`
+
+`sudo apt install google-chrome-stable`
+
 # Linux (Red Hat Enterprise)
 
 **Download & Install Chrome:**
@@ -150,7 +158,7 @@ Input your password and you're done.
 
 If you wish to uninstall it, you can use the command:
 
-`sudo dnf remove zendownloader`
+`sudo dnf remove zendownloader` or `sudo dnf remove ZenDownloader` if it complains about casing.
 
 # First Run
 
@@ -246,7 +254,9 @@ All videos get downloaded/converted to MP4 and I don't have intentions to allow 
 
 Make sure you have the correct codecs to watch mp4s.
 
-Most operating systems do come with them, but some don't. Search Engines are your friends.
+Most operating systems do come with them, but some don't. 
+
+Search Engines are your friends.
 
 # UI
 
@@ -307,10 +317,25 @@ The timeout option effects everything related to timeouts and should help if you
 
 # Building
 
+You can also use this section if there isn't a distribution for your operating system.
+As long as you can use IntelliJ, you're good to go.
+
 I 100% recommend using IDEA. Don't use Eclipse or Netbeans because they're not fully supported.
 This project is built using JDK 21.
 
 Download IntelliJ: [Download](https://www.jetbrains.com/idea/)
+
+Press the **Download** button, Scroll down and download the **Community Edition**.
+
+For Windows & Mac, it should be as simple as opening the downloaded file.
+
+For Linux, you have to extract the tar ball. 
+
+Either right click it in the file and select **Extract Here** or find the terminal command for extracting tar balls.
+
+Open the extracted folder, go into `bin`, right click an empty spot in the folder, open the Terminal and use the command:
+
+`./idea`
 
 In order to import the project through VCS, `Git` is needed as well.
 *Git is recommended for to easy updating*
@@ -341,8 +366,6 @@ Under **Gradle JVM** select it and select **Download JDK**
 
 For the version you will want to select **21**
 
-*The Java Version has recently been upgraded to 21*
-
 Press **Download**, press **Apply** and press **Ok**
 
 Once that's been downloaded, go to File > Close Project
@@ -351,7 +374,13 @@ Once that's been downloaded, go to File > Close Project
 
 and then reopen it and you should be good to go.
 
-If there's a warning on top of IntelliJ to install Java accept it.
+If there's a warning on top of IntelliJ to install Java, you have to accept it.
+
+Now once everything is imported and downloaded, open the project tree on the left (Folder Icon) and look for: 
+
+`src > main > kotlin > nobility.downloader > Main.kt`
+
+Right click **Main.kt** and select `Run MainKt`
 
 If you want to make the `.deb` or the `.rpm` file, you need to install a couple extra things:
 
@@ -369,5 +398,16 @@ Red Hat Enterprise:
 
 `sudo dnf install rpm-build`
 
+To create the distribution files, you have to use the gradle task on the right:
 
-That's it! If you have any issues, please create an issue in Github and i'll get right on it.
+![Gradle Distribution](guide/gradle_build_distribution.png?raw=true "Gradle Distribution")
+
+Choose your respective extenstion to build by double-clicking **packageExe**, **packageDeb** or **packageRpm** under the **Tasks** section.
+
+After everything is set up for the first time, all you'd have to do is update the project files for any major commit.
+
+![Update Project](guide/update_project.png?raw=true "Update Project")
+
+That's it! If you have any issues, please create an issue in Github and i'll get right on it. (Will be delayed due to other projects atm)
+
+So much readme commits.. Sorry about that.
