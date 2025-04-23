@@ -7,6 +7,6 @@ import nobility.downloader.ui.windows.utils.AppWindowScope
 interface ViewPage {
     val page: Page
     @Composable
-    fun ui(windowScope: AppWindowScope)
+    fun Ui(windowScope: AppWindowScope)
     fun onClose()
 }

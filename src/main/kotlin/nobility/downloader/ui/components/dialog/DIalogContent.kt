@@ -18,7 +18,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
-import nobility.downloader.ui.components.linkifyText
+import nobility.downloader.ui.components.LinkifyText
 import nobility.downloader.utils.tone
 
 @Composable
@@ -47,7 +47,7 @@ fun dialogHeader(
             val scrollState = rememberScrollState()
             val scope = rememberCoroutineScope()
             if (supportLinks) {
-                linkifyText(
+                LinkifyText(
                     text = content,
                     style = MaterialTheme.typography.bodyMedium,
                     textColor = MaterialTheme.colorScheme.onSurface,

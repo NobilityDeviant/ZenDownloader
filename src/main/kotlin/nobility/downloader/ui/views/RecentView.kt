@@ -89,7 +89,7 @@ class RecentView: ViewPage {
     }
 
     @Composable
-    override fun ui(windowScope: AppWindowScope) {
+    override fun Ui(windowScope: AppWindowScope) {
         val scope = rememberCoroutineScope()
         val seasonsListState = rememberLazyListState()
         Scaffold(

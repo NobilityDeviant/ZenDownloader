@@ -13,14 +13,13 @@ class ErrorConsoleView: ViewPage {
     override val page = Page.ERROR_CONSOLE
 
     @Composable
-    override fun ui(windowScope: AppWindowScope) {
+    override fun Ui(windowScope: AppWindowScope) {
         Column(
             modifier = Modifier.fillMaxSize()
         ) {
-            Core.errorConsole.textField(
+            Core.errorConsole.ConsoleTextField(
                 windowScope,
-                true,
-                false
+                modifier = Modifier.fillMaxSize()
             )
         }
     }

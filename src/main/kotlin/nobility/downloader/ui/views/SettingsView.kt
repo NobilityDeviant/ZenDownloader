@@ -76,7 +76,7 @@ class SettingsView : ViewPage {
 
     @OptIn(ExperimentalLayoutApi::class, ExperimentalFoundationApi::class)
     @Composable
-    override fun ui(windowScope: AppWindowScope) {
+    override fun Ui(windowScope: AppWindowScope) {
         this.windowScope = windowScope
         val focusManager = LocalFocusManager.current
         Scaffold(

@@ -2,6 +2,7 @@ package nobility.downloader.ui.components
 
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
@@ -67,7 +68,7 @@ class Console(
         )
         if (b == '\r'.code) return
         if (b == '\n'.code) {
-            var text = sb.toString()
+            val text = sb.toString()
             var filtered = false
             for (s in filters) {
                 if (text.contains(s)) {
@@ -118,10 +119,10 @@ class Console(
 
     @OptIn(ExperimentalFoundationApi::class)
     @Composable
-    fun textField(
+    fun ConsoleTextField(
         windowScope: AppWindowScope,
-        unbound: Boolean = false,
-        popoutMode: Boolean = false
+        modifier: Modifier = Modifier,
+        popoutMode: Boolean = false,
     ) {
         val scrollState = rememberScrollState(size)
         val scope = rememberCoroutineScope()
@@ -151,14 +152,9 @@ class Console(
                     )
                 }
             ) {
-                Column {
-                    val modifier = if (unbound) {
-                        Modifier.fillMaxSize()
-                    } else {
-                        Modifier.fillMaxWidth()
-                            .height(200.dp)
-                            .padding(start = 5.dp, end = 5.dp, bottom = 5.dp)
-                    }
+                Column(
+                    modifier
+                ) {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(4.dp),
@@ -198,26 +194,46 @@ class Console(
                         }
                     }
                     if ((!popoutMode && !consolePoppedOut) || (popoutMode && consolePoppedOut)) {
-                        TextField(
-                            value = consoleText,
-                            readOnly = true,
-                            onValueChange = {
-                                consoleText = it
-                            },
-                            modifier = modifier.onClick(
-                                matcher = PointerMatcher.mouse(PointerButton.Secondary)
-                            ) {}.verticalScroll(scrollState),
-                            colors = TextFieldDefaults.colors(),
-                            textStyle = if (errorMode)
-                                MaterialTheme.typography.labelSmall
-                            else
-                                MaterialTheme.typography.labelLarge
-                        )
+                        Column(
+                            Modifier.padding(1.dp)
+                                .border(
+                                    1.dp,
+                                    MaterialTheme.colorScheme.primary,
+                                    RoundedCornerShape(8.dp)
+                                )
+                        ) {
+                            TextField(
+                                value = consoleText,
+                                readOnly = true,
+                                onValueChange = {
+                                    consoleText = it
+                                },
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .onClick(
+                                        matcher = PointerMatcher.mouse(PointerButton.Secondary)
+                                    ) {}
+                                    .verticalScroll(scrollState),
+                                colors = TextFieldDefaults.colors(),
+                                shape = RoundedCornerShape(8.dp),
+                                textStyle = if (errorMode)
+                                    MaterialTheme.typography.labelSmall
+                                else
+                                    MaterialTheme.typography.labelLarge
+                            )
+                        }
                     } else if (!popoutMode && consolePoppedOut) {
                         Column(
                             modifier = modifier
+                                .padding(1.dp)
                                 .background(
-                                    MaterialTheme.colorScheme.surfaceVariant.tone(20.0)
+                                    MaterialTheme.colorScheme.surfaceVariant.tone(20.0),
+                                    RoundedCornerShape(8.dp)
+                                )
+                                .border(
+                                    1.dp,
+                                    MaterialTheme.colorScheme.error,
+                                    RoundedCornerShape(8.dp)
                                 )
                         ) {}
                     }
@@ -256,10 +272,10 @@ class Console(
                     MaterialTheme.colorScheme.surface
                 )
             ) {
-                textField(
+                ConsoleTextField(
                     this@newWindow,
-                    true,
-                    true
+                    modifier = Modifier.fillMaxSize(),
+                    popoutMode = true
                 )
             }
         }

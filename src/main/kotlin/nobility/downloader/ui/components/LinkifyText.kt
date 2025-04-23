@@ -21,7 +21,7 @@ import java.util.regex.Pattern
 private const val URL_TAG = "URL"
 
 @Composable
-fun linkifyText(
+fun LinkifyText(
     text: String,
     textColor: Color = Color.Unspecified,
     textAlign: TextAlign? = null,
@@ -95,7 +95,7 @@ fun extractUrls(text: String): List<LinkInfo> {
         matchStart = matcher.start(1)
         matchEnd = matcher.end()
 
-        var url = text.substring(matchStart, matchEnd)
+        var url = text.substring(matchStart, matchEnd).trim()
         if (!url.startsWith("http://") && !url.startsWith("https://")) {
             url = "https://$url"
         }

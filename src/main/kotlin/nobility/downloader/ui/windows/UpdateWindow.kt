@@ -28,11 +28,11 @@ import nobility.downloader.core.Core
 import nobility.downloader.core.driver.undetected_chrome.SysUtil
 import nobility.downloader.core.settings.Defaults
 import nobility.downloader.core.updates.Update
-import nobility.downloader.ui.components.defaultButton
 import nobility.downloader.ui.components.DefaultButton
-import nobility.downloader.ui.components.dialog.DialogHelper
 import nobility.downloader.ui.components.FullBox
-import nobility.downloader.ui.components.linkifyText
+import nobility.downloader.ui.components.GithubText
+import nobility.downloader.ui.components.defaultButton
+import nobility.downloader.ui.components.dialog.DialogHelper
 import nobility.downloader.ui.windows.utils.AppWindowScope
 import nobility.downloader.ui.windows.utils.ApplicationState
 import nobility.downloader.utils.*
@@ -178,22 +178,22 @@ class UpdateWindow(
                             modifier = Modifier.padding(4.dp)
                         )
                         Surface(
-                            modifier = Modifier.fillMaxWidth()
-                                .height(100.dp),
                             color = MaterialTheme.colorScheme.surfaceVariant
                         ) {
-                            linkifyText(
+                            GithubText(
                                 text = """
                                       Current Version: ${AppInfo.VERSION}
                                       Latest Version: ${update.version}
-                                      Update Download Link: 
+                                      
+                                      Update Download Link:
+                                       
                                       ${update.downloadLink}
                                    """.trimIndent(),
                                 style = MaterialTheme.typography.bodyMedium,
                                 textColor = MaterialTheme.colorScheme.onSurface,
                                 textAlign = TextAlign.Center,
                                 linkColor = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.padding(10.dp).fillMaxSize(50f)
+                                modifier = Modifier.fillMaxWidth().padding(4.dp)
                             )
                         }
                         Text(
@@ -208,7 +208,7 @@ class UpdateWindow(
                             modifier = Modifier.fillMaxWidth().fillMaxHeight(),
                             color = MaterialTheme.colorScheme.surfaceVariant
                         ) {
-                            linkifyText(
+                            GithubText(
                                 text = update.updateDescription,
                                 style = MaterialTheme.typography.bodyMedium,
                                 textColor = MaterialTheme.colorScheme.onSurface,
@@ -512,6 +512,18 @@ class UpdateWindow(
                                 }
                             } else if (myOs == OS.LINUX) {
                                 if (url.lowercase(Locale.getDefault()).endsWith(".deb")) {
+                                    return Resource.Success(
+                                        Update(
+                                            version,
+                                            downloadLink = url,
+                                            downloadName = name,
+                                            downloadType = type,
+                                            updateDescription = body
+                                        )
+                                    )
+                                }
+
+                                if (url.lowercase(Locale.getDefault()).endsWith(".rpm")) {
                                     return Resource.Success(
                                         Update(
                                             version,

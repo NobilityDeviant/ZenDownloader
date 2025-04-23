@@ -49,12 +49,12 @@ import kotlin.system.exitProcess
 fun mainWindow(scope: AppWindowScope) {
     uiWrapper(scope) {
         when (Core.currentPage) {
-            Page.DOWNLOADER -> Core.downloaderView.ui(scope)
-            Page.DOWNLOADS -> Core.downloadsView.ui(scope)
-            Page.SETTINGS -> Core.settingsView.ui(scope)
-            Page.HISTORY -> Core.historyView.ui(scope)
-            Page.RECENT -> Core.recentView.ui(scope)
-            Page.ERROR_CONSOLE -> Core.errorConsoleView.ui(scope)
+            Page.DOWNLOADER -> Core.downloaderView.Ui(scope)
+            Page.DOWNLOADS -> Core.downloadsView.Ui(scope)
+            Page.SETTINGS -> Core.settingsView.Ui(scope)
+            Page.HISTORY -> Core.historyView.Ui(scope)
+            Page.RECENT -> Core.recentView.Ui(scope)
+            Page.ERROR_CONSOLE -> Core.errorConsoleView.Ui(scope)
         }
     }
 }
@@ -63,7 +63,7 @@ fun mainWindow(scope: AppWindowScope) {
 @Composable
 private fun uiWrapper(
     windowScope: AppWindowScope,
-    content: @Composable (PaddingValues) -> Unit
+    content: @Composable () -> Unit
 ) {
     var showFileMenu by remember {
         mutableStateOf(false)
@@ -111,42 +111,46 @@ private fun uiWrapper(
                                     Page.entries,
                                     key = { it.name }
                                 ) { page ->
-                                    if (page == Page.DOWNLOADS) {
-                                        BadgedBox(
-                                            badge = {
-                                                if (Core.child.downloadsInQueue.value > 0) {
-                                                    Badge(
-                                                        containerColor = Color.Red,
-                                                        modifier = Modifier.offset(y = 2.dp, x = (-8).dp)
-                                                    ) {
-                                                        Text(
-                                                            Core.child.downloadsInQueue.value.toString(),
-                                                            overflow = TextOverflow.Clip,
-                                                            color = Color.White,
-                                                            fontWeight = FontWeight.Bold,
-                                                            fontSize = 10.sp
-                                                        )
+                                    when (page) {
+                                        Page.DOWNLOADS -> {
+                                            BadgedBox(
+                                                badge = {
+                                                    if (Core.child.downloadsInQueue.value > 0) {
+                                                        Badge(
+                                                            containerColor = Color.Red,
+                                                            modifier = Modifier.offset(y = 2.dp, x = (-8).dp)
+                                                        ) {
+                                                            Text(
+                                                                Core.child.downloadsInQueue.value.toString(),
+                                                                overflow = TextOverflow.Clip,
+                                                                color = Color.White,
+                                                                fontWeight = FontWeight.Bold,
+                                                                fontSize = 10.sp
+                                                            )
+                                                        }
                                                     }
                                                 }
+                                            ) {
+                                                PageButton(page)
                                             }
-                                        ) {
-                                            PageButton(page)
                                         }
-                                    } else if (page == Page.ERROR_CONSOLE) {
-                                        BadgedBox(
-                                            badge = {
-                                                if (Core.errorConsole.unreadErrors) {
-                                                    Badge(
-                                                        containerColor = Color.Red,
-                                                        modifier = Modifier.offset(y = 2.dp, x = (-8).dp)
-                                                    ) {}
+                                        Page.ERROR_CONSOLE -> {
+                                            BadgedBox(
+                                                badge = {
+                                                    if (Core.errorConsole.unreadErrors) {
+                                                        Badge(
+                                                            containerColor = Color.Red,
+                                                            modifier = Modifier.offset(y = 2.dp, x = (-8).dp)
+                                                        ) {}
+                                                    }
                                                 }
+                                            ) {
+                                                PageButton(page)
                                             }
-                                        ) {
+                                        }
+                                        else -> {
                                             PageButton(page)
                                         }
-                                    } else {
-                                        PageButton(page)
                                     }
                                 }
                                 item(key = {"database-button"}) {
@@ -193,7 +197,7 @@ private fun uiWrapper(
                             )
                         }
 
-                        var options = mutableStateListOf<@Composable () -> Unit>()
+                        val options = mutableStateListOf<@Composable () -> Unit>()
 
                         when (Core.currentPage) {
                             Page.DOWNLOADER -> {
@@ -438,7 +442,7 @@ private fun uiWrapper(
                     )
                 )
             },
-            content = {
+            content = { paddingValues ->
                 if (Core.child.shutdownExecuted) {
                     Box(
                         modifier = Modifier.fillMaxSize()
@@ -493,10 +497,10 @@ private fun uiWrapper(
                         }
                     }
                 }
-                Column(
-                    modifier = Modifier.padding(top = it.calculateTopPadding())
+                Box(
+                    modifier = Modifier.padding(paddingValues)
                 ) {
-                    content(it)
+                    content()
                 }
                 ApplicationState.addToastToWindow(windowScope)
             }

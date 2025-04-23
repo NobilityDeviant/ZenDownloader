@@ -54,7 +54,7 @@ class DownloadsView : ViewPage {
     private var deletedFile = false //used so it doesn't scroll to top on deletion (hacky)
 
     @Composable
-    override fun ui(windowScope: AppWindowScope) {
+    override fun Ui(windowScope: AppWindowScope) {
         val scope = rememberCoroutineScope()
         val scrollState = rememberLazyListState()
         Column(
