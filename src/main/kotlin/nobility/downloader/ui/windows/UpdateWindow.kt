@@ -564,7 +564,8 @@ class UpdateWindow(
         WINDOWS(".exe"),
         MAC(".dmg"),
         DEBIAN(".deb"),
-        ARCH(".rpm");
+        ARCH(".rpm"),
+        OTHER("");
 
         companion object {
 
@@ -575,8 +576,9 @@ class UpdateWindow(
                     DEBIAN
                 else if (SysUtil.isMacOs)
                     MAC
-                else
+                else if (SysUtil.isWindows)
                     WINDOWS
+                else OTHER
             }
 
             fun downloadMatchesMyOs(url: String): Boolean {

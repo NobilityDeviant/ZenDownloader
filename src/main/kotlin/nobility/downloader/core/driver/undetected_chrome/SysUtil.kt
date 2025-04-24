@@ -1,62 +1,92 @@
 package nobility.downloader.core.driver.undetected_chrome
 
 import java.io.File
+import java.util.*
 
 object SysUtil {
 
-    private val isWindows: Boolean
-        get() = osName.startsWith("Windows")
+    val isWindows: Boolean
+        get() = osName.startsWith("windows")
 
     val isMacOs: Boolean
-        get() = osName.startsWith("Mac")
+        get() = osName.startsWith("mac")
 
     val isLinux: Boolean
-        get() = osName.startsWith("Linux") || (!isWindows && !isMacOs)
+        get() = osName.startsWith("linux") || isArch || isDebian
 
-    val isArch get() = linuxDistro == LinuxDistro.ARCH
+    val isArch get() = findLinuxDistro() == DistroBase.ARCH
 
-    val isDebian get() = linuxDistro == LinuxDistro.DEBIAN
+    val isDebian get() = findLinuxDistro() == DistroBase.DEBIAN
 
-    private val linuxDistro: LinuxDistro get() {
+    private enum class DistroBase {
+        DEBIAN,
+        ARCH,
+        OTHER
+    }
 
-        File("/etc/os-release").takeIf { it.exists() }?.readLines()?.let { lines ->
-            val id = lines.find { it.startsWith("ID=") }?.removePrefix("ID=")?.replace("\"", "")?.trim()
-            val idLike = lines.find { it.startsWith("ID_LIKE=") }?.removePrefix("ID_LIKE=")?.replace("\"", "")?.trim()
+    private val debianIds get() = listOf(
+        "ubuntu",
+        "pop",
+        "debian"
+    )
 
-            return when {
-                id == "arch" -> LinuxDistro.ARCH
-                id == "debian" || idLike?.contains("debian") == true -> LinuxDistro.DEBIAN
-                else -> LinuxDistro.OTHER
-            }
+    private val archIds get() = listOf(
+        "fedora",
+        "centos",
+        "manjaro",
+        "arch",
+        "blackarch",
+        "amzn",
+        "almalinux",
+        "archcraft"
+    )
+
+    private val debianIdLikes get() = listOf(
+        "debian",
+        "ubuntu"
+    )
+
+    private val archIdLikes get() = listOf(
+        "arch",
+        "fedora",
+        "centos"
+    )
+
+    private fun findLinuxDistro(): DistroBase {
+
+        val osReleaseFile = listOf("/etc/os-release", "/usr/lib/os-release")
+            .map(::File)
+            .firstOrNull { it.exists() } ?: return DistroBase.OTHER
+
+        val lines = osReleaseFile.readLines()
+        val id = lines.find { it.startsWith("ID=") }?.removePrefix("ID=")?.replace("\"", "")?.trim()
+        val idLike = lines.find { it.startsWith("ID_LIKE=") }?.removePrefix("ID_LIKE=")?.replace("\"", "")?.trim()
+
+        val cleanId = id?.lowercase()?.trim()
+        val likeList = idLike?.lowercase()?.split(' ', ',')?.map { it.trim() } ?: emptyList()
+
+        if (cleanId in debianIds || likeList.any { it in debianIdLikes }) {
+            return DistroBase.DEBIAN
+        } else if (cleanId in archIds || likeList.any { it in archIdLikes }) {
+            return DistroBase.ARCH
         }
-
-        return when {
-            File("/etc/arch-release").exists() -> LinuxDistro.ARCH
-            File("/etc/debian_version").exists() -> LinuxDistro.DEBIAN
-            File("/etc/alpine-release").exists() -> LinuxDistro.OTHER
-            else -> LinuxDistro.OTHER
-        }
+        return DistroBase.OTHER
     }
 
     private val osName: String
-        get() = System.getProperty("os.name")
+        get() = System.getProperty("os.name").lowercase(Locale.getDefault())
 
     val path: List<String>
         get() {
             val sep = File.pathSeparator
             val paths = System.getenv("PATH")
-            return listOf(*paths.split(sep.toRegex())
+            return listOf(
+                *paths.split(sep.toRegex())
                 .dropLastWhile { it.isEmpty() }
                 .toTypedArray())
         }
 
     fun getString(key: String?): String {
         return System.getenv(key)
-    }
-
-    private enum class LinuxDistro {
-        DEBIAN,
-        ARCH,
-        OTHER
     }
 }
