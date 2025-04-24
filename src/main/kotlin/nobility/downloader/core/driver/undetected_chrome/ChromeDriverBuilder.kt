@@ -591,7 +591,9 @@ class ChromeDriverBuilder {
         }
 
         if (chromeDataPath == null) {
-            throw RuntimeException("Chrome not found in your PC. You must set the directory with binaryLocation.")
+            throw RuntimeException(
+                "Chrome not found in your PC. You must set the directory with binaryLocation."
+            )
         }
 
         return chromeDataPath

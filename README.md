@@ -10,7 +10,7 @@ Many of the anime websites out there are locked down really hard which makes wco
 
 **Now also supports M3U8 Videos & Episodes with 2 videos.**
 
-Ok ok.. I'll support premium minimally. 
+Ok, ok.. I'll support premium minimally. 
 
 **You can now use your wcopremium.tv credentials to download higher quality movies.**
 
@@ -378,7 +378,7 @@ If there's a warning on top of IntelliJ to install Java, you have to accept it.
 
 Now once everything is imported and downloaded, open the project tree on the left (Folder Icon) and look for: 
 
-`src > main > kotlin > nobility.downloader > Main.kt`
+`src > main > kotlin > Main.kt`
 
 Right click **Main.kt** and select `Run MainKt`
 
@@ -386,9 +386,9 @@ If you want to make the `.deb` or the `.rpm` file, you need to install a couple 
 
 Debian:
 
-`sudo apt-get install binutils`
+`sudo apt install binutils`
 
-`sudo apt-get install fakeroot`
+`sudo apt install fakeroot`
 
 Red Hat Enterprise:
 
@@ -402,7 +402,7 @@ To create the distribution files, you have to use the gradle task on the right:
 
 ![Gradle Distribution](guide/gradle_build_distribution.png?raw=true "Gradle Distribution")
 
-Choose your respective extenstion to build by double-clicking **packageExe**, **packageDeb** or **packageRpm** under the **Tasks** section.
+Choose your respective extension to build by double-clicking **packageExe**, **packageDeb** or **packageRpm** under the **Tasks** section.
 
 After everything is set up for the first time, all you'd have to do is update the project files for any major commit.
 

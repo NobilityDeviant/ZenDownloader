@@ -356,7 +356,7 @@ class UpdateWindow(
                     onDenyTitle = "Continue",
                     onConfirmTitle = "Finish"
                 ) {
-                    if (downloadedUpdate.name.endsWith(".exe")) {
+                    if (downloadedUpdate.name.endsWith(OS.WINDOWS.extension)) {
                         Tools.openFile(
                             downloadedUpdate.absolutePath,
                             appWindowScope = appWindowScope
@@ -485,7 +485,6 @@ class UpdateWindow(
             val version = json["tag_name"].asString
             val body = json["body"].asString
             val array = json.getAsJsonArray("assets")
-            val myOs = myOs()
             if (array != null) {
                 for (element in array) {
                     if (element.isJsonObject) {
@@ -498,42 +497,16 @@ class UpdateWindow(
                             val url = o["browser_download_url"].asString
                             val type = o["content_type"].asString
                             val name = o["name"].asString
-                            if (myOs == OS.WINDOWS) {
-                                if (url.endsWith(".exe")) {
-                                    return Resource.Success(
-                                        Update(
-                                            version,
-                                            downloadLink = url,
-                                            downloadName = name,
-                                            downloadType = type,
-                                            updateDescription = body
-                                        )
+                            if (OS.downloadMatchesMyOs(url)) {
+                                return Resource.Success(
+                                    Update(
+                                        version,
+                                        downloadLink = url,
+                                        downloadName = name,
+                                        downloadType = type,
+                                        updateDescription = body
                                     )
-                                }
-                            } else if (myOs == OS.LINUX) {
-                                if (url.lowercase(Locale.getDefault()).endsWith(".deb")) {
-                                    return Resource.Success(
-                                        Update(
-                                            version,
-                                            downloadLink = url,
-                                            downloadName = name,
-                                            downloadType = type,
-                                            updateDescription = body
-                                        )
-                                    )
-                                }
-
-                                if (url.lowercase(Locale.getDefault()).endsWith(".rpm")) {
-                                    return Resource.Success(
-                                        Update(
-                                            version,
-                                            downloadLink = url,
-                                            downloadName = name,
-                                            downloadType = type,
-                                            updateDescription = body
-                                        )
-                                    )
-                                }
+                                )
                             }
                         }
                     }
@@ -545,34 +518,28 @@ class UpdateWindow(
         return Resource.Error("Failed to find release for your operating system.")
     }
 
+
     private fun isLatest(latest: String?): Boolean {
-        if (latest == null || latest == AppInfo.VERSION) {
+        if (latest == null) {
             return true
         }
-        try {
-            val latestSplit = latest.split("\\.".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
-            val current = AppInfo.VERSION.split("\\.".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
-            if (latestSplit[0].toInt() > current[0].toInt()) {
+        val currentParts = AppInfo.VERSION.split(".").map { it.toIntOrNull() ?: 0 }
+        val latestParts = latest.split(".").map { it.toIntOrNull() ?: 0 }
+
+        val maxLength = maxOf(currentParts.size, latestParts.size)
+        val paddedCurrent = currentParts + List(maxLength - currentParts.size) { 0 }
+        val paddedLatest = latestParts + List(maxLength - latestParts.size) { 0 }
+
+        for (i in 0 until maxLength) {
+            if (paddedLatest[i] > paddedCurrent[i]) {
                 return false
             }
-            if (latestSplit.size > 2) {
-                if (latestSplit[1].toInt() > current[1].toInt()) {
-                    return false
-                }
+            if (paddedLatest[i] < paddedCurrent[i]) {
+                return true
             }
-            if (latestSplit.size > 3) {
-                if (latestSplit[2].toInt() > current[2].toInt()) {
-                    return false
-                }
-            }
-        } catch (e: Exception) {
-            FrogLog.logError(
-                "Failed to check for latest update version.",
-                e
-            )
-            return true
         }
-        return false
+
+        return true
     }
 
     private fun removeValidation() {
@@ -591,16 +558,31 @@ class UpdateWindow(
         }
     }
 
-    private fun myOs(): OS {
-        return if (SysUtil.isLinux)
-            OS.LINUX
-        else if (SysUtil.isMacOs)
-            OS.MAC
-        else
-            OS.WINDOWS
-    }
+    private enum class OS(
+        val extension: String
+    ) {
+        WINDOWS(".exe"),
+        MAC(".dmg"),
+        DEBIAN(".deb"),
+        ARCH(".rpm");
 
-    private enum class OS {
-        WINDOWS, LINUX, MAC
+        companion object {
+
+            val myOs: OS get() {
+                return if (SysUtil.isArch)
+                    ARCH
+                else if (SysUtil.isDebian)
+                    DEBIAN
+                else if (SysUtil.isMacOs)
+                    MAC
+                else
+                    WINDOWS
+            }
+
+            fun downloadMatchesMyOs(url: String): Boolean {
+                val os = myOs
+                return url.lowercase(Locale.getDefault()).endsWith(os.extension)
+            }
+        }
     }
 }
