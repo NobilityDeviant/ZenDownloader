@@ -91,7 +91,7 @@ class DownloadThread {
     }
 
     fun addToQueue(vararg downloads: Episode): Int {
-        return addToQueue(*downloads)
+        return addToQueue(listOf(*downloads))
     }
 
     fun addToQueue(downloads: List<Episode>): Int {

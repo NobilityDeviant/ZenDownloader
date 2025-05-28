@@ -6,15 +6,12 @@ If you check that website out, it's one of the best video sites for free cartoon
 
 Many of the anime websites out there are locked down really hard which makes wco the perfect target.
 
-**You can now download all paywalled movies!**
-
 **Now also supports M3U8 Videos & Episodes with 2 videos.**
 
-Ok, ok.. I'll support premium minimally. 
+*Free movie downloading has officially been killed*
+*You will have to create a wcopremium.tv account and use those credentials in the settings now*
 
-**You can now use your wcopremium.tv credentials to download higher quality movies.**
-
-We're back for blood. >:(
+We're still back for blood. >:(
 
 ![](https://github.com/NobilityDeviant/ZenDownloader/raw/master/images/illegal_anime_poster.png)
 
