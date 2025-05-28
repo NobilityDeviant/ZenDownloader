@@ -9,6 +9,7 @@ import nobility.downloader.core.BoxMaker
 import nobility.downloader.core.Core
 import nobility.downloader.core.scraper.video_download.Functions
 import nobility.downloader.core.settings.Defaults
+import nobility.downloader.utils.FrogLog
 import nobility.downloader.utils.Resource
 import nobility.downloader.utils.Tools
 import nobility.downloader.utils.Tools.titleForImages
@@ -53,12 +54,18 @@ object RecentScraper {
                         val imagePath = seriesImagesPath + titleForImages(episodeName)
                         val imageFile = File(imagePath)
                         if (!imageFile.exists()) {
-                            Tools.downloadFile(
-                                seriesImageLink,
-                                imageFile,
-                                Defaults.TIMEOUT.int() * 1000,
-                                UserAgents.random
-                            )
+                            try {
+                                Tools.downloadFile(
+                                    seriesImageLink,
+                                    imageFile,
+                                    Defaults.TIMEOUT.int() * 1000,
+                                    UserAgents.random
+                                )
+                            } catch (_: Exception) {
+                                FrogLog.logError(
+                                    "Failed to download image: $seriesImageLink"
+                                )
+                            }
                         }
                         BoxMaker.makeRecent(
                             imagePath,
@@ -92,12 +99,18 @@ object RecentScraper {
                         val imagePath = seriesImagesPath + titleForImages(seriesName)
                         val imageFile = File(imagePath)
                         if (!imageFile.exists()) {
-                            Tools.downloadFile(
-                                seriesImageLink,
-                                imageFile,
-                                Defaults.TIMEOUT.int() * 1000,
-                                UserAgents.random
-                            )
+                            try {
+                                Tools.downloadFile(
+                                    seriesImageLink,
+                                    imageFile,
+                                    Defaults.TIMEOUT.int() * 1000,
+                                    UserAgents.random
+                                )
+                            } catch (_: Exception) {
+                                FrogLog.logError(
+                                    "Failed to download image: $seriesImageLink"
+                                )
+                            }
                         }
                         BoxMaker.makeRecent(
                             imagePath,

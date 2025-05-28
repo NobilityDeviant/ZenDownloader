@@ -1,5 +1,7 @@
 package nobility.downloader.utils
 
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.colorspace.ColorSpaces
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import nobility.downloader.core.BoxHelper.Companion.int
@@ -467,4 +469,40 @@ object Tools {
         }
         return result.replace("\\s{2,}".toRegex(), " ").trim()
     }
+
+    enum class ColorStyle {
+        ANY,
+        PASTEL,
+        NEON
+    }
+
+    fun randomColor(style: ColorStyle = ColorStyle.ANY): Color {
+        val hue = kotlin.random.Random.nextFloat() * 360f
+        val (saturation, lightness) = when (style) {
+            ColorStyle.PASTEL -> {
+                val sat = 0.3f + kotlin.random.Random.nextFloat() * 0.2f  // 0.3 to 0.5
+                val light = 0.7f + kotlin.random.Random.nextFloat() * 0.2f
+                sat to light
+            }
+            ColorStyle.NEON -> {
+                val sat = 0.9f + kotlin.random.Random.nextFloat() * 0.1f
+                val light = 0.5f + kotlin.random.Random.nextFloat() * 0.2f
+                sat to light
+            }
+            ColorStyle.ANY -> {
+                val sat = 0.4f + kotlin.random.Random.nextFloat() * 0.6f
+                val light = 0.3f + kotlin.random.Random.nextFloat() * 0.6f
+                sat to light
+            }
+        }
+
+        return Color.hsl(
+            hue,
+            saturation,
+            lightness,
+            1f,
+            ColorSpaces.Srgb
+        )
+    }
+
 }

@@ -42,7 +42,7 @@ class MovieHandler {
             }
         }
         if (movies.isNotEmpty()) {
-            FrogLog.writeMessage(
+            FrogLog.logDebug(
                 "Successfully loaded ${movies.size} movie details."
             )
         }

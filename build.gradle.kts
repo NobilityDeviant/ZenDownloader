@@ -1,11 +1,14 @@
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
 
+val objectBox = "4.0.3"
+val currentOs: org.gradle.internal.os.OperatingSystem = org.gradle.internal.os.OperatingSystem.current()
+
 buildscript {
     repositories {
         mavenCentral()
     }
     dependencies {
-        //4.1.0 breaks the jvm
+        //4.1.0 & 4.2.0 breaks the jvm
         //default to 4.0.3 if it breaks
         classpath("io.objectbox:objectbox-gradle-plugin:4.0.3")
     }
@@ -13,6 +16,7 @@ buildscript {
 
 plugins {
     kotlin("jvm")
+    kotlin("kapt") version "1.9.23"
     id("org.jetbrains.compose")
     id("org.jetbrains.kotlin.plugin.compose").version("2.1.10")
 }
@@ -22,7 +26,7 @@ kotlin {
 }
 
 group = "nobility.downloader"
-version = "1.1.14"
+version = "1.1.15"
 
 repositories {
     mavenCentral()
@@ -32,7 +36,37 @@ repositories {
 }
 
 dependencies {
-    implementation(compose.desktop.currentOs)
+
+    implementation(compose.desktop.currentOs) {
+        exclude(group = "org.jetbrains.compose.material", module = "material")
+    }
+
+    when {
+        currentOs.isLinux -> {
+            implementation("io.objectbox:objectbox-linux:$objectBox")
+            implementation("io.objectbox:objectbox-linux-arm64:$objectBox")
+            implementation("io.objectbox:objectbox-linux-armv7:$objectBox")
+        }
+        currentOs.isMacOsX -> implementation("io.objectbox:objectbox-macos:$objectBox")
+        currentOs.isWindows -> implementation("io.objectbox:objectbox-windows:$objectBox")
+    }
+
+    val allObjectBoxLibs = listOf(
+        "io.objectbox:objectbox-linux:$objectBox",
+        "io.objectbox:objectbox-linux-arm64:$objectBox",
+        "io.objectbox:objectbox-linux-armv7:$objectBox",
+        "io.objectbox:objectbox-macos:$objectBox",
+        "io.objectbox:objectbox-windows:$objectBox"
+    )
+
+    if (project.gradle.startParameter.taskNames.any { it.contains("packageFatJar") }) {
+        allObjectBoxLibs.forEach {
+            implementation(it)
+        }
+    }
+
+    kapt("io.objectbox:objectbox-processor:$objectBox")
+
     //network
     implementation("org.jsoup:jsoup:1.19.1")
     implementation("org.seleniumhq.selenium:selenium-java:4.31.0")
@@ -40,14 +74,6 @@ dependencies {
     implementation("ch.qos.logback:logback-classic:1.5.18")
     runtimeOnly("org.jetbrains.kotlinx:kotlinx-coroutines-swing:1.10.2")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
-    //database
-    val objectBox = "4.0.3"
-    implementation("io.objectbox:objectbox-linux:$objectBox")
-    implementation("io.objectbox:objectbox-macos:$objectBox")
-    implementation("io.objectbox:objectbox-windows:$objectBox")
-    implementation("io.objectbox:objectbox-linux-arm64:$objectBox")
-    implementation("io.objectbox:objectbox-linux-armv7:$objectBox")
-    implementation("com.darkrockstudios:mpfilepicker:3.1.0")
     //for url updating.
     implementation("com.google.http-client:google-http-client:1.46.3")
     //for undetected chrome
@@ -58,6 +84,8 @@ dependencies {
     implementation("br.com.devsrsouza.compose.icons:eva-icons:1.1.1")
     implementation("io.coil-kt.coil3:coil-compose:3.1.0")
     implementation("io.coil-kt.coil3:coil-network-okhttp:3.1.0")
+    implementation("com.darkrockstudios:mpfilepicker:3.1.0")
+    implementation(compose.components.resources)
     //for unzipping assets
     implementation("net.lingala.zip4j:zip4j:2.11.5")
     //m3u8 downloading
@@ -122,3 +150,105 @@ compose.desktop {
         }
     }
 }
+
+//attempting to create a universal jar.
+//keeps throwing io.objectbox.EntityInfo not found error.
+//but all other errors have been fixed so far.
+tasks.register<Jar>("packageFatJar") {
+    println("Project Name: " + project.name) 
+    group = "compose desktop"
+    description = "Builds a fat JAR."
+    archiveBaseName.set("ZenDownloader")
+    archiveClassifier.set("all")
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    destinationDirectory.set(layout.buildDirectory.dir("custom-jars"))
+
+    manifest {
+        attributes["Main-Class"] = "MainKt"
+    }
+
+    doFirst {
+        val jarFile = destinationDirectory.get().file("ZenDownloader-${project.version}-all.jar").asFile
+        if (jarFile.exists()) {
+            jarFile.delete()
+        }
+    }
+
+    sourceSets["main"].java.srcDir("build/generated/source/kapt/main")
+    dependsOn("kaptKotlin")
+    dependsOn(configurations.runtimeClasspath)
+
+    from(sourceSets["main"].output)
+
+    val preservedJars = listOf("skiko", "skia", "org.jetbrains.compose", "objectbox")
+
+    from({
+        configurations.runtimeClasspath.get().flatMap { file ->
+            val name = file.name
+            val keepAsIs = preservedJars.any {
+                name.contains(it, ignoreCase = true)
+            }
+            if (keepAsIs) {
+                listOf(file)
+            } else if (file.isDirectory) {
+                listOf(file)
+            } else {
+                zipTree(file).matching {
+                    exclude("META-INF/*.SF", "META-INF/*.DSA", "META-INF/*.RSA")
+                }
+            }
+        }
+    })
+
+    //fail-safe even though they're generated or exported on first run
+    from({
+        configurations.runtimeClasspath.get().filter { file ->
+            file.name.contains("objectbox") && file.extension in listOf("so", "dll", "dylib")
+        }
+    })
+
+    from(sourceSets["main"].resources)
+
+    doLast {
+        val jarFile = destinationDirectory.get().file("ZenDownloader-${project.version}-all.jar").asFile
+        if (jarFile.exists()) {
+            println("The fatJar has been created in: ${jarFile.absolutePath}")
+        } else {
+            println("Failed to find the created fatJar.")
+        }
+    }
+}
+
+interface InjectedExecOps {
+    @get:Inject
+    val execOps: ExecOperations
+}
+
+tasks.register("runFatJar") {
+    group = "compose desktop"
+    description = "Builds and runs the fat JAR."
+
+    dependsOn("packageFatJar")
+
+    doLast {
+        val jarName = "ZenDownloader-${project.version}-all.jar"
+        val jarFile = layout.buildDirectory.file("custom-jars/$jarName").get().asFile
+
+        if (jarFile.exists()) {
+            val injected = project.objects.newInstance<InjectedExecOps>()
+
+            println("Launching: ${jarFile.absolutePath}")
+
+            injected.execOps.javaexec {
+                mainClass.set("-jar")
+                args = listOf(jarFile.absolutePath)
+            }
+
+        } else {
+            throw GradleException("fatJar not found at: ${jarFile.absolutePath}")
+        }
+    }
+}
+
+
+

@@ -93,8 +93,8 @@ class BoxHelper {
 
         val shared = BoxHelper()
 
-        val wcoPath get() = AppInfo.databasePath + File.separator + "wco" + File.separator
-        val seriesPath get() = AppInfo.databasePath + File.separator + "series" + File.separator
+        val wcoPath get() = AppInfo.databasePath + "wco" + File.separator
+        val seriesPath get() = AppInfo.databasePath + "series" + File.separator
         val seriesImagesPath: String get() = AppInfo.databasePath + "series_images${File.separator}"
 
         val dubbed get() = shared.dubbedSeriesBox.all.filter { it.name.isNotEmpty() }
@@ -566,7 +566,7 @@ class BoxHelper {
                 .equal(Genre_.name, name, QueryBuilder.StringOrder.CASE_INSENSITIVE)
                 .build().use {
                     val genre = it.findUniqueOrNull()
-                    return genre ?: Genre("Null")
+                    return genre ?: Genre(name)
                 }
         }
 
@@ -576,7 +576,6 @@ class BoxHelper {
                 .build().use {
                     return it.findUniqueOrNull() != null
                 }
-            return false
         }
 
         fun removeSeriesFavorite(slug: String) {

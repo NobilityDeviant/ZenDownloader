@@ -324,7 +324,7 @@ object Functions {
                         Tools.bytesToString(
                             completeFileSize
                         )
-                    } for: ${download.name}"
+                    }"
                 )
                 break
             }

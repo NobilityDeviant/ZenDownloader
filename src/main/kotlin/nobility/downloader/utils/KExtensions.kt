@@ -1,6 +1,7 @@
 package nobility.downloader.utils
 
 import androidx.compose.ui.graphics.Color
+import com.materialkolor.hct.Hct
 import com.materialkolor.ktx.toColor
 import com.materialkolor.ktx.toHct
 import io.github.bonigarcia.wdm.WebDriverManager
@@ -46,6 +47,16 @@ fun Color.hover(): Color {
         .withTone(
             if (Defaults.DARK_MODE.boolean()) 70.0 else 30.0
         ).toColor()
+}
+
+fun Color.toColorOnThis(otherColor: Color = this): Color {
+    val hct = toHct()
+    val tone = hct.tone
+    val otherHct = otherColor.toHct()
+    val otherTone = otherHct.tone
+    val onTone = if (tone > 60 || otherTone > 60) 10.0 else 90.0
+    val foregroundHct = Hct.from(hct.hue, hct.chroma, onTone)
+    return foregroundHct.toColor()
 }
 
 fun <T> List<T>.containsOne(other: List<T>): Boolean {

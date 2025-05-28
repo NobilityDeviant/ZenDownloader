@@ -104,7 +104,12 @@ private fun uiWrapper(
                                             }
                                         },
                                         orientation = Orientation.Horizontal
-                                    ),
+                                    )
+                                    .horizontalWheelScroll { scroll ->
+                                        coroutineScope.launch {
+                                            listState.scrollBy(scroll)
+                                        }
+                                    },
                                 state = listState
                             ) {
                                 items(
@@ -115,13 +120,13 @@ private fun uiWrapper(
                                         Page.DOWNLOADS -> {
                                             BadgedBox(
                                                 badge = {
-                                                    if (Core.child.downloadsInQueue.value > 0) {
+                                                    if (Core.child.downloadThread.downloadsInQueue.value > 0) {
                                                         Badge(
                                                             containerColor = Color.Red,
                                                             modifier = Modifier.offset(y = 2.dp, x = (-8).dp)
                                                         ) {
                                                             Text(
-                                                                Core.child.downloadsInQueue.value.toString(),
+                                                                Core.child.downloadThread.downloadsInQueue.value.toString(),
                                                                 overflow = TextOverflow.Clip,
                                                                 color = Color.White,
                                                                 fontWeight = FontWeight.Bold,

@@ -13,6 +13,7 @@ import nobility.downloader.core.settings.Quality
 import nobility.downloader.utils.FrogLog
 import nobility.downloader.utils.JavascriptHelper
 import nobility.downloader.utils.UserAgents
+import nobility.downloader.utils.fileExists
 import org.openqa.selenium.JavascriptExecutor
 import org.openqa.selenium.WebDriver
 import org.openqa.selenium.chrome.ChromeOptions
@@ -52,7 +53,8 @@ abstract class DriverBase(
                                 }
                             }
                         }
-                    } catch (_: Exception) {}
+                    } catch (_: Exception) {
+                    }
                     delay(25)
                 }
             }
@@ -78,7 +80,11 @@ abstract class DriverBase(
         chromeOptions.addArguments("--user-agent=$userAgent")
         val chromePath = Defaults.CHROME_BROWSER_PATH.string()
         val chromeDriverPath = Defaults.CHROME_DRIVER_PATH.string()
-        if (chromePath.isNotEmpty() && chromeDriverPath.isNotEmpty()) {
+        if (chromePath.isNotEmpty()
+            && chromePath.fileExists()
+            && chromeDriverPath.isNotEmpty()
+            && chromeDriverPath.fileExists()
+        ) {
             FrogLog.logInfo(
                 """
                     Using chrome browser from settings.

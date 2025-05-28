@@ -6,6 +6,7 @@ import nobility.downloader.core.BoxHelper.Companion.int
 import nobility.downloader.core.BoxHelper.Companion.string
 import nobility.downloader.core.Core
 import nobility.downloader.core.entities.Download
+import nobility.downloader.core.entities.Episode
 import nobility.downloader.core.scraper.data.DownloadData
 import nobility.downloader.core.scraper.video_download.Functions.downloadVideo
 import nobility.downloader.core.scraper.video_download.Functions.fileSize
@@ -27,10 +28,14 @@ import java.io.File
  * Just used to make the video handler smaller and easier to manage.
  */
 class VideoDownloadHelper(
+    private val episode: Episode,
     val temporaryQuality: Quality?
 ) {
 
-    val data = VideoDownloadData(temporaryQuality)
+    val data = VideoDownloadData(
+        episode,
+        temporaryQuality
+    )
 
     suspend fun parseQualities(
         slug: String
@@ -45,57 +50,73 @@ class VideoDownloadHelper(
                 if (result.isFailed) {
                     if (result.errorCode != -1) {
                         val errorCode = ErrorCode.errorCodeForCode(result.errorCode)
-                        if (errorCode == ErrorCode.NO_FRAME) {
-                            data.resRetries++
-                            return Resource.Error(
-                                "Failed to find frame for quality check. Retrying...",
-                                result.message
-                            )
-                        } else if (errorCode == ErrorCode.CLOUDFLARE_FUCK) {
-                            return Resource.Error(
-                                """
-                               Cloudflare has blocked our request.
-                               Unfortunately that means we can't proceed, but well continue anyways...
-                            """.trimIndent(),
-                                result.message
-                            )
-                        } else if (errorCode == ErrorCode.IFRAME_FORBIDDEN || errorCode == ErrorCode.EMPTY_FRAME) {
-                            data.resRetries = 3
-                            return Resource.Error(
-                                "Failed to find video frame for: $slug" +
-                                        "\nPlease report this in github issues with the video you are trying to download.",
-                                result.message
-                            )
-                        } else if (errorCode == ErrorCode.FAILED_EXTRACT_RES) {
-                            data.resRetries = 3
-                            return Resource.Error(
-                                "Failed to extract quality links. Returned an empty list.",
-                                result.message
-                            )
-                        } else if (errorCode == ErrorCode.NO_JS) {
-                            data.resRetries = 3
-                            return Resource.Error(
-                                "This browser doesn't support JavascriptExecutor.",
-                                result.message
-                            )
-                        } else if (errorCode == ErrorCode.M3U8_LINK_FAILED) {
-                            data.retries++
-                            return Resource.Error(
-                                "m3u8 link has failed.",
-                                result.message
-                            )
-                        } else if (errorCode == ErrorCode.FAILED_PAGE_READ) {
-                            data.retries++
-                            return Resource.Error(
-                                "Failed to read webpage.",
-                                result.message
-                            )
-                        } else if (errorCode == ErrorCode.FFMPEG_NOT_INSTALLED) {
-                            //no retry needed, we finish the episode
-                            return Resource.Error(
-                                "Critical error | Skipping episode",
-                                result.message
-                            )
+                        when (errorCode) {
+                            ErrorCode.NO_FRAME -> {
+                                data.resRetries++
+                                return Resource.Error(
+                                    "Failed to find frame for quality check. Retrying...",
+                                    result.message
+                                )
+                            }
+                            ErrorCode.CLOUDFLARE_FUCK -> {
+                                return Resource.Error(
+                                    """
+                                                   Cloudflare has blocked our request.
+                                                   Unfortunately that means we can't proceed, but well continue anyways...
+                                                """.trimIndent(),
+                                    result.message
+                                )
+                            }
+                            ErrorCode.IFRAME_FORBIDDEN, ErrorCode.EMPTY_FRAME -> {
+                                data.resRetries = 3
+                                return Resource.Error(
+                                    "Failed to find video frame for: $slug" +
+                                            "\nPlease report this in github issues with the video you are trying to download.",
+                                    result.message
+                                )
+                            }
+                            ErrorCode.FAILED_EXTRACT_RES -> {
+                                data.resRetries = 3
+                                return Resource.Error(
+                                    "Failed to extract quality links. Returned an empty list.",
+                                    result.message
+                                )
+                            }
+                            ErrorCode.NO_JS -> {
+                                data.resRetries = 3
+                                return Resource.Error(
+                                    "This browser doesn't support JavascriptExecutor.",
+                                    result.message
+                                )
+                            }
+                            ErrorCode.M3U8_LINK_FAILED -> {
+                                data.retries++
+                                return Resource.Error(
+                                    "m3u8 link has failed.",
+                                    result.message
+                                )
+                            }
+                            ErrorCode.FAILED_PAGE_READ -> {
+                                data.retries++
+                                return Resource.Error(
+                                    "Failed to read webpage.",
+                                    result.message
+                                )
+                            }
+                            ErrorCode.FFMPEG_NOT_INSTALLED -> {
+                                //no retry needed, we finish the episode
+                                return Resource.Error(
+                                    "Critical error | Skipping episode",
+                                    result.message
+                                )
+                            }
+                            else -> {
+                                data.retries++
+                                return Resource.Error(
+                                    "Error without ErrorCode.",
+                                    result.message
+                                )
+                            }
                         }
                     } else {
                         data.retries++
@@ -595,7 +616,7 @@ class VideoDownloadHelper(
                         if (!hasSeparateAudio) {
                             data.currentDownload.downloading = false
                             data.currentDownload.update()
-                            Core.child.incrementDownloadsFinished()
+                            Core.child.downloadThread.incrementDownloadsFinished()
                             data.writeMessage("Successfully downloaded with ${downloadData.quality.tag} quality.")
                             data.finishEpisode()
                             if (job.isActive) {
@@ -724,7 +745,7 @@ class VideoDownloadHelper(
                         )
                         audioSaveFile.delete()
                         mergedVideoAndAudioFile.parentFile.deleteRecursively()
-                        Core.child.incrementDownloadsFinished()
+                        Core.child.downloadThread.incrementDownloadsFinished()
                         data.writeMessage("Successfully downloaded with ${downloadData.quality.tag} quality.")
                         data.finishEpisode()
                     } else {
@@ -769,7 +790,7 @@ class VideoDownloadHelper(
         val qualityOption = temporaryQuality ?: Quality.qualityForTag(
             Defaults.QUALITY.string()
         )
-        val episodeName = data.currentEpisode.name.fixForFiles() + "-01"
+        val episodeName = episode.name.fixForFiles() + "-01"
         val saveFile = data.generateEpisodeSaveFile(qualityOption, "-01")
         var currentDownload = downloadForNameAndQuality(
             episodeName,
@@ -861,8 +882,8 @@ class VideoDownloadHelper(
                         currentDownload = Download()
                         currentDownload.downloadPath = saveFile.absolutePath
                         currentDownload.name = episodeName
-                        currentDownload.slug = data.currentEpisode.slug
-                        currentDownload.seriesSlug = data.currentEpisode.seriesSlug
+                        currentDownload.slug = episode.slug
+                        currentDownload.seriesSlug = episode.seriesSlug
                         currentDownload.resolution = qualityOption.resolution
                         currentDownload.dateAdded = System.currentTimeMillis()
                         currentDownload.fileSize = 0
@@ -924,7 +945,7 @@ class VideoDownloadHelper(
                     //second time to ensure ui update
                     currentDownload.update()
                     if (saveFile.exists() && saveFile.length() >= originalFileSize) {
-                        Core.child.incrementDownloadsFinished()
+                        Core.child.downloadThread.incrementDownloadsFinished()
                         data.writeMessage("(2nd) Successfully downloaded with ${qualityOption.tag} quality.")
                         break
                     }

@@ -325,7 +325,7 @@ fun PageButton(
     modifier: Modifier = Modifier
 ) {
     defaultButton(
-        page.title + if (page == Page.DOWNLOADS) " (${Core.child.downloadsInProgress.value})" else "",
+        page.title + if (page == Page.DOWNLOADS) " (${Core.child.downloadThread.downloadsInProgress.value})" else "",
         modifier = modifier,
         colors = ButtonDefaults.buttonColors(
             containerColor = if (Core.currentPage == page)

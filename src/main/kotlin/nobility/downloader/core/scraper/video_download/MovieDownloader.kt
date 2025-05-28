@@ -22,7 +22,6 @@ import java.time.Duration
 
 object MovieDownloader {
 
-    @Suppress("SelfAssignment")
     suspend fun handleMovie(
         movie: MovieHandler.Movie,
         data: VideoDownloadData
@@ -175,9 +174,17 @@ object MovieDownloader {
                 return@withContext
             }
         }
+        if (videoLinkError.isNotEmpty()) {
+            data.logError(
+                "Failed to find video link for movie.",
+                videoLinkError
+            )
+            data.retries++
+            return@withContext
+        }
         if (downloadLink.isEmpty()) {
             data.writeMessage(
-                "Failed to find video link for movie: ${movie.slug.slugToLink()}. | Retrying..."
+                "Failed to find video link for movie. | Retrying..."
             )
             data.retries++
             return@withContext
@@ -215,9 +222,9 @@ object MovieDownloader {
             if (data.mCurrentDownload == null) {
                 data.mCurrentDownload = Download()
                 data.currentDownload.downloadPath = saveFile.absolutePath
-                data.currentDownload.name = data.currentEpisode.name
-                data.currentDownload.slug = data.currentEpisode.slug
-                data.currentDownload.seriesSlug = data.currentEpisode.seriesSlug
+                data.currentDownload.name = data.episode.name
+                data.currentDownload.slug = data.episode.slug
+                data.currentDownload.seriesSlug = data.episode.seriesSlug
                 data.currentDownload.resolution = qualityOption.resolution
                 data.currentDownload.dateAdded = System.currentTimeMillis()
                 data.currentDownload.fileSize = 0
@@ -228,7 +235,7 @@ object MovieDownloader {
                 data.logInfo("Using existing download for movie.")
             }
             data.driver.navigate().to(downloadLink)
-            var fileSizeRetries = Defaults.FILE_SIZE_RETRIES.int()
+            val fileSizeRetries = Defaults.FILE_SIZE_RETRIES.int()
             var originalFileSize = 0L
             var headMode = true
             data.logInfo("Checking movie file size with $fileSizeRetries retries.")
@@ -317,7 +324,7 @@ object MovieDownloader {
             //second time to ensure ui update
             data.currentDownload.update()
             if (saveFile.exists() && saveFile.length() >= originalFileSize) {
-                Core.child.incrementDownloadsFinished()
+                Core.child.downloadThread.incrementDownloadsFinished()
                 data.writeMessage("Successfully downloaded movie.")
                 data.finishEpisode()
             }

@@ -32,10 +32,11 @@ import compose.icons.EvaIcons
 import compose.icons.evaicons.Fill
 import compose.icons.evaicons.fill.ChevronDown
 import compose.icons.evaicons.fill.Star
-import kotlinx.coroutines.*
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import nobility.downloader.core.BoxHelper
-import nobility.downloader.core.BoxHelper.Companion.boolean
-import nobility.downloader.core.BoxHelper.Companion.int
 import nobility.downloader.core.BoxHelper.Companion.string
 import nobility.downloader.core.BoxMaker
 import nobility.downloader.core.Core
@@ -43,7 +44,6 @@ import nobility.downloader.core.entities.Episode
 import nobility.downloader.core.entities.data.SeriesIdentity
 import nobility.downloader.core.scraper.SeriesUpdater
 import nobility.downloader.core.scraper.data.ToDownload
-import nobility.downloader.core.scraper.video_download.VideoDownloadHandler
 import nobility.downloader.core.settings.Defaults
 import nobility.downloader.core.settings.Quality
 import nobility.downloader.ui.components.*
@@ -131,7 +131,8 @@ class DownloadConfirmWindow(
                         shape = RoundedCornerShape(5.dp)
                     )
             ) {
-                if (series.genreNames.isNotEmpty()) {
+                val genres = series.filteredGenres
+                if (genres.isNotEmpty()) {
                     LazyRow(
                         horizontalArrangement = Arrangement.spacedBy(4.dp),
                         verticalAlignment = Alignment.CenterVertically,
@@ -144,20 +145,31 @@ class DownloadConfirmWindow(
                                     }
                                 },
                                 orientation = Orientation.Horizontal
-                            ),
+                            )
+                            .horizontalWheelScroll { scroll ->
+                                coroutineScope.launch {
+                                    genresListState.scrollBy(scroll)
+                                }
+                            },
                         state = genresListState
                     ) {
                         items(
-                            series.genreNames.map {
+                            genres.map {
                                 BoxHelper.genreForName(it)
-                            }.distinct(),
+                            },
                             key = { it.id }
                         ) {
+                            val color = Tools.randomColor(Tools.ColorStyle.PASTEL)
+                            val onColor = color.toColorOnThis()
                             DefaultButton(
                                 it.name,
                                 Modifier.height(35.dp)
                                     .width(120.dp),
-                                fontSize = 10.sp
+                                fontSize = 12.sp,
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = color,
+                                    contentColor = onColor
+                                )
                             ) {
                                 Core.openWco(it.name)
                                 windowScope.showToast("Searching for ${it.name} in Database")
@@ -211,14 +223,13 @@ class DownloadConfirmWindow(
             "Download ${series.name}",
             maximized = true,
             keyEvents = {
-                if (it.isShiftPressed) {
+                shiftHeld = it.isShiftPressed
+                /*if (it.isShiftPressed) {
                     shiftHeld = true
                     return@newWindow true
                 } else {
-                    if (shiftHeld) {
-                        shiftHeld = false
-                    }
-                }
+                    shiftHeld = false
+                }*/
                 false
             }
         ) {
@@ -845,78 +856,20 @@ class DownloadConfirmWindow(
                                 movieEpisode.isMovie = true
                                 movieEpisode.lastUpdated = System.currentTimeMillis()
                                 if (Core.child.isRunning) {
-                                    val added = Core.child.addEpisodeToQueue(
+                                    val added = Core.child.downloadThread.addToQueue(
                                         movieEpisode
                                     )
-                                    if (added) {
+                                    if (added > 0) {
                                         windowScope.showToast("Added movie to current queue.")
                                     } else {
                                         windowScope.showToast(
-                                            "Movie wasn't added to current queue. It has already been added before."
+                                            "Movie is already in queue."
                                         )
                                     }
                                     return@DefaultButton
                                 }
                                 Core.child.softStart()
-                                Core.child.taskScope.launch(Dispatchers.IO) {
-                                    Core.child.addEpisodeToQueue(movieEpisode)
-                                    //todo try to support new threads on new video queues
-                                    try {
-                                        var threads = if (!Defaults.HEADLESS_MODE.boolean())
-                                            1 else Defaults.DOWNLOAD_THREADS.int()
-                                        if (Core.child.currentEpisodes.size < threads) {
-                                            threads = Core.child.currentEpisodes.size
-                                        }
-                                        val tasks = mutableListOf<Job>()
-                                        for (i in 1..threads) {
-                                            tasks.add(
-                                                launch {
-                                                    val downloader = VideoDownloadHandler(temporaryQuality)
-                                                    try {
-                                                        downloader.run()
-                                                    } catch (e: Exception) {
-                                                        downloader.killDriver()
-                                                        val error = e.localizedMessage
-                                                        if (!error.isNullOrEmpty()) {
-                                                            if (error.contains("unknown error: cannot find")
-                                                                || error.contains("Unable to find driver executable")
-                                                                || error.contains("unable to find binary")
-                                                            ) {
-                                                                FrogLog.writeMessage(
-                                                                    "[$i] VideoDownloadHandler failed. You must install Chrome before downloading videos."
-                                                                )
-                                                            } else {
-                                                                FrogLog.logError(
-                                                                    "[$i] VideoDownloadHandler failed.",
-                                                                    e
-                                                                )
-                                                            }
-                                                        } else {
-                                                            FrogLog.logError(
-                                                                "VideoDownloadHandler failed without a valid error.",
-                                                                e
-                                                            )
-                                                        }
-                                                    }
-                                                }
-                                            )
-                                        }
-                                        tasks.joinAll()
-                                        if (Core.child.downloadsFinishedForSession > 0) {
-                                            FrogLog.writeMessage(
-                                                "Gracefully finished downloading ${Core.child.downloadsFinishedForSession} video(s)."
-                                            )
-                                        } else {
-                                            FrogLog.writeMessage(
-                                                "Gracefully finished. No downloads have been made."
-                                            )
-                                        }
-                                        Core.child.stop()
-                                    } catch (e: Exception) {
-                                        Core.child.stop()
-                                        FrogLog.logError("Download task failed with the error: " + e.localizedMessage)
-                                    }
-                                }
+                                Core.child.downloadThread.addToQueue(movieEpisode)
                                 FrogLog.writeMessage("Successfully launched video downloader for movie.")
                                 windowScope.closeWindow()
                             }
@@ -945,11 +898,11 @@ class DownloadConfirmWindow(
                                     series.slug
                                 )
                                 if (Core.child.isRunning) {
-                                    val added = Core.child.addEpisodesToQueue(
+                                    val added = Core.child.downloadThread.addToQueue(
                                         if (singleEpisode)
                                             listOf(series.episodes.first())
                                         else
-                                            selectedEpisodes
+                                            selectedEpisodes.map { it }
                                     )
                                     if (added > 0) {
                                         windowScope.showToast("Added $added episode(s) to current queue.")
@@ -964,69 +917,9 @@ class DownloadConfirmWindow(
                                     selectedEpisodes.add(series.episodes.first())
                                 }
                                 Core.child.softStart()
-                                //must use an outside scope because closing this window
-                                //will cancel the local coroutine
-                                Core.child.taskScope.launch(Dispatchers.IO) {
-                                    //sort in case the episodes are not in order
-                                    Core.child.addEpisodesToQueue(
-                                        selectedEpisodes.sortedWith(Tools.baseEpisodesComparator)
-                                    )
-                                    try {
-                                        var threads = if (!Defaults.HEADLESS_MODE.boolean())
-                                            1 else Defaults.DOWNLOAD_THREADS.int()
-                                        if (Core.child.currentEpisodes.size < threads) {
-                                            threads = Core.child.currentEpisodes.size
-                                        }
-                                        val tasks = mutableListOf<Job>()
-                                        for (i in 1..threads) {
-                                            tasks.add(
-                                                launch {
-                                                    val downloader = VideoDownloadHandler(temporaryQuality)
-                                                    try {
-                                                        downloader.run()
-                                                    } catch (e: Exception) {
-                                                        downloader.killDriver()
-                                                        val error = e.localizedMessage
-                                                        if (!error.isNullOrEmpty()) {
-                                                            if (error.contains("unknown error: cannot find")
-                                                                || error.contains("Unable to find driver executable")
-                                                                || error.contains("unable to find binary")
-                                                            ) {
-                                                                FrogLog.writeMessage(
-                                                                    "[$i] VideoDownloadHandler failed. You must install Chrome before downloading videos."
-                                                                )
-                                                            } else {
-                                                                FrogLog.logError(
-                                                                    "[$i] VideoDownloadHandler failed.",
-                                                                    e
-                                                                )
-                                                            }
-                                                        } else {
-                                                            FrogLog.logError(
-                                                                "VideoDownloadHandler failed without a valid error.",
-                                                                e
-                                                            )
-                                                        }
-                                                    }
-                                                }
-                                            )
-                                        }
-                                        tasks.joinAll()
-                                        if (Core.child.downloadsFinishedForSession > 0) {
-                                            FrogLog.writeMessage(
-                                                "Gracefully finished downloading ${Core.child.downloadsFinishedForSession} video(s)." + if (Core.child.forceStopped) " | Force Stopped" else ""
-                                            )
-                                        } else {
-                                            FrogLog.writeMessage(
-                                                "Gracefully finished. No downloads have been made." + if (Core.child.forceStopped) " | Force Stopped" else ""
-                                            )
-                                        }
-                                        Core.child.stop()
-                                    } catch (e: Exception) {
-                                        Core.child.stop()
-                                        FrogLog.logError("Download task failed with the error: " + e.localizedMessage)
-                                    }
-                                }
+                                Core.child.downloadThread.addToQueue(
+                                    selectedEpisodes.sortedWith(Tools.baseEpisodesComparator)
+                                )
                                 FrogLog.writeMessage("Successfully launched video downloader for ${selectedEpisodes.size} episode(s).")
                                 windowScope.closeWindow()
                             }

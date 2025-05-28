@@ -66,12 +66,12 @@ class AssetUpdateWindow {
             undecorated = true,
             onClose = onClose
         ) {
-            assetUpdaterUi(this)
+            Ui(this)
         }
     }
 
     @Composable
-    fun assetUpdaterUi(
+    fun Ui(
         scope: AppWindowScope
     ) {
         Row(
@@ -453,14 +453,6 @@ class AssetUpdateWindow {
             AppInfo.USER_AGENTS_LINK,
             userAgentsPath,
             "user_agents.txt"
-        ),
-        //need to download this for now.
-        //coil doesn't allow resources and i can't figure out the new resources api
-        NO_IMAGE(
-            "https://api.github.com/repos/NobilityDeviant/ZenDownloader/commits?path=images/no-image.png&page=1&per_page=1",
-            "https://raw.githubusercontent.com/NobilityDeviant/ZenDownloader/refs/heads/master/images/no-image.png",
-            noImagePath,
-            "no-image.png"
         )
     }
 
@@ -468,7 +460,6 @@ class AssetUpdateWindow {
         private val databasePath = AppInfo.databasePath
         private val movieListPath = databasePath + "movies.txt"
         val userAgentsPath = databasePath + "user_agents.txt"
-        val noImagePath = databasePath + File.separator + "extra" + File.separator + "no-image.png"
         private val linksPath = databasePath + "wco" + File.separator + "links" + File.separator
         private val wcoDataPath = databasePath + "wco" + File.separator + "data" + File.separator
         private val seriesPath = databasePath + "series" + File.separator

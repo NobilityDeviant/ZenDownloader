@@ -87,9 +87,6 @@ object FrogLog {
         println("[I] $information")
     }
 
-    /**
-     * Redundant but might make an option to disable or filter messages.
-     */
     fun writeMessage(
         message: String,
         toErrorStream: Boolean = false
@@ -156,7 +153,7 @@ object FrogLog {
     ) {
         val date = Tools.dateFormatted
         val title = Tools.fixTitle("error_${name.replace(" ", "_")}_$date.txt")
-        val folderName = AppInfo.databasePath + File.separator + "errors" + File.separator
+        val folderName = AppInfo.databasePath + "errors" + File.separator
         File(folderName).mkdirs()
         val file = File(folderName + title)
         if (!file.exists() && !file.createNewFile()) {

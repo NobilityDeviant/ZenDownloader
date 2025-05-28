@@ -13,10 +13,10 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.CursorDropdownMenu
 import androidx.compose.material.Icon
-import androidx.compose.material.ripple
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.VerticalDivider
+import androidx.compose.material3.ripple
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -36,8 +36,8 @@ import nobility.downloader.core.BoxHelper.Companion.seriesForSlug
 import nobility.downloader.core.Core
 import nobility.downloader.core.entities.Download
 import nobility.downloader.core.scraper.data.ToDownload
-import nobility.downloader.ui.components.FullBox
 import nobility.downloader.ui.components.DefaultDropdownItem
+import nobility.downloader.ui.components.FullBox
 import nobility.downloader.ui.components.dialog.DialogHelper
 import nobility.downloader.ui.components.verticalScrollbar
 import nobility.downloader.ui.components.verticalScrollbarEndPadding
@@ -60,7 +60,7 @@ class DownloadsView : ViewPage {
         Column(
             modifier = Modifier.fillMaxSize()
         ) {
-            header()
+            Header()
             FullBox {
                 LazyColumn(
                     verticalArrangement = Arrangement.spacedBy(1.dp),
@@ -79,7 +79,10 @@ class DownloadsView : ViewPage {
                         ),
                     state = scrollState
                 ) {
-                    items(downloads, key = { it.nameAndResolution() }) {
+                    items(
+                        downloads,
+                        key = { it.nameAndResolution() }
+                    ) {
                         downloadRow(it, windowScope)
                     }
                 }
@@ -124,9 +127,10 @@ class DownloadsView : ViewPage {
             }
         }
 
+    //todo make a universal header
     @OptIn(ExperimentalFoundationApi::class)
     @Composable
-    private fun header() {
+    private fun Header() {
         Row(
             modifier = Modifier.background(
                 color = MaterialTheme.colorScheme.inversePrimary,
@@ -309,7 +313,7 @@ class DownloadsView : ViewPage {
                         EvaIcons.Fill.Download
                     ) {
                         if (Core.child.isRunning) {
-                            if (Core.child.addEpisodeToQueue(download)) {
+                            if (Core.child.downloadThread.addToQueue(download) > 0) {
                                 windowScope.showToast("Added episode to the download queue.")
                             } else {
                                 windowScope.showToast("This episode is already in the download queue.")

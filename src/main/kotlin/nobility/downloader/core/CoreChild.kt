@@ -12,10 +12,11 @@ import nobility.downloader.Page
 import nobility.downloader.core.BoxHelper.Companion.int
 import nobility.downloader.core.BoxHelper.Companion.string
 import nobility.downloader.core.BoxHelper.Companion.update
+import nobility.downloader.core.driver.undetected_chrome.ChromeDriverBuilder
 import nobility.downloader.core.driver.undetected_chrome.UndetectedChromeDriver
 import nobility.downloader.core.entities.Download
-import nobility.downloader.core.entities.Episode
 import nobility.downloader.core.scraper.DownloadHandler
+import nobility.downloader.core.scraper.DownloadThread
 import nobility.downloader.core.scraper.MovieHandler
 import nobility.downloader.core.settings.Defaults
 import nobility.downloader.core.updates.UrlUpdater
@@ -32,6 +33,7 @@ import kotlin.system.exitProcess
 
 class CoreChild {
 
+    val downloadThread = DownloadThread()
     val taskScope = CoroutineScope(Dispatchers.Default)
     var isRunning = false
         private set
@@ -40,27 +42,9 @@ class CoreChild {
     var shutdownProgressIndex by mutableStateOf(0)
     var shutdownProgressTotal by mutableStateOf(0)
     val runningDrivers: MutableMap<String, WebDriver> = Collections.synchronizedMap(mutableMapOf())
-    //val runningDrivers: MutableList<WebDriver> = Collections.synchronizedList(mutableListOf())
-    val currentEpisodes: MutableList<Episode> = Collections.synchronizedList(mutableListOf())
-    val downloadList: MutableList<Download> = Collections.synchronizedList(mutableStateListOf<Download>())
+    val downloadList: MutableList<Download> = Collections.synchronizedList(mutableStateListOf())
     lateinit var movieHandler: MovieHandler
     var forceStopped = false
-
-    @Volatile
-    var downloadsFinishedForSession = 0
-        private set
-
-    @Volatile
-    var downloadsInProgress = mutableStateOf(0)
-        private set
-
-    @Volatile
-    var downloadsInQueue = mutableStateOf(0)
-        private set
-
-    private fun synchronizeDownloadsInQueue() {
-        downloadsInQueue.value = currentEpisodes.size
-    }
 
     fun init() {
         BoxHelper.shared.downloadBox.all.forEach {
@@ -73,6 +57,9 @@ class CoreChild {
             }
             movieHandler.loadMovies()
             WebDriverManager.chromedriver().setup()
+            launch {
+                downloadThread.run()
+            }
         }
     }
 
@@ -84,33 +71,14 @@ class CoreChild {
         val url = Core.currentUrl
         Defaults.LAST_DOWNLOAD.update(url)
         taskScope.launch {
-            val downloadHandler = DownloadHandler()
-            val updateResult = downloadHandler.extractDataFromUrl(url)
-            if (updateResult.isSuccess) {
-                Defaults.LAST_DOWNLOAD.update("")
-                downloadHandler.launch()
-            } else {
-                downloadHandler.kill()
+            val result = DownloadHandler.run(url)
+            if (result.isFailed) {
                 withContext(Dispatchers.Main) {
                     stop()
-                    val error = updateResult.message!!
-                    if (error.contains("unknown error: cannot find")
-                        || error.contains("Unable to find driver executable")
-                        || error.contains("unable to find binary")
-                    ) {
-                        showError(
-                            """
-                               Failed to read episodes from $url"
-                               Error: Failed to find Chrome on your PC.
-                               Make sure Chrome is installed. If this problem persists, there might be permission issues with your folders.
-                               Try running this program as admin or with superuser permissions.
-                            """.trimIndent()
-                        )
-                    } else {
-                        showError(
-                            "Failed to read episodes from $url", error
-                        )
-                    }
+                    showError(
+                        "Failed to extract data from: $url",
+                        result.message
+                    )
                 }
             }
         }
@@ -118,12 +86,13 @@ class CoreChild {
 
     fun softStart() {
         forceStopped = false
-        currentEpisodes.clear()
+        downloadThread.clear()
+        downloadThread.hasStartedDownloading = true
         Core.startButtonEnabled = false
         Core.stopButtonEnabled = true
         isRunning = true
-        downloadsFinishedForSession = 0
-        synchronizeDownloadsInQueue()
+        downloadThread.downloadsFinishedForSession = 0
+        downloadThread.synchronizeDownloadsInQueue()
     }
 
     fun stop() {
@@ -133,13 +102,14 @@ class CoreChild {
         Core.startButtonEnabled = true
         Core.stopButtonEnabled = false
         isRunning = false
-        currentEpisodes.clear()
-        downloadsInProgress.value = 0
-        synchronizeDownloadsInQueue()
+        downloadThread.clear()
+        downloadThread.downloadsInProgress.value = 0
+        downloadThread.synchronizeDownloadsInQueue()
     }
 
     fun shutdown(force: Boolean = false) {
         if (force && !shutdownExecuted) {
+            downloadThread.stop()
             shutdownExecuted = true
             stop()
             taskScope.launch {
@@ -158,6 +128,7 @@ class CoreChild {
                 """.trimIndent(),
                 "Shutdown"
             ) {
+                downloadThread.stop()
                 shutdownExecuted = true
                 stop()
                 taskScope.launch {
@@ -166,6 +137,7 @@ class CoreChild {
                 }
             }
         } else {
+            downloadThread.stop()
             shutdownExecuted = true
             taskScope.launch {
                 killAllDrivers()
@@ -178,6 +150,7 @@ class CoreChild {
         if (runningDrivers.isEmpty()) {
             return@withContext
         }
+        WebDriverManager.chromedriver().quit()
         val tasks = mutableListOf<Job>()
         val copyRunningDrivers = HashMap(runningDrivers)
         shutdownProgressTotal = copyRunningDrivers.size
@@ -272,67 +245,17 @@ class CoreChild {
             showError("Your download threads can't be higher than ${Constants.maxThreads}.")
             return false
         }
+        if (!ChromeDriverBuilder.isChromeInstalled()) {
+            showError(
+                """
+                    Chrome isn't installed. Install it and restart the app.
+                    For some help visit: https://github.com/NobilityDeviant/ZenDownloader/#download--install
+                """.trimIndent()
+            )
+            return false
+        }
         return true
     }
-
-    @Synchronized
-    fun incrementDownloadsFinished() {
-        downloadsFinishedForSession++
-    }
-
-    @Synchronized
-    fun incrementDownloadsInProgress() {
-        downloadsInProgress.value++
-    }
-
-    @Synchronized
-    fun decrementDownloadsInProgress() {
-        if (downloadsInProgress.value > 0) {
-            downloadsInProgress.value--
-        }
-    }
-
-    private fun isEpisodeInQueue(episode: Episode): Boolean {
-        for (e in currentEpisodes) {
-            if (e.matches(episode)) {
-                return true
-            }
-        }
-        return false
-    }
-
-    fun addEpisodeToQueue(episode: Episode): Boolean {
-        if (!isEpisodeInQueue(episode)) {
-            currentEpisodes.add(episode)
-            synchronizeDownloadsInQueue()
-            return true
-        }
-        return false
-    }
-
-    fun addEpisodesToQueue(episodesToAdd: List<Episode>): Int {
-        var added = 0
-        for (episode in episodesToAdd) {
-            if (!isEpisodeInQueue(episode)) {
-                currentEpisodes.add(episode)
-                added++
-            }
-        }
-        synchronizeDownloadsInQueue()
-        return added
-    }
-
-    @get:Synchronized
-    val nextEpisode: Episode?
-        get() {
-            if (currentEpisodes.isEmpty()) {
-                return null
-            }
-            val link = currentEpisodes.first()
-            currentEpisodes.removeAt(0)
-            synchronizeDownloadsInQueue()
-            return link
-        }
 
     private fun indexForDownload(download: Download): Int {
         for ((index, d) in downloadList.withIndex()) {

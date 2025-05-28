@@ -4,7 +4,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.input.key.KeyEvent
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Window
@@ -14,8 +13,10 @@ import androidx.compose.ui.window.rememberWindowState
 import nobility.downloader.ui.components.toast.ToastHostState
 import nobility.downloader.ui.components.toast.toastHost
 import nobility.downloader.ui.theme.CoreTheme
-import nobility.downloader.utils.AppInfo
+import nobility.downloader.zendownloader.generated.resources.Res
+import nobility.downloader.zendownloader.generated.resources.icon
 import org.apache.commons.lang3.SystemUtils
+import org.jetbrains.compose.resources.painterResource
 
 /**
  * My implementation of Jetpacks multi window example.
@@ -124,7 +125,7 @@ class ApplicationState {
                 val open by remember { scope.open }
                 if (open) {
                     Window(
-                        icon = painterResource(AppInfo.APP_ICON_PATH),
+                        icon = painterResource(Res.drawable.icon),
                         //undecorated windows don't work on windows 7 & maybe windows 11?
                         undecorated = if (!SystemUtils.IS_OS_WINDOWS_7) undecorated else false,
                         transparent = if (!SystemUtils.IS_OS_WINDOWS_7) transparent else false,

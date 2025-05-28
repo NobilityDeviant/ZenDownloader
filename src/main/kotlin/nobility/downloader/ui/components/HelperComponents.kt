@@ -17,6 +17,9 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.*
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.PointerType
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.TextStyle
@@ -214,5 +217,24 @@ fun tooltip(
         )
     } else {
         content()
+    }
+}
+
+@Composable
+fun Modifier.horizontalWheelScroll(
+    scrollMultiplier: Int = -50,
+    action: (Float) -> Unit
+): Modifier = this then pointerInput(Unit) {
+    awaitPointerEventScope {
+        while (true) {
+            val event = awaitPointerEvent(PointerEventPass.Initial)
+            val scrollDeltaY = event.changes
+                .firstOrNull { it.type == PointerType.Mouse }
+                ?.scrollDelta?.y ?: 0f
+
+            if (scrollDeltaY != 0f) {
+                action(scrollDeltaY * scrollMultiplier)
+            }
+        }
     }
 }

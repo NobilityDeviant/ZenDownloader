@@ -24,6 +24,7 @@ import nobility.downloader.ui.windows.database.DatabaseWindow
 import nobility.downloader.utils.AppInfo
 import nobility.downloader.utils.FrogLog
 import nobility.downloader.utils.fileExists
+import java.io.File
 import java.io.PrintStream
 
 /**
@@ -79,6 +80,10 @@ class Core private constructor() {
                 Defaults.FIRST_LAUNCH.update(true)
             } else {
                 FrogLog.writeMessage("Welcome Back!")
+            }
+            val file = File(AppInfo.databasePath + "extra")
+            if (file.exists()) {
+                file.deleteRecursively()
             }
             BoxHelper.init()
             child.init()

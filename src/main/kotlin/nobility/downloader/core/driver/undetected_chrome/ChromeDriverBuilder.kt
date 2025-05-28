@@ -1,10 +1,12 @@
 package nobility.downloader.core.driver.undetected_chrome
 
 import com.alibaba.fastjson.JSONObject
+import nobility.downloader.core.BoxHelper.Companion.string
 import nobility.downloader.core.driver.undetected_chrome.SysUtil.getString
 import nobility.downloader.core.driver.undetected_chrome.SysUtil.isLinux
 import nobility.downloader.core.driver.undetected_chrome.SysUtil.isMacOs
 import nobility.downloader.core.driver.undetected_chrome.SysUtil.path
+import nobility.downloader.core.settings.Defaults
 import nobility.downloader.utils.FrogLog
 import nobility.downloader.utils.fileExists
 import org.openqa.selenium.chrome.ChromeDriver
@@ -262,18 +264,7 @@ class ChromeDriverBuilder {
     ): ChromeOptions {
         var mBinaryLocation = binaryLocation
         if (mBinaryLocation.isEmpty() || !mBinaryLocation.fileExists()) {
-            try {
-                mBinaryLocation = chromePath()
-            } catch (_: Exception) {
-                FrogLog.logError(
-                    """
-                        Chrome isn't installed. Install it and restart the app.
-                        For some help visit: https://github.com/NobilityDeviant/ZenDownloader/#download--install
-                    """.trimIndent(),
-                    important = true
-                )
-                throw RuntimeException("Failed to find chrome binary.")
-            }
+            mBinaryLocation = chromePath()
             if (mBinaryLocation.isEmpty()) {
                 FrogLog.logError(
                     """
@@ -543,62 +534,6 @@ class ChromeDriverBuilder {
         }
     }
 
-    private fun chromePath(): String {
-        var chromeDataPath: String? = null
-        val isPosix = isMacOs || isLinux
-        val possibles = mutableSetOf<String>()
-        if (isPosix) {
-            val names = mutableListOf(
-                "google-chrome",
-                "chromium",
-                "chromium-browser",
-                "chrome",
-                "google-chrome-stable"
-            )
-            path.forEach { path ->
-                names.forEach { name ->
-                    possibles.add(path + File.separator + name)
-                }
-            }
-            if (isMacOs) {
-                possibles.add("/Applications/Google Chrome.app/Contents/MacOS/Google Chrome")
-                possibles.add("/Applications/Chromium.app/Contents/MacOS/Chromium")
-            }
-        } else {
-            val paths = listOf(
-                getString("PROGRAMFILES"),
-                getString("PROGRAMFILES(X86)"),
-                getString("LOCALAPPDATA")
-            )
-            val middles = listOf(
-                "Google" + File.separator + "Chrome" + File.separator + "Application",
-                "Google" + File.separator + "Chrome Beta" + File.separator + "Application",
-                "Google" + File.separator + "Chrome Canary" + File.separator + "Application"
-            )
-            paths.forEach { path ->
-                middles.forEach { middle ->
-                    possibles.add(path + File.separator + middle + File.separator + "chrome.exe")
-                }
-            }
-        }
-
-        for (possible in possibles) {
-            val file = File(possible)
-            if (file.exists() && file.canExecute()) {
-                chromeDataPath = file.absolutePath
-                break
-            }
-        }
-
-        if (chromeDataPath == null) {
-            throw RuntimeException(
-                "Chrome not found in your PC. You must set the directory with binaryLocation."
-            )
-        }
-
-        return chromeDataPath
-    }
-
     @Suppress("UNCHECKED_CAST")
     private fun undotMerge(key: String, value: Any, dict: MutableMap<String, Any>) {
         if (key.contains(".")) {
@@ -616,5 +551,70 @@ class ChromeDriverBuilder {
             return
         }
         dict[key] = value
+    }
+
+    companion object {
+
+        fun isChromeInstalled(): Boolean {
+            val chromePath = Defaults.CHROME_BROWSER_PATH.string()
+            val chromeDriverPath = Defaults.CHROME_DRIVER_PATH.string()
+            if (chromePath.isNotEmpty()
+                && chromePath.fileExists()
+                && chromeDriverPath.isNotEmpty()
+                && chromeDriverPath.fileExists()
+            ) {
+                return true
+            }
+            return chromePath().isNotBlank()
+        }
+
+        fun chromePath(): String {
+            var chromeDataPath = ""
+            val isPosix = isMacOs || isLinux
+            val possibles = mutableSetOf<String>()
+            if (isPosix) {
+                val names = mutableListOf(
+                    "google-chrome",
+                    "chromium",
+                    "chromium-browser",
+                    "chrome",
+                    "google-chrome-stable"
+                )
+                path.forEach { path ->
+                    names.forEach { name ->
+                        possibles.add(path + File.separator + name)
+                    }
+                }
+                if (isMacOs) {
+                    possibles.add("/Applications/Google Chrome.app/Contents/MacOS/Google Chrome")
+                    possibles.add("/Applications/Chromium.app/Contents/MacOS/Chromium")
+                }
+            } else {
+                val paths = listOf(
+                    getString("PROGRAMFILES"),
+                    getString("PROGRAMFILES(X86)"),
+                    getString("LOCALAPPDATA")
+                )
+                val middles = listOf(
+                    "Google" + File.separator + "Chrome" + File.separator + "Application",
+                    "Google" + File.separator + "Chrome Beta" + File.separator + "Application",
+                    "Google" + File.separator + "Chrome Canary" + File.separator + "Application"
+                )
+                paths.forEach { path ->
+                    middles.forEach { middle ->
+                        possibles.add(path + File.separator + middle + File.separator + "chrome.exe")
+                    }
+                }
+            }
+
+            for (possible in possibles) {
+                val file = File(possible)
+                if (file.exists() && file.canExecute()) {
+                    chromeDataPath = file.absolutePath
+                    break
+                }
+            }
+            return chromeDataPath
+        }
     }
 }

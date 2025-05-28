@@ -25,6 +25,7 @@ import java.io.File
  * We use it in a separate class to be able to pass the data to any other function.
  */
 class VideoDownloadData(
+    val episode: Episode,
     val temporaryQuality: Quality? = null,
     private val customTag: String? = null
 ) {
@@ -34,14 +35,13 @@ class VideoDownloadData(
     val undriver: UndetectedChromeDriver get() = base.undriver
     val userAgent = base.userAgent
     val pageChangeWaitTime = 5_000L //in milliseconds
-    var mCurrentEpisode: Episode? = null
     var mCurrentDownload: Download? = null
-    val currentEpisode get() = mCurrentEpisode!!
     val currentDownload get() = mCurrentDownload!!
     var retries = 0
     var resRetries = 0
     var premRetries = 0
     val downloadDatas = mutableListOf<DownloadData>()
+    var finished = false
 
     fun createDownload(
         slug: String,
@@ -69,9 +69,9 @@ class VideoDownloadData(
         if (mCurrentDownload == null) {
             mCurrentDownload = Download()
             currentDownload.downloadPath = saveFile.absolutePath
-            currentDownload.name = currentEpisode.name
-            currentDownload.slug = currentEpisode.slug
-            currentDownload.seriesSlug = currentEpisode.seriesSlug
+            currentDownload.name = episode.name
+            currentDownload.slug = episode.slug
+            currentDownload.seriesSlug = episode.seriesSlug
             currentDownload.resolution = qualityOption.resolution
             currentDownload.dateAdded = System.currentTimeMillis()
             currentDownload.fileSize = 0
@@ -88,12 +88,9 @@ class VideoDownloadData(
         updatedQuality: Quality,
         extraName: String = ""
     ): File {
-        if (mCurrentEpisode == null) {
-            throw Exception("Failed to generate save folder. The current episode is null.")
-        }
-        val series = seriesForSlug(currentEpisode.seriesSlug)
+        val series = seriesForSlug(episode.seriesSlug)
         val downloadFolderPath = Defaults.SAVE_FOLDER.string()
-        val episodeName = currentEpisode.name.fixForFiles() + extraName
+        val episodeName = episode.name.fixForFiles() + extraName
         val seasonFolder = if (Defaults.SEPARATE_SEASONS.boolean())
             Tools.findSeasonFromEpisode(episodeName) else null
         var saveFolder = File(
@@ -132,30 +129,10 @@ class VideoDownloadData(
         return false
     }
 
-    fun getNewEpisode(): Boolean {
-        if (mCurrentEpisode == null) {
-            downloadDatas.clear()
-            mCurrentEpisode = Core.child.nextEpisode
-            if (mCurrentEpisode == null) {
-                return false
-            }
-            resRetries = 0
-            retries = 0
-            premRetries = 0
-            Core.child.incrementDownloadsInProgress()
-        }
-        return true
-    }
-
     fun reachedMax(): Boolean {
         if (retries >= Defaults.VIDEO_RETRIES.int()) {
-            if (mCurrentEpisode != null) {
-                writeMessage("Reached max retries of ${Defaults.VIDEO_RETRIES.int()}.")
-            }
+            writeMessage("Reached max retries of ${Defaults.VIDEO_RETRIES.int()}.")
             finishEpisode()
-            resRetries = 0
-            retries = 0
-            premRetries = 0
             return true
         }
         return false
@@ -168,10 +145,8 @@ class VideoDownloadData(
             currentDownload.update()
             mCurrentDownload = null
         }
-        if (mCurrentEpisode != null) {
-            mCurrentEpisode = null
-            Core.child.decrementDownloadsInProgress()
-        }
+        Core.child.downloadThread.decrementDownloadsInProgress()
+        finished = true
     }
 
     fun resetDownload() {
@@ -222,5 +197,7 @@ class VideoDownloadData(
         )
     }
 
-    private val tag get() = if (!customTag.isNullOrEmpty()) "[$customTag]" else if (mCurrentEpisode != null) "[S] [${currentEpisode.name}]" else "[S] [No Episode]"
+    private val tag get() = if (!customTag.isNullOrEmpty())
+        "[$customTag]"
+    else "[S] [${episode.name}]"
 }

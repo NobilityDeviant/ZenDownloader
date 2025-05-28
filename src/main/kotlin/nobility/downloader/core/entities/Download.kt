@@ -17,22 +17,30 @@ data class Download(
 ) : Episode() {
 
     var manualProgress = false
+
     @Transient
     var downloading = false
+
     @Transient
     var paused = false
+
     @Transient
     var queued = false
+
     @Transient
     var videoProgress = mutableStateOf("0%")
+
     @Transient
     var audioProgress = mutableStateOf("")
+
     @Transient
     var videoDownloadSeconds = mutableStateOf(0)
         private set
+
     @Transient
     var audioDownloadSeconds = mutableStateOf(0)
         private set
+
     @Transient
     var downloadSpeed = mutableStateOf("")
         private set
@@ -41,42 +49,32 @@ data class Download(
         download: Download,
         updateProperties: Boolean
     ) {
-        var changed = false
         if (downloadPath != download.downloadPath) {
             downloadPath = download.downloadPath
-            changed = true
         }
         if (dateAdded != download.dateAdded) {
             dateAdded = download.dateAdded
-            changed = true
         }
         if (fileSize != download.fileSize) {
             fileSize = download.fileSize
-            changed = true
         }
         if (queued != download.queued) {
             queued = download.queued
-            changed = true
         }
         if (downloading != download.downloading) {
             downloading = download.downloading
-            changed = true
         }
         if (resolution != download.resolution) {
             resolution = download.resolution
-            changed = true
         }
         if (manualProgress != download.manualProgress) {
             manualProgress = download.manualProgress
-            changed = true
         }
         if (videoProgress.value != download.videoProgress.value) {
             videoProgress.value = download.videoProgress.value
-            changed = true
         }
         if (audioProgress.value != download.audioProgress.value) {
             audioProgress.value = download.audioProgress.value
-            changed = true
         }
         if (updateProperties) {
             updateProgress()

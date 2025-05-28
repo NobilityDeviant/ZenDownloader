@@ -54,22 +54,30 @@ class SettingsView : ViewPage {
 
     init {
         Defaults.settings.forEach {
-            if (it.value is String) {
-                stringOptions.put(
-                    it, mutableStateOf(it.string())
-                )
-            } else if (it.value is Boolean) {
-                booleanOptions.put(
-                    it, mutableStateOf(it.boolean())
-                )
-            } else if (it.value is Int) {
-                intOptions.put(
-                    it, mutableStateOf(it.int())
-                )
-            } else if (it.value is Long) {
-                longOptions.put(
-                    it, mutableStateOf(it.long())
-                )
+            when (it.value) {
+                is String -> {
+                    stringOptions.put(
+                        it, mutableStateOf(it.string())
+                    )
+                }
+
+                is Boolean -> {
+                    booleanOptions.put(
+                        it, mutableStateOf(it.boolean())
+                    )
+                }
+
+                is Int -> {
+                    intOptions.put(
+                        it, mutableStateOf(it.int())
+                    )
+                }
+
+                is Long -> {
+                    longOptions.put(
+                        it, mutableStateOf(it.long())
+                    )
+                }
             }
         }
     }
@@ -146,8 +154,8 @@ class SettingsView : ViewPage {
                         horizontalArrangement = Arrangement.spacedBy(5.dp),
                         maxItemsInEachRow = 10
                     ) {
-                        Defaults.intFields.forEach {
-                            fieldRowInt(it)
+                        Defaults.intFields.forEach { field ->
+                            fieldRowInt(field)
                         }
                     }
                     FlowRow(
@@ -155,8 +163,8 @@ class SettingsView : ViewPage {
                         horizontalArrangement = Arrangement.spacedBy(5.dp),
                         maxItemsInEachRow = 10
                     ) {
-                        Defaults.checkBoxes.forEach {
-                            fieldCheckbox(it)
+                        Defaults.checkBoxes.forEach { cb ->
+                            fieldCheckbox(cb)
                         }
                     }
                 }
@@ -619,14 +627,22 @@ class SettingsView : ViewPage {
 
     fun updateValues() {
         Defaults.entries.forEach {
-            if (it.value is String) {
-                stringOptions[it]?.value = it.string()
-            } else if (it.value is Boolean) {
-                booleanOptions[it]?.value = it.boolean()
-            } else if (it.value is Int) {
-                intOptions[it]?.value = it.int()
-            } else if (it.value is Long) {
-                longOptions[it]?.value = it.long()
+            when (it.value) {
+                is String -> {
+                    stringOptions[it]?.value = it.string()
+                }
+
+                is Boolean -> {
+                    booleanOptions[it]?.value = it.boolean()
+                }
+
+                is Int -> {
+                    intOptions[it]?.value = it.int()
+                }
+
+                is Long -> {
+                    longOptions[it]?.value = it.long()
+                }
             }
         }
         saveButtonEnabled.value = false

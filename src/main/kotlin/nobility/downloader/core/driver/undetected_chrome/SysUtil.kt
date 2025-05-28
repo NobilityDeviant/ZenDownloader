@@ -12,7 +12,7 @@ object SysUtil {
         get() = osName.startsWith("mac")
 
     val isLinux: Boolean
-        get() = osName.startsWith("linux") || isArch || isDebian
+        get() = osName.startsWith("linux") || isArch || isDebian || (!isWindows && !isMacOs)
 
     val isArch get() = findLinuxDistro() == DistroBase.ARCH
 
@@ -33,7 +33,6 @@ object SysUtil {
     private val archIds get() = listOf(
         "fedora",
         "centos",
-        "manjaro",
         "arch",
         "blackarch",
         "amzn",

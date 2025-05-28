@@ -27,6 +27,11 @@ data class Series(
 ) {
 
     var genreNames = mutableListOf<String>()
+
+    val filteredGenres get() = genreNames.filter {
+        it != "Null"
+    }.distinct()
+
     var episodes: ToMany<Episode> = ToMany(this, Series_.episodes)
 
     val episodesSize: Int

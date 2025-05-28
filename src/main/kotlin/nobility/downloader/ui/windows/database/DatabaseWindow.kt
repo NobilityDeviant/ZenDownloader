@@ -119,7 +119,7 @@ class DatabaseWindow {
             sortedSeries.filter {
                 var foundGenre = false
                 if (byGenre) {
-                    for (genre in it.genreNames) {
+                    for (genre in it.filteredGenres) {
                         if (genre.equals(search, true)) {
                             foundGenre = true
                             break
@@ -667,7 +667,7 @@ class DatabaseWindow {
             )
             divider()
             linkifyGenres(
-                series.genreNames.distinct(),
+                series.filteredGenres,
                 textColor = MaterialTheme.colorScheme.onSecondaryContainer,
                 linkColor = MaterialTheme.colorScheme.primary,
                 modifier = Modifier

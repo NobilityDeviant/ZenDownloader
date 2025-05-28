@@ -51,10 +51,7 @@ import nobility.downloader.core.Core.Companion.randomSeries2
 import nobility.downloader.core.entities.Series
 import nobility.downloader.core.entities.data.SeriesIdentity
 import nobility.downloader.core.settings.Defaults
-import nobility.downloader.ui.components.DefaultButton
-import nobility.downloader.ui.components.DefaultDropdownItem
-import nobility.downloader.ui.components.DefaultImage
-import nobility.downloader.ui.components.DefaultTextField
+import nobility.downloader.ui.components.*
 import nobility.downloader.ui.windows.utils.AppWindowScope
 import nobility.downloader.utils.Constants.randomSeriesRowHeight
 import nobility.downloader.utils.Tools
@@ -234,7 +231,13 @@ class DownloaderView : ViewPage {
                                         }
                                     },
                                     orientation = Orientation.Horizontal
-                                ).hoverable(rowInteraction),
+                                ).hoverable(rowInteraction)
+                                .horizontalWheelScroll { scroll ->
+                                    coroutineScope.launch {
+                                        seriesStateList.scrollBy(scroll)
+                                        seriesStateList2.scrollBy(scroll)
+                                    }
+                                },
                             state = seriesStateList
                         ) {
                             items(
@@ -307,7 +310,13 @@ class DownloaderView : ViewPage {
                                     },
                                     orientation = Orientation.Horizontal
                                 ).hoverable(rowInteraction)
-                                .padding(bottom = 16.dp),
+                                .padding(bottom = 16.dp)
+                                .horizontalWheelScroll { scroll ->
+                                    coroutineScope.launch {
+                                        seriesStateList.scrollBy(scroll)
+                                        seriesStateList2.scrollBy(scroll)
+                                    }
+                                },
                             state = seriesStateList2
                         ) {
                             items(
@@ -343,7 +352,7 @@ class DownloaderView : ViewPage {
                                         RectangleShape
                                     ).hoverable(interaction)
                                         .pointerMoveFilter(
-                                            onMove = { offset ->
+                                            onMove = {
                                                 hoveredSeries.value = series
                                                 false
                                             },
@@ -379,16 +388,17 @@ class DownloaderView : ViewPage {
                                     delay(5000)
                                     continue
                                 }
+                                //todo on last ones, wait awhile before scrolling to the beginning
                                 launch {
                                     if (seriesStateList.canScrollForward) {
-                                        seriesStateList.animateScrollBy(200f)
+                                        seriesStateList.animateScrollBy(250f)
                                     } else if (seriesStateList.canScrollBackward) {
                                         seriesStateList.animateScrollToItem(0)
                                     }
                                 }
                                 launch {
                                     if (seriesStateList2.canScrollForward) {
-                                        seriesStateList2.animateScrollBy(200f)
+                                        seriesStateList2.animateScrollBy(250f)
                                     } else if (seriesStateList2.canScrollBackward) {
                                         seriesStateList2.animateScrollToItem(0)
                                     }

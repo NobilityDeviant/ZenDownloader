@@ -4,6 +4,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import nobility.downloader.core.BoxHelper.Companion.int
 import nobility.downloader.core.Core
+import nobility.downloader.core.entities.Episode
 import nobility.downloader.core.scraper.video_download.Functions.downloadVideo
 import nobility.downloader.core.scraper.video_download.Functions.fileSize
 import nobility.downloader.core.scraper.video_download.MovieDownloader.handleMovie
@@ -18,23 +19,35 @@ import nobility.downloader.utils.update
  * This class is used to organize the executions in an easy-to-read manner (for my sanity).
  */
 class VideoDownloadHandler(
+    private val episode: Episode,
     temporaryQuality: Quality? = null
 ) {
 
-    private val help = VideoDownloadHelper(temporaryQuality)
+    private val help = VideoDownloadHelper(
+        episode,
+        temporaryQuality
+    )
+
     private val data get() = help.data
 
     suspend fun run() = withContext(Dispatchers.IO) {
+        Core.child.downloadThread.incrementDownloadsInProgress()
         while (Core.child.isRunning) {
-            if (data.reachedMax()) continue
-            if (!data.getNewEpisode()) break
-            val slug = data.currentEpisode.slug
+            if (data.reachedMax()) {
+                continue
+            }
+            if (data.finished) {
+                break
+            }
+            val slug = episode.slug
             if (slug.isEmpty()) {
                 data.writeMessage("Skipping episode with no slug.")
                 data.finishEpisode()
                 continue
             }
-            if (data.quickCheckVideoExists(slug)) continue
+            if (data.quickCheckVideoExists(slug)) {
+                continue
+            }
             val movie = Core.child.movieHandler.movieForSlug(slug)
             if (movie != null) {
                 handleMovie(movie, data)
@@ -173,7 +186,7 @@ class VideoDownloadHandler(
                     //second time to ensure ui update
                     data.currentDownload.update()
                     if (saveFile.exists() && saveFile.length() >= originalFileSize) {
-                        Core.child.incrementDownloadsFinished()
+                        Core.child.downloadThread.incrementDownloadsFinished()
                         data.writeMessage("Successfully downloaded with ${qualityOption.tag} quality.")
                         help.handleSecondVideo()
                         data.finishEpisode()

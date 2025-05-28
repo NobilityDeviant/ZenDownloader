@@ -29,7 +29,9 @@ import compose.icons.evaicons.Fill
 import compose.icons.evaicons.fill.ArrowIosDownward
 import compose.icons.evaicons.fill.ArrowIosUpward
 import compose.icons.evaicons.fill.Info
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import nobility.downloader.Page
 import nobility.downloader.core.BoxHelper
 import nobility.downloader.core.BoxHelper.Companion.long
@@ -38,10 +40,12 @@ import nobility.downloader.core.Core
 import nobility.downloader.core.entities.Episode
 import nobility.downloader.core.entities.RecentData
 import nobility.downloader.core.entities.Series
+import nobility.downloader.core.scraper.DownloadHandler
 import nobility.downloader.core.scraper.RecentScraper
 import nobility.downloader.core.scraper.data.ToDownload
 import nobility.downloader.core.settings.Defaults
 import nobility.downloader.ui.components.*
+import nobility.downloader.ui.components.dialog.DialogHelper.showError
 import nobility.downloader.ui.windows.utils.AppWindowScope
 import nobility.downloader.utils.FrogLog
 import nobility.downloader.utils.Tools
@@ -115,11 +119,27 @@ class RecentView: ViewPage {
                                 }
                             }
                         } else {
-                            Text(
-                                "Last Updated: ${Tools.dateFormatted(lastUpdated, false)}",
-                                fontSize = 16.sp,
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(16.dp)
+                            ) {
+                                defaultButton(
+                                    "Update Recent Series",
+                                    height = 35.dp,
+                                    width = 170.dp,
+                                    padding = PaddingValues(0.dp)
+                                ) {
+                                    scope.launch {
+                                        reloadRecentData()
+                                    }
+                                }
+
+                                Text(
+                                    "Last Updated: ${Tools.dateFormatted(lastUpdated, false)}",
+                                    fontSize = 16.sp,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                            }
                         }
                     }
                 }
@@ -287,22 +307,27 @@ class RecentView: ViewPage {
                             ToDownload(series, episode)
                         )
                     } else {
-                        if (!Core.child.isRunning) {
-                            windowScope.showToast(
-                                """
+                        windowScope.showToast(
+                            """
                                     Failed to find local data.
                                     Scraping data for link.
                                 """.trimIndent()
-                            )
+                        )
+                        if (!Core.child.isRunning) {
                             Core.currentUrl = link
                             Core.child.start()
                         } else {
-                            windowScope.showToast(
-                                """
-                                    Failed to find local data.
-                                    Unable to scrape data for link because the scraper is running.
-                                """.trimIndent()
-                            )
+                            Core.child.taskScope.launch {
+                                val result = DownloadHandler.run(link)
+                                if (result.isFailed) {
+                                    withContext(Dispatchers.Main) {
+                                        showError(
+                                            "Failed to extract data from: $link",
+                                            result.message
+                                        )
+                                    }
+                                }
+                            }
                         }
                     }
                 } else {
