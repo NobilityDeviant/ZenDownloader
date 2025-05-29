@@ -174,6 +174,9 @@ fun DefaultTextField(
     textStyle: TextStyle = LocalTextStyle.current,
     keyboardOptions: KeyboardOptions = KeyboardOptions(),
     modifier: Modifier = Modifier,
+    requestFocus: Boolean = false,
+    focusRequester: FocusRequester = remember { FocusRequester() },
+    trailingIcon: @Composable (() -> Unit)? = null,
     contextMenuItems: () -> List<ContextMenuItem> = { listOf() }
 ) {
     val contextMenuRepresentation = DefaultContextMenuRepresentation(
@@ -199,8 +202,11 @@ fun DefaultTextField(
                         )
                     }
                 },
+                trailingIcon = trailingIcon,
                 textStyle = textStyle,
-                modifier = modifier,
+                modifier = if (requestFocus)
+                    modifier.focusRequester(focusRequester)
+                else modifier,
                 colors = colors,
                 keyboardOptions = keyboardOptions
             )

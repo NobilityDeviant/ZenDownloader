@@ -2,6 +2,7 @@ package nobility.downloader.core.scraper
 
 import androidx.compose.runtime.mutableStateOf
 import kotlinx.coroutines.*
+import nobility.downloader.core.BoxHelper.Companion.boolean
 import nobility.downloader.core.BoxHelper.Companion.int
 import nobility.downloader.core.Core
 import nobility.downloader.core.entities.Episode
@@ -9,19 +10,18 @@ import nobility.downloader.core.scraper.video_download.VideoDownloadHandler
 import nobility.downloader.core.settings.Defaults
 import nobility.downloader.utils.FrogLog
 import java.util.*
+import java.util.concurrent.atomic.AtomicInteger
 
 /**
  * Used to handle video download tasks.
- * This will continuously run during the entire apps lifespan.
+ * This will continuously run during the entire apps' lifespan.
  */
 class DownloadThread {
 
     val downloadQueue: MutableList<Episode> = Collections.synchronizedList(mutableListOf())
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
-    @Volatile
-    var hasStartedDownloading = false
-    @Volatile
-    private var currentJobs = 0
+    private var currentJobs = AtomicInteger(0)
+    private var stopJob: Job? = null
 
     @Volatile
     var downloadsInProgress = mutableStateOf(0)
@@ -36,36 +36,46 @@ class DownloadThread {
 
     suspend fun run() = withContext(scope.coroutineContext) {
         while (isActive) {
-
-            val maxThreads = Defaults.DOWNLOAD_THREADS.int()
-            val slots = (maxThreads - currentJobs).coerceAtLeast(0)
-
-            if (Core.child.isRunning && downloadQueue.isNotEmpty() && slots > 0) {
-                repeat(downloadQueue.size.coerceAtMost(slots)) {
+            val headless = Defaults.HEADLESS_MODE.boolean()
+            val maxThreads = if (!headless) 1 else Defaults.DOWNLOAD_THREADS.int()
+            val availableSlots = (maxThreads - currentJobs.get()).coerceAtLeast(0)
+            if (Core.child.isRunning && availableSlots > 0) {
+                var launched = 0
+                while (launched < availableSlots) {
                     launchDownloadJob()
+                    launched++
                 }
             }
-            if (hasFinished()) {
-                val finished = downloadsFinishedForSession
-                if (finished > 0) {
-                    FrogLog.writeMessage("Gracefully finished downloading $finished video(s).")
-                } else {
-                    FrogLog.writeMessage("Gracefully finished. No downloads have been made.")
-                }
-                Core.child.stop()
-                hasStartedDownloading = false
-            }
-            delay(500)
         }
     }
 
-    private fun launchDownloadJob(): Job? {
+    suspend fun launchStopJob() = withContext(scope.coroutineContext) {
+        stopJob?.cancel()
+        delay(5000)
+        stopJob = launch {
+            while (isActive) {
+                if (hasFinished()) {
+                    val finished = downloadsFinishedForSession
+                    if (finished > 0) {
+                        FrogLog.writeMessage("Gracefully finished downloading $finished video(s).")
+                    } else {
+                        FrogLog.writeMessage("Gracefully finished. No downloads have been made.")
+                    }
+                    Core.child.stop()
+                    break
+                }
+                delay(2500)
+            }
+        }
+    }
+
+    private fun launchDownloadJob() {
         val nextDownload = nextDownload
         if (nextDownload == null) {
-            return null
+            return
         }
-        return scope.launch(Dispatchers.IO) {
-            currentJobs++
+        currentJobs.incrementAndGet()
+        scope.launch(Dispatchers.IO) {
             val downloader = VideoDownloadHandler(nextDownload)
             try {
                 downloader.run()
@@ -76,16 +86,13 @@ class DownloadThread {
                 )
             } finally {
                 downloader.killDriver()
-                currentJobs--
+                currentJobs.decrementAndGet()
             }
         }
     }
 
     private fun hasFinished(): Boolean {
-        if (!hasStartedDownloading) {
-            return false
-        }
-        val noJobs = currentJobs <= 0
+        val noJobs = currentJobs.get() <= 0
         val nothingToDownload = downloadQueue.isEmpty()
         return noJobs && nothingToDownload
     }

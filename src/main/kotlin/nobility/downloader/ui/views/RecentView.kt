@@ -29,28 +29,20 @@ import compose.icons.evaicons.Fill
 import compose.icons.evaicons.fill.ArrowIosDownward
 import compose.icons.evaicons.fill.ArrowIosUpward
 import compose.icons.evaicons.fill.Info
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import nobility.downloader.Page
 import nobility.downloader.core.BoxHelper
 import nobility.downloader.core.BoxHelper.Companion.long
 import nobility.downloader.core.BoxHelper.Companion.update
 import nobility.downloader.core.Core
-import nobility.downloader.core.entities.Episode
 import nobility.downloader.core.entities.RecentData
-import nobility.downloader.core.entities.Series
-import nobility.downloader.core.scraper.DownloadHandler
 import nobility.downloader.core.scraper.RecentScraper
-import nobility.downloader.core.scraper.data.ToDownload
 import nobility.downloader.core.settings.Defaults
 import nobility.downloader.ui.components.*
-import nobility.downloader.ui.components.dialog.DialogHelper.showError
 import nobility.downloader.ui.windows.utils.AppWindowScope
 import nobility.downloader.utils.FrogLog
 import nobility.downloader.utils.Tools
 import nobility.downloader.utils.hover
-import nobility.downloader.utils.linkToSlug
 
 class RecentView: ViewPage {
 
@@ -289,50 +281,10 @@ class RecentView: ViewPage {
                 EvaIcons.Fill.Info
             ) {
                 closeMenu()
-                val link = recentData.link
-                if (link.isNotEmpty()) {
-                    var series: Series? = null
-                    var episode: Episode? = null
-                    if (recentData.isSeries) {
-                        series = BoxHelper.seriesForSlug(link.linkToSlug())
-                    } else {
-                        val pair = BoxHelper.seriesForEpisodeSlug(link.linkToSlug())
-                        if (pair != null) {
-                            series = pair.first
-                            episode = pair.second
-                        }
-                    }
-                    if (series != null) {
-                        Core.openDownloadConfirm(
-                            ToDownload(series, episode)
-                        )
-                    } else {
-                        windowScope.showToast(
-                            """
-                                    Failed to find local data.
-                                    Scraping data for link.
-                                """.trimIndent()
-                        )
-                        if (!Core.child.isRunning) {
-                            Core.currentUrl = link
-                            Core.child.start()
-                        } else {
-                            Core.child.taskScope.launch {
-                                val result = DownloadHandler.run(link)
-                                if (result.isFailed) {
-                                    withContext(Dispatchers.Main) {
-                                        showError(
-                                            "Failed to extract data from: $link",
-                                            result.message
-                                        )
-                                    }
-                                }
-                            }
-                        }
-                    }
-                } else {
-                    windowScope.showToast("There is no link for this ${type(recentData)}.")
-                }
+                Core.openSeriesDetails(
+                    recentData.link,
+                    windowScope
+                )
             }
         }
         Row(

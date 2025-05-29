@@ -36,7 +36,6 @@ import nobility.downloader.core.Core
 import nobility.downloader.core.entities.Series
 import nobility.downloader.core.entities.SeriesHistory
 import nobility.downloader.core.scraper.SeriesUpdater
-import nobility.downloader.core.scraper.data.ToDownload
 import nobility.downloader.ui.components.*
 import nobility.downloader.ui.components.dialog.DialogHelper
 import nobility.downloader.ui.windows.utils.AppWindowScope
@@ -206,7 +205,7 @@ class HistoryView : ViewPage {
                             sortedSeriesDataData,
                             key = { it.series.slug + it.series.id }
                         ) {
-                            seriesDataRow(
+                            SeriesDataRow(
                                 it,
                                 windowScope,
                                 scope
@@ -387,7 +386,7 @@ class HistoryView : ViewPage {
 
     @OptIn(ExperimentalFoundationApi::class)
     @Composable
-    private fun seriesDataRow(
+    private fun SeriesDataRow(
         seriesData: SeriesData,
         windowScope: AppWindowScope,
         coroutineSeries: CoroutineScope
@@ -408,8 +407,9 @@ class HistoryView : ViewPage {
                 EvaIcons.Fill.Info
             ) {
                 closeMenu()
-                Core.openDownloadConfirm(
-                    ToDownload(seriesData.series)
+                Core.openSeriesDetails(
+                    seriesData.series.slug,
+                    windowScope
                 )
             }
             DefaultDropdownItem(

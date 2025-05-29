@@ -7,6 +7,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.key
 import androidx.compose.ui.unit.dp
 import nobility.downloader.ui.components.DefaultImage
 import nobility.downloader.ui.windows.utils.ApplicationState
@@ -23,7 +25,14 @@ object ImagePopoutWindow {
                 imagePath else urlBackup
         else imagePath
         ApplicationState.newWindow(
-            title
+            title,
+            keyEvents = {
+                if (it.key == Key.Escape) {
+                    ApplicationState.removeWindowWithId(title)
+                    true
+                }
+                false
+            }
         ) {
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,

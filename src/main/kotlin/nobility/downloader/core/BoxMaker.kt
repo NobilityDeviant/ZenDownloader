@@ -29,8 +29,7 @@ object BoxMaker {
         addToHistory: Boolean = true
     ): Series {
         var series = BoxHelper.seriesForSlug(
-            slug,
-            //SeriesIdentity.idForType(identity)
+            slug
         )
         val newSeries = Series(
             slug,

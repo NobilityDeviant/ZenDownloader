@@ -51,8 +51,6 @@ fun BasicTextFieldWithCursorAtEnd(
     decorationBox: @Composable (innerTextField: @Composable () -> Unit) -> Unit =
         @Composable { innerTextField -> innerTextField() }
 ) {
-    // Holds the latest internal TextFieldValue state. We need to keep it to have the correct value
-    // of the composition.
     var textFieldValueState by remember {
         mutableStateOf(
             TextFieldValue(
@@ -64,9 +62,6 @@ fun BasicTextFieldWithCursorAtEnd(
         )
     }
 
-    // Holds the latest TextFieldValue that BasicTextField was recomposed with. We couldn't simply
-    // pass `TextFieldValue(text = value)` to the CoreTextField because we need to preserve the
-    // composition.
     val textFieldValue = textFieldValueState.copy(text = value)
 
     SideEffect {

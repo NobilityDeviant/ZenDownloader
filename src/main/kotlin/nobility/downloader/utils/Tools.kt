@@ -5,6 +5,7 @@ import androidx.compose.ui.graphics.colorspace.ColorSpaces
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import nobility.downloader.core.BoxHelper.Companion.int
+import nobility.downloader.core.entities.Download
 import nobility.downloader.core.entities.Episode
 import nobility.downloader.core.scraper.video_download.Functions
 import nobility.downloader.core.settings.Defaults
@@ -208,6 +209,29 @@ object Tools {
         else
             sdf.format(time)
     }
+
+    val downloadProgressComparator = Comparator<Download> { d1, d2 ->
+
+        if (d1.downloading && !d2.downloading) {
+            return@Comparator -1
+        }
+        if (!d1.downloading && d2.downloading) {
+            return@Comparator 1
+        }
+
+        val d1InProgress = d1.downloadFile() != null && !d1.isComplete
+        val d2InProgress = d2.downloadFile() != null && !d2.isComplete
+
+        if (d1InProgress && !d2InProgress) {
+            return@Comparator -1
+        }
+        if (!d1InProgress && d2InProgress) {
+            return@Comparator 1
+        }
+
+        return@Comparator 0
+    }
+
 
     val baseEpisodesComparator = Comparator { e1: Episode, e2: Episode ->
         val seasonKey = "Season"
@@ -480,7 +504,7 @@ object Tools {
         val hue = kotlin.random.Random.nextFloat() * 360f
         val (saturation, lightness) = when (style) {
             ColorStyle.PASTEL -> {
-                val sat = 0.3f + kotlin.random.Random.nextFloat() * 0.2f  // 0.3 to 0.5
+                val sat = 0.3f + kotlin.random.Random.nextFloat() * 0.2f
                 val light = 0.7f + kotlin.random.Random.nextFloat() * 0.2f
                 sat to light
             }

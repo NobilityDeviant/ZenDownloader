@@ -42,7 +42,7 @@ object UrlUpdater {
             val lastUpdatedDay = lastUpdatedCal.get(Calendar.DAY_OF_YEAR)
             val currentDay = currentCal.get(Calendar.DAY_OF_YEAR)
             val difference = currentDay - lastUpdatedDay
-            if (difference <= Constants.daysToUpdateWcoUrl) {
+            if (difference >= 0 && difference <= Constants.daysToUpdateWcoUrl) {
                 FrogLog.logInfo(
                     "Skipping wco url update. It has been updated recently. Last Checked Day: $lastUpdatedDay Current Day: $currentDay Difference: $difference (Max Days: ${Constants.daysToUpdateWcoUrl})"
                 )
@@ -67,12 +67,13 @@ object UrlUpdater {
                     }
                 }
             }
-        } catch (e: IOException) {
+        } catch (_: IOException) {
             urls.addAll(
                 listOf(
                     "https://wcofun.org",
                     "https://wcofun.com",
-                    "https://wcofun.net"
+                    "https://wcofun.net",
+                    "https://www.wcoflix.tv"
                 )
             )
         }

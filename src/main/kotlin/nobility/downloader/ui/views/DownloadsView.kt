@@ -32,10 +32,8 @@ import compose.icons.evaicons.Fill
 import compose.icons.evaicons.fill.*
 import kotlinx.coroutines.launch
 import nobility.downloader.Page
-import nobility.downloader.core.BoxHelper.Companion.seriesForSlug
 import nobility.downloader.core.Core
 import nobility.downloader.core.entities.Download
-import nobility.downloader.core.scraper.data.ToDownload
 import nobility.downloader.ui.components.DefaultDropdownItem
 import nobility.downloader.ui.components.FullBox
 import nobility.downloader.ui.components.dialog.DialogHelper
@@ -44,7 +42,6 @@ import nobility.downloader.ui.components.verticalScrollbarEndPadding
 import nobility.downloader.ui.windows.utils.AppWindowScope
 import nobility.downloader.utils.Tools
 import nobility.downloader.utils.hover
-import nobility.downloader.utils.slugToLink
 
 class DownloadsView : ViewPage {
 
@@ -62,6 +59,13 @@ class DownloadsView : ViewPage {
         ) {
             Header()
             FullBox {
+
+                val sortedDownloads by remember {
+                    derivedStateOf {
+                        downloads.sortedWith(Tools.downloadProgressComparator)
+                    }
+                }
+
                 LazyColumn(
                     verticalArrangement = Arrangement.spacedBy(1.dp),
                     modifier = Modifier.padding(
@@ -80,7 +84,7 @@ class DownloadsView : ViewPage {
                     state = scrollState
                 ) {
                     items(
-                        downloads,
+                        sortedDownloads,
                         key = { it.nameAndResolution() }
                     ) {
                         downloadRow(it, windowScope)
@@ -312,16 +316,10 @@ class DownloadsView : ViewPage {
                         "Resume",
                         EvaIcons.Fill.Download
                     ) {
-                        if (Core.child.isRunning) {
-                            if (Core.child.downloadThread.addToQueue(download) > 0) {
-                                windowScope.showToast("Added episode to the download queue.")
-                            } else {
-                                windowScope.showToast("This episode is already in the download queue.")
-                            }
-                        } else {
-                            Core.currentUrl = download.slug.slugToLink()
-                            Core.child.start()
-                        }
+                        Core.openSeriesDetails(
+                            download.slug,
+                            windowScope
+                        )
                         closeMenu()
                     }
                 }
@@ -340,34 +338,10 @@ class DownloadsView : ViewPage {
                 EvaIcons.Fill.Info
             ) {
                 closeMenu()
-                val slug = download.seriesSlug
-                if (slug.isNotEmpty()) {
-                    val series = seriesForSlug(slug)
-                    if (series != null) {
-                        Core.openDownloadConfirm(
-                            ToDownload(series)
-                        )
-                    } else {
-                        if (!Core.child.isRunning) {
-                            DialogHelper.showMessage(
-                                "Failed to find local series",
-                                "Launching the downloader for ${slug.slugToLink()}"
-                            )
-                            Core.currentUrl = slug.slugToLink()
-                            Core.child.start()
-                        } else {
-                            DialogHelper.showError(
-                                """
-                                    Failed to find local series. 
-                                    Unable to download it because the downloader is currently running.
-                                    Here's the link: ${slug.slugToLink()}
-                                """.trimIndent()
-                            )
-                        }
-                    }
-                } else {
-                    windowScope.showToast("There is no series slug for this download.")
-                }
+                Core.openSeriesDetails(
+                    download.seriesSlug,
+                    windowScope
+                )
             }
             DefaultDropdownItem(
                 "Open Folder",

@@ -47,7 +47,6 @@ import nobility.downloader.core.BoxMaker
 import nobility.downloader.core.Core
 import nobility.downloader.core.entities.Series
 import nobility.downloader.core.entities.data.SeriesIdentity
-import nobility.downloader.core.scraper.data.ToDownload
 import nobility.downloader.core.settings.Defaults
 import nobility.downloader.ui.components.*
 import nobility.downloader.ui.components.dialog.DialogHelper
@@ -137,7 +136,7 @@ class DatabaseWindow {
             }
         }
     }.stateIn(
-        Core.child.taskScope,
+        Core.taskScope,
         SharingStarted.WhileSubscribed(5000),
         sortedSeries
     )
@@ -317,7 +316,7 @@ class DatabaseWindow {
                     ).fillMaxSize()
                 ) {
                     val series by series.collectAsState()
-                    header()
+                    Header()
                     FullBox {
                         LazyColumn(
                             verticalArrangement = Arrangement.spacedBy(1.dp),
@@ -339,7 +338,7 @@ class DatabaseWindow {
                                 series,
                                 key = { it.slug + it.id }
                             ) {
-                                seriesRow(it, this@newWindow)
+                                SeriesRow(it, this@newWindow)
                             }
                         }
                         verticalScrollbar(seasonsListState)
@@ -367,7 +366,7 @@ class DatabaseWindow {
 
     @OptIn(ExperimentalFoundationApi::class)
     @Composable
-    private fun header() {
+    private fun Header() {
         Row(
             modifier = Modifier.background(
                 color = MaterialTheme.colorScheme.inversePrimary,
@@ -513,7 +512,7 @@ class DatabaseWindow {
 
     @OptIn(ExperimentalFoundationApi::class)
     @Composable
-    private fun seriesRow(
+    private fun SeriesRow(
         series: Series,
         windowScope: AppWindowScope
     ) {
@@ -533,8 +532,9 @@ class DatabaseWindow {
                 EvaIcons.Fill.Info
             ) {
                 closeMenu()
-                Core.openDownloadConfirm(
-                    ToDownload(series)
+                Core.openSeriesDetails(
+                    series.slug,
+                    windowScope
                 )
             }
             val favorited by remember {

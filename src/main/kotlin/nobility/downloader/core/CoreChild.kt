@@ -11,7 +11,6 @@ import kotlinx.coroutines.*
 import nobility.downloader.Page
 import nobility.downloader.core.BoxHelper.Companion.int
 import nobility.downloader.core.BoxHelper.Companion.string
-import nobility.downloader.core.BoxHelper.Companion.update
 import nobility.downloader.core.driver.undetected_chrome.ChromeDriverBuilder
 import nobility.downloader.core.driver.undetected_chrome.UndetectedChromeDriver
 import nobility.downloader.core.entities.Download
@@ -34,7 +33,7 @@ import kotlin.system.exitProcess
 class CoreChild {
 
     val downloadThread = DownloadThread()
-    val taskScope = CoroutineScope(Dispatchers.Default)
+    @Volatile
     var isRunning = false
         private set
     var isUpdating by mutableStateOf(false)
@@ -51,7 +50,7 @@ class CoreChild {
             addDownload(it)
         }
         movieHandler = MovieHandler()
-        taskScope.launch(Dispatchers.IO) {
+        Core.taskScope.launch(Dispatchers.IO) {
             launch {
                 UrlUpdater.updateWcoUrl()
             }
@@ -63,31 +62,41 @@ class CoreChild {
         }
     }
 
+    /**
+     * New rule. start can only be used by the user.
+     * I have replaced every other use of it with a better solution.
+     */
     fun start() {
         if (!canStart()) {
             return
         }
         softStart()
         val url = Core.currentUrl
-        Defaults.LAST_DOWNLOAD.update(url)
-        taskScope.launch {
+        Core.taskScope.launch {
             val result = DownloadHandler.run(url)
             if (result.isFailed) {
                 withContext(Dispatchers.Main) {
                     stop()
                     showError(
-                        "Failed to extract data from: $url",
+                        "Failed to find series from: $url",
                         result.message
                     )
                 }
+            } else {
+                launchStopJob()
             }
+        }
+    }
+
+    fun launchStopJob() {
+        Core.taskScope.launch {
+            downloadThread.launchStopJob()
         }
     }
 
     fun softStart() {
         forceStopped = false
         downloadThread.clear()
-        downloadThread.hasStartedDownloading = true
         Core.startButtonEnabled = false
         Core.stopButtonEnabled = true
         isRunning = true
@@ -112,7 +121,7 @@ class CoreChild {
             downloadThread.stop()
             shutdownExecuted = true
             stop()
-            taskScope.launch {
+            Core.taskScope.launch {
                 killAllDrivers()
                 exitProcess(-1)
             }
@@ -131,7 +140,7 @@ class CoreChild {
                 downloadThread.stop()
                 shutdownExecuted = true
                 stop()
-                taskScope.launch {
+                Core.taskScope.launch {
                     killAllDrivers()
                     exitProcess(0)
                 }
@@ -139,7 +148,7 @@ class CoreChild {
         } else {
             downloadThread.stop()
             shutdownExecuted = true
-            taskScope.launch {
+            Core.taskScope.launch {
                 killAllDrivers()
                 exitProcess(0)
             }
@@ -219,7 +228,7 @@ class CoreChild {
                         
                     ${Core.exampleEpisode}
                     
-                    You can also input a keyword to search inside the database window.
+                    You can also input a keyword to open & search inside the database window.
                         
                 """.trimIndent(),
                 size = DpSize(400.dp, 400.dp)

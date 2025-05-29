@@ -5,7 +5,7 @@ import java.io.File
 object AppInfo {
 
     const val DEBUG_MODE = false
-    const val USE_CUSTOM_ERROR_PS = false
+    const val USE_CUSTOM_ERROR_PS = true
     const val UPDATE_ASSETS_ON_LAUNCH = true
     private const val NAME = "ZenDownloader"
     const val VERSION = "1.1.15" //version can only have 3 numbers split by decimals

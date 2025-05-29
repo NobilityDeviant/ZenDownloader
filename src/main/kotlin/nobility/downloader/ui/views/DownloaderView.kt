@@ -21,6 +21,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
@@ -39,12 +40,16 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import compose.icons.EvaIcons
 import compose.icons.evaicons.Fill
+import compose.icons.evaicons.fill.ArrowLeft
+import compose.icons.evaicons.fill.ArrowRight
+import compose.icons.evaicons.fill.Close
 import compose.icons.evaicons.fill.Refresh
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import nobility.downloader.Page
 import nobility.downloader.core.BoxHelper.Companion.boolean
+import nobility.downloader.core.BoxHelper.Companion.update
 import nobility.downloader.core.Core
 import nobility.downloader.core.Core.Companion.randomSeries
 import nobility.downloader.core.Core.Companion.randomSeries2
@@ -66,10 +71,12 @@ class DownloaderView : ViewPage {
         Scaffold(
             modifier = Modifier.fillMaxSize(),
             topBar = {
+                val focusRequester = remember { FocusRequester() }
                 DefaultTextField(
                     Core.currentUrl,
                     onValueChanged = {
                         Core.currentUrl = it
+                        Defaults.LAST_DOWNLOAD.update(it)
                     },
                     hint = Core.currentUrlHint,
                     singleLine = true,
@@ -82,6 +89,21 @@ class DownloaderView : ViewPage {
                             }
                             return@onKeyEvent false
                         }.onFocusChanged { Core.currentUrlFocused = it.isFocused },
+                    focusRequester = focusRequester,
+                    requestFocus = true,
+                    trailingIcon = {
+                        if (Core.currentUrl.isNotEmpty()) {
+                            TooltipIconButton(
+                                "",
+                                EvaIcons.Fill.Close,
+                                iconColor = MaterialTheme.colorScheme.primary
+                            ) {
+                                Core.currentUrl = ""
+                                Defaults.LAST_DOWNLOAD.update("")
+                                focusRequester.requestFocus()
+                            }
+                        }
+                    },
                     contextMenuItems = {
                         val items = mutableListOf<ContextMenuItem>()
                         if (Tools.clipboardString.isNotEmpty()) {
@@ -192,6 +214,10 @@ class DownloaderView : ViewPage {
                         .verticalScroll(rememberScrollState())
                 ) {
                     if (randomSeries.isNotEmpty() && randomSeries2.isNotEmpty()) {
+
+                        val seriesStateList = rememberLazyListState()
+                        val seriesStateList2 = rememberLazyListState()
+                        val coroutineScope = rememberCoroutineScope()
                         val rowInteraction = remember { MutableInteractionSource() }
                         val isHovering by rowInteraction.collectIsHoveredAsState()
 
@@ -199,6 +225,8 @@ class DownloaderView : ViewPage {
                             mutableStateOf(false)
                         }
                         val closeMenu = { showMenu = false }
+                        var scrolled = remember { false }
+
                         CursorDropdownMenu(
                             expanded = showMenu,
                             onDismissRequest = { closeMenu() },
@@ -210,14 +238,36 @@ class DownloaderView : ViewPage {
                                 "Reload Random Series",
                                 EvaIcons.Fill.Refresh
                             ) {
-                                Core.reloadRandomSeries()
                                 closeMenu()
+                                Core.reloadRandomSeries()
+                            }
+                            DefaultDropdownItem(
+                                "Scroll To Start",
+                                EvaIcons.Fill.ArrowLeft
+                            ) {
+                                closeMenu()
+                                scrolled = true
+                                coroutineScope.launch {
+                                    seriesStateList.scrollToItem(0)
+                                    seriesStateList2.scrollToItem(0)
+                                }
+                            }
+                            DefaultDropdownItem(
+                                "Scroll To End",
+                                EvaIcons.Fill.ArrowRight
+                            ) {
+                                closeMenu()
+                                scrolled = true
+                                coroutineScope.launch {
+                                    seriesStateList.scrollToItem(
+                                        seriesStateList.layoutInfo.totalItemsCount
+                                    )
+                                    seriesStateList2.scrollToItem(
+                                        seriesStateList2.layoutInfo.totalItemsCount
+                                    )
+                                }
                             }
                         }
-
-                        val seriesStateList = rememberLazyListState()
-                        val seriesStateList2 = rememberLazyListState()
-                        val coroutineScope = rememberCoroutineScope()
 
                         LazyRow(
                             Modifier.fillMaxWidth()
@@ -288,7 +338,10 @@ class DownloaderView : ViewPage {
                                         series.imagePath,
                                         contentScale = ContentScale.FillBounds,
                                         onClick = {
-                                            Core.openDownloadConfirm(series.asToDownload)
+                                            Core.openSeriesDetails(
+                                                series.slug,
+                                                windowScope
+                                            )
                                         },
                                         onRightClick = {
                                             showMenu = true
@@ -367,7 +420,10 @@ class DownloaderView : ViewPage {
                                         series.imagePath,
                                         contentScale = ContentScale.FillBounds,
                                         onClick = {
-                                            Core.openDownloadConfirm(series.asToDownload)
+                                            Core.openSeriesDetails(
+                                                series.slug,
+                                                windowScope
+                                            )
                                         },
                                         onRightClick = {
                                             showMenu = true
@@ -388,7 +444,11 @@ class DownloaderView : ViewPage {
                                     delay(5000)
                                     continue
                                 }
-                                //todo on last ones, wait awhile before scrolling to the beginning
+                                if (scrolled) {
+                                    delay(5000)
+                                    scrolled = false
+                                    continue
+                                }
                                 launch {
                                     if (seriesStateList.canScrollForward) {
                                         seriesStateList.animateScrollBy(250f)
@@ -406,7 +466,6 @@ class DownloaderView : ViewPage {
                                 delay(3500)
                             }
                         }
-                        //Spacer(Modifier.weight(1f))
                     }
                     Row(
                         Modifier.align(Alignment.CenterHorizontally)

@@ -6,24 +6,33 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import nobility.downloader.Page
 import nobility.downloader.core.BoxHelper.Companion.boolean
 import nobility.downloader.core.BoxHelper.Companion.string
 import nobility.downloader.core.BoxHelper.Companion.update
+import nobility.downloader.core.entities.Episode
 import nobility.downloader.core.entities.Series
+import nobility.downloader.core.scraper.DownloadHandler
 import nobility.downloader.core.scraper.data.ToDownload
 import nobility.downloader.core.settings.Defaults
 import nobility.downloader.ui.components.Console
 import nobility.downloader.ui.components.dialog.DialogHelper
+import nobility.downloader.ui.components.dialog.DialogHelper.showError
 import nobility.downloader.ui.views.*
 import nobility.downloader.ui.windows.DownloadConfirmWindow
 import nobility.downloader.ui.windows.ImageUpdaterWindow
 import nobility.downloader.ui.windows.UpdateWindow
 import nobility.downloader.ui.windows.database.DatabaseWindow
+import nobility.downloader.ui.windows.utils.AppWindowScope
 import nobility.downloader.utils.AppInfo
 import nobility.downloader.utils.FrogLog
 import nobility.downloader.utils.fileExists
+import nobility.downloader.utils.linkToSlug
 import java.io.File
 import java.io.PrintStream
 
@@ -47,6 +56,7 @@ class Core private constructor() {
         lateinit var recentView: RecentView
         lateinit var errorConsoleView: ErrorConsoleView
 
+        val taskScope = CoroutineScope(Dispatchers.Default)
         var currentPage by mutableStateOf(Page.DOWNLOADER)
             private set
         var lastPage = Page.DOWNLOADER
@@ -233,6 +243,41 @@ class Core private constructor() {
             }
             val downloadConfirm = DownloadConfirmWindow(toDownload)
             downloadConfirm.open()
+        }
+
+        fun openSeriesDetails(
+            url: String,
+            appWindowScope: AppWindowScope? = null
+        ) {
+            val slug = url.linkToSlug()
+            var series = BoxHelper.seriesForSlug(slug)
+            var episode: Episode? = null
+            if (series == null) {
+                val pair = BoxHelper.seriesForEpisodeSlug(slug)
+                series = pair?.first
+                episode = pair?.second
+            }
+            if (series == null) {
+                appWindowScope?.showToast(
+                    """
+                        This series or episode isn't cached.
+                        Looking for series data online...
+                    """.trimIndent()
+                )
+                taskScope.launch {
+                    val result = DownloadHandler.run(url)
+                    if (result.isFailed) {
+                        withContext(Dispatchers.Main) {
+                            showError(
+                                "Failed to find series from: $url",
+                                result.message
+                            )
+                        }
+                    }
+                }
+            } else {
+                openDownloadConfirm(ToDownload(series, episode))
+            }
         }
 
         val wcoUrl: String
