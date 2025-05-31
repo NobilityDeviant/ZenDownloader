@@ -46,6 +46,7 @@ class DownloadThread {
                     launched++
                 }
             }
+            delay(500)
         }
     }
 

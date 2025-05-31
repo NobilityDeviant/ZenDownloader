@@ -1,14 +1,22 @@
 package nobility.downloader.ui.components
 
 import androidx.compose.foundation.*
+import androidx.compose.foundation.gestures.Orientation
+import androidx.compose.foundation.gestures.draggable
+import androidx.compose.foundation.gestures.rememberDraggableState
+import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsHoveredAsState
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.CursorDropdownMenu
 import androidx.compose.material.DropdownMenuItem
+import androidx.compose.material.Icon
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -17,8 +25,11 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.input.pointer.PointerIcon
+import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -34,10 +45,15 @@ import androidx.compose.ui.unit.sp
 import compose.icons.EvaIcons
 import compose.icons.evaicons.Fill
 import compose.icons.evaicons.fill.ArrowDown
+import compose.icons.evaicons.fill.ArrowIosDownward
+import compose.icons.evaicons.fill.ArrowIosUpward
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
 import nobility.downloader.Page
 import nobility.downloader.core.Core
 import nobility.downloader.utils.Constants
 import nobility.downloader.utils.hover
+import nobility.downloader.utils.toColorOnThis
 import nobility.downloader.utils.tone
 
 data class DropdownOption(
@@ -236,7 +252,7 @@ fun DefaultSettingsTextField(
         textColor = if (isSystemInDarkTheme()) Color.White else Color.Black,
         itemHoverColor = (if (isSystemInDarkTheme()) Color.DarkGray else Color.LightGray).hover(),
     )
-    tooltip(
+    Tooltip(
         tooltipText = settingsDescription
     ) {
         CompositionLocalProvider(
@@ -272,7 +288,7 @@ fun DefaultSettingsTextField(
                         }
                     },
                     colors = TextFieldDefaults.colors(),
-                    padding = PaddingValues(start = 4.dp, end = 4.dp),
+                    padding = PaddingValues(start = 4.dp, end = if (trailingIcon != null) 0.dp else 4.dp),
                     visualTransformation = if (passwordMode)
                         PasswordVisualTransformation()
                     else
@@ -502,7 +518,7 @@ fun TooltipIconButton(
     contentDescription: String = "",
     onClick: () -> Unit
 ) {
-    tooltip(
+    Tooltip(
         tooltipText,
         tooltipModifier
     ) {
@@ -543,7 +559,7 @@ fun TooltipIconButton(
             }
         }
     }
-    tooltip(tooltipText) {
+    Tooltip(tooltipText) {
         IconButton(
             onClick = onClick
         ) {
@@ -571,7 +587,7 @@ fun FullBox(
 }
 
 @Composable
-fun BoxScope.verticalScrollbar(
+fun BoxScope.VerticalScrollbar(
     scrollState: ScrollState
 ) {
     VerticalScrollbar(
@@ -594,7 +610,7 @@ fun BoxScope.verticalScrollbar(
 }
 
 @Composable
-fun BoxScope.verticalScrollbar(
+fun BoxScope.VerticalScrollbar(
     scrollState: LazyListState
 ) {
     VerticalScrollbar(
@@ -618,4 +634,216 @@ fun BoxScope.verticalScrollbar(
 
 enum class SpacePosition {
     START, END
+}
+
+data class HeaderSort(
+    val title: String,
+    var descending: MutableState<Boolean> = mutableStateOf(true)
+) {
+    override fun equals(other: Any?): Boolean {
+        if (other is HeaderSort) {
+            return title == other.title
+        }
+        return false
+    }
+
+    override fun hashCode(): Int {
+        var result = descending.hashCode()
+        result = 31 * result + title.hashCode()
+        return result
+    }
+}
+
+data class HeaderItem<T>(
+    val title: String,
+    val weight: Float = 1f,
+    val defaultSort: Boolean = false,
+    val sortSelector: ((T) -> Comparable<*>)? = null
+) {
+    val headerSort: HeaderSort? = if (sortSelector != null)
+        HeaderSort(title)
+    else null
+}
+
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+private fun <T> CustomHeader(
+    items: List<HeaderItem<T>>,
+    currentSort: MutableState<HeaderSort?>,
+    mainColor: Color = MaterialTheme.colorScheme.inversePrimary,
+    height: Dp = 40.dp,
+    padding: PaddingValues = PaddingValues(end = verticalScrollbarEndPadding)
+) {
+    val onMainColor = mainColor.toColorOnThis()
+    Row(
+        modifier = Modifier.background(
+            color = mainColor,
+            shape = RectangleShape
+        ).height(height)
+            .fillMaxWidth()
+            .padding(padding),
+        horizontalArrangement = Arrangement.spacedBy(4.dp)
+    ) {
+        items.forEachIndexed { index, item ->
+            if (item.headerSort != null) {
+                Row(
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier
+                        .fillMaxHeight()
+                        .weight(item.weight)
+                        .onClick {
+                            if (currentSort.value == item.headerSort) {
+                                currentSort.value?.descending?.value =
+                                    currentSort.value?.descending?.value != true
+                            } else {
+                                currentSort.value = item.headerSort
+                            }
+                        }
+                        .pointerHoverIcon(PointerIcon.Hand)
+                ) {
+                    Text(
+                        text = item.title,
+                        modifier = Modifier
+                            .padding(4.dp),
+                        color = onMainColor,
+                        fontSize = 14.sp,
+                        textAlign = TextAlign.Center
+                    )
+                    Icon(
+                        if (currentSort.value?.descending?.value == true)
+                            EvaIcons.Fill.ArrowIosDownward
+                        else
+                            EvaIcons.Fill.ArrowIosUpward,
+                        "",
+                        modifier = Modifier.size(16.dp)
+                            .alpha(
+                                if (currentSort.value == item.headerSort) 1f else 0f
+                            ).offset(y = 2.dp),
+                        tint = onMainColor
+                    )
+                }
+            } else {
+                Row(
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier
+                        .fillMaxHeight()
+                        .weight(item.weight)
+                ) {
+                    Text(
+                        text = item.title,
+                        modifier = Modifier
+                            .padding(4.dp),
+                        color = onMainColor,
+                        fontSize = 14.sp,
+                        textAlign = TextAlign.Center
+                    )
+                }
+            }
+            if (index != items.lastIndex) {
+                VerticalDivider(
+                    modifier = Modifier.fillMaxHeight()
+                        .width(1.dp)
+                        .background(
+                            onMainColor
+                        ),
+                    color = Color.Transparent
+                )
+            }
+        }
+    }
+}
+
+/**
+ * A lazy column with a custom header created to be used universally.
+ * I was trying to figure this out for a while and eventually came up with this.
+ * Now we don't need tons of enums and bloated sorting code.
+ * All you need to do is: Pass the headerItems, sortState, items and the row.
+ * key is also advised or else the LazyColumn's performance will suffer.
+ * This is not the best, but you can build on it.
+ * The major downside is the weights and dividers needed for the row.
+ * Maybe there can be a row class? IDK ill figure it out one day.
+ * It could also use some more customization parameters.
+ * <And adjustable column widths: should be doable by changing the header item's weight on drag>
+ * @author NobilityDev
+ */
+@Composable
+fun <T> SortedLazyColumn(
+    headerItems: List<HeaderItem<T>>,
+    sortState: MutableState<HeaderSort?>,
+    items: List<T>,
+    modifier: Modifier = Modifier.fillMaxSize(),
+    startingComparator: Comparator<T>? = null,
+    key: ((T) -> Any)? = null,
+    lazyListState: LazyListState = rememberLazyListState(),
+    scope: CoroutineScope = rememberCoroutineScope(),
+    lazyColumnRow: @Composable (T) -> Unit
+) {
+    LaunchedEffect(Unit) {
+        val default = headerItems.firstOrNull { it.defaultSort }
+        if (default != null) {
+            sortState.value = default.headerSort
+        }
+    }
+    Column(
+        modifier = modifier
+    ) {
+        CustomHeader(
+            headerItems,
+            sortState
+        )
+        val sortedItems by remember(items, sortState.value, startingComparator) {
+            derivedStateOf {
+                val item = headerItems.find { it.headerSort == sortState.value }
+                val selector = item?.sortSelector
+
+                val sortedItems = if (startingComparator != null) {
+                    items.sortedWith(startingComparator)
+                } else items
+
+                if (selector != null) {
+                    @Suppress("UNCHECKED_CAST")
+                    val castSelector = selector as (T) -> Comparable<Any>
+                    if (sortState.value?.descending?.value == true) {
+                        sortedItems.sortedByDescending(castSelector)
+                    } else {
+                        sortedItems.sortedBy(castSelector)
+                    }
+                } else {
+                    sortedItems
+                }
+            }
+        }
+
+        FullBox {
+            LazyColumn(
+                verticalArrangement = Arrangement.spacedBy(1.dp),
+                modifier = Modifier
+                    .padding(
+                        top = 4.dp,
+                        bottom = 4.dp,
+                        end = verticalScrollbarEndPadding
+                    )
+                    .fillMaxSize()
+                    .draggable(
+                        state = rememberDraggableState {
+                            scope.launch {
+                                lazyListState.scrollBy(-it)
+                            }
+                        },
+                        orientation = Orientation.Vertical,
+                    ),
+                state = lazyListState
+            ) {
+                items(
+                    sortedItems,
+                    key = key
+                ) {
+                    lazyColumnRow(it)
+                }
+            }
+            VerticalScrollbar(lazyListState)
+        }
+    }
 }

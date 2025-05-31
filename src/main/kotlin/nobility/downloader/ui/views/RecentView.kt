@@ -181,7 +181,7 @@ class RecentView: ViewPage {
                                 )
                             }
                         }
-                        verticalScrollbar(seasonsListState)
+                        VerticalScrollbar(seasonsListState)
                     }
                 }
             }

@@ -317,7 +317,7 @@ class DownloadConfirmWindow(
                                     )
                                 }
                             }
-                            verticalScrollbar(episodesListState)
+                            VerticalScrollbar(episodesListState)
                             if (toDownload.episode != null) {
                                 LaunchedEffect(Unit) {
                                     val index = indexForEpisode(toDownload.episode)

@@ -129,7 +129,7 @@ fun FixedTextField(
     interactionSource: MutableInteractionSource = remember { MutableInteractionSource() },
     shape: Shape = TextFieldDefaults.shape,
     colors: TextFieldColors = TextFieldDefaults.colors(),
-    padding: PaddingValues = PaddingValues(3.dp)
+    padding: PaddingValues = PaddingValues(4.dp)
 ) {
     // If color is not provided via the text style, use content color as a default
     val textColor = textStyle.color.takeOrElse {
@@ -182,7 +182,7 @@ fun FixedTextField(
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun tooltip(
+fun Tooltip(
     tooltipText: String,
     modifier: Modifier = Modifier,
     content: @Composable () -> Unit

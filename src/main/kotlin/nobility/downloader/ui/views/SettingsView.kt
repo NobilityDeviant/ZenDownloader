@@ -10,12 +10,18 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.input.pointer.PointerIcon
+import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.darkrockstudios.libraries.mpfilepicker.DirectoryPicker
 import com.darkrockstudios.libraries.mpfilepicker.FilePicker
+import compose.icons.EvaIcons
+import compose.icons.evaicons.Fill
+import compose.icons.evaicons.fill.ArrowDown
+import compose.icons.evaicons.fill.ArrowUp
 import nobility.downloader.Page
 import nobility.downloader.core.BoxHelper.Companion.boolean
 import nobility.downloader.core.BoxHelper.Companion.int
@@ -155,7 +161,7 @@ class SettingsView : ViewPage {
                         maxItemsInEachRow = 10
                     ) {
                         Defaults.intFields.forEach { field ->
-                            fieldRowInt(field)
+                            FieldRowInt(field)
                         }
                     }
                     FlowRow(
@@ -168,7 +174,7 @@ class SettingsView : ViewPage {
                         }
                     }
                 }
-                verticalScrollbar(scrollState)
+                VerticalScrollbar(scrollState)
             }
         }
     }
@@ -192,7 +198,7 @@ class SettingsView : ViewPage {
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.padding(10.dp)
         ) {
-            tooltip(setting.description) {
+            Tooltip(setting.description) {
                 Text(
                     "$title:",
                     style = MaterialTheme.typography.labelMedium
@@ -339,65 +345,85 @@ class SettingsView : ViewPage {
     @Suppress("SameParameterValue")
     @OptIn(ExperimentalFoundationApi::class)
     @Composable
-    private fun fieldRowInt(
+    private fun FieldRowInt(
         setting: Defaults
     ) {
         val option = intOptions[setting] ?: return
         val title = setting.alternativeName.ifEmpty {
             setting.name.normalizeEnumName()
         }
-        val modifier = Modifier.height(30.dp).width(60.dp)
+        val modifier = Modifier
+            .height(30.dp)
+            .width(80.dp)
             .then(focusModifier)
         Row(
-            horizontalArrangement = Arrangement.spacedBy(5.dp),
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
             verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.padding(10.dp)
+            modifier = Modifier.padding(8.dp)
         ) {
-            tooltip(setting.description) {
+            Tooltip(setting.description) {
                 Text(
                     "$title:",
                     style = MaterialTheme.typography.labelMedium
                 )
             }
-            when (setting) {
+            val type = when (setting) {
                 Defaults.DOWNLOAD_THREADS -> {
-                    DefaultSettingsTextField(
-                        if (option.value == -1) "" else option.value.toString(),
-                        { text ->
-                            option.value = textToDigits(FieldType.THREADS, text)
-                            updateSaveButton()
-                        },
-                        numbersOnly = true,
-                        textStyle = MaterialTheme.typography.labelMedium,
-                        modifier = modifier
-                    )
+                    FieldType.THREADS
                 }
-
                 Defaults.TIMEOUT -> {
-                    DefaultSettingsTextField(
-                        if (option.value == -1) "" else option.value.toString(),
-                        { text ->
-                            option.value = textToDigits(FieldType.TIMEOUT, text)
-                            updateSaveButton()
-                        },
-                        numbersOnly = true,
-                        textStyle = MaterialTheme.typography.labelMedium,
-                        modifier = modifier
-                    )
+                    FieldType.TIMEOUT
                 }
-
                 else -> {
-                    DefaultSettingsTextField(
-                        if (option.value == -1) "" else option.value.toString(),
-                        { text ->
-                            option.value = textToDigits(FieldType.RETRY, text)
-                            updateSaveButton()
-                        },
-                        numbersOnly = true,
-                        textStyle = MaterialTheme.typography.labelMedium,
-                        modifier = modifier
-                    )
+                    FieldType.DEFAULT
                 }
+            }
+            DefaultSettingsTextField(
+                if (option.value <= -1) "" else option.value.toString(),
+                { text ->
+                    option.value = textToDigits(
+                        type,
+                        text
+                    )
+                    updateSaveButton()
+                },
+                numbersOnly = true,
+                textStyle = MaterialTheme.typography.labelMedium,
+                modifier = modifier
+            )
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                DefaultIcon(
+                    EvaIcons.Fill.ArrowUp,
+                    Modifier.size(
+                        24.dp,
+                        16.dp
+                    ).pointerHoverIcon(PointerIcon.Hand),
+                    onClick = {
+                        option.value = fixedValue(
+                            type,
+                            option.value + 1
+                        )
+                        updateSaveButton()
+                    }
+                )
+
+                DefaultIcon(
+                    EvaIcons.Fill.ArrowDown,
+                    Modifier.size(
+                        24.dp,
+                        16.dp
+                    ).pointerHoverIcon(PointerIcon.Hand),
+                    onClick = {
+                        option.value = fixedValue(
+                            type,
+                            option.value - 1
+                        )
+                        updateSaveButton()
+                    }
+                )
             }
         }
     }
@@ -416,7 +442,7 @@ class SettingsView : ViewPage {
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.padding(10.dp)
         ) {
-            tooltip(setting.description) {
+            Tooltip(setting.description) {
                 Text(
                     "$title:",
                     style = MaterialTheme.typography.labelMedium
@@ -431,7 +457,7 @@ class SettingsView : ViewPage {
                         updateSaveButton()
                     }
                 }
-                tooltip(setting.description) {
+                Tooltip(setting.description) {
                     DefaultDropdown(
                         option.value,
                         expanded,
@@ -457,7 +483,7 @@ class SettingsView : ViewPage {
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.padding(10.dp)
         ) {
-            tooltip(setting.description) {
+            Tooltip(setting.description) {
                 Text(
                     "$title:",
                     style = MaterialTheme.typography.labelMedium,
@@ -468,7 +494,7 @@ class SettingsView : ViewPage {
                     }
                 )
             }
-            tooltip(setting.description) {
+            Tooltip(setting.description) {
                 DefaultCheckbox(
                     option.value,
                     modifier = Modifier.height(30.dp)
@@ -481,7 +507,33 @@ class SettingsView : ViewPage {
     }
 
     private enum class FieldType {
-        THREADS, TIMEOUT, RETRY;
+        THREADS, TIMEOUT, DEFAULT;
+    }
+
+    private fun fixedValue(
+        type: FieldType,
+        value: Int
+    ): Int {
+        if (type == FieldType.THREADS) {
+            if (value < minThreads) {
+                return minThreads
+            } else if (value > maxThreads) {
+                return maxThreads
+            }
+        } else if (type == FieldType.TIMEOUT) {
+            if (value < minTimeout) {
+                return minTimeout
+            } else if (value > maxTimeout) {
+                return maxTimeout
+            }
+        } else if (type == FieldType.DEFAULT) {
+            if (value < 1) {
+                return 1
+            } else if (value > 100) {
+                return 100
+            }
+        }
+        return value
     }
 
     private fun textToDigits(
@@ -508,7 +560,7 @@ class SettingsView : ViewPage {
             } else if (num > maxTimeout) {
                 num = maxTimeout
             }
-        } else if (type == FieldType.RETRY) {
+        } else if (type == FieldType.DEFAULT) {
             if (num < 1) {
                 num = 1
             } else if (num > 100) {
@@ -731,7 +783,7 @@ class SettingsView : ViewPage {
                         }
                     }
                 }
-                verticalScrollbar(scrollState)
+                VerticalScrollbar(scrollState)
             }
         }
     }

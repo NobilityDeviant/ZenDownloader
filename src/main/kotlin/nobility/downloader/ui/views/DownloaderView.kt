@@ -29,6 +29,8 @@ import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onKeyEvent
+import androidx.compose.ui.input.pointer.PointerIcon
+import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.input.pointer.pointerMoveFilter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
@@ -58,6 +60,7 @@ import nobility.downloader.core.entities.data.SeriesIdentity
 import nobility.downloader.core.settings.Defaults
 import nobility.downloader.ui.components.*
 import nobility.downloader.ui.windows.utils.AppWindowScope
+import nobility.downloader.utils.Constants.mediumIconSize
 import nobility.downloader.utils.Constants.randomSeriesRowHeight
 import nobility.downloader.utils.Tools
 
@@ -93,15 +96,17 @@ class DownloaderView : ViewPage {
                     requestFocus = true,
                     trailingIcon = {
                         if (Core.currentUrl.isNotEmpty()) {
-                            TooltipIconButton(
-                                "",
+                            DefaultIcon(
                                 EvaIcons.Fill.Close,
-                                iconColor = MaterialTheme.colorScheme.primary
-                            ) {
-                                Core.currentUrl = ""
-                                Defaults.LAST_DOWNLOAD.update("")
-                                focusRequester.requestFocus()
-                            }
+                                Modifier.size(mediumIconSize)
+                                    .pointerHoverIcon(PointerIcon.Hand),
+                                iconColor = MaterialTheme.colorScheme.primary,
+                                onClick = {
+                                    Core.currentUrl = ""
+                                    Defaults.LAST_DOWNLOAD.update("")
+                                    focusRequester.requestFocus()
+                                }
+                            )
                         }
                     },
                     contextMenuItems = {

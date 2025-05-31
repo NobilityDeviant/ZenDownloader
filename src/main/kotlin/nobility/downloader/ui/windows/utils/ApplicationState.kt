@@ -70,7 +70,6 @@ class ApplicationState {
         @Composable
         fun addToastToWindow(scope: AppWindowScope) {
             val toastHostState = remember { ToastHostState() }
-            //val coScope = rememberCoroutineScope()
             Box(
                 contentAlignment = Alignment.Center
             ) {
@@ -86,14 +85,6 @@ class ApplicationState {
                     scope.toastContent.value = ""
                 }
             }
-            /*if (scope.toastContent.value.isNotEmpty()) {
-                coScope.launch {
-                    toastHostState.showToast(
-                        scope.toastContent.value
-                    )
-                    scope.toastContent.value = ""
-                }
-            }*/
         }
 
         fun newWindow(
@@ -126,7 +117,7 @@ class ApplicationState {
                 if (open) {
                     Window(
                         icon = painterResource(Res.drawable.icon),
-                        //undecorated windows don't work on windows 7 & maybe windows 11?
+                        //undecorated windows don't work on windows 7
                         undecorated = if (!SystemUtils.IS_OS_WINDOWS_7) undecorated else false,
                         transparent = if (!SystemUtils.IS_OS_WINDOWS_7) transparent else false,
                         resizable = resizable,

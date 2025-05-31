@@ -177,6 +177,34 @@ private fun uiWrapper(
                             ) {}
                         }
                         if (Core.currentPage == Page.DOWNLOADS) {
+                            //todo make a universal badger
+                            BadgedBox(
+                                badge = {
+                                    if (Core.child.downloadThread.downloadsInQueue.value > 0) {
+                                        Badge(
+                                            containerColor = Color.Red,
+                                            modifier = Modifier.offset(y = 2.dp, x = (-8).dp)
+                                        ) {
+                                            Text(
+                                                Core.child.downloadThread.downloadsInQueue.value.toString(),
+                                                overflow = TextOverflow.Clip,
+                                                color = Color.White,
+                                                fontWeight = FontWeight.Bold,
+                                                fontSize = 10.sp
+                                            )
+                                        }
+                                    }
+                                }
+                            ) {
+                                TooltipIconButton(
+                                    "Download Queue",
+                                    icon = EvaIcons.Fill.CloudDownload,
+                                    iconSize = mediumIconSize
+                                ) {
+                                    val downloadQueue = DownloadQueueWindow()
+                                    downloadQueue.open()
+                                }
+                            }
                             TooltipIconButton(
                                 "Open Download Folder",
                                 icon = EvaIcons.Fill.Folder,

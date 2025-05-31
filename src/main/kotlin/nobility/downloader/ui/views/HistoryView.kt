@@ -212,7 +212,7 @@ class HistoryView : ViewPage {
                             )
                         }
                     }
-                    verticalScrollbar(seasonsListState)
+                    VerticalScrollbar(seasonsListState)
                 }
             }
         }

@@ -20,6 +20,8 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.input.pointer.PointerButton
+import androidx.compose.ui.input.pointer.PointerIcon
+import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.SpanStyle
@@ -54,6 +56,7 @@ import nobility.downloader.ui.windows.MovieEditorWindow
 import nobility.downloader.ui.windows.utils.AppWindowScope
 import nobility.downloader.ui.windows.utils.ApplicationState
 import nobility.downloader.utils.*
+import nobility.downloader.utils.Constants.mediumIconSize
 import java.util.regex.Pattern
 
 /**
@@ -219,21 +222,23 @@ class DatabaseWindow {
                                 focusRequester = focusRequester,
                                 trailingIcon = {
                                     if (search.isNotEmpty()) {
-                                        TooltipIconButton(
-                                            "",
+                                        DefaultIcon(
                                             EvaIcons.Fill.Close,
-                                            iconColor = MaterialTheme.colorScheme.primary
-                                        ) {
-                                            Core.databaseSearchText.value = ""
-                                            focusRequester.requestFocus()
-                                        }
+                                            Modifier.size(mediumIconSize)
+                                                .pointerHoverIcon(PointerIcon.Hand),
+                                            iconColor = MaterialTheme.colorScheme.primary,
+                                            onClick = {
+                                                Core.databaseSearchText.value = ""
+                                                focusRequester.requestFocus()
+                                            }
+                                        )
                                     }
                                 }
                             )
                             val searchByGenre by searchByGenre.collectAsState()
                             val searchByDesc by searchByDesc.collectAsState()
                             val genreTooltip = "Enables searching by genre. Search by genre is case sensitive."
-                            tooltip(genreTooltip) {
+                            Tooltip(genreTooltip) {
                                 DefaultCheckbox(
                                     searchByGenre,
                                     modifier = Modifier.padding(top = 10.dp, bottom = 10.dp)
@@ -242,7 +247,7 @@ class DatabaseWindow {
                                     Defaults.DB_SEARCH_GENRE.update(mSearchByGenre.value)
                                 }
                             }
-                            tooltip(genreTooltip) {
+                            Tooltip(genreTooltip) {
                                 Text(
                                     "Genre",
                                     fontSize = 14.sp,
@@ -253,7 +258,7 @@ class DatabaseWindow {
                                 )
                             }
                             val descTooltip = "Enables searching by description keywords."
-                            tooltip(descTooltip) {
+                            Tooltip(descTooltip) {
                                 DefaultCheckbox(
                                     searchByDesc,
                                     modifier = Modifier.padding(top = 10.dp, bottom = 10.dp)
@@ -262,7 +267,7 @@ class DatabaseWindow {
                                     Defaults.DB_SEARCH_DESC.update(mSearchByDesc.value)
                                 }
                             }
-                            tooltip(descTooltip) {
+                            Tooltip(descTooltip) {
                                 Text(
                                     "Description",
                                     fontSize = 14.sp,
@@ -341,7 +346,7 @@ class DatabaseWindow {
                                 SeriesRow(it, this@newWindow)
                             }
                         }
-                        verticalScrollbar(seasonsListState)
+                        VerticalScrollbar(seasonsListState)
                         LaunchedEffect(series.size) {
                             resultText = "Showing ${series.size} series results"
                         }
@@ -924,7 +929,7 @@ class DatabaseWindow {
                         }
                     }
                 }
-                verticalScrollbar(scrollState)
+                VerticalScrollbar(scrollState)
             }
         }
     }
