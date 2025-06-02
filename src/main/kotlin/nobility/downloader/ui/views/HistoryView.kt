@@ -1,24 +1,15 @@
 package nobility.downloader.ui.views
 
 import androidx.compose.foundation.*
-import androidx.compose.foundation.gestures.Orientation
-import androidx.compose.foundation.gestures.draggable
-import androidx.compose.foundation.gestures.rememberDraggableState
-import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.CursorDropdownMenu
-import androidx.compose.material.Icon
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.input.pointer.PointerButton
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextAlign
@@ -26,7 +17,10 @@ import androidx.compose.ui.unit.dp
 import compose.icons.EvaIcons
 import compose.icons.evaicons.Fill
 import compose.icons.evaicons.Outline
-import compose.icons.evaicons.fill.*
+import compose.icons.evaicons.fill.Info
+import compose.icons.evaicons.fill.Search
+import compose.icons.evaicons.fill.Star
+import compose.icons.evaicons.fill.Trash
 import compose.icons.evaicons.outline.Star
 import kotlinx.coroutines.*
 import nobility.downloader.Page
@@ -50,7 +44,7 @@ class HistoryView : ViewPage {
     override val page = Page.HISTORY
 
     private val downloadScope = CoroutineScope(Dispatchers.IO)
-    private var sort by mutableStateOf(Sort.DATE_DESC)
+    private var sort: MutableState<HeaderSort?> = mutableStateOf(null)
     private var checkForEpisodesButtonEnabled = mutableStateOf(true)
     private var clearHistoryEnabled = mutableStateOf(true)
     private var loading by mutableStateOf(false)
@@ -62,20 +56,7 @@ class HistoryView : ViewPage {
 
     private val seriesDatas = mutableStateListOf<SeriesData>()
 
-    private val sortedSeriesDataData: List<SeriesData>
-        get() {
-            return when (sort) {
-                Sort.NAME -> seriesDatas.sortedBy { it.series.name }
-                Sort.NAME_DESC -> seriesDatas.sortedByDescending { it.series.name }
-                Sort.DATE -> seriesDatas.sortedBy { it.history.dateAdded }
-                Sort.DATE_DESC -> seriesDatas.sortedByDescending { it.history.dateAdded }
-                Sort.EPISODES -> seriesDatas.sortedBy { it.series.episodesSize }
-                Sort.EPISODES_DESC -> seriesDatas.sortedByDescending { it.series.episodesSize }
-            }
-        }
-
     private fun loadHistoryData() {
-        //todo use this more often
         BoxHelper.shared.wcoBoxStore.callInReadTx {
             BoxHelper.shared.historyBox.all.forEach {
                 val series = BoxHelper.seriesForSlug(it.seriesSlug)
@@ -100,7 +81,6 @@ class HistoryView : ViewPage {
     @Composable
     override fun Ui(windowScope: AppWindowScope) {
         val scope = rememberCoroutineScope()
-        val seasonsListState = rememberLazyListState()
         Scaffold(
             modifier = Modifier.fillMaxSize(50f),
             bottomBar = {
@@ -176,43 +156,45 @@ class HistoryView : ViewPage {
                         modifier = Modifier.size(80.dp)
                     )
                 }
-            }
-
-            Column(
-                modifier = Modifier.padding(
-                    bottom = padding.calculateBottomPadding()
-                ).fillMaxSize()
-            ) {
-                header()
-                FullBox {
-                    LazyColumn(
-                        verticalArrangement = Arrangement.spacedBy(4.dp),
-                        modifier = Modifier.padding(
-                            top = 5.dp,
-                            bottom = 5.dp,
-                            end = verticalScrollbarEndPadding
-                        ).fillMaxSize().draggable(
-                            state = rememberDraggableState {
-                                scope.launch {
-                                    seasonsListState.scrollBy(-it)
-                                }
-                            },
-                            orientation = Orientation.Vertical,
-                        ),
-                        state = seasonsListState
-                    ) {
-                        items(
-                            sortedSeriesDataData,
-                            key = { it.series.slug + it.series.id }
+            } else {
+                SortedLazyColumn<SeriesData>(
+                    listOf(
+                        HeaderItem(
+                            "Name",
+                            NAME_WEIGHT
                         ) {
-                            SeriesDataRow(
-                                it,
-                                windowScope,
-                                scope
-                            )
-                        }
-                    }
-                    VerticalScrollbar(seasonsListState)
+                            it.series.name
+                        },
+                        HeaderItem(
+                            "Date Added",
+                            DATE_WEIGHT,
+                            true
+                        ) {
+                            it.history.dateAdded
+                        },
+                        HeaderItem(
+                            "Episodes",
+                            EPISODES_WEIGHT
+                        ) {
+                            it.series.episodesSize
+                        },
+                        HeaderItem(
+                            "Image",
+                            IMAGE_WEIGHT
+                        )
+                    ),
+                    sort,
+                    seriesDatas,
+                    key = { it.series.slug + it.series.id },
+                    modifier = Modifier.padding(
+                        bottom = padding.calculateBottomPadding()
+                    ).fillMaxSize()
+                ) { _, item ->
+                    SeriesDataRow(
+                        item,
+                        windowScope,
+                        scope
+                    )
                 }
             }
         }
@@ -220,167 +202,6 @@ class HistoryView : ViewPage {
             loading = true
             loadHistoryData()
             loading = false
-        }
-    }
-
-    @OptIn(ExperimentalFoundationApi::class)
-    @Composable
-    private fun header() {
-        Row(
-            modifier = Modifier.background(
-                color = MaterialTheme.colorScheme.inversePrimary,
-                shape = RectangleShape
-            ).height(40.dp).fillMaxWidth().padding(end = verticalScrollbarEndPadding),
-            horizontalArrangement = Arrangement.spacedBy(4.dp)
-        ) {
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier.weight(NAME_WEIGHT)
-                    .align(Alignment.CenterVertically).onClick {
-                        sort = when (sort) {
-                            Sort.NAME -> {
-                                Sort.NAME_DESC
-                            }
-
-                            Sort.NAME_DESC -> {
-                                Sort.NAME
-                            }
-
-                            else -> {
-                                Sort.NAME_DESC
-                            }
-                        }
-                    }
-            ) {
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(spaceBetweenNameAndIcon),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Text(
-                        text = "Series Name",
-                        modifier = Modifier
-                            .padding(4.dp)
-                            .align(Alignment.CenterVertically),
-                        color = MaterialTheme.colorScheme.onPrimaryContainer,
-                        fontSize = MaterialTheme.typography.bodySmall.fontSize,
-                        textAlign = TextAlign.Center
-                    )
-                    if (sort == Sort.NAME || sort == Sort.NAME_DESC) {
-                        Icon(
-                            if (sort == Sort.NAME_DESC)
-                                EvaIcons.Fill.ArrowIosDownward
-                            else
-                                EvaIcons.Fill.ArrowIosUpward,
-                            "",
-                            modifier = Modifier.size(18.dp),
-                            tint = MaterialTheme.colorScheme.onPrimaryContainer
-                        )
-                    }
-                }
-            }
-            divider(true)
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier.weight(DATE_WEIGHT)
-                    .align(Alignment.CenterVertically).onClick {
-                        sort = when (sort) {
-                            Sort.DATE -> {
-                                Sort.DATE_DESC
-                            }
-
-                            Sort.DATE_DESC -> {
-                                Sort.DATE
-                            }
-
-                            else -> {
-                                Sort.DATE_DESC
-                            }
-                        }
-                    }
-            ) {
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(spaceBetweenNameAndIcon),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Text(
-                        text = "Date Added",
-                        modifier = Modifier
-                            .padding(4.dp)
-                            .align(Alignment.CenterVertically),
-                        color = MaterialTheme.colorScheme.onPrimaryContainer,
-                        fontSize = MaterialTheme.typography.bodySmall.fontSize,
-                        textAlign = TextAlign.Center
-                    )
-                    if (sort == Sort.DATE || sort == Sort.DATE_DESC) {
-                        Icon(
-                            if (sort == Sort.DATE_DESC)
-                                EvaIcons.Fill.ArrowIosDownward
-                            else
-                                EvaIcons.Fill.ArrowIosUpward,
-                            "",
-                            modifier = Modifier.size(18.dp),
-                            tint = MaterialTheme.colorScheme.onPrimaryContainer
-                        )
-                    }
-                }
-            }
-            divider(true)
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier.weight(EPISODES_WEIGHT)
-                    .align(Alignment.CenterVertically).onClick {
-                        sort = when (sort) {
-                            Sort.EPISODES -> {
-                                Sort.EPISODES_DESC
-                            }
-
-                            Sort.EPISODES_DESC -> {
-                                Sort.EPISODES
-                            }
-
-                            else -> {
-                                Sort.EPISODES_DESC
-                            }
-                        }
-                    }
-            ) {
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(spaceBetweenNameAndIcon),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Text(
-                        text = "Episodes",
-                        modifier = Modifier
-                            .padding(4.dp)
-                            .align(Alignment.CenterVertically),
-                        color = MaterialTheme.colorScheme.onPrimaryContainer,
-                        fontSize = MaterialTheme.typography.bodySmall.fontSize,
-                        textAlign = TextAlign.Center
-                    )
-                    if (sort == Sort.EPISODES || sort == Sort.EPISODES_DESC) {
-                        Icon(
-                            if (sort == Sort.EPISODES_DESC)
-                                EvaIcons.Fill.ArrowIosDownward
-                            else
-                                EvaIcons.Fill.ArrowIosUpward,
-                            "",
-                            modifier = Modifier.size(18.dp),
-                            tint = MaterialTheme.colorScheme.onPrimaryContainer
-                        )
-                    }
-                }
-            }
-            divider(true)
-            Text(
-                text = "Image",
-                modifier = Modifier
-                    .padding(4.dp)
-                    .align(Alignment.CenterVertically)
-                    .weight(IMAGE_WEIGHT),
-                color = MaterialTheme.colorScheme.onPrimaryContainer,
-                fontSize = MaterialTheme.typography.bodySmall.fontSize,
-                textAlign = TextAlign.Center
-            )
         }
     }
 
@@ -505,7 +326,7 @@ class HistoryView : ViewPage {
                         .align(Alignment.CenterStart)
                 )
             }
-            divider()
+            Divider()
             Text(
                 text = Tools.dateFormatted(seriesData.history.dateAdded),
                 modifier = Modifier
@@ -516,7 +337,7 @@ class HistoryView : ViewPage {
                 fontSize = MaterialTheme.typography.bodySmall.fontSize,
                 textAlign = TextAlign.Center
             )
-            divider()
+            Divider()
             Text(
                 text = seriesData.series.episodesSize.toString(),
                 modifier = Modifier
@@ -527,7 +348,7 @@ class HistoryView : ViewPage {
                 fontSize = MaterialTheme.typography.bodySmall.fontSize,
                 textAlign = TextAlign.Center
             )
-            divider()
+            Divider()
             DefaultImage(
                 seriesData.series.imagePath,
                 seriesData.series.imageLink,
@@ -541,17 +362,12 @@ class HistoryView : ViewPage {
     }
 
     @Composable
-    private fun divider(
-        header: Boolean = false
-    ) {
+    private fun Divider() {
         VerticalDivider(
             modifier = Modifier.fillMaxHeight()
                 .width(1.dp)
                 .background(
-                    if (header)
-                        MaterialTheme.colorScheme.onPrimaryContainer
-                    else
-                        MaterialTheme.colorScheme.onSurfaceVariant
+                    MaterialTheme.colorScheme.onSurfaceVariant
                 ),
             color = Color.Transparent
         )
@@ -619,17 +435,7 @@ class HistoryView : ViewPage {
         )
     }
 
-    private enum class Sort {
-        NAME,
-        NAME_DESC,
-        DATE,
-        DATE_DESC,
-        EPISODES,
-        EPISODES_DESC
-    }
-
     companion object {
-        private val spaceBetweenNameAndIcon = 1.dp
         private val rowHeight = 130.dp
         private const val NAME_WEIGHT = 5f
         private const val EPISODES_WEIGHT = 1f

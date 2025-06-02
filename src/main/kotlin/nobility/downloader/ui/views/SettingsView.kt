@@ -149,12 +149,12 @@ class SettingsView : ViewPage {
                             focusManager.clearFocus(true)
                         }
                 ) {
-                    fieldRow(Defaults.SAVE_FOLDER, true)
-                    fieldRow(Defaults.CHROME_BROWSER_PATH, true)
-                    fieldRow(Defaults.CHROME_DRIVER_PATH, true)
-                    fieldRow(Defaults.WCO_PREMIUM_USERNAME, true)
-                    fieldRow(Defaults.WCO_PREMIUM_PASSWORD, true)
-                    fieldDropdown(Defaults.QUALITY)
+                    FieldRow(Defaults.SAVE_FOLDER, true)
+                    FieldRow(Defaults.CHROME_BROWSER_PATH, true)
+                    FieldRow(Defaults.CHROME_DRIVER_PATH, true)
+                    FieldRow(Defaults.WCO_PREMIUM_USERNAME, true)
+                    FieldRow(Defaults.WCO_PREMIUM_PASSWORD, true)
+                    FieldDropdown(Defaults.QUALITY)
                     FlowRow(
                         verticalArrangement = Arrangement.spacedBy(5.dp),
                         horizontalArrangement = Arrangement.spacedBy(5.dp),
@@ -170,7 +170,7 @@ class SettingsView : ViewPage {
                         maxItemsInEachRow = 10
                     ) {
                         Defaults.checkBoxes.forEach { cb ->
-                            fieldCheckbox(cb)
+                            FieldCheckbox(cb)
                         }
                     }
                 }
@@ -182,7 +182,7 @@ class SettingsView : ViewPage {
     @Suppress("SameParameterValue")
     @OptIn(ExperimentalFoundationApi::class)
     @Composable
-    private fun fieldRow(
+    private fun FieldRow(
         setting: Defaults,
         fullWidth: Boolean
     ) {
@@ -220,6 +220,7 @@ class SettingsView : ViewPage {
                         DefaultCheckbox(
                             showOption.value,
                             modifier = Modifier.height(30.dp)
+                                .pointerHoverIcon(PointerIcon.Hand)
                         ) {
                             showOption.value = it
                             updateSaveButton()
@@ -227,10 +228,12 @@ class SettingsView : ViewPage {
                         Text(
                             "Show Password",
                             fontSize = 12.sp,
-                            modifier = Modifier.onClick {
-                                showOption.value = showOption.value.not()
-                                updateSaveButton()
-                            }
+                            modifier = Modifier
+                                .onClick {
+                                    showOption.value = showOption.value.not()
+                                    updateSaveButton()
+                                }
+                                .pointerHoverIcon(PointerIcon.Hand)
                         )
                     }
                 }
@@ -430,7 +433,7 @@ class SettingsView : ViewPage {
 
     @Suppress("SameParameterValue")
     @Composable
-    private fun fieldDropdown(
+    private fun FieldDropdown(
         setting: Defaults
     ) {
         val option = stringOptions[setting] ?: return
@@ -471,7 +474,7 @@ class SettingsView : ViewPage {
 
     @OptIn(ExperimentalFoundationApi::class)
     @Composable
-    private fun fieldCheckbox(
+    private fun FieldCheckbox(
         setting: Defaults
     ) {
         val title = setting.alternativeName.ifEmpty {
@@ -488,16 +491,19 @@ class SettingsView : ViewPage {
                     "$title:",
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurface,
-                    modifier = Modifier.onClick {
-                        option.value = option.value.not()
-                        updateSaveButton()
-                    }
+                    modifier = Modifier
+                        .onClick {
+                            option.value = option.value.not()
+                            updateSaveButton()
+                        }
+                        .pointerHoverIcon(PointerIcon.Hand)
                 )
             }
             Tooltip(setting.description) {
                 DefaultCheckbox(
                     option.value,
                     modifier = Modifier.height(30.dp)
+                        .pointerHoverIcon(PointerIcon.Hand)
                 ) {
                     option.value = it
                     updateSaveButton()
@@ -736,7 +742,7 @@ class SettingsView : ViewPage {
                         modifier = Modifier.padding(5.dp)
                     ) {
                         Defaults.updateCheckBoxes.forEach {
-                            fieldCheckbox(it)
+                            FieldCheckbox(it)
                         }
                     }
                     Row(

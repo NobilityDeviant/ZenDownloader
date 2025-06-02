@@ -10,7 +10,7 @@ import androidx.compose.foundation.interaction.collectIsHoveredAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
@@ -133,7 +133,7 @@ fun DefaultDropdownItem(
     endIcon: ImageVector? = null,
     enabled: Boolean = true,
     modifier: Modifier = Modifier,
-    iconColor: Color = LocalContentColor.current,
+    iconColor: Color = MaterialTheme.colorScheme.onSurface,
     onClick: () -> Unit
 ) {
     val interaction =  remember { MutableInteractionSource() }
@@ -164,7 +164,8 @@ fun DefaultDropdownItem(
             Text(
                 text,
                 fontSize = 12.sp,
-                modifier = Modifier.offset(y = (-3).dp)
+                modifier = Modifier.offset(y = (-3).dp),
+                color = iconColor
             )
             if (endIcon != null) {
                 Icon(
@@ -694,8 +695,14 @@ private fun <T> CustomHeader(
                         .weight(item.weight)
                         .onClick {
                             if (currentSort.value == item.headerSort) {
-                                currentSort.value?.descending?.value =
-                                    currentSort.value?.descending?.value != true
+                                if (currentSort.value?.descending?.value == true) {
+                                    currentSort.value?.descending?.value = false
+                                } else if (currentSort.value?.descending?.value == false) {
+                                    currentSort.value?.descending?.value = true
+                                    currentSort.value = null
+                                }
+                                //currentSort.value?.descending?.value =
+                                  //  currentSort.value?.descending?.value != true
                             } else {
                                 currentSort.value = item.headerSort
                             }
@@ -773,12 +780,14 @@ fun <T> SortedLazyColumn(
     headerItems: List<HeaderItem<T>>,
     sortState: MutableState<HeaderSort?>,
     items: List<T>,
-    modifier: Modifier = Modifier.fillMaxSize(),
-    startingComparator: Comparator<T>? = null,
+    headerColor: Color = MaterialTheme.colorScheme.inversePrimary,
+    modifier: Modifier = Modifier.fillMaxSize()
+        .background(MaterialTheme.colorScheme.surface),
+    endingComparator: Comparator<T>? = null,
     key: ((T) -> Any)? = null,
     lazyListState: LazyListState = rememberLazyListState(),
     scope: CoroutineScope = rememberCoroutineScope(),
-    lazyColumnRow: @Composable (T) -> Unit
+    lazyColumnRow: @Composable (Int, T) -> Unit
 ) {
     LaunchedEffect(Unit) {
         val default = headerItems.firstOrNull { it.defaultSort }
@@ -791,28 +800,33 @@ fun <T> SortedLazyColumn(
     ) {
         CustomHeader(
             headerItems,
-            sortState
+            sortState,
+            mainColor = headerColor
         )
-        val sortedItems by remember(items, sortState.value, startingComparator) {
+        val sortedItems by remember(
+            items,
+            sortState.value,
+            endingComparator
+        ) {
             derivedStateOf {
                 val item = headerItems.find { it.headerSort == sortState.value }
                 val selector = item?.sortSelector
 
-                val sortedItems = if (startingComparator != null) {
-                    items.sortedWith(startingComparator)
-                } else items
-
-                if (selector != null) {
+                val sortedItems = if (selector != null) {
                     @Suppress("UNCHECKED_CAST")
                     val castSelector = selector as (T) -> Comparable<Any>
                     if (sortState.value?.descending?.value == true) {
-                        sortedItems.sortedByDescending(castSelector)
+                        items.sortedByDescending(castSelector)
                     } else {
-                        sortedItems.sortedBy(castSelector)
+                        items.sortedBy(castSelector)
                     }
                 } else {
-                    sortedItems
+                    items
                 }
+
+                if (endingComparator != null) {
+                    sortedItems.sortedWith(endingComparator)
+                } else sortedItems
             }
         }
 
@@ -821,7 +835,7 @@ fun <T> SortedLazyColumn(
                 verticalArrangement = Arrangement.spacedBy(1.dp),
                 modifier = Modifier
                     .padding(
-                        top = 4.dp,
+                        top = 1.dp,
                         bottom = 4.dp,
                         end = verticalScrollbarEndPadding
                     )
@@ -836,11 +850,13 @@ fun <T> SortedLazyColumn(
                     ),
                 state = lazyListState
             ) {
-                items(
+                itemsIndexed(
                     sortedItems,
-                    key = key
-                ) {
-                    lazyColumnRow(it)
+                    key = { index, item ->
+                        key?.invoke(item) ?: index
+                    }
+                ) { index, item ->
+                    lazyColumnRow(index, item)
                 }
             }
             VerticalScrollbar(lazyListState)

@@ -68,10 +68,10 @@ class DownloadsView : ViewPage {
             Core.child.downloadList,
             key = { it.nameAndResolution() },
             lazyListState = scrollState,
-            startingComparator = Tools.downloadProgressComparator
-        ) {
+            endingComparator = Tools.downloadProgressComparator
+        ) { _, item ->
             DownloadRow(
-                it,
+                item,
                 windowScope
             )
         }

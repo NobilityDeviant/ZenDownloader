@@ -4,6 +4,7 @@ import io.objectbox.query.QueryBuilder
 import nobility.downloader.core.entities.*
 import nobility.downloader.core.entities.data.SeriesIdentity
 import nobility.downloader.core.entities.data.Website
+import nobility.downloader.utils.Tools
 import nobility.downloader.utils.findUniqueOrNull
 import java.util.*
 
@@ -120,6 +121,7 @@ object BoxMaker {
             }
     }
 
+    @Suppress("UNUSED")
     fun makeGenre(
         name: String = "",
         slug: String = "",
@@ -147,6 +149,7 @@ object BoxMaker {
         name: String,
         link: String,
         isSeries: Boolean,
+        dateFound: Long = Tools.currentTime
     ) {
         BoxHelper.shared.wcoRecentBox.query()
             .equal(RecentData_.name, name, QueryBuilder.StringOrder.CASE_SENSITIVE)
@@ -159,7 +162,8 @@ object BoxMaker {
                             imageLink,
                             name,
                             link,
-                            isSeries
+                            isSeries,
+                            dateFound
                         )
                     )
                 }

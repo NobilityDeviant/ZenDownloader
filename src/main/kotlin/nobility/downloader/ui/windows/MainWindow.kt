@@ -47,7 +47,7 @@ import kotlin.system.exitProcess
 
 @Composable
 fun mainWindow(scope: AppWindowScope) {
-    uiWrapper(scope) {
+    UiWrapper(scope) {
         when (Core.currentPage) {
             Page.DOWNLOADER -> Core.downloaderView.Ui(scope)
             Page.DOWNLOADS -> Core.downloadsView.Ui(scope)
@@ -61,7 +61,7 @@ fun mainWindow(scope: AppWindowScope) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun uiWrapper(
+private fun UiWrapper(
     windowScope: AppWindowScope,
     content: @Composable () -> Unit
 ) {
@@ -198,7 +198,7 @@ private fun uiWrapper(
                             ) {
                                 TooltipIconButton(
                                     "Download Queue",
-                                    icon = EvaIcons.Fill.CloudDownload,
+                                    icon = EvaIcons.Fill.Sync,
                                     iconSize = mediumIconSize
                                 ) {
                                     val downloadQueue = DownloadQueueWindow()
@@ -434,12 +434,18 @@ private fun uiWrapper(
                             Page.RECENT -> {
                                 options.add {
                                     DefaultDropdownItem(
-                                        "Download Recent Data",
-                                        EvaIcons.Fill.Download
+                                        "Clear Recent Data",
+                                        EvaIcons.Fill.Trash
                                     ) {
                                         closeMenu()
-                                        scope.launch {
-                                            Core.recentView.reloadRecentData()
+                                        DialogHelper.showConfirm(
+                                            "Are you sure you want to remove all the recent data?",
+                                            size = DpSize(300.dp, 200.dp),
+                                        ) {
+                                            scope.launch {
+                                                BoxHelper.shared.wcoRecentBox.removeAll()
+                                                Core.recentView.clear()
+                                            }
                                         }
                                     }
                                 }

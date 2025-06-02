@@ -1,24 +1,15 @@
 package nobility.downloader.ui.views
 
 import androidx.compose.foundation.*
-import androidx.compose.foundation.gestures.Orientation
-import androidx.compose.foundation.gestures.draggable
-import androidx.compose.foundation.gestures.rememberDraggableState
-import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.CursorDropdownMenu
-import androidx.compose.material.Icon
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.input.pointer.PointerButton
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextAlign
@@ -26,14 +17,13 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import compose.icons.EvaIcons
 import compose.icons.evaicons.Fill
-import compose.icons.evaicons.fill.ArrowIosDownward
-import compose.icons.evaicons.fill.ArrowIosUpward
 import compose.icons.evaicons.fill.Info
 import kotlinx.coroutines.launch
 import nobility.downloader.Page
 import nobility.downloader.core.BoxHelper
 import nobility.downloader.core.BoxHelper.Companion.long
 import nobility.downloader.core.BoxHelper.Companion.update
+import nobility.downloader.core.BoxMaker
 import nobility.downloader.core.Core
 import nobility.downloader.core.entities.RecentData
 import nobility.downloader.core.scraper.RecentScraper
@@ -48,32 +38,51 @@ class RecentView: ViewPage {
 
     override val page = Page.RECENT
 
-    private var sort by mutableStateOf(Sort.NAME)
-    private val recentData = BoxHelper.shared.wcoRecentBox.all
+    private var sort: MutableState<HeaderSort?> = mutableStateOf(null)
+    private val recentData = BoxHelper.shared.wcoRecentBox.all.toMutableStateList()
     private var loading by mutableStateOf(false)
     private var lastUpdated by mutableStateOf(Defaults.WCO_RECENT_LAST_UPDATED.long())
-
-    private val sortedRecentData: List<RecentData>
-        get() {
-            return when (sort) {
-                Sort.NAME -> recentData.sortedBy { it.name }
-                Sort.NAME_DESC -> recentData.sortedByDescending { it.name }
-            }
-        }
 
     suspend fun reloadRecentData() {
         if (loading) {
             return
         }
-        BoxHelper.shared.wcoRecentBox.removeAll()
         Defaults.WCO_RECENT_LAST_UPDATED.update(0L)
-        recentData.clear()
         lastUpdated = 0
-        Defaults
         loading = true
         val result = RecentScraper.run()
-        if (result.data == true) {
-            recentData.addAll(BoxHelper.shared.wcoRecentBox.all)
+        val data = result.data
+        var added = 0
+        if (data != null) {
+            if (data.isNotEmpty()) {
+                data.forEach { recent ->
+                    if (!recentData.any { it.matches(recent) }) {
+                        recentData.add(recent)
+                        BoxMaker.makeRecent(
+                            recent.imagePath,
+                            recent.imageLink,
+                            recent.name,
+                            recent.link,
+                            recent.isSeries,
+                            recent.dateFound
+                        )
+                        added++
+                    }
+                }
+                if (added > 0) {
+                    FrogLog.writeMessage(
+                        "Found and added $added new recent data."
+                    )
+                } else {
+                    FrogLog.logError(
+                        "Found no uncached recent data."
+                    )
+                }
+            } else {
+                FrogLog.logError(
+                    "Found no recent data."
+                )
+            }
             lastUpdated = Defaults.WCO_RECENT_LAST_UPDATED.long()
         } else {
             FrogLog.logError(
@@ -87,7 +96,6 @@ class RecentView: ViewPage {
     @Composable
     override fun Ui(windowScope: AppWindowScope) {
         val scope = rememberCoroutineScope()
-        val seasonsListState = rememberLazyListState()
         Scaffold(
             modifier = Modifier.fillMaxSize(50f),
             bottomBar = {
@@ -146,43 +154,34 @@ class RecentView: ViewPage {
                         modifier = Modifier.size(80.dp)
                     )
                 }
-            }
-            Column(
-                modifier = Modifier.padding(
-                    bottom = padding.calculateBottomPadding()
-                ).fillMaxSize()
-            ) {
-                header()
-                if (!loading) {
-                    FullBox {
-                        LazyColumn(
-                            verticalArrangement = Arrangement.spacedBy(4.dp),
-                            modifier = Modifier.padding(
-                                top = 5.dp,
-                                bottom = 5.dp,
-                                end = verticalScrollbarEndPadding
-                            ).fillMaxSize().draggable(
-                                state = rememberDraggableState {
-                                    scope.launch {
-                                        seasonsListState.scrollBy(-it)
-                                    }
-                                },
-                                orientation = Orientation.Vertical,
-                            ),
-                            state = seasonsListState
-                        ) {
-                            items(
-                                sortedRecentData,
-                                key = { it.name }
-                            ) {
-                                recentDataRow(
-                                    it,
-                                    windowScope
-                                )
-                            }
-                        }
-                        VerticalScrollbar(seasonsListState)
-                    }
+            } else {
+                SortedLazyColumn<RecentData>(
+                    listOf(
+                        HeaderItem(
+                            "Name",
+                            NAME_WEIGHT
+                        ) { it.name },
+                        HeaderItem(
+                            "Date Found",
+                            DATE_WEIGHT,
+                            true
+                        ) { it.dateFound },
+                        HeaderItem(
+                            "Image",
+                            IMAGE_WEIGHT
+                        )
+                    ),
+                    sort,
+                    recentData,
+                    key = { it.name + it.id },
+                    modifier = Modifier.padding(
+                        bottom = padding.calculateBottomPadding()
+                    ).fillMaxSize()
+                ) { _, item ->
+                    RecentDataRow(
+                        item,
+                        windowScope
+                    )
                 }
             }
         }
@@ -195,73 +194,7 @@ class RecentView: ViewPage {
 
     @OptIn(ExperimentalFoundationApi::class)
     @Composable
-    private fun header() {
-        Row(
-            modifier = Modifier.background(
-                color = MaterialTheme.colorScheme.inversePrimary,
-                shape = RectangleShape
-            ).height(40.dp).fillMaxWidth().padding(end = verticalScrollbarEndPadding),
-            horizontalArrangement = Arrangement.spacedBy(4.dp)
-        ) {
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier.weight(NAME_WEIGHT)
-                    .align(Alignment.CenterVertically).onClick {
-                        sort = when (sort) {
-                            Sort.NAME -> {
-                                Sort.NAME_DESC
-                            }
-
-                            Sort.NAME_DESC -> {
-                                Sort.NAME
-                            }
-
-                        }
-                    }
-            ) {
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(spaceBetweenNameAndIcon),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Text(
-                        text = "Name",
-                        modifier = Modifier
-                            .padding(4.dp)
-                            .align(Alignment.CenterVertically),
-                        color = MaterialTheme.colorScheme.onPrimaryContainer,
-                        fontSize = MaterialTheme.typography.bodySmall.fontSize,
-                        textAlign = TextAlign.Center
-                    )
-                    if (sort == Sort.NAME || sort == Sort.NAME_DESC) {
-                        Icon(
-                            if (sort == Sort.NAME_DESC)
-                                EvaIcons.Fill.ArrowIosDownward
-                            else
-                                EvaIcons.Fill.ArrowIosUpward,
-                            "",
-                            modifier = Modifier.size(18.dp),
-                            tint = MaterialTheme.colorScheme.onPrimaryContainer
-                        )
-                    }
-                }
-            }
-            divider(true)
-            Text(
-                text = "Image",
-                modifier = Modifier
-                    .padding(4.dp)
-                    .align(Alignment.CenterVertically)
-                    .weight(IMAGE_WEIGHT),
-                color = MaterialTheme.colorScheme.onPrimaryContainer,
-                fontSize = MaterialTheme.typography.bodySmall.fontSize,
-                textAlign = TextAlign.Center
-            )
-        }
-    }
-
-    @OptIn(ExperimentalFoundationApi::class)
-    @Composable
-    private fun recentDataRow(
+    private fun RecentDataRow(
         recentData: RecentData,
         windowScope: AppWindowScope
     ) {
@@ -308,13 +241,24 @@ class RecentView: ViewPage {
             Text(
                 text = recentData.name,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                fontSize = MaterialTheme.typography.headlineSmall.fontSize,
+                fontSize = 22.sp,
                 modifier = Modifier
                     .padding(4.dp)
                     .align(Alignment.CenterVertically)
                     .weight(NAME_WEIGHT)
             )
-            divider()
+            Divider()
+            Text(
+                text = Tools.dateFormatted(recentData.dateFound),
+                modifier = Modifier
+                    .padding(4.dp)
+                    .align(Alignment.CenterVertically)
+                    .weight(DATE_WEIGHT),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                fontSize = MaterialTheme.typography.bodySmall.fontSize,
+                textAlign = TextAlign.Center
+            )
+            Divider()
             val imagePath = BoxHelper.seriesImagesPath + Tools.titleForImages(recentData.name)
             DefaultImage(
                 imagePath,
@@ -329,17 +273,12 @@ class RecentView: ViewPage {
     }
 
     @Composable
-    private fun divider(
-        header: Boolean = false
-    ) {
+    private fun Divider() {
         VerticalDivider(
             modifier = Modifier.fillMaxHeight()
                 .width(1.dp)
                 .background(
-                    if (header)
-                        MaterialTheme.colorScheme.onPrimaryContainer
-                    else
-                        MaterialTheme.colorScheme.onSurfaceVariant
+                    MaterialTheme.colorScheme.onSurfaceVariant
                 ),
             color = Color.Transparent
         )
@@ -349,17 +288,18 @@ class RecentView: ViewPage {
         return if (data.isSeries) "Series" else "Episode"
     }
 
-    override fun onClose() {}
-
-    private enum class Sort {
-        NAME,
-        NAME_DESC
+    fun clear() {
+        recentData.clear()
+        Defaults.WCO_RECENT_LAST_UPDATED.update(0L)
+        lastUpdated = 0
     }
 
+    override fun onClose() {}
+
     companion object {
-        private val spaceBetweenNameAndIcon = 1.dp
         private val rowHeight = 130.dp
-        private const val NAME_WEIGHT = 7.1f
-        private const val IMAGE_WEIGHT = 1.9f
+        private const val NAME_WEIGHT = 1f
+        private const val IMAGE_WEIGHT = 0.35f
+        private const val DATE_WEIGHT = 0.2f
     }
 }

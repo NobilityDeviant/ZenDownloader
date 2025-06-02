@@ -358,7 +358,7 @@
     },
     {
       "id": "9:7049152544636722855",
-      "lastPropertyId": "3:2288583564906970754",
+      "lastPropertyId": "5:4909504519740823243",
       "name": "Favorite",
       "properties": [
         {
@@ -376,6 +376,16 @@
           "id": "3:2288583564906970754",
           "name": "episodes",
           "type": 30
+        },
+        {
+          "id": "4:5400525666602269899",
+          "name": "lastUpdated",
+          "type": 6
+        },
+        {
+          "id": "5:4909504519740823243",
+          "name": "website",
+          "type": 9
         }
       ],
       "relations": []

@@ -5,11 +5,10 @@ import kotlinx.coroutines.withContext
 import nobility.downloader.core.BoxHelper
 import nobility.downloader.core.BoxHelper.Companion.int
 import nobility.downloader.core.BoxHelper.Companion.update
-import nobility.downloader.core.BoxMaker
 import nobility.downloader.core.Core
+import nobility.downloader.core.entities.RecentData
 import nobility.downloader.core.scraper.video_download.Functions
 import nobility.downloader.core.settings.Defaults
-import nobility.downloader.utils.FrogLog
 import nobility.downloader.utils.Resource
 import nobility.downloader.utils.Tools
 import nobility.downloader.utils.Tools.titleForImages
@@ -19,8 +18,9 @@ import java.io.File
 
 object RecentScraper {
 
-    suspend fun run(): Resource<Boolean> = withContext(Dispatchers.IO) {
+    suspend fun run(): Resource<List<RecentData>> = withContext(Dispatchers.IO) {
         try {
+            val recent = mutableListOf<RecentData>()
             val result = Functions.readUrlLines(
                 Core.wcoUrl,
                 "RecentScraper"
@@ -62,18 +62,20 @@ object RecentScraper {
                                     UserAgents.random
                                 )
                             } catch (_: Exception) {
-                                FrogLog.logError(
-                                    "Failed to download image: $seriesImageLink"
-                                )
+                                //FrogLog.logError(
+                                  //  "Failed to download image: $seriesImageLink"
+                                //)
                             }
                         }
-                        BoxMaker.makeRecent(
+                        val recentData = RecentData(
                             imagePath,
                             seriesImageLink,
                             episodeName,
                             episodeLink,
-                            false
+                            false,
+                            Tools.currentTime
                         )
+                        recent.add(recentData)
                     }
                 }
             }
@@ -107,26 +109,28 @@ object RecentScraper {
                                     UserAgents.random
                                 )
                             } catch (_: Exception) {
-                                FrogLog.logError(
-                                    "Failed to download image: $seriesImageLink"
-                                )
+                                //FrogLog.logError(
+                                  //  "Failed to download image: $seriesImageLink"
+                                //)
                             }
                         }
-                        BoxMaker.makeRecent(
+                        val recentData = RecentData(
                             imagePath,
                             seriesImageLink,
                             seriesName,
                             seriesLink,
-                            true
+                            true,
+                            Tools.currentTime
                         )
+                        recent.add(recentData)
                     }
                 }
             }
             Defaults.WCO_RECENT_LAST_UPDATED.update(Tools.currentTime)
+            return@withContext Resource.Success(recent)
         } catch (e: Exception) {
             return@withContext Resource.Error(e)
         }
-        return@withContext Resource.Success(true)
     }
 
 }

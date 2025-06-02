@@ -319,7 +319,7 @@
     },
     {
       "id": "8:3480781995443333909",
-      "lastPropertyId": "6:5555767426059178442",
+      "lastPropertyId": "7:3289992867768124949",
       "name": "RecentData",
       "properties": [
         {
@@ -352,6 +352,11 @@
           "name": "id",
           "type": 6,
           "flags": 1
+        },
+        {
+          "id": "7:3289992867768124949",
+          "name": "dateFound",
+          "type": 6
         }
       ],
       "relations": []

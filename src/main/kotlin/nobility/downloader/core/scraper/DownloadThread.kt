@@ -1,5 +1,6 @@
 package nobility.downloader.core.scraper
 
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import kotlinx.coroutines.*
 import nobility.downloader.core.BoxHelper.Companion.boolean
@@ -18,7 +19,7 @@ import java.util.concurrent.atomic.AtomicInteger
  */
 class DownloadThread {
 
-    val downloadQueue: MutableList<Episode> = Collections.synchronizedList(mutableListOf())
+    val downloadQueue: MutableList<Episode> = Collections.synchronizedList(mutableStateListOf())
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private var currentJobs = AtomicInteger(0)
     private var stopJob: Job? = null
@@ -114,6 +115,11 @@ class DownloadThread {
         return added
     }
 
+    fun removeFromQueue(episode: Episode) {
+        downloadQueue.remove(episode)
+        synchronizeDownloadsInQueue()
+    }
+
     @get:Synchronized
     private val nextDownload: Episode?
         get() {
@@ -132,6 +138,7 @@ class DownloadThread {
 
     fun clear() {
         downloadQueue.clear()
+        synchronizeDownloadsInQueue()
     }
 
     fun stop() {
