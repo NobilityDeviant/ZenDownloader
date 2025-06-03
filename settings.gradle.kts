@@ -4,11 +4,15 @@ pluginManagement {
         maven("https://maven.pkg.jetbrains.space/public/p/compose/dev")
     }
 
+    resolutionStrategy {
+        eachPlugin {
+            if (requested.id.id == "io.objectbox") {
+                useModule("io.objectbox:objectbox-gradle-plugin:${requested.version}")
+            }
+        }
+    }
+
     plugins {
-        kotlin("jvm").version(extra["kotlin.version"] as String)
-        id("org.jetbrains.compose").version(extra["compose.version"] as String)
-        id("org.jetbrains.kotlin.multiplatform").version(extra["kotlin.version"] as String)
+        kotlin("jvm").version("2.2.0-RC")
     }
 }
-
-rootProject.name = "ZenDownloader"

@@ -1,8 +1,6 @@
 package nobility.downloader.ui.components.toast
 
 import androidx.compose.foundation.layout.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -15,6 +13,9 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import compose.icons.EvaIcons
+import compose.icons.evaicons.Fill
+import compose.icons.evaicons.fill.Close
 import nobility.downloader.core.BoxHelper.Companion.float
 import nobility.downloader.core.settings.Defaults
 
@@ -88,7 +89,7 @@ fun toast(
                     onClick = { toastData.dismiss() },
                     content = {
                         Icon(
-                            Icons.Filled.Close,
+                            EvaIcons.Fill.Close,
                             contentDescription = null,
                         )
                     }

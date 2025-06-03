@@ -1,6 +1,6 @@
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
 
-val objectBox = "4.0.3"
+val objectBox = "4.3.0"
 val currentOs: org.gradle.internal.os.OperatingSystem = org.gradle.internal.os.OperatingSystem.current()
 
 buildscript {
@@ -8,17 +8,18 @@ buildscript {
         mavenCentral()
     }
     dependencies {
-        //4.1.0 & 4.2.0 breaks the jvm
-        //default to 4.0.3 if it breaks
-        classpath("io.objectbox:objectbox-gradle-plugin:4.0.3")
+        //4.3.0 finally doesn't break!
+        classpath("io.objectbox:objectbox-gradle-plugin:4.3.0")
     }
 }
 
 plugins {
     kotlin("jvm")
-    kotlin("kapt") version "1.9.23"
-    id("org.jetbrains.compose")
-    id("org.jetbrains.kotlin.plugin.compose").version("2.1.10")
+    //alias(libs.plugins.multiplatform)
+    alias(libs.plugins.compose)
+    alias(libs.plugins.compose.compiler)
+    alias(libs.plugins.kapt)
+    alias(libs.plugins.objectbox)
 }
 
 kotlin {
@@ -37,9 +38,7 @@ repositories {
 
 dependencies {
 
-    implementation(compose.desktop.currentOs) {
-        exclude(group = "org.jetbrains.compose.material", module = "material")
-    }
+    implementation(compose.desktop.currentOs)
 
     when {
         currentOs.isLinux -> {
@@ -47,6 +46,7 @@ dependencies {
             implementation("io.objectbox:objectbox-linux-arm64:$objectBox")
             implementation("io.objectbox:objectbox-linux-armv7:$objectBox")
         }
+
         currentOs.isMacOsX -> implementation("io.objectbox:objectbox-macos:$objectBox")
         currentOs.isWindows -> implementation("io.objectbox:objectbox-windows:$objectBox")
     }
@@ -68,37 +68,35 @@ dependencies {
     kapt("io.objectbox:objectbox-processor:$objectBox")
 
     //network
-    implementation("org.jsoup:jsoup:1.19.1")
-    implementation("org.seleniumhq.selenium:selenium-java:4.31.0")
-    implementation("io.github.bonigarcia:webdrivermanager:6.0.1")
+    implementation("org.jsoup:jsoup:1.20.1")
+    implementation("org.seleniumhq.selenium:selenium-java:4.33.0")
+    implementation("io.github.bonigarcia:webdrivermanager:6.1.0")
     implementation("ch.qos.logback:logback-classic:1.5.18")
     runtimeOnly("org.jetbrains.kotlinx:kotlinx-coroutines-swing:1.10.2")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
     //for url updating.
-    implementation("com.google.http-client:google-http-client:1.46.3")
+    implementation("com.google.http-client:google-http-client:1.47.0")
     //for undetected chrome
     implementation("com.alibaba:fastjson:2.0.57")
     //ui
     implementation(compose.material3)
     implementation("com.materialkolor:material-kolor:2.1.1")
     implementation("br.com.devsrsouza.compose.icons:eva-icons:1.1.1")
-    implementation("io.coil-kt.coil3:coil-compose:3.1.0")
-    implementation("io.coil-kt.coil3:coil-network-okhttp:3.1.0")
+    implementation("io.coil-kt.coil3:coil-compose:3.2.0")
+    implementation("io.coil-kt.coil3:coil-network-okhttp:3.2.0")
     implementation("com.darkrockstudios:mpfilepicker:3.1.0")
-    implementation(compose.components.resources)
+    //implementation(compose.components.resources)
     //for unzipping assets
     implementation("net.lingala.zip4j:zip4j:2.11.5")
     //m3u8 downloading
     implementation("org.apache.commons:commons-lang3:3.17.0")
     implementation("org.apache.commons:commons-collections4:4.4")
     implementation("org.bouncycastle:bcprov-jdk18on:1.80")
-    implementation("org.apache.httpcomponents.client5:httpclient5:5.4.3")
-    implementation("io.netty:netty-common:4.2.0.Final")
+    implementation("org.apache.httpcomponents.client5:httpclient5:5.5")
+    implementation("io.netty:netty-common:4.2.1.Final")
     implementation("org.jctools:jctools-core:4.0.5")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.8.1")
 }
-
-apply(plugin = "io.objectbox")
 
 compose.desktop {
     application {
@@ -155,7 +153,7 @@ compose.desktop {
 //keeps throwing io.objectbox.EntityInfo not found error.
 //but all other errors have been fixed so far.
 tasks.register<Jar>("packageFatJar") {
-    println("Project Name: " + project.name) 
+    println("Project Name: " + project.name)
     group = "compose desktop"
     description = "Builds a fat JAR."
     archiveBaseName.set("ZenDownloader")
@@ -180,7 +178,12 @@ tasks.register<Jar>("packageFatJar") {
 
     from(sourceSets["main"].output)
 
-    val preservedJars = listOf("skiko", "skia", "org.jetbrains.compose", "objectbox")
+    val preservedJars = listOf(
+        "skiko",
+        "skia",
+        "org.jetbrains.compose",
+        "objectbox"
+    )
 
     from({
         configurations.runtimeClasspath.get().flatMap { file ->

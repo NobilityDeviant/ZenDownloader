@@ -21,7 +21,7 @@ class M3u8ExecutorProgress : Runnable {
     @Suppress("warnings")
     private fun doProgress() {
         val elapsedSecondsInc = elapsedSeconds.incrementAndGet()
-        if (m3u8Progresses.isEmpty) {
+        if (m3u8Progresses.isEmpty()) {
             return
         }
         var idx = 0

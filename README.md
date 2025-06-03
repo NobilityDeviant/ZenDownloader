@@ -379,6 +379,8 @@ Now once everything is imported and downloaded, open the project tree on the lef
 
 Right click **Main.kt** and select `Run MainKt`
 
+Or even better, you can use the `run` task from Gradle.
+
 If you want to make the `.deb` or the `.rpm` file, you need to install a couple extra things:
 
 Debian:

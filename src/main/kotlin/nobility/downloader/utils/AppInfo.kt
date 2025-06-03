@@ -20,5 +20,8 @@ object AppInfo {
     const val WCO_MOVIE_LIST_LINK = "https://raw.githubusercontent.com/NobilityDeviant/ZenDownloader/master/assets/movies.txt"
     const val USER_AGENTS_LINK = "https://raw.githubusercontent.com/NobilityDeviant/ZenDownloader/master/assets/user_agents.txt"
     val databasePath = "${System.getProperty("user.home")}${File.separator}.zen_database${File.separator}"
-    const val NO_IMAGE_DRAWABLE = "/drawable/no-image.png"
+    //const val NO_IMAGE_DRAWABLE = "/drawable/no_image.png"
+    private const val IMAGE_PATH = "images/"
+    const val APP_ICON_PATH = IMAGE_PATH + "icon.png"
+    const val NO_IMAGE_PATH = IMAGE_PATH + "no_image.png"
 }

@@ -1,0 +1,16 @@
+[versions]
+
+kotlin = "2.2.0-RC"
+compose = "1.8.1"
+objectbox = "4.3.0"
+
+[libraries]
+
+
+[plugins]
+
+multiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
+compose-compiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
+compose = { id = "org.jetbrains.compose", version.ref = "compose" }
+kapt = { id = "org.jetbrains.kotlin.kapt", version.ref = "kotlin" }
+objectbox = { id = "io.objectbox", version.ref = "objectbox" }

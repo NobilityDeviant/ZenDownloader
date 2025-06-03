@@ -27,17 +27,10 @@ import coil3.request.crossfade
 import coil3.size.Precision
 import kotlinx.coroutines.Dispatchers
 import nobility.downloader.ui.windows.ImagePopoutWindow
-import nobility.downloader.utils.AppInfo
-import nobility.downloader.utils.Tools
-import nobility.downloader.utils.fileExists
-import nobility.downloader.utils.hover
-import nobility.downloader.zendownloader.generated.resources.Res
-import nobility.downloader.zendownloader.generated.resources.no_image
-import org.jetbrains.compose.resources.ExperimentalResourceApi
-import org.jetbrains.compose.resources.imageResource
+import nobility.downloader.utils.*
 import java.io.File
 
-@OptIn(ExperimentalFoundationApi::class, ExperimentalResourceApi::class)
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun DefaultImage(
     imagePath: String,
@@ -86,7 +79,7 @@ fun DefaultImage(
                 filterQuality = FilterQuality.High
             )
         else rememberAsyncImagePainter(
-            model = Res.getUri(AppInfo.NO_IMAGE_DRAWABLE)
+            model = AppInfo.NO_IMAGE_PATH
         ),
         error = if (urlBackup != null)
             rememberAsyncImagePainter(
@@ -94,7 +87,7 @@ fun DefaultImage(
                 filterQuality = FilterQuality.High
             )
         else rememberAsyncImagePainter(
-            model = Res.getUri(AppInfo.NO_IMAGE_DRAWABLE)
+            model = AppInfo.NO_IMAGE_PATH
         )
     )
 }
@@ -110,7 +103,7 @@ private fun imageRequest(
         .crossfade(true)
         .coroutineContext(Dispatchers.IO)
     if (noImage) {
-        val image = imageResource(Res.drawable.no_image)
+        val image = ImageUtils.loadImageBitmap(AppInfo.NO_IMAGE_PATH)
         builder.apply {
             error {
                 image.asSkiaBitmap().asImage()
