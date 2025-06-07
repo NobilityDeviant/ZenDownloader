@@ -87,7 +87,7 @@ object FrogLog {
         println("[I] $information")
     }
 
-    fun writeMessage(
+    fun message(
         message: String,
         toErrorStream: Boolean = false
     ) {

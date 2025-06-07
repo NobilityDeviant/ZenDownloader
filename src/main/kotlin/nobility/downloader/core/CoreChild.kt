@@ -22,11 +22,14 @@ import nobility.downloader.core.updates.UrlUpdater
 import nobility.downloader.ui.components.dialog.DialogHelper
 import nobility.downloader.ui.components.dialog.DialogHelper.showError
 import nobility.downloader.utils.Constants
+import nobility.downloader.utils.FrogLog
 import nobility.downloader.utils.update
 import org.openqa.selenium.WebDriver
 import java.io.File
 import java.net.URI
 import java.util.*
+import java.util.logging.Level
+import java.util.logging.Logger
 import kotlin.system.exitProcess
 
 
@@ -55,6 +58,9 @@ class CoreChild {
                 UrlUpdater.updateWcoUrl()
             }
             movieHandler.loadMovies()
+            val logger = Logger.getLogger("org.openqa.selenium.remote.http.WebSocket")
+            logger.setLevel(Level.SEVERE)
+
             WebDriverManager.chromedriver().setup()
             launch {
                 downloadThread.run()
@@ -116,15 +122,15 @@ class CoreChild {
         downloadThread.synchronizeDownloadsInQueue()
     }
 
+    @OptIn(DelicateCoroutinesApi::class)
     fun shutdown(force: Boolean = false) {
-        if (force && !shutdownExecuted) {
-            downloadThread.stop()
+        downloadThread.stop()
+        Core.taskScope.cancel()
+
+        if (force) {
             shutdownExecuted = true
             stop()
-            Core.taskScope.launch {
-                killAllDrivers()
-                exitProcess(-1)
-            }
+            GlobalScope.launch { killAllDrivers() }
             return
         }
         if (isRunning) {
@@ -137,50 +143,78 @@ class CoreChild {
                 """.trimIndent(),
                 "Shutdown"
             ) {
-                downloadThread.stop()
                 shutdownExecuted = true
                 stop()
-                Core.taskScope.launch {
-                    killAllDrivers()
-                    exitProcess(0)
-                }
+                GlobalScope.launch { killAllDrivers() }
             }
         } else {
-            downloadThread.stop()
             shutdownExecuted = true
-            Core.taskScope.launch {
-                killAllDrivers()
-                exitProcess(0)
-            }
+            GlobalScope.launch { killAllDrivers() }
         }
     }
 
-    private suspend fun killAllDrivers() = withContext(Dispatchers.Default) {
-        if (runningDrivers.isEmpty()) {
-            return@withContext
+    private val maxRetries = 2
+    private val killTimeout = 7000L
+
+    private suspend fun killAllDrivers(): Nothing = withContext(Dispatchers.Default) {
+        FrogLog.logInfo("killAllDrivers() started")
+        val drivers = synchronized(runningDrivers) { runningDrivers.toMap() }
+
+        if (drivers.isEmpty()) {
+            FrogLog.logInfo("No drivers found. exiting...")
+            exitProcess(0)
         }
-        WebDriverManager.chromedriver().quit()
-        val tasks = mutableListOf<Job>()
-        val copyRunningDrivers = HashMap(runningDrivers)
-        shutdownProgressTotal = copyRunningDrivers.size
+
+        shutdownProgressTotal = drivers.size
         var index = 0
-        copyRunningDrivers.forEach { _, driver ->
-            tasks.add(launch {
-                try {
+
+        for ((key, driver) in drivers) {
+            val success = attemptKillDriver(key, driver)
+
+            if (!success) {
+                FrogLog.logError("All attempts failed to kill driver ($key)")
+            }
+
+            runningDrivers.remove(key)
+            shutdownProgressIndex = ++index
+        }
+
+        FrogLog.logInfo("Driver shutdown complete. exiting...")
+        exitProcess(0)
+    }
+
+    private suspend fun attemptKillDriver(key: String, driver: WebDriver): Boolean {
+        repeat(maxRetries) { attempt ->
+            FrogLog.logInfo("Killing driver [$key] — attempt ${attempt + 1}/$maxRetries")
+            try {
+                val result = withTimeoutOrNull(killTimeout) {
                     if (driver is UndetectedChromeDriver) {
                         driver.kill()
                     } else {
-                        driver.close()
                         driver.quit()
                     }
-                } catch (_: Exception) {
+                    true
                 }
-                shutdownProgressIndex = index
-                index++
-            })
+
+                if (result == true) {
+                    FrogLog.logInfo("Successfully killed driver [$key]")
+                    return true
+                } else {
+                    FrogLog.logInfo(
+                        "Attempt ${attempt + 1} timed out for driver [$key]"
+                    )
+                }
+            } catch (e: Exception) {
+                FrogLog.logError(
+                    "Failed to kill driver ($key) on attempt ${attempt + 1}",
+                    e
+                )
+            }
         }
-        tasks.joinAll()
+        return false
     }
+
+
 
     private fun canStart(): Boolean {
         if (isUpdating) {

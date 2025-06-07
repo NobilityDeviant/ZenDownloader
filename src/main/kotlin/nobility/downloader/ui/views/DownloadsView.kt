@@ -27,7 +27,6 @@ import nobility.downloader.core.Core
 import nobility.downloader.core.entities.Download
 import nobility.downloader.ui.components.DefaultDropdownItem
 import nobility.downloader.ui.components.HeaderItem
-import nobility.downloader.ui.components.HeaderSort
 import nobility.downloader.ui.components.SortedLazyColumn
 import nobility.downloader.ui.components.dialog.DialogHelper
 import nobility.downloader.ui.windows.utils.AppWindowScope
@@ -37,13 +36,11 @@ import nobility.downloader.utils.hover
 class DownloadsView : ViewPage {
 
     override val page = Page.DOWNLOADS
-
-    private var sort = mutableStateOf<HeaderSort?>(null)
     private var deletedFile = false //used so it doesn't scroll to top on deletion (hacky)
 
     @Composable
     override fun Ui(windowScope: AppWindowScope) {
-        val scrollState = rememberLazyListState()
+        val lazyListState = rememberLazyListState()
         SortedLazyColumn(
             listOf(
                 HeaderItem(
@@ -64,10 +61,9 @@ class DownloadsView : ViewPage {
                     PROGRESS_WEIGHT
                 ) { it.videoProgress.value }
             ),
-            sort,
             Core.child.downloadList,
             key = { it.nameAndResolution() },
-            lazyListState = scrollState,
+            lazyListState = lazyListState,
             endingComparator = Tools.downloadProgressComparator
         ) { _, item ->
             DownloadRow(
@@ -77,7 +73,7 @@ class DownloadsView : ViewPage {
         }
         LaunchedEffect(Core.child.downloadList.size) {
             if (!deletedFile) {
-                scrollState.animateScrollToItem(0)
+                lazyListState.animateScrollToItem(0)
             } else {
                 deletedFile = false
             }

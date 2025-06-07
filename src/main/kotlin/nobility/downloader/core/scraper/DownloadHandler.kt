@@ -61,7 +61,7 @@ object DownloadHandler {
                 toDownload = resultData
             } else if (resultData.episode != null) {
                 toDownload = resultData
-                FrogLog.writeMessage("Successfully scraped episode from: $url")
+                FrogLog.message("Successfully scraped episode from: $url")
             } else {
                 return@withContext Resource.Error("Failed to find data for download.")
             }

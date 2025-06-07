@@ -702,7 +702,7 @@ private fun <T> CustomHeader(
                                     currentSort.value = null
                                 }
                                 //currentSort.value?.descending?.value =
-                                  //  currentSort.value?.descending?.value != true
+                                //  currentSort.value?.descending?.value != true
                             } else {
                                 currentSort.value = item.headerSort
                             }
@@ -778,7 +778,6 @@ private fun <T> CustomHeader(
 @Composable
 fun <T> SortedLazyColumn(
     headerItems: List<HeaderItem<T>>,
-    sortState: MutableState<HeaderSort?>,
     items: List<T>,
     headerColor: Color = MaterialTheme.colorScheme.inversePrimary,
     modifier: Modifier = Modifier.fillMaxSize()
@@ -789,12 +788,12 @@ fun <T> SortedLazyColumn(
     scope: CoroutineScope = rememberCoroutineScope(),
     lazyColumnRow: @Composable (Int, T) -> Unit
 ) {
-    LaunchedEffect(Unit) {
-        val default = headerItems.firstOrNull { it.defaultSort }
-        if (default != null) {
-            sortState.value = default.headerSort
-        }
+    val sortState: MutableState<HeaderSort?> = remember {
+        mutableStateOf(
+            headerItems.firstOrNull { it.defaultSort }?.headerSort
+        )
     }
+
     Column(
         modifier = modifier
     ) {
@@ -803,6 +802,7 @@ fun <T> SortedLazyColumn(
             sortState,
             mainColor = headerColor
         )
+
         val sortedItems by remember(
             items,
             sortState.value,

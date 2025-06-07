@@ -142,7 +142,7 @@ private fun UiWrapper(
                                         Page.ERROR_CONSOLE -> {
                                             BadgedBox(
                                                 badge = {
-                                                    if (Core.errorConsole.unreadErrors) {
+                                                    if (Core.errorConsole.state.unreadErrors) {
                                                         Badge(
                                                             containerColor = Color.Red,
                                                             modifier = Modifier.offset(y = 2.dp, x = (-8).dp)

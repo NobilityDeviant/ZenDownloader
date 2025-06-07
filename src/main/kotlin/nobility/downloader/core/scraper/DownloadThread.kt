@@ -59,9 +59,9 @@ class DownloadThread {
                 if (hasFinished()) {
                     val finished = downloadsFinishedForSession
                     if (finished > 0) {
-                        FrogLog.writeMessage("Gracefully finished downloading $finished video(s).")
+                        FrogLog.message("Gracefully finished downloading $finished video(s).")
                     } else {
-                        FrogLog.writeMessage("Gracefully finished. No downloads have been made.")
+                        FrogLog.message("Gracefully finished. No downloads have been made.")
                     }
                     Core.child.stop()
                     break

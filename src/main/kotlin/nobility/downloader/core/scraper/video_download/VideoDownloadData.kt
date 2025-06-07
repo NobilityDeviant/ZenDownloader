@@ -158,7 +158,7 @@ class VideoDownloadData(
     }
 
     fun writeMessage(s: String) {
-        FrogLog.writeMessage("$tag $s")
+        FrogLog.message("$tag $s")
     }
 
     fun logInfo(s: String) {

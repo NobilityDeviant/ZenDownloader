@@ -25,14 +25,14 @@ class SlugHandler {
     ): Resource<ToDownload> {
         val fullLink = slug.slugToLink()
         if (slug == "anime/movies") {
-            FrogLog.writeMessage(
+            FrogLog.message(
                 """
                     You can't scrape the movies series.
                 """.trimIndent()
             )
             return Resource.Error("Failed to read series.")
         }
-        FrogLog.writeMessage("Scraping data from url: $fullLink")
+        FrogLog.message("Scraping data from url: $fullLink")
         if (forceSeries) {
             return handleSeriesSlug(slug)
         }
@@ -340,7 +340,7 @@ class SlugHandler {
                         }
                     }
                     try {
-                        FrogLog.writeMessage("Looking for series from episode link ($episodeLink).")
+                        FrogLog.message("Looking for series from episode link ($episodeLink).")
                         val result = handleSlug(seriesSlug, true)
                         val resultData = result.data
                         if (resultData != null) {
@@ -351,7 +351,7 @@ class SlugHandler {
                                     identityResult.identity
                                 )
                                 if (added) {
-                                    FrogLog.writeMessage("Added series found from episode link ($episodeLink) successfully.")
+                                    FrogLog.message("Added series found from episode link ($episodeLink) successfully.")
                                 }
                                 return@withContext Resource.Success(
                                     ToDownload(
@@ -375,7 +375,7 @@ class SlugHandler {
                     }
                 }
             }
-            FrogLog.writeMessage(
+            FrogLog.message(
                 "Failed to find series for episode ($episodeLink)" +
                         " Just downloading episode..."
             )

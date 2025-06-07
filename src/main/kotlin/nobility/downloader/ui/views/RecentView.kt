@@ -3,6 +3,7 @@ package nobility.downloader.ui.views
 import androidx.compose.foundation.*
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.CursorDropdownMenu
 import androidx.compose.material3.*
@@ -38,7 +39,6 @@ class RecentView: ViewPage {
 
     override val page = Page.RECENT
 
-    private var sort: MutableState<HeaderSort?> = mutableStateOf(null)
     private val recentData = BoxHelper.shared.wcoRecentBox.all.toMutableStateList()
     private var loading by mutableStateOf(false)
     private var lastUpdated by mutableStateOf(Defaults.WCO_RECENT_LAST_UPDATED.long())
@@ -70,7 +70,7 @@ class RecentView: ViewPage {
                     }
                 }
                 if (added > 0) {
-                    FrogLog.writeMessage(
+                    FrogLog.message(
                         "Found and added $added new recent data."
                     )
                 } else {
@@ -155,6 +155,8 @@ class RecentView: ViewPage {
                     )
                 }
             } else {
+                val lazyListState = rememberLazyListState(0)
+                val fastScrolling = rememberScrollSpeed(lazyListState)
                 SortedLazyColumn<RecentData>(
                     listOf(
                         HeaderItem(
@@ -171,8 +173,9 @@ class RecentView: ViewPage {
                             IMAGE_WEIGHT
                         )
                     ),
-                    sort,
                     recentData,
+                    scope = scope,
+                    lazyListState = lazyListState,
                     key = { it.name + it.id },
                     modifier = Modifier.padding(
                         bottom = padding.calculateBottomPadding()
@@ -180,6 +183,7 @@ class RecentView: ViewPage {
                 ) { _, item ->
                     RecentDataRow(
                         item,
+                        fastScrolling.value,
                         windowScope
                     )
                 }
@@ -196,6 +200,7 @@ class RecentView: ViewPage {
     @Composable
     private fun RecentDataRow(
         recentData: RecentData,
+        fastScrolling: Boolean,
         windowScope: AppWindowScope
     ) {
         var showFileMenu by remember {
@@ -259,10 +264,13 @@ class RecentView: ViewPage {
                 textAlign = TextAlign.Center
             )
             Divider()
-            val imagePath = BoxHelper.seriesImagesPath + Tools.titleForImages(recentData.name)
+            val imagePath = remember {
+                BoxHelper.seriesImagesPath + Tools.titleForImages(recentData.name)
+            }
             DefaultImage(
                 imagePath,
                 recentData.imageLink,
+                fastScrolling = fastScrolling,
                 contentScale = ContentScale.FillBounds,
                 modifier = Modifier.fillMaxSize()
                     .padding(10.dp)
@@ -299,7 +307,7 @@ class RecentView: ViewPage {
     companion object {
         private val rowHeight = 130.dp
         private const val NAME_WEIGHT = 1f
-        private const val IMAGE_WEIGHT = 0.35f
+        private const val IMAGE_WEIGHT = 0.29f
         private const val DATE_WEIGHT = 0.2f
     }
 }

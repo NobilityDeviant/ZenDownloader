@@ -62,19 +62,19 @@ object IdentityScraper {
             if (added > 0) {
                 when (identity) {
                     SeriesIdentity.SUBBED -> {
-                        FrogLog.writeMessage("Successfully downloaded $added missing subbed link(s).")
+                        FrogLog.message("Successfully downloaded $added missing subbed link(s).")
                     }
 
                     SeriesIdentity.DUBBED -> {
-                        FrogLog.writeMessage("Successfully downloaded $added missing dubbed link(s).")
+                        FrogLog.message("Successfully downloaded $added missing dubbed link(s).")
                     }
 
                     SeriesIdentity.CARTOON -> {
-                        FrogLog.writeMessage("Successfully downloaded $added missing cartoon link(s).")
+                        FrogLog.message("Successfully downloaded $added missing cartoon link(s).")
                     }
 
                     SeriesIdentity.MOVIE -> {
-                        FrogLog.writeMessage("Successfully downloaded $added missing movie link(s).")
+                        FrogLog.message("Successfully downloaded $added missing movie link(s).")
                     }
 
                     else -> {}
@@ -94,7 +94,7 @@ object IdentityScraper {
     ): SeriesIdentity = withContext(Dispatchers.Default) {
         SeriesIdentity.filteredValues().forEach {
             if (!BoxHelper.areIdentityLinksComplete(it)) {
-                FrogLog.writeMessage("Identity links for: $it aren't fully downloaded. Launching IdentityScraper now.")
+                FrogLog.message("Identity links for: $it aren't fully downloaded. Launching IdentityScraper now.")
                 try {
                     scrapeLinksToSlugs(it)
                 } catch (e: Exception) {
@@ -115,7 +115,7 @@ object IdentityScraper {
     ): Resource<SeriesIdentity> = withContext(Dispatchers.IO) {
         val fixedSlug = slug.fixedSlug()
         val fullSeriesLink = slug.slugToLink()
-        FrogLog.writeMessage("Looking for identity for $fixedSlug online")
+        FrogLog.message("Looking for identity for $fixedSlug online")
         for (identity in SeriesIdentity.filteredValues()) {
             val fullIdentityLink = identity.slug.slugToLink()
             val result = Functions.readUrlLines(
@@ -144,15 +144,15 @@ object IdentityScraper {
                     }
                     if (s.contains(fixedSlug) || s == fixedSlug) {
                         addIdentityLinkWithSlug(fixedSlug, identity)
-                        FrogLog.writeMessage("Successfully labeled $fullSeriesLink as $identity")
+                        FrogLog.message("Successfully labeled $fullSeriesLink as $identity")
                         return@withContext Resource.Success(identity)
                     }
                 }
             }
         }
         val new = SeriesIdentity.NEW
-        FrogLog.writeMessage("Failed to find identity for $fixedSlug")
-        FrogLog.writeMessage("Labeling it as $new")
+        FrogLog.message("Failed to find identity for $fixedSlug")
+        FrogLog.message("Labeling it as $new")
         addIdentityLinkWithSlug(slug, new)
         return@withContext Resource.Success(new)
     }

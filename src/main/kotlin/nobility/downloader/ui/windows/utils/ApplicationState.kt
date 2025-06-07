@@ -115,7 +115,7 @@ class ApplicationState {
                 val open by remember { scope.open }
                 if (open) {
                     Window(
-                        icon = ImageUtils.loadPainterFromResource(AppInfo.APP_ICON_PATH),
+                        icon = remember { ImageUtils.loadPainterFromResource(AppInfo.APP_ICON_PATH) },
                         //undecorated windows don't work on windows 7
                         undecorated = if (!SystemUtils.IS_OS_WINDOWS_7) undecorated else false,
                         transparent = if (!SystemUtils.IS_OS_WINDOWS_7) transparent else false,

@@ -1,4 +1,4 @@
-package nobility.downloader.ui.components
+package nobility.downloader.ui.components.console
 
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
@@ -21,115 +21,45 @@ import compose.icons.evaicons.fill.Trash
 import compose.icons.evaicons.outline.Close
 import compose.icons.evaicons.outline.DiagonalArrowRightUp
 import kotlinx.coroutines.launch
-import nobility.downloader.Page
 import nobility.downloader.core.BoxHelper.Companion.boolean
-import nobility.downloader.core.Core
 import nobility.downloader.core.settings.Defaults
+import nobility.downloader.ui.components.TooltipIconButton
 import nobility.downloader.ui.windows.utils.AppWindowScope
 import nobility.downloader.ui.windows.utils.ApplicationState
-import nobility.downloader.utils.AppInfo
 import nobility.downloader.utils.Tools
 import nobility.downloader.utils.hover
 import nobility.downloader.utils.tone
 import java.io.OutputStream
-import java.util.*
 
 class Console(
     private val errorMode: Boolean = false
 ) : OutputStream() {
 
-    var consolePoppedOut by mutableStateOf(false)
-    private var consoleText by mutableStateOf("")
-    private val sb = StringBuilder()
-    var unreadErrors by mutableStateOf(false)
-    var size = 0
-        private set
-
-    init {
-        if (!errorMode) {
-            sb.append(time()).append(" ")
-        }
-    }
-
-    private fun time(): String {
-        val c = Calendar.getInstance()
-        val hour = c[Calendar.HOUR]
-        val minute = c[Calendar.MINUTE]
-        return "[" + hour + ":" + (if (minute.toString().length == 1) "0" else "") + minute + "]"
-    }
+    val state = ConsoleState(errorMode)
 
     override fun write(b: Int) {
-        clearIfSize(
-            @Suppress("KotlinConstantConditions")
-            if (AppInfo.DEBUG_MODE)
-                5_000
-            else if (errorMode) 3_000
-            else 1_000
+        state.appendChar(
+            b.toChar()
         )
-        if (b == '\r'.code) return
-        if (b == '\n'.code) {
-            val text = sb.toString()
-            var filtered = false
-            for (s in filters) {
-                if (text.contains(s)) {
-                    filtered = true
-                    break
-                }
-            }
-            if (!filtered) {
-                consoleText = consoleText.plus(text.plus("\n"))
-                size++
-            }
-            sb.clear()
-            return
-        }
-        if (!errorMode) {
-            if (sb.isEmpty()) {
-                sb.append(time()).append(" ")
-            }
-        }
-        sb.append(b.toChar())
-        if (errorMode) {
-            if (Core.currentPage != Page.ERROR_CONSOLE && !consolePoppedOut) {
-                unreadErrors = true
-            }
-        }
     }
-
-    override fun flush() {}
 
     override fun close() {
-        clear()
-    }
-
-    private fun clearIfSize(sizeCheck: Int = 300) {
-        if (size >= sizeCheck) {
-            clear()
-        }
-    }
-
-    fun isEmpty(): Boolean {
-        return consoleText.isEmpty() && size <= 0
-    }
-
-    fun clear() {
-        consoleText = ""
-        size = 0
+        state.clear()
     }
 
     @OptIn(ExperimentalFoundationApi::class)
     @Composable
     fun ConsoleTextField(
         windowScope: AppWindowScope,
-        modifier: Modifier = Modifier,
+        modifier: Modifier = Modifier.Companion,
         popoutMode: Boolean = false,
     ) {
-        val scrollState = rememberScrollState(size)
+        val scrollState = rememberScrollState(state.lineCount)
         val scope = rememberCoroutineScope()
         val contextMenuRepresentation = DefaultContextMenuRepresentation(
-            backgroundColor = if (isSystemInDarkTheme()) Color.DarkGray else Color.LightGray,
-            textColor = if (isSystemInDarkTheme()) Color.White else Color.Black,
-            itemHoverColor = (if (isSystemInDarkTheme()) Color.DarkGray else Color.LightGray).hover(),
+            backgroundColor = if (isSystemInDarkTheme()) Color.Companion.DarkGray else Color.Companion.LightGray,
+            textColor = if (isSystemInDarkTheme()) Color.Companion.White else Color.Companion.Black,
+            itemHoverColor = (if (isSystemInDarkTheme()) Color.Companion.DarkGray else Color.Companion.LightGray).hover(),
         )
         CompositionLocalProvider(LocalContextMenuRepresentation provides contextMenuRepresentation) {
             ContextMenuDataProvider(
@@ -147,20 +77,23 @@ class Console(
                             }
                         },
                         ContextMenuItem("Clear Console") {
-                            clear()
+                            state.clear()
                         }
                     )
                 }
             ) {
+                val consoleText by remember {
+                    derivedStateOf { state.consoleText }
+                }
                 Column(
                     modifier
                 ) {
                     Row(
-                        verticalAlignment = Alignment.CenterVertically,
+                        verticalAlignment = Alignment.Companion.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(4.dp),
-                        modifier = Modifier.align(Alignment.End)
+                        modifier = Modifier.Companion.align(Alignment.Companion.End)
                     ) {
-                        if ((!popoutMode && !consolePoppedOut) || popoutMode) {
+                        if ((!popoutMode && !state.consolePoppedOut) || popoutMode) {
                             TooltipIconButton(
                                 "Copy Console Text",
                                 EvaIcons.Fill.Copy,
@@ -170,32 +103,32 @@ class Console(
                                 windowScope.showToast("Copied Console Text")
                             }
                         }
-                        if ((!popoutMode && !consolePoppedOut) || popoutMode) {
+                        if ((!popoutMode && !state.consolePoppedOut) || popoutMode) {
                             TooltipIconButton(
                                 "Clear Console",
                                 EvaIcons.Fill.Trash,
                                 iconColor = MaterialTheme.colorScheme.primary
                             ) {
-                                clear()
+                                state.clear()
                             }
                         }
                         TooltipIconButton(
-                            if (consolePoppedOut)
+                            if (state.consolePoppedOut)
                                 "Close Console Window" else "Pop out Console",
-                            if (consolePoppedOut)
+                            if (state.consolePoppedOut)
                                 EvaIcons.Outline.Close else EvaIcons.Outline.DiagonalArrowRightUp,
                             iconColor = MaterialTheme.colorScheme.primary
                         ) {
-                            if (consolePoppedOut) {
+                            if (state.consolePoppedOut) {
                                 closeWindow()
                             } else {
                                 openWindow()
                             }
                         }
                     }
-                    if ((!popoutMode && !consolePoppedOut) || (popoutMode && consolePoppedOut)) {
+                    if ((!popoutMode && !state.consolePoppedOut) || (popoutMode && state.consolePoppedOut)) {
                         Column(
-                            Modifier.padding(1.dp)
+                            Modifier.Companion.padding(1.dp)
                                 .border(
                                     1.dp,
                                     MaterialTheme.colorScheme.primary,
@@ -205,13 +138,11 @@ class Console(
                             TextField(
                                 value = consoleText,
                                 readOnly = true,
-                                onValueChange = {
-                                    consoleText = it
-                                },
-                                modifier = Modifier
+                                onValueChange = {},
+                                modifier = Modifier.Companion
                                     .fillMaxSize()
                                     .onClick(
-                                        matcher = PointerMatcher.mouse(PointerButton.Secondary)
+                                        matcher = PointerMatcher.Companion.mouse(PointerButton.Companion.Secondary)
                                     ) {}
                                     .verticalScroll(scrollState),
                                 colors = TextFieldDefaults.colors(),
@@ -222,7 +153,7 @@ class Console(
                                     MaterialTheme.typography.labelLarge
                             )
                         }
-                    } else if (!popoutMode && consolePoppedOut) {
+                    } else if (!popoutMode && state.consolePoppedOut) {
                         Column(
                             modifier = modifier
                                 .padding(1.dp)
@@ -237,8 +168,8 @@ class Console(
                                 )
                         ) {}
                     }
-                    //auto scroll
-                    LaunchedEffect(size) {
+                    LaunchedEffect(consoleText) {
+                        //Auto-scroll to bottom when new line appears
                         if (Defaults.AUTO_SCROLL_CONSOLES.boolean()) {
                             scrollState.animateScrollTo(scrollState.maxValue)
                         }
@@ -251,39 +182,33 @@ class Console(
     private val windowTitle = "${if (errorMode) "Error " else ""}Console"
 
     fun closeWindow() {
-        ApplicationState.removeWindowWithId(windowTitle)
+        ApplicationState.Companion.removeWindowWithId(windowTitle)
     }
 
     fun openWindow() {
-        consolePoppedOut = true
-        ApplicationState.newWindow(
+        state.consolePoppedOut = true
+        ApplicationState.Companion.newWindow(
             windowTitle,
             size = DpSize(400.dp, 250.dp),
-            windowAlignment = Alignment.BottomEnd,
+            windowAlignment = Alignment.Companion.BottomEnd,
             alwaysOnTop = Defaults.CONSOLE_ON_TOP.boolean(),
             onClose = {
-                consolePoppedOut = false
+                state.consolePoppedOut = false
                 return@newWindow true
             }
         ) {
             Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier.background(
+                horizontalAlignment = Alignment.Companion.CenterHorizontally,
+                modifier = Modifier.Companion.background(
                     MaterialTheme.colorScheme.surface
                 )
             ) {
                 ConsoleTextField(
                     this@newWindow,
-                    modifier = Modifier.fillMaxSize(),
+                    modifier = Modifier.Companion.fillMaxSize(),
                     popoutMode = true
                 )
             }
         }
-    }
-
-    companion object {
-        private val filters = listOf<String>(
-            "Hint: use closeThreadResources() to avoid finalizing recycled transactions"
-        )
     }
 }

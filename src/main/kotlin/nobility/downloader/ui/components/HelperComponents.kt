@@ -8,6 +8,7 @@ import androidx.compose.foundation.TooltipPlacement
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -30,6 +31,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import nobility.downloader.core.BoxHelper.Companion.boolean
 import nobility.downloader.core.settings.Defaults
+import kotlin.math.abs
 
 @Composable
 fun BasicTextFieldWithCursorAtEnd(
@@ -232,4 +234,30 @@ fun Modifier.horizontalWheelScroll(
             }
         }
     }
+}
+
+@Composable
+fun rememberScrollSpeed(
+    lazyListState: LazyListState
+): State<Boolean> {
+
+    val isFastScrolling = remember { mutableStateOf(false) }
+
+    LaunchedEffect(lazyListState) {
+        var lastFirstVisible = lazyListState.firstVisibleItemIndex
+        var lastTime = withFrameNanos { it }
+
+        snapshotFlow { lazyListState.firstVisibleItemIndex }
+            .collect { index ->
+                val now = withFrameNanos { it }
+                val diff = now - lastTime
+                val delta = abs(index - lastFirstVisible)
+                //if moving more than 2 items in under 100ms
+                isFastScrolling.value = delta > 2 && diff < 100_000_000
+                lastFirstVisible = index
+                lastTime = now
+            }
+    }
+
+    return isFastScrolling
 }

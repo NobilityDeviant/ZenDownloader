@@ -3,6 +3,7 @@ package nobility.downloader.ui.views
 import androidx.compose.foundation.*
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.CursorDropdownMenu
 import androidx.compose.material3.*
@@ -44,7 +45,6 @@ class HistoryView : ViewPage {
     override val page = Page.HISTORY
 
     private val downloadScope = CoroutineScope(Dispatchers.IO)
-    private var sort: MutableState<HeaderSort?> = mutableStateOf(null)
     private var checkForEpisodesButtonEnabled = mutableStateOf(true)
     private var clearHistoryEnabled = mutableStateOf(true)
     private var loading by mutableStateOf(false)
@@ -99,7 +99,7 @@ class HistoryView : ViewPage {
                             enabled = clearHistoryEnabled
                         ) {
                             DialogHelper.showConfirm(
-                                "Are you sure you would like to delete your download history?",
+                                "Are you sure you want to delete your download history?",
                                 onConfirmTitle = "Clear History"
                             ) {
                                 if (seriesDatas.isEmpty()) {
@@ -157,6 +157,8 @@ class HistoryView : ViewPage {
                     )
                 }
             } else {
+                val lazyListState = rememberLazyListState()
+                val fastScrolling = rememberScrollSpeed(lazyListState)
                 SortedLazyColumn<SeriesData>(
                     listOf(
                         HeaderItem(
@@ -183,8 +185,8 @@ class HistoryView : ViewPage {
                             IMAGE_WEIGHT
                         )
                     ),
-                    sort,
                     seriesDatas,
+                    lazyListState = lazyListState,
                     key = { it.series.slug + it.series.id },
                     modifier = Modifier.padding(
                         bottom = padding.calculateBottomPadding()
@@ -193,7 +195,8 @@ class HistoryView : ViewPage {
                     SeriesDataRow(
                         item,
                         windowScope,
-                        scope
+                        scope,
+                        fastScrolling.value
                     )
                 }
             }
@@ -210,7 +213,8 @@ class HistoryView : ViewPage {
     private fun SeriesDataRow(
         seriesData: SeriesData,
         windowScope: AppWindowScope,
-        coroutineSeries: CoroutineScope
+        coroutineSeries: CoroutineScope,
+        fastScrolling: Boolean
     ) {
         var showFileMenu by remember {
             mutableStateOf(false)
@@ -352,6 +356,7 @@ class HistoryView : ViewPage {
             DefaultImage(
                 seriesData.series.imagePath,
                 seriesData.series.imageLink,
+                fastScrolling = fastScrolling,
                 contentScale = ContentScale.FillBounds,
                 modifier = Modifier.fillMaxSize()
                     .padding(10.dp)

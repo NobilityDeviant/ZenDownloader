@@ -15,7 +15,6 @@ buildscript {
 
 plugins {
     kotlin("jvm")
-    //alias(libs.plugins.multiplatform)
     alias(libs.plugins.compose)
     alias(libs.plugins.compose.compiler)
     alias(libs.plugins.kapt)
@@ -85,7 +84,6 @@ dependencies {
     implementation("io.coil-kt.coil3:coil-compose:3.2.0")
     implementation("io.coil-kt.coil3:coil-network-okhttp:3.2.0")
     implementation("com.darkrockstudios:mpfilepicker:3.1.0")
-    //implementation(compose.components.resources)
     //for unzipping assets
     implementation("net.lingala.zip4j:zip4j:2.11.5")
     //m3u8 downloading

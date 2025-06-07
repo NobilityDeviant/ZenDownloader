@@ -177,6 +177,7 @@ class DatabaseWindow {
         ) {
             val scope = rememberCoroutineScope()
             val seasonsListState = rememberLazyListState()
+            val fastScrolling = rememberScrollSpeed(seasonsListState)
             Scaffold(
                 modifier = Modifier.fillMaxSize(50f),
                 bottomBar = {
@@ -343,7 +344,11 @@ class DatabaseWindow {
                                 series,
                                 key = { it.slug + it.id }
                             ) {
-                                SeriesRow(it, this@newWindow)
+                                SeriesRow(
+                                    it,
+                                    fastScrolling.value,
+                                    this@newWindow
+                                )
                             }
                         }
                         VerticalScrollbar(seasonsListState)
@@ -428,7 +433,7 @@ class DatabaseWindow {
                     }
                 }
             }
-            divider()
+            this@DatabaseWindow.Divider()
             Text(
                 text = "Description",
                 modifier = Modifier
@@ -439,7 +444,7 @@ class DatabaseWindow {
                 fontSize = MaterialTheme.typography.bodySmall.fontSize,
                 textAlign = TextAlign.Center
             )
-            divider()
+            this@DatabaseWindow.Divider()
             Text(
                 text = "Genres",
                 modifier = Modifier
@@ -452,7 +457,7 @@ class DatabaseWindow {
             )
             val type by databaseType.collectAsState()
             if (type != DatabaseType.MOVIE) {
-                divider()
+                this@DatabaseWindow.Divider()
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     modifier = Modifier.weight(EPISODES_WEIGHT)
@@ -501,7 +506,7 @@ class DatabaseWindow {
                     }
                 }
             }
-            divider()
+            this@DatabaseWindow.Divider()
             Text(
                 text = "Image",
                 modifier = Modifier
@@ -519,6 +524,7 @@ class DatabaseWindow {
     @Composable
     private fun SeriesRow(
         series: Series,
+        fastScrolling: Boolean,
         windowScope: AppWindowScope
     ) {
         var showFileMenu by remember {
@@ -629,7 +635,7 @@ class DatabaseWindow {
                         .align(Alignment.CenterStart)
                 )
             }
-            divider()
+            this@DatabaseWindow.Divider()
             Text(
                 text = series.description.ifEmpty { "No Description" },
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -670,7 +676,7 @@ class DatabaseWindow {
                         showFileMenu = showFileMenu.not()
                     }
             )
-            divider()
+            this@DatabaseWindow.Divider()
             linkifyGenres(
                 series.filteredGenres,
                 textColor = MaterialTheme.colorScheme.onSecondaryContainer,
@@ -682,7 +688,7 @@ class DatabaseWindow {
             )
             val type by databaseType.collectAsState()
             if (type != DatabaseType.MOVIE) {
-                divider()
+                this@DatabaseWindow.Divider()
                 Text(
                     text = if (series.seriesIdentity != SeriesIdentity.MOVIE)
                         series.episodesSize.toString() else "Movie",
@@ -695,10 +701,11 @@ class DatabaseWindow {
                     textAlign = TextAlign.Center
                 )
             }
-            divider()
+            this@DatabaseWindow.Divider()
             DefaultImage(
                 series.imagePath,
                 series.imageLink,
+                fastScrolling = fastScrolling,
                 contentScale = ContentScale.FillBounds,
                 modifier = Modifier.fillMaxSize()
                     .padding(10.dp)
@@ -709,7 +716,7 @@ class DatabaseWindow {
     }
 
     @Composable
-    private fun divider() {
+    private fun Divider() {
         VerticalDivider(
             modifier = Modifier.fillMaxHeight()
                 .width(1.dp)

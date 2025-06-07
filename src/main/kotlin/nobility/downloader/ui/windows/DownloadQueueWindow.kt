@@ -24,15 +24,12 @@ import nobility.downloader.core.Core
 import nobility.downloader.core.entities.Episode
 import nobility.downloader.ui.components.DefaultDropdownItem
 import nobility.downloader.ui.components.HeaderItem
-import nobility.downloader.ui.components.HeaderSort
 import nobility.downloader.ui.components.SortedLazyColumn
 import nobility.downloader.ui.components.dialog.DialogHelper
 import nobility.downloader.ui.windows.utils.ApplicationState
 import nobility.downloader.utils.hover
 
 class DownloadQueueWindow {
-
-    private var currentSort = mutableStateOf<HeaderSort?>(null)
 
     fun open() {
         ApplicationState.newWindow(
@@ -49,7 +46,6 @@ class DownloadQueueWindow {
                         0.1f
                     ),
                 ),
-                currentSort,
                 Core.child.downloadThread.downloadQueue,
                 key = { it.name + it.id },
                 lazyListState = scrollState,

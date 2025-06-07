@@ -20,7 +20,7 @@ class MovieHandler {
     suspend fun loadMovies() {
         val moviesFile = File(AppInfo.databasePath + "movies.txt")
         if (!moviesFile.exists()) {
-            FrogLog.writeMessage(
+            FrogLog.message(
                 "movies.txt not found. Downloading movie list..."
             )
             downloadMovieList()
@@ -72,7 +72,7 @@ class MovieHandler {
                 }
             }
             if (movies.isNotEmpty()) {
-                FrogLog.writeMessage(
+                FrogLog.message(
                     "Successfully downloaded ${movies.size} movie details."
                 )
             }
@@ -87,7 +87,7 @@ class MovieHandler {
 
     fun movieForSlug(slug: String): Movie? {
         if (movies.isEmpty()) {
-            FrogLog.writeMessage(
+            FrogLog.message(
                 """
                     Failed to check if slug is a movie because the movies.txt file is empty.
                     Please reload the program before downloading movies.

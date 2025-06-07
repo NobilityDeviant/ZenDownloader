@@ -871,7 +871,7 @@ class DownloadConfirmWindow(
                                 Core.child.softStart()
                                 Core.child.downloadThread.addToQueue(movieEpisode)
                                 Core.child.launchStopJob()
-                                FrogLog.writeMessage("Successfully launched video downloader for movie.")
+                                FrogLog.message("Successfully launched video downloader for movie.")
                                 windowScope.closeWindow()
                             }
                         } else {
@@ -922,7 +922,7 @@ class DownloadConfirmWindow(
                                     selectedEpisodes.sortedWith(Tools.baseEpisodesComparator)
                                 )
                                 Core.child.launchStopJob()
-                                FrogLog.writeMessage("Successfully launched video downloader for ${selectedEpisodes.size} episode(s).")
+                                FrogLog.message("Successfully launched video downloader for ${selectedEpisodes.size} episode(s).")
                                 windowScope.closeWindow()
                             }
                         }

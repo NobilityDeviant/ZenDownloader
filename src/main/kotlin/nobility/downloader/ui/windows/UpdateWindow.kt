@@ -111,7 +111,7 @@ class UpdateWindow(
                                         enabled = !update.isLatest
                                     ) {
                                         Defaults.DENIED_UPDATE.update(true)
-                                        FrogLog.writeMessage(
+                                        FrogLog.message(
                                             "The latest update has been denied. You will no longer receive a notification about it until the next update."
                                         )
                                         close()
@@ -407,7 +407,7 @@ class UpdateWindow(
 
     private suspend fun checkForUpdates() = withContext(Dispatchers.IO) {
         if (!justCheck) {
-            FrogLog.writeMessage(
+            FrogLog.message(
                 "Checking for updates..."
             )
         }

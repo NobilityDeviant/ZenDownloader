@@ -18,7 +18,7 @@ object ImageUtils {
         }
         val saveFolder = File(BoxHelper.seriesImagesPath)
         if (!saveFolder.exists() && !saveFolder.mkdirs()) {
-            FrogLog.writeMessage("Failed to download series image: ${series.imageLink}. Save folder was unable to be created.")
+            FrogLog.message("Failed to download series image: ${series.imageLink}. Save folder was unable to be created.")
             return
         }
         val saveFile = File(series.imagePath)

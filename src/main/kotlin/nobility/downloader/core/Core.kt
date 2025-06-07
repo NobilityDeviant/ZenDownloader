@@ -20,7 +20,7 @@ import nobility.downloader.core.entities.Series
 import nobility.downloader.core.scraper.DownloadHandler
 import nobility.downloader.core.scraper.data.ToDownload
 import nobility.downloader.core.settings.Defaults
-import nobility.downloader.ui.components.Console
+import nobility.downloader.ui.components.console.Console
 import nobility.downloader.ui.components.dialog.DialogHelper
 import nobility.downloader.ui.components.dialog.DialogHelper.showError
 import nobility.downloader.ui.views.*
@@ -86,10 +86,10 @@ class Core private constructor() {
                 }
             }
             if (!Defaults.FIRST_LAUNCH.boolean()) {
-                FrogLog.writeMessage("Welcome to ${AppInfo.TITLE}!")
+                FrogLog.message("Welcome to ${AppInfo.TITLE}!")
                 Defaults.FIRST_LAUNCH.update(true)
             } else {
-                FrogLog.writeMessage("Welcome Back!")
+                FrogLog.message("Welcome Back!")
             }
             val file = File(AppInfo.databasePath + "extra")
             if (file.exists()) {
@@ -167,7 +167,7 @@ class Core private constructor() {
                     settingsView.updateValues()
                 }
                 Page.ERROR_CONSOLE -> {
-                    errorConsole.unreadErrors = false
+                    errorConsole.state.unreadErrors = false
                 }
                 else -> {}
             }
@@ -178,7 +178,7 @@ class Core private constructor() {
             //after open
             when (page) {
                 Page.ERROR_CONSOLE -> {
-                    errorConsole.unreadErrors = false
+                    errorConsole.state.unreadErrors = false
                 }
                 else -> {}
             }
@@ -236,7 +236,7 @@ class Core private constructor() {
             toDownload: ToDownload
         ) {
             if (toDownload.series == null) {
-                FrogLog.writeMessage(
+                FrogLog.message(
                     "Failed to open download confirm window. Series isn't valid."
                 )
                 return
