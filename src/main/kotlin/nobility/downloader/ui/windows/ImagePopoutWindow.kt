@@ -13,6 +13,7 @@ import androidx.compose.ui.unit.dp
 import nobility.downloader.ui.components.DefaultImage
 import nobility.downloader.ui.windows.utils.ApplicationState
 import nobility.downloader.utils.fileExists
+import nobility.downloader.utils.isUp
 
 object ImagePopoutWindow {
 
@@ -26,8 +27,8 @@ object ImagePopoutWindow {
         else imagePath
         ApplicationState.newWindow(
             title,
-            keyEvents = {
-                if (it.key == Key.Escape) {
+            keyEvents = { focused, e ->
+                if (focused && e.isUp && e.key == Key.Escape) {
                     ApplicationState.removeWindowWithId(title)
                     true
                 }

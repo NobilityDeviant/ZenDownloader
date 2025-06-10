@@ -25,6 +25,7 @@ import nobility.downloader.ui.components.dialog.DialogHelper
 import nobility.downloader.ui.components.dialog.DialogHelper.showError
 import nobility.downloader.ui.views.*
 import nobility.downloader.ui.windows.DownloadConfirmWindow
+import nobility.downloader.ui.windows.DownloadQueueWindow
 import nobility.downloader.ui.windows.ImageUpdaterWindow
 import nobility.downloader.ui.windows.UpdateWindow
 import nobility.downloader.ui.windows.database.DatabaseWindow
@@ -80,9 +81,19 @@ class Core private constructor() {
             }
             @Suppress("KotlinConstantConditions")
             if (!AppInfo.DEBUG_MODE) {
-                System.setOut(PrintStream(console))
+                System.setOut(
+                    PrintStream(
+                        console,
+                        true,
+                        Charsets.UTF_8.name()
+                    )
+                )
                 if (AppInfo.USE_CUSTOM_ERROR_PS) {
-                    errorPrintStream = PrintStream(errorConsole)
+                    errorPrintStream = PrintStream(
+                        errorConsole,
+                        true,
+                        Charsets.UTF_8.name()
+                    )
                 }
             }
             if (!Defaults.FIRST_LAUNCH.boolean()) {
@@ -145,18 +156,23 @@ class Core private constructor() {
                 Page.DOWNLOADER -> {
                     downloaderView.onClose()
                 }
+
                 Page.DOWNLOADS -> {
                     downloadsView.onClose()
                 }
+
                 Page.SETTINGS -> {
                     settingsView.onClose()
                 }
+
                 Page.HISTORY -> {
                     historyView.onClose()
                 }
+
                 Page.RECENT -> {
                     recentView.onClose()
                 }
+
                 Page.ERROR_CONSOLE -> {
                     errorConsoleView.onClose()
                 }
@@ -166,9 +182,11 @@ class Core private constructor() {
                 Page.SETTINGS -> {
                     settingsView.updateValues()
                 }
+
                 Page.ERROR_CONSOLE -> {
                     errorConsole.state.unreadErrors = false
                 }
+
                 else -> {}
             }
             currentPage = page
@@ -180,6 +198,7 @@ class Core private constructor() {
                 Page.ERROR_CONSOLE -> {
                     errorConsole.state.unreadErrors = false
                 }
+
                 else -> {}
             }
         }
@@ -224,6 +243,11 @@ class Core private constructor() {
         fun openImageUpdater() {
             val imageUpdaterWindow = ImageUpdaterWindow()
             imageUpdaterWindow.open()
+        }
+
+        fun openDownloadQueue() {
+            val downloadQueueWindow = DownloadQueueWindow()
+            downloadQueueWindow.open()
         }
 
         fun openUpdate(

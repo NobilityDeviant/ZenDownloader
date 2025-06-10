@@ -12,6 +12,9 @@ import javax.imageio.ImageIO
 
 object ImageUtils {
 
+    //it's way faster to preload it and re-use it everywhere.
+    val noImage = loadImageBitmap(AppInfo.NO_IMAGE_PATH)
+
     suspend fun downloadSeriesImage(series: Series) {
         if (series.imageLink.isEmpty() || series.imageLink == "N/A") {
             return

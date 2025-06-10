@@ -124,8 +124,8 @@ object DialogHelper {
             resizable = false,
             transparent = true,
             alwaysOnTop = true,
-            keyEvents = {
-                if (it.key == Key.Enter && it.type == KeyEventType.KeyUp) {
+            keyEvents = { focused, e ->
+                if (e.key == Key.Enter && e.type == KeyEventType.KeyUp) {
                     ApplicationState.removeWindowWithId(title)
                     onConfirm()
                 }

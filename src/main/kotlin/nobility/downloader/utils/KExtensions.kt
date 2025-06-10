@@ -1,6 +1,9 @@
 package nobility.downloader.utils
 
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.key.KeyEvent
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.type
 import com.materialkolor.hct.Hct
 import com.materialkolor.ktx.toColor
 import com.materialkolor.ktx.toHct
@@ -15,6 +18,8 @@ import org.apache.commons.io.FileUtils
 import org.apache.commons.lang3.StringUtils
 import org.openqa.selenium.WebDriver
 import java.io.File
+
+val KeyEvent.isUp: Boolean get() = type == KeyEventType.KeyUp
 
 //fix the new selenium pageSource being nullable.
 //why?

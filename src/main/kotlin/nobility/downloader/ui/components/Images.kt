@@ -50,10 +50,6 @@ fun DefaultImage(
 ) {
     val context = LocalPlatformContext.current
 
-    val fallbackImage = remember {
-        ImageUtils.loadImageBitmap(AppInfo.NO_IMAGE_PATH)
-    }
-
     val imageFileExists = remember(imagePath) {
         File(imagePath).exists()
     }
@@ -70,8 +66,7 @@ fun DefaultImage(
     AsyncImage(
         model = imageRequest(
             context,
-            imagePath,
-            fallbackImage
+            imagePath
         ),
         contentDescription = null,
         contentScale = contentScale,
@@ -100,16 +95,14 @@ fun DefaultImage(
         fallback = rememberAsyncImagePainter(
             model = imageRequest(
                 context,
-                urlBackup ?: AppInfo.NO_IMAGE_PATH,
-                fallbackImage
+                urlBackup ?: AppInfo.NO_IMAGE_PATH
             ),
             filterQuality = FilterQuality.Low
         ),
         error = rememberAsyncImagePainter(
             model = imageRequest(
                 context,
-                urlBackup ?: AppInfo.NO_IMAGE_PATH,
-                fallbackImage
+                urlBackup ?: AppInfo.NO_IMAGE_PATH
             ),
             filterQuality = FilterQuality.Low
         )
@@ -120,7 +113,7 @@ fun DefaultImage(
 fun imageRequest(
     context: PlatformContext,
     data: String,
-    fallbackImage: ImageBitmap? = null
+    fallbackImage: ImageBitmap? = ImageUtils.noImage
 ): ImageRequest {
 
     val builder = ImageRequest.Builder(context)

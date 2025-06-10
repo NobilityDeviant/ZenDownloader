@@ -3,7 +3,7 @@ import androidx.compose.runtime.key
 import androidx.compose.ui.window.application
 import nobility.downloader.core.Core
 import nobility.downloader.ui.windows.AssetUpdateWindow
-import nobility.downloader.ui.windows.mainWindow
+import nobility.downloader.ui.windows.MainWindow
 import nobility.downloader.ui.windows.utils.ApplicationState
 import nobility.downloader.utils.AppInfo
 import nobility.downloader.utils.KeyEvents
@@ -29,7 +29,7 @@ fun main() {
                     false
                 }
             ) {
-                mainWindow(this)
+                MainWindow(this)
             }
             true
         }
@@ -44,7 +44,7 @@ fun main() {
                 false
             }
         ) {
-            mainWindow(this)
+            MainWindow(this)
         }
     }
 

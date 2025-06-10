@@ -222,14 +222,8 @@ class DownloadConfirmWindow(
         ApplicationState.newWindow(
             "Download ${series.name}",
             maximized = true,
-            keyEvents = {
+            keyEvents = { focused, it ->
                 shiftHeld = it.isShiftPressed
-                /*if (it.isShiftPressed) {
-                    shiftHeld = true
-                    return@newWindow true
-                } else {
-                    shiftHeld = false
-                }*/
                 false
             }
         ) {
@@ -380,7 +374,8 @@ class DownloadConfirmWindow(
         val episodes = episodes.toMutableList()
         if (!movieMode) {
             val movies = episodes.filter {
-                it.name.contains("Movie", true) || it.name.contains("Film", true)
+                it.name.contains("Movie", true)
+                        || it.name.contains("Film", true)
             }
             if (movies.isNotEmpty()) {
                 seasonDataList.add(
@@ -420,15 +415,14 @@ class DownloadConfirmWindow(
                 val match = Regex("Season(?:\\s|\\s?[:/]\\s?)\\d+").find(it.name)
                 return@groupBy if (match != null) {
                     val seasonName = it.name.substring(match.range)
-                    seasonName.filter { char -> char.isDigit() }.ifEmpty { 1 }
+                    seasonName.filter { char -> char.isDigit() }.ifEmpty { "1" }
                 } else {
-                    1
+                    "Random"
                 }
             }.mapValues { map -> map.value.distinctBy { episode -> episode.name } }
             return seasonDataList.plus(subLists.map {
-                val seasonNumber = it.key.toString().toInt()
                 SeasonData(
-                    "${series.name} Season $seasonNumber",
+                    if (it.key == "Random") "${series.name} ${it.key}" else "${series.name} Season ${it.key}",
                     it.value,
                     it.value.contains(toDownload.episode)
                 )
@@ -502,7 +496,7 @@ class DownloadConfirmWindow(
     }
 
     @Composable
-    private fun episodeRow(episode: Episode) {
+    private fun EpisodeRow(episode: Episode) {
         var checked = selectedEpisodes.contains(episode)
         val highlighted = highlightedEpisodes.contains(
             indexForEpisode(episode, false)
@@ -604,7 +598,7 @@ class DownloadConfirmWindow(
     }
 
     @Composable
-    fun seasonHeader(
+    fun SeasonHeader(
         seasonData: SeasonData,
         expanded: Boolean,
         onHeaderClicked: () -> Unit
@@ -675,7 +669,7 @@ class DownloadConfirmWindow(
     ) {
         if (!seasonData.searchMode) {
             stickyHeader(UUID.randomUUID().toString()) {
-                seasonHeader(
+                SeasonHeader(
                     seasonData = seasonData,
                     expanded = isExpanded,
                     onHeaderClicked = onHeaderClick
@@ -686,7 +680,7 @@ class DownloadConfirmWindow(
                     seasonData.episodes,
                     key = { UUID.randomUUID().toString() }
                 ) {
-                    episodeRow(it)
+                    EpisodeRow(it)
                 }
             }
         } else {
@@ -694,7 +688,7 @@ class DownloadConfirmWindow(
                 seasonData.episodes,
                 key = { UUID.randomUUID().toString() }
             ) {
-                episodeRow(it)
+                EpisodeRow(it)
             }
         }
     }

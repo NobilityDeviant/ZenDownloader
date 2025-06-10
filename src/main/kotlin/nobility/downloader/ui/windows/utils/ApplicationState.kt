@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.input.key.KeyEvent
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Window
@@ -88,7 +89,7 @@ class ApplicationState {
 
         fun newWindow(
             title: String,
-            keyEvents: ((KeyEvent) -> Boolean)? = null,
+            keyEvents: ((Boolean, KeyEvent) -> Boolean)? = null,
             size: DpSize = DpSize(800.dp, 600.dp),
             onClose: (() -> Boolean)? = null,
             maximized: Boolean = false,
@@ -100,8 +101,10 @@ class ApplicationState {
             content: @Composable (AppWindowScope.() -> Unit)
         ) {
             val scope = object : AppWindowScope {
+                //use the title so the same window can't be opened twice
                 override val windowId: String = title
                 override var open = mutableStateOf(true)
+                override var focused = mutableStateOf(false)
                 override var toastContent = mutableStateOf("")
                 override var onClose: (() -> Boolean)? = onClose
                 override fun closeWindow() {
@@ -116,7 +119,7 @@ class ApplicationState {
                 if (open) {
                     Window(
                         icon = remember { ImageUtils.loadPainterFromResource(AppInfo.APP_ICON_PATH) },
-                        //undecorated windows don't work on windows 7
+                        //undecorated windows don't work on Windows 7
                         undecorated = if (!SystemUtils.IS_OS_WINDOWS_7) undecorated else false,
                         transparent = if (!SystemUtils.IS_OS_WINDOWS_7) transparent else false,
                         resizable = resizable,
@@ -138,8 +141,17 @@ class ApplicationState {
                                 WindowPlacement.Maximized
                             else WindowPlacement.Floating
                         ),
-                        onKeyEvent = keyEvents ?: { false },
+                        onKeyEvent = {
+                            keyEvents?.invoke(
+                                scope.focused.value,
+                                it
+                            )?: false
+                        },
                         content = {
+                            val focused = LocalWindowInfo.current.isWindowFocused
+                            LaunchedEffect(focused) {
+                                scope.focused.value = focused
+                            }
                             CoreTheme {
                                 scope.content()
                             }

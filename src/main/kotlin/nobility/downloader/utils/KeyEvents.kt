@@ -1,6 +1,9 @@
 package nobility.downloader.utils
 
-import androidx.compose.ui.input.key.*
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEvent
+import androidx.compose.ui.input.key.isCtrlPressed
+import androidx.compose.ui.input.key.key
 import nobility.downloader.Page
 import nobility.downloader.core.BoxHelper.Companion.boolean
 import nobility.downloader.core.BoxHelper.Companion.string
@@ -88,6 +91,14 @@ class KeyEvents {
                 }
             )
             shortcuts.add(
+                Shortcut(Key.Q, "Open Download Queue", true) {
+                    if (Core.currentPage == Page.SETTINGS && Core.settingsFieldFocused) {
+                        return@Shortcut
+                    }
+                    Core.openDownloadQueue()
+                }
+            )
+            shortcuts.add(
                 Shortcut(Key.DirectionLeft, "Cycle Through Tabs", true) {
                     if (Core.currentPage == Page.SETTINGS && Core.settingsFieldFocused) {
                         return@Shortcut
@@ -123,13 +134,12 @@ class KeyEvents {
         }
     }
 
-    fun loadKeyEvents(): (KeyEvent) -> Boolean = core@ {
-        val up = it.type == KeyEventType.KeyUp
+    fun loadKeyEvents(): (Boolean, KeyEvent) -> Boolean = core@ { focused, e ->
         val ctrl = if (Defaults.CTRL_FOR_HOTKEYS.boolean())
-            it.isCtrlPressed else !Core.currentUrlFocused
-        if (up) {
+            e.isCtrlPressed else !Core.currentUrlFocused
+        if (focused && e.isUp) {
             shortcuts.forEach { s ->
-                if (it.key == s.key) {
+                if (e.key == s.key) {
                     if (s.ctrl && ctrl) {
                         s.func()
                         return@core true

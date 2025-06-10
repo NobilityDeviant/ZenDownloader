@@ -46,7 +46,7 @@ import nobility.downloader.utils.Constants.mediumIconSize
 import kotlin.system.exitProcess
 
 @Composable
-fun mainWindow(scope: AppWindowScope) {
+fun MainWindow(scope: AppWindowScope) {
     UiWrapper(scope) {
         when (Core.currentPage) {
             Page.DOWNLOADER -> Core.downloaderView.Ui(scope)
@@ -201,8 +201,7 @@ private fun UiWrapper(
                                     icon = EvaIcons.Fill.Sync,
                                     iconSize = mediumIconSize
                                 ) {
-                                    val downloadQueue = DownloadQueueWindow()
-                                    downloadQueue.open()
+                                    Core.openDownloadQueue()
                                 }
                             }
                             TooltipIconButton(

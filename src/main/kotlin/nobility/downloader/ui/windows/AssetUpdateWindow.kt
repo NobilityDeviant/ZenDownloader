@@ -41,9 +41,10 @@ import kotlin.system.exitProcess
  * An asset update window.
  * Since we can't manage files in use, why not update them before?
  * Note that we can't access anything from the Core/BoxHelper so it needs to be standalone.
- * If we try to use anything there, the singleton will launch and it will crash due to a ObjectBox error.
+ * If we try to use anything there, the singleton will launch, and it will crash due to an ObjectBox error.
  * Comes with a shutdown/fail feature to ensure incomplete downloads get handled.
- * All assets are very low in download size. We don't really need to worry about much besides available file space for unzipping.
+ * All assets are very low in download size.
+ * We don't really need to worry about much besides available file space for unzipping.
  */
 class AssetUpdateWindow {
 
@@ -93,7 +94,8 @@ class AssetUpdateWindow {
                 LinearProgressIndicator(
                     progress = { downloadProgress },
                     modifier = Modifier.fillMaxWidth(0.9f)
-                        .height(25.dp).padding(top = 10.dp),
+                        .height(25.dp)
+                        .padding(top = 10.dp),
                     trackColor = MaterialTheme.colorScheme.background,
                 )
                 Text(
@@ -277,7 +279,7 @@ class AssetUpdateWindow {
             if (!assetFile.exists()
                 || (assetFile.isDirectory && assetFile.listFiles()?.isEmpty() == true)
                 || modifiedDifference >= 14400000
-            ) { //4 hour difference
+            ) { //4-hour difference
                 started[asset.fileName] = true
                 println("Detected new update for: $asset. Online Last Modified: $onlineLastModified Compared to Local Last Modified: $localLastModified Difference: $modifiedDifference")
                 bis = BufferedInputStream(con.inputStream)
@@ -303,15 +305,11 @@ class AssetUpdateWindow {
                 try {
                     bos.flush()
                     bos.close()
-                } catch (ignored: Exception) {
-                    ignored.printStackTrace()
-                }
+                } catch (_: Exception) {}
                 try {
                     fos.flush()
                     fos.close()
-                } catch (ignored: Exception) {
-                    ignored.printStackTrace()
-                }
+                } catch (_: Exception) {}
                 val finished = total >= completeFileSize
                 if (finished) {
                     if (downloadFile.name.endsWith(".zip")) {
@@ -355,7 +353,7 @@ class AssetUpdateWindow {
     private val shuttingDownText
         get() = """
         Shutting down.
-        Please delete any assets that didn't download fully.
+        Please delete any assets that didn't fully download.
     """.trimIndent()
 
     private enum class AssetDisable(

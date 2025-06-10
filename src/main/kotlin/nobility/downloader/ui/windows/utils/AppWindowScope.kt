@@ -6,6 +6,7 @@ interface AppWindowScope {
     val windowId: String
     var toastContent: MutableState<String>
     var open: MutableState<Boolean>
+    var focused: MutableState<Boolean>
 
     /**
      * When a window is closed programmatically, it doesn't actually clean anything.

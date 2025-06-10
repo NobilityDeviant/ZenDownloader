@@ -526,7 +526,6 @@ class VideoDownloadHelper(
                 return@withContext Resource.Success(downloadDatas)
             }
         } catch (e: Exception) {
-            e.printStackTrace()
             return@withContext Resource.Error(e)
         }
     }
