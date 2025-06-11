@@ -237,7 +237,6 @@ class SlugHandler {
         }
     }
 
-    //todo fully implement updater next update
     private suspend fun scrapeEpisodeWithSlug(
         episodeSlug: String
     ): Resource<ToDownload> = withContext(Dispatchers.IO) {

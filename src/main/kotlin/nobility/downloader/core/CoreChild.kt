@@ -124,10 +124,9 @@ class CoreChild {
 
     @OptIn(DelicateCoroutinesApi::class)
     fun shutdown(force: Boolean = false) {
-        downloadThread.stop()
-        Core.taskScope.cancel()
-
         if (force) {
+            downloadThread.stop()
+            Core.taskScope.cancel()
             shutdownExecuted = true
             stop()
             GlobalScope.launch { killAllDrivers() }
@@ -138,16 +137,20 @@ class CoreChild {
                 """
                     You are currently downloading videos.
                     Shutting down will stop all downloads and possibly corrupt any incomplete video.
-                    It's advised to press the Stop button beforehand.
+                    It's advised to press the Stop button and wait for it to fully stop beforehand.
                     Do you wish to continue?
                 """.trimIndent(),
                 "Shutdown"
             ) {
+                downloadThread.stop()
+                Core.taskScope.cancel()
                 shutdownExecuted = true
                 stop()
                 GlobalScope.launch { killAllDrivers() }
             }
         } else {
+            downloadThread.stop()
+            Core.taskScope.cancel()
             shutdownExecuted = true
             GlobalScope.launch { killAllDrivers() }
         }
@@ -235,8 +238,8 @@ class CoreChild {
                 showError(
                     """
                        The download folder in your settings doesn't allow write permissions.
-                       If this is a USB or SD Card then disable write protection.
-                       You can try selecting a folder in the user or home folder or running the app as admin or with superuser permissions..
+                       If this is a USB or SD Card, you have to disable write protection.
+                       You can also try selecting a folder in the user or home folder or, running the app as admin/superuser permissions.
                     """.trimIndent()
                 )
                 Core.changePage(Page.SETTINGS)

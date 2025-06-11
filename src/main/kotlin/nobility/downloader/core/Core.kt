@@ -36,6 +36,7 @@ import nobility.downloader.utils.fileExists
 import nobility.downloader.utils.linkToSlug
 import java.io.File
 import java.io.PrintStream
+import java.io.UnsupportedEncodingException
 
 /**
  * A class used to represent the global singleton for the application.
@@ -81,19 +82,32 @@ class Core private constructor() {
             }
             @Suppress("KotlinConstantConditions")
             if (!AppInfo.DEBUG_MODE) {
-                System.setOut(
-                    PrintStream(
-                        console,
-                        true,
-                        Charsets.UTF_8.name()
+                try {
+                    System.setOut(
+                        PrintStream(
+                            console,
+                            true,
+                            Charsets.UTF_8.name()
+                        )
                     )
-                )
+                } catch (_: UnsupportedEncodingException) {
+                    System.setOut(
+                        PrintStream(console)
+                    )
+                    FrogLog.message(
+                        "[WARNING] UTF-8 unsupported. The console may display incorrect characters."
+                    )
+                }
                 if (AppInfo.USE_CUSTOM_ERROR_PS) {
-                    errorPrintStream = PrintStream(
-                        errorConsole,
-                        true,
-                        Charsets.UTF_8.name()
-                    )
+                    try {
+                        errorPrintStream = PrintStream(
+                            errorConsole,
+                            true,
+                            Charsets.UTF_8.name()
+                        )
+                    } catch (_: UnsupportedEncodingException) {
+                        errorPrintStream = PrintStream(errorConsole)
+                    }
                 }
             }
             if (!Defaults.FIRST_LAUNCH.boolean()) {

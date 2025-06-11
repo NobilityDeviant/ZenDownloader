@@ -6,6 +6,7 @@ import nobility.downloader.core.settings.Defaults
 import java.io.File
 import java.nio.file.Files
 
+//ribbit
 object FrogLog {
 
     fun logError(

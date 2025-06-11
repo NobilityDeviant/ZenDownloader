@@ -37,10 +37,13 @@ class Console(
 
     val state = ConsoleState(errorMode)
 
-    override fun write(b: Int) {
-        state.appendChar(
-            b.toChar()
-        )
+    override fun write(b: Int) {}
+
+    override fun write(b: ByteArray, off: Int, len: Int) {
+        val text = String(b, off, len, Charsets.UTF_8)
+        text.forEach {
+            state.appendChar(it)
+        }
     }
 
     override fun close() {
@@ -51,15 +54,15 @@ class Console(
     @Composable
     fun ConsoleTextField(
         windowScope: AppWindowScope,
-        modifier: Modifier = Modifier.Companion,
+        modifier: Modifier = Modifier,
         popoutMode: Boolean = false,
     ) {
         val scrollState = rememberScrollState(state.lineCount)
         val scope = rememberCoroutineScope()
         val contextMenuRepresentation = DefaultContextMenuRepresentation(
-            backgroundColor = if (isSystemInDarkTheme()) Color.Companion.DarkGray else Color.Companion.LightGray,
-            textColor = if (isSystemInDarkTheme()) Color.Companion.White else Color.Companion.Black,
-            itemHoverColor = (if (isSystemInDarkTheme()) Color.Companion.DarkGray else Color.Companion.LightGray).hover(),
+            backgroundColor = if (isSystemInDarkTheme()) Color.DarkGray else Color.LightGray,
+            textColor = if (isSystemInDarkTheme()) Color.White else Color.Black,
+            itemHoverColor = (if (isSystemInDarkTheme()) Color.DarkGray else Color.LightGray).hover(),
         )
         CompositionLocalProvider(LocalContextMenuRepresentation provides contextMenuRepresentation) {
             ContextMenuDataProvider(
@@ -89,9 +92,9 @@ class Console(
                     modifier
                 ) {
                     Row(
-                        verticalAlignment = Alignment.Companion.CenterVertically,
+                        verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(4.dp),
-                        modifier = Modifier.Companion.align(Alignment.Companion.End)
+                        modifier = Modifier.align(Alignment.End)
                     ) {
                         if ((!popoutMode && !state.consolePoppedOut) || popoutMode) {
                             TooltipIconButton(
@@ -128,7 +131,7 @@ class Console(
                     }
                     if ((!popoutMode && !state.consolePoppedOut) || (popoutMode && state.consolePoppedOut)) {
                         Column(
-                            Modifier.Companion.padding(1.dp)
+                            Modifier.padding(1.dp)
                                 .border(
                                     1.dp,
                                     MaterialTheme.colorScheme.primary,
@@ -139,10 +142,10 @@ class Console(
                                 value = consoleText,
                                 readOnly = true,
                                 onValueChange = {},
-                                modifier = Modifier.Companion
+                                modifier = Modifier
                                     .fillMaxSize()
                                     .onClick(
-                                        matcher = PointerMatcher.Companion.mouse(PointerButton.Companion.Secondary)
+                                        matcher = PointerMatcher.mouse(PointerButton.Secondary)
                                     ) {}
                                     .verticalScroll(scrollState),
                                 colors = TextFieldDefaults.colors(),
@@ -182,15 +185,15 @@ class Console(
     private val windowTitle = "${if (errorMode) "Error " else ""}Console"
 
     fun closeWindow() {
-        ApplicationState.Companion.removeWindowWithId(windowTitle)
+        ApplicationState.removeWindowWithId(windowTitle)
     }
 
     fun openWindow() {
         state.consolePoppedOut = true
-        ApplicationState.Companion.newWindow(
+        ApplicationState.newWindow(
             windowTitle,
             size = DpSize(400.dp, 250.dp),
-            windowAlignment = Alignment.Companion.BottomEnd,
+            windowAlignment = Alignment.BottomEnd,
             alwaysOnTop = Defaults.CONSOLE_ON_TOP.boolean(),
             onClose = {
                 state.consolePoppedOut = false
@@ -198,14 +201,14 @@ class Console(
             }
         ) {
             Column(
-                horizontalAlignment = Alignment.Companion.CenterHorizontally,
-                modifier = Modifier.Companion.background(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier.background(
                     MaterialTheme.colorScheme.surface
                 )
             ) {
                 ConsoleTextField(
                     this@newWindow,
-                    modifier = Modifier.Companion.fillMaxSize(),
+                    modifier = Modifier.fillMaxSize(),
                     popoutMode = true
                 )
             }

@@ -145,6 +145,10 @@ object Tools {
     }
 
     //should only be used after fixing the title for files.
+    /**
+     * This should only be used after fixing the title for files.
+     * @see nobility.downloader.utils.Tools.fixTitle
+     */
     fun findSeasonFromEpisode(title: String): String {
         val hasSeason = title.contains("Season")
         return if (hasSeason) {

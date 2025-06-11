@@ -156,7 +156,7 @@ class DownloadsView : ViewPage {
                 ) {
                     closeMenu()
                     if (download.downloading || download.queued) {
-                        windowScope.showToast("You can't remove a download that's still downloading.")
+                        windowScope.showToast("You can't remove a download that's downloading.")
                     } else {
                         deletedFile = true
                         Core.child.removeDownload(download)
