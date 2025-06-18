@@ -28,7 +28,7 @@ object IdentityScraper {
             )
             val data = result.data
             if (data == null) {
-                FrogLog.logError(
+                FrogLog.error(
                     "Failed to find slugs for $identity",
                     result.message
                 )
@@ -52,7 +52,7 @@ object IdentityScraper {
                 }
             }
             if (slugs.isEmpty()) {
-                FrogLog.logError(
+                FrogLog.error(
                     "Failed to find slugs for $identity",
                     "The slugs list returned empty."
                 )
@@ -81,7 +81,7 @@ object IdentityScraper {
                 }
             }
         } catch (e: Exception) {
-            FrogLog.logError(
+            FrogLog.error(
                 "Failed to scrape identity links for: $identity",
                 e,
                 true
@@ -98,7 +98,7 @@ object IdentityScraper {
                 try {
                     scrapeLinksToSlugs(it)
                 } catch (e: Exception) {
-                    FrogLog.logError(
+                    FrogLog.error(
                         "Failed to scrape identity links for: $it",
                         e,
                         true

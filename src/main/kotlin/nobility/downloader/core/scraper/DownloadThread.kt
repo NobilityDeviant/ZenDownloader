@@ -82,7 +82,7 @@ class DownloadThread {
             try {
                 downloader.run()
             } catch (e: Exception) {
-                FrogLog.logError(
+                FrogLog.error(
                     "Failed to finish download.",
                     e
                 )

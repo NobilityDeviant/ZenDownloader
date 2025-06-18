@@ -8,6 +8,7 @@ import nobility.downloader.core.BoxHelper.Companion.string
 import nobility.downloader.ui.windows.database.DatabaseSort
 import nobility.downloader.ui.windows.database.DatabaseType
 import nobility.downloader.utils.Constants
+import nobility.downloader.utils.fileExists
 import java.io.File
 
 /**
@@ -476,5 +477,12 @@ enum class Defaults(
             DISABLE_WCO_SERIES_LINKS_UPDATE,
             DISABLE_WCO_DATA_UPDATE
         )
+
+        val isUsingCustomChrome: Boolean get() {
+            val driver =  CHROME_DRIVER_PATH.string()
+            val browser = CHROME_BROWSER_PATH.string()
+            return driver.isNotEmpty() && driver.fileExists()
+                    && browser.isNotEmpty() && browser.fileExists()
+        }
     }
 }

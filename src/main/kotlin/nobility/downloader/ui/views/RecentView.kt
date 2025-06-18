@@ -74,18 +74,18 @@ class RecentView: ViewPage {
                         "Found and added $added new recent data."
                     )
                 } else {
-                    FrogLog.logError(
+                    FrogLog.error(
                         "Found no uncached recent data."
                     )
                 }
             } else {
-                FrogLog.logError(
+                FrogLog.error(
                     "Found no recent data."
                 )
             }
             lastUpdated = Defaults.WCO_RECENT_LAST_UPDATED.long()
         } else {
-            FrogLog.logError(
+            FrogLog.error(
                 "Failed to load recent data.",
                 result.message
             )

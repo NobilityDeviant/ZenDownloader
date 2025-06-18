@@ -4,6 +4,7 @@ import kotlinx.coroutines.*
 import nobility.downloader.core.BoxHelper.Companion.int
 import nobility.downloader.core.Core
 import nobility.downloader.core.driver.DriverBaseImpl
+import nobility.downloader.core.driver.undetected_chrome.SysUtil
 import nobility.downloader.core.entities.Download
 import nobility.downloader.core.scraper.video_download.m3u8_downloader.core.M3u8Download
 import nobility.downloader.core.scraper.video_download.m3u8_downloader.core.M3u8DownloadListener
@@ -174,7 +175,7 @@ object Functions {
         }
         @Suppress("KotlinConstantConditions")
         if (AppInfo.DEBUG_MODE) {
-            FrogLog.logError(
+            FrogLog.error(
                 "[$customTag] Failed to read webpage with simple mode. Moving on to full mode.",
                 exception
             )
@@ -373,4 +374,30 @@ object Functions {
         }
         return builder.build()
     }
+
+    fun killChromeProcesses() {
+        if (SysUtil.isWindows) {
+            Runtime.getRuntime().exec("taskkill /F /IM chromedriver.exe /T")
+            val process = Runtime.getRuntime().exec(
+                "tasklist /FI \"IMAGENAME eq chrome.exe\" /FI \"STATUS eq running\" /FO LIST"
+            )
+            val reader = BufferedReader(InputStreamReader(process.inputStream))
+            val output = reader.readText()
+            val lines = output.split("\n")
+            var foundChrome = false
+            for (line in lines) {
+                if (line.contains("chrome.exe", ignoreCase = true)) {
+                    foundChrome = true
+                    break
+                }
+            }
+            if (foundChrome) {
+                Runtime.getRuntime().exec("taskkill /F /IM chrome.exe /T")
+            }
+        } else {
+            Runtime.getRuntime().exec("pkill -f chromedriver")
+            Runtime.getRuntime().exec("pkill -f chrome")
+        }
+    }
+
 }

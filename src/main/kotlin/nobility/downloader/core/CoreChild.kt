@@ -160,11 +160,11 @@ class CoreChild {
     private val killTimeout = 7000L
 
     private suspend fun killAllDrivers(): Nothing = withContext(Dispatchers.Default) {
-        FrogLog.logInfo("killAllDrivers() started")
+        FrogLog.info("killAllDrivers() started")
         val drivers = synchronized(runningDrivers) { runningDrivers.toMap() }
 
         if (drivers.isEmpty()) {
-            FrogLog.logInfo("No drivers found. exiting...")
+            FrogLog.info("No drivers found. exiting...")
             exitProcess(0)
         }
 
@@ -175,20 +175,20 @@ class CoreChild {
             val success = attemptKillDriver(key, driver)
 
             if (!success) {
-                FrogLog.logError("All attempts failed to kill driver ($key)")
+                FrogLog.error("All attempts failed to kill driver ($key)")
             }
 
             runningDrivers.remove(key)
             shutdownProgressIndex = ++index
         }
 
-        FrogLog.logInfo("Driver shutdown complete. exiting...")
+        FrogLog.info("Driver shutdown complete. exiting...")
         exitProcess(0)
     }
 
     private suspend fun attemptKillDriver(key: String, driver: WebDriver): Boolean {
         repeat(maxRetries) { attempt ->
-            FrogLog.logInfo("Killing driver [$key] — attempt ${attempt + 1}/$maxRetries")
+            FrogLog.info("Killing driver [$key] — attempt ${attempt + 1}/$maxRetries")
             try {
                 val result = withTimeoutOrNull(killTimeout) {
                     if (driver is UndetectedChromeDriver) {
@@ -200,15 +200,15 @@ class CoreChild {
                 }
 
                 if (result == true) {
-                    FrogLog.logInfo("Successfully killed driver [$key]")
+                    FrogLog.info("Successfully killed driver [$key]")
                     return true
                 } else {
-                    FrogLog.logInfo(
+                    FrogLog.info(
                         "Attempt ${attempt + 1} timed out for driver [$key]"
                     )
                 }
             } catch (e: Exception) {
-                FrogLog.logError(
+                FrogLog.error(
                     "Failed to kill driver ($key) on attempt ${attempt + 1}",
                     e
                 )

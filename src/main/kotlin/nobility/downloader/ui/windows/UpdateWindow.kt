@@ -313,7 +313,7 @@ class UpdateWindow(
                 Core.child.isUpdating = false
                 finished = total >= completeFileSize
                 if (finished) {
-                    FrogLog.logInfo(
+                    FrogLog.info(
                         "Update downloaded successfully! Size: " +
                                 Tools.bytesToString(completeFileSize) +
                                 " | Path: " + downloadedUpdate.absolutePath
@@ -417,7 +417,7 @@ class UpdateWindow(
                 mUpdate = result.data
             } else {
                 val message = result.message
-                FrogLog.logError(
+                FrogLog.error(
                     "Failed to check for updates. " +
                             if (!message.isNullOrEmpty()) message else ""
                 )
@@ -469,7 +469,7 @@ class UpdateWindow(
                 JsonParser.parseString(stringBuilder.toString()).asJsonObject
             )
         } catch (e: Exception) {
-            FrogLog.logError(
+            FrogLog.error(
                 "Failed to fetch update details.",
                 e,
                 true

@@ -95,18 +95,18 @@ class Core private constructor() {
                         PrintStream(console)
                     )
                     FrogLog.message(
-                        "[WARNING] UTF-8 unsupported. The console may display incorrect characters."
+                        "[WARNING] UTF-8 unsupported. The console might display incorrect characters."
                     )
                 }
                 if (AppInfo.USE_CUSTOM_ERROR_PS) {
-                    try {
-                        errorPrintStream = PrintStream(
+                    errorPrintStream = try {
+                        PrintStream(
                             errorConsole,
                             true,
                             Charsets.UTF_8.name()
                         )
                     } catch (_: UnsupportedEncodingException) {
-                        errorPrintStream = PrintStream(errorConsole)
+                        PrintStream(errorConsole)
                     }
                 }
             }

@@ -291,7 +291,7 @@ class SettingsView : ViewPage {
                         showFilePicker = false
                     }
                     DefaultButton(
-                        "Set Folder",
+                        "Set File",
                         Modifier.height(30.dp)
                             .width(80.dp),
                         contentPadding = PaddingValues(0.dp)

@@ -162,13 +162,13 @@ class VideoDownloadData(
     }
 
     fun logInfo(s: String) {
-        FrogLog.logInfo(
+        FrogLog.info(
             "$tag $s"
         )
     }
 
     fun logDebug(s: String) {
-        FrogLog.logDebug(
+        FrogLog.debug(
             "$tag $s"
         )
     }
@@ -178,7 +178,7 @@ class VideoDownloadData(
         e: Throwable?,
         important: Boolean = false
     ) {
-        FrogLog.logError(
+        FrogLog.error(
             "$tag $message",
             e,
             important
@@ -190,7 +190,7 @@ class VideoDownloadData(
         errorMessage: String? = null,
         important: Boolean = false
     ) {
-        FrogLog.logError(
+        FrogLog.error(
             "$tag $message",
             errorMessage,
             important

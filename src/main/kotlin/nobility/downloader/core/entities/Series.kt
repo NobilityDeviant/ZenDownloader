@@ -55,10 +55,10 @@ data class Series(
     fun updateEpisodes(
         episodes: List<Episode>
     ) {
-        FrogLog.logDebug(
+        FrogLog.debug(
             "Updating episodes for $name."
         )
-        FrogLog.logDebug(
+        FrogLog.debug(
             "Old episodes: ${this.episodes.size} New episodes: ${episodes.size}"
         )
         val seriesBox: Box<Series> = when (seriesIdentity) {

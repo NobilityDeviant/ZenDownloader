@@ -82,7 +82,9 @@ class ChromeDriverBuilder {
             userDataDir,
             browser
         )
-
+        FrogLog.debug(
+            "Built UndetectedChromeDriver with driver: ${System.getProperty("webdriver.chrome.driver")}"
+        )
         return undetectedChromeDriver
     }
 
@@ -103,7 +105,7 @@ class ChromeDriverBuilder {
                 headless = true
             }
         } catch (e: Exception) {
-            FrogLog.logError(
+            FrogLog.error(
                 "Failed to add headless to the driver.",
                 e
             )
@@ -119,7 +121,7 @@ class ChromeDriverBuilder {
                 args.remove("prefs")
             }
         } catch (e: Exception) {
-            FrogLog.logError(
+            FrogLog.error(
                 "Failed to set preferences for the driver.",
                 e
             )
@@ -266,7 +268,7 @@ class ChromeDriverBuilder {
         if (mBinaryLocation.isEmpty() || !mBinaryLocation.fileExists()) {
             mBinaryLocation = chromePath()
             if (mBinaryLocation.isEmpty()) {
-                FrogLog.logError(
+                FrogLog.error(
                     """
                         Chrome isn't installed. Install it and restart the app.
                         For some help visit: https://github.com/NobilityDeviant/ZenDownloader/#download--install
@@ -474,7 +476,7 @@ class ChromeDriverBuilder {
             try {
                 val br = process.inputStream.bufferedReader()
                 br.readLines().forEach {
-                    FrogLog.logDebug("[BROWSER] $it")
+                    FrogLog.debug("[BROWSER] $it")
                 }
                 br.close()
             } catch (e: Exception) {
@@ -486,7 +488,7 @@ class ChromeDriverBuilder {
             try {
                 val er = process.errorStream.bufferedReader()
                 er.readLines().forEach {
-                    FrogLog.logError("[BROWSER] $it")
+                    FrogLog.error("[BROWSER] $it")
                 }
                 er.close()
             } catch (e: Exception) {

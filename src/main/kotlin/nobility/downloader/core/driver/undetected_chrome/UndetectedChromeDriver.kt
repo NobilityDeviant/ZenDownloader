@@ -1,5 +1,7 @@
 package nobility.downloader.core.driver.undetected_chrome
 
+import nobility.downloader.core.scraper.video_download.Functions
+import nobility.downloader.core.settings.Defaults
 import nobility.downloader.utils.FrogLog
 import org.openqa.selenium.Capabilities
 import org.openqa.selenium.chrome.ChromeDriver
@@ -28,7 +30,7 @@ class UndetectedChromeDriver(
             try {
                 super.get(url)
             } catch (e: Exception) {
-                FrogLog.logError("Caught UCD get() Error: $url", e)
+                FrogLog.error("Caught UCD get() Error: $url", e)
             }
         } else {
             super.get(url)
@@ -49,15 +51,28 @@ class UndetectedChromeDriver(
     override fun quit() {
         try {
             browser.destroy()
+        } catch (e: Exception) {
+            FrogLog.error(
+                "Failed to kill driver process.",
+                e
+            )
+        }
+        try {
             super.quit()
         } catch (e: Exception) {
-            FrogLog.logError("Failed to kill driver.", e)
+            FrogLog.error(
+                "Failed to quit driver.",
+                e
+            )
         }
         if (!keepUserDataDir) {
             val file = File(userDataDir)
             if (file.exists()) {
                 file.deleteRecursively()
             }
+        }
+        if (Defaults.isUsingCustomChrome) {
+            Functions.killChromeProcesses()
         }
     }
 
@@ -236,10 +251,10 @@ class UndetectedChromeDriver(
                     stealthResource.close()
                 }
             } else {
-                FrogLog.logError("Failed to inject stealth script.", "stealth.min.js not found")
+                FrogLog.error("Failed to inject stealth script.", "stealth.min.js not found")
             }
         } catch (e: Exception) {
-            FrogLog.logError("Failed to inject stealth script.", e)
+            FrogLog.error("Failed to inject stealth script.", e)
         }
         val params = mutableMapOf<String, Any>(
             "source" to stringBuffer.toString()

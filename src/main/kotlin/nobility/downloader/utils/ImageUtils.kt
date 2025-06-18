@@ -33,7 +33,7 @@ object ImageUtils {
                     saveFile
                 )
             } catch (e: Exception) {
-                FrogLog.logError(
+                FrogLog.error(
                     "Failed to download image for ${series.imageLink}",
                     e
                 )

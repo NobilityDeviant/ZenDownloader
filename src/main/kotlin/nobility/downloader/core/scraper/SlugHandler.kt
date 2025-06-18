@@ -362,12 +362,12 @@ class SlugHandler {
                                 )
                             }
                         } else {
-                            FrogLog.logInfo(
+                            FrogLog.info(
                                 "Failed to find series for $episodeLink. Error: ${result.message}"
                             )
                         }
                     } catch (e: Exception) {
-                        FrogLog.logError(
+                        FrogLog.error(
                             "Failed to find series for $episodeLink.",
                             e
                         )

@@ -43,12 +43,12 @@ object UrlUpdater {
             val currentDay = currentCal.get(Calendar.DAY_OF_YEAR)
             val difference = currentDay - lastUpdatedDay
             if (difference >= 0 && difference <= Constants.daysToUpdateWcoUrl) {
-                FrogLog.logInfo(
+                FrogLog.info(
                     "Skipping wco url update. It has been updated recently. Last Checked Day: $lastUpdatedDay Current Day: $currentDay Difference: $difference (Max Days: ${Constants.daysToUpdateWcoUrl})"
                 )
                 return@withContext
             } else {
-                FrogLog.logInfo(
+                FrogLog.info(
                     "Wco url needs to be updated. Last Checked Day: $lastUpdatedDay Current Day: $currentDay Difference: $difference (Max Days: ${Constants.daysToUpdateWcoUrl})"
                 )
             }
@@ -78,7 +78,7 @@ object UrlUpdater {
             )
         }
         for (u in urls) {
-            FrogLog.logDebug(
+            FrogLog.debug(
                 "Checking for changed url with: $u"
             )
             try {
@@ -96,12 +96,12 @@ object UrlUpdater {
                 val newUrl = request.url.toString()
                 response.disconnect()
                 if (statusCode == 200) {
-                    FrogLog.logDebug(
+                    FrogLog.debug(
                         "Received status code 200 for $u"
                     )
                     val domainWithoutExtension = Tools.extractDomainFromLink(newUrl)
                     val extension = Tools.extractExtensionFromLink(newUrl)
-                    FrogLog.logDebug(
+                    FrogLog.debug(
                         "Found Domain: $domainWithoutExtension Extension: $extension"
                     )
                     var updated = false
@@ -120,13 +120,13 @@ object UrlUpdater {
                     Defaults.WCO_LAST_UPDATED.update(Date().time)
                     break
                 } else {
-                    FrogLog.logDebug(
+                    FrogLog.debug(
                         "Failed with status code: $statusCode for url: $u" +
                                 "\nSkipping..."
                     )
                 }
             } catch (e: Throwable) {
-                FrogLog.logError(
+                FrogLog.error(
                     "Failed to check for updated website url with: $u",
                     e
                 )

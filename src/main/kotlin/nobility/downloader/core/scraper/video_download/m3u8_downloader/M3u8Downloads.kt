@@ -44,9 +44,9 @@ object M3u8Downloads {
                             stopped = true
                             try {
                                 m3u8Complete?.cancel(true)
-                                FrogLog.logInfo("Shutdown m3u8Executor gracefully.")
+                                FrogLog.info("Shutdown m3u8Executor gracefully.")
                             } catch (e: Exception) {
-                                FrogLog.logError(
+                                FrogLog.error(
                                     "Failed to shutdown m3u8Executor.",
                                     e
                                 )
@@ -87,9 +87,9 @@ object M3u8Downloads {
                             stopped = true
                             try {
                                 m3u8Complete?.cancel(true)
-                                FrogLog.logInfo("Shutdown m3u8Executor gracefully.")
+                                FrogLog.info("Shutdown m3u8Executor gracefully.")
                             } catch (e: Exception) {
-                                FrogLog.logError(
+                                FrogLog.error(
                                     "Failed to shutdown m3u8Executor.",
                                     e
                                 )

@@ -318,7 +318,7 @@ class VideoDownloadHelper(
                                                     }
                                                 }
                                                 val audioUrl = "$domain/$audioSplit"
-                                                FrogLog.logInfo("Found separate english audio for m3u8. t: $t audio url: $audioUrl quality: $quality")
+                                                FrogLog.info("Found separate english audio for m3u8. t: $t audio url: $audioUrl quality: $quality")
                                                 separateAudio = true
                                                 downloadDatas.add(
                                                     DownloadData(

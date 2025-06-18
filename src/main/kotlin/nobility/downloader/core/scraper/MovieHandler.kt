@@ -33,7 +33,7 @@ class MovieHandler {
                     try {
                         movies.add(Movie(split[0], split[1], split[2].toInt()))
                     } catch (e: Exception) {
-                        FrogLog.logError(
+                        FrogLog.error(
                             "Failed to load movie line: $it",
                             e
                         )
@@ -42,7 +42,7 @@ class MovieHandler {
             }
         }
         if (movies.isNotEmpty()) {
-            FrogLog.logDebug(
+            FrogLog.debug(
                 "Successfully loaded ${movies.size} movie details."
             )
         }
@@ -63,7 +63,7 @@ class MovieHandler {
                         try {
                             movies.add(Movie(split[0], split[1], split[2].toInt()))
                         } catch (e: Exception) {
-                            FrogLog.logError(
+                            FrogLog.error(
                                 "Failed to load movie line: $it",
                                 e
                             )
@@ -77,7 +77,7 @@ class MovieHandler {
                 )
             }
         } catch (e: Exception) {
-            FrogLog.logError(
+            FrogLog.error(
                 "Failed to download movie list. Please restart the app before downloading movies.",
                 e,
                 true

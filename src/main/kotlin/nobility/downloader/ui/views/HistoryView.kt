@@ -252,7 +252,7 @@ class HistoryView : ViewPage {
                     } else {
                         windowScope.showToast("No new episodes were found for: ${seriesData.series.name}")
                         if (!result.message.isNullOrEmpty()) {
-                            FrogLog.logError(
+                            FrogLog.error(
                                 "Failed to find new episodes for ${seriesData.series.name}",
                                 result.message
                             )

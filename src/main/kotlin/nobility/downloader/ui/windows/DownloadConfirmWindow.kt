@@ -826,7 +826,7 @@ class DownloadConfirmWindow(
                                     } else {
                                         windowScope.showToast("No new episodes were found.")
                                         if (!result.message.isNullOrEmpty()) {
-                                            FrogLog.logError(result.message)
+                                            FrogLog.error(result.message)
                                         }
                                     }
                                 }

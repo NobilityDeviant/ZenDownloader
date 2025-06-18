@@ -24,12 +24,12 @@ object VideoUtil {
             if (SystemUtils.IS_OS_WINDOWS) {
                 val path = AppInfo.databasePath + "ffmpeg.exe"
                 if (path.fileExists()) {
-                    FrogLog.logInfo("Found ffmpeg.exe for windows.")
+                    FrogLog.info("Found ffmpeg.exe for windows.")
                     return path
                 }
             }
             if (execCommand(listOf("ffmpeg", "-version"))) {
-                FrogLog.logInfo("Found ffmpeg installed.")
+                FrogLog.info("Found ffmpeg installed.")
                 return "ffmpeg"
             }
             return ""
@@ -48,12 +48,12 @@ object VideoUtil {
             if (SystemUtils.IS_OS_WINDOWS) {
                 val path = AppInfo.databasePath + "ffmpeg.exe"
                 if (path.fileExists()) {
-                    FrogLog.logInfo("Found ffmpeg.exe for windows.")
+                    FrogLog.info("Found ffmpeg.exe for windows.")
                     return path
                 }
             }
             if (execCommand(listOf("ffmpeg", "-version"))) {
-                FrogLog.logInfo("Found ffmpeg installed.")
+                FrogLog.info("Found ffmpeg installed.")
                 return "ffmpeg"
             }
         } catch (_: Exception) {
@@ -186,14 +186,14 @@ object VideoUtil {
         try {
             val res = execCommand(command)
             if (!res) {
-                FrogLog.logError(
+                FrogLog.error(
                     "Failed to merge video and audio.",
                     "Command returned 1."
                 )
             }
             return res
         } catch (e: Exception) {
-            FrogLog.logError(
+            FrogLog.error(
                 "Failed to merge video and audio.",
                 e
             )
@@ -205,7 +205,7 @@ object VideoUtil {
     }
 
     private fun execCommand(commands: List<String>): Boolean {
-        FrogLog.logInfo("execCommand ${commands.joinToString(" ")}")
+        FrogLog.info("execCommand ${commands.joinToString(" ")}")
         try {
             val videoProcess = ProcessBuilder(commands)
                 .redirectErrorStream(true)
@@ -216,10 +216,10 @@ object VideoUtil {
                 log.warn(s)
             }
             val code = videoProcess.waitFor()
-            FrogLog.logInfo("execCommand code=$code")
+            FrogLog.info("execCommand code=$code")
             return code == 0
         } catch (e: Exception) {
-            FrogLog.logError(
+            FrogLog.error(
                 "Failed to execute ffmpeg command.",
                 e
             )

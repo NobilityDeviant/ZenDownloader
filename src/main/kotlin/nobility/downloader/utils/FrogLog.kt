@@ -9,7 +9,7 @@ import java.nio.file.Files
 //ribbit
 object FrogLog {
 
-    fun logError(
+    fun error(
         message: String,
         errorMessage: String? = null,
         important: Boolean = false
@@ -35,7 +35,7 @@ object FrogLog {
         }
     }
 
-    fun logError(
+    fun error(
         message: String,
         exception: Throwable?,
         important: Boolean = false
@@ -72,7 +72,7 @@ object FrogLog {
         }
     }
 
-    fun logDebug(
+    fun debug(
         message: String
     ) {
         if (!Defaults.SHOW_DEBUG_MESSAGES.boolean()) {
@@ -81,7 +81,7 @@ object FrogLog {
         println("[${callerClassName()}] [D] $message")
     }
 
-    fun logInfo(information: String) {
+    fun info(information: String) {
         if (!Defaults.SHOW_DEBUG_MESSAGES.boolean()) {
             return
         }
@@ -158,7 +158,7 @@ object FrogLog {
         File(folderName).mkdirs()
         val file = File(folderName + title)
         if (!file.exists() && !file.createNewFile()) {
-            logDebug(
+            debug(
                 "Failed to create error log file: ${file.absolutePath}"
             )
             return
@@ -178,9 +178,9 @@ object FrogLog {
             sb.toString()
         )
         if (file.exists()) {
-            logDebug("Wrote error log ($name) to ${file.absolutePath}")
+            debug("Wrote error log ($name) to ${file.absolutePath}")
         } else {
-            logDebug("Failed to write error log ($name) to ${file.absolutePath}")
+            debug("Failed to write error log ($name) to ${file.absolutePath}")
         }
     }
 

@@ -253,7 +253,7 @@ class BoxHelper {
                         return query.findUniqueOrFirst()
                     }
             } catch (e: Exception) {
-                FrogLog.logError(
+                FrogLog.error(
                     "Failed to find download for slug and quality.",
                     e
                 )
@@ -278,7 +278,7 @@ class BoxHelper {
                         return query.findUniqueOrFirst()
                     }
             } catch (e: Exception) {
-                FrogLog.logError(
+                FrogLog.error(
                     "Failed to find download for name and quality.",
                     e
                 )
@@ -399,7 +399,7 @@ class BoxHelper {
                     }
                 }
             } catch (e: Exception) {
-                FrogLog.logError(
+                FrogLog.error(
                     "Failed to add series: ${series.name} with identity: $identity.",
                     e
                 )

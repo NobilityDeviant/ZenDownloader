@@ -38,26 +38,33 @@ abstract class DriverBase(
 
 
     init {
-        setupDriver()
-        //discovered you can actually read the browsers console logs
-        //this will be used to print the video links and errors.
-        if (driver.manage().logs().availableLogTypes.contains("browser")) {
-            browserLogCoroutine.launch {
-                while (isActive) {
-                    try {
-                        driver.manage().logs().get("browser").all.forEach {
-                            if (it.level != Level.SEVERE) {
-                                if (!browserLogs.contains(it.message)) {
-                                    browserLogs.add(it.message)
-                                    //FrogLog.writeMessage("[${it.level.name}]" + it.message)
+        try {
+            setupDriver()
+            //discovered you can actually read the browsers console logs
+            //this will be used to print the video links and errors.
+            if (driver.manage().logs().availableLogTypes.contains("browser")) {
+                browserLogCoroutine.launch {
+                    while (isActive) {
+                        try {
+                            driver.manage().logs().get("browser").all.forEach {
+                                if (it.level != Level.SEVERE) {
+                                    if (!browserLogs.contains(it.message)) {
+                                        browserLogs.add(it.message)
+                                        //FrogLog.writeMessage("[${it.level.name}]" + it.message)
+                                    }
                                 }
                             }
+                        } catch (_: Exception) {
                         }
-                    } catch (_: Exception) {
+                        delay(25)
                     }
-                    delay(25)
                 }
             }
+        } catch (e: Exception) {
+            FrogLog.error(
+                "Failed to set up Chrome.",
+                e
+            )
         }
     }
 
@@ -85,13 +92,14 @@ abstract class DriverBase(
             && chromeDriverPath.isNotEmpty()
             && chromeDriverPath.fileExists()
         ) {
-            FrogLog.logInfo(
+            FrogLog.info(
                 """
                     Using chrome browser from settings.
                     Chrome Browser Path: $chromePath
                     Chrome Driver Path: $chromeDriverPath
                 """.trimIndent()
             )
+            System.setProperty("webdriver.chrome.driver", chromeDriverPath)
             nDriver = ChromeDriverBuilder().build(
                 options = chromeOptions,
                 driverExecutablePath = chromeDriverPath,
@@ -132,13 +140,13 @@ abstract class DriverBase(
 
     fun executeJs(script: String) {
         if (!isSetup) {
-            FrogLog.logError(
+            FrogLog.error(
                 "Failed to execute Javascript. The driver isn't set up properly."
             )
             return
         }
         if (driver !is JavascriptExecutor) {
-            FrogLog.logError(
+            FrogLog.error(
                 "Failed to execute script: $script",
                 "This browser doesn't support JavascriptExecutor."
             )

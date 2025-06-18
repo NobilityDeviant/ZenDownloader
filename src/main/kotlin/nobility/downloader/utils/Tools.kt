@@ -44,7 +44,7 @@ object Tools {
                     .systemClipboard
                     .getData(DataFlavor.stringFlavor).toString()
             } catch (e: Exception) {
-                FrogLog.logError(
+                FrogLog.error(
                     "Failed to get clipboard contents.",
                     e
                 )
@@ -144,7 +144,6 @@ object Tools {
         return mTitle.trim()
     }
 
-    //should only be used after fixing the title for files.
     /**
      * This should only be used after fixing the title for files.
      * @see nobility.downloader.utils.Tools.fixTitle
