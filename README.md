@@ -1,6 +1,6 @@
 # ZenDownloader
 
-A Kotlin & Jetpack Compose program used to download episodes, series and movies from: https://www.wcofun.net/
+A Kotlin & Jetpack Compose program used to download episodes, series and movies from: https://www.wcoflix.tv/
 
 If you check that website out, it's one of the best video sites for free cartoons and anime. It's also the most vulnerable.
 
@@ -9,6 +9,7 @@ Many of the anime websites out there are locked down really hard which makes wco
 **Now also supports M3U8 Videos & Episodes with 2 videos.**
 
 *Free movie downloading has officially been killed*
+
 *You will have to create a wcopremium.tv account and use those credentials in the settings now*
 
 We're still back for blood. >:(
@@ -99,27 +100,37 @@ You're also going to need to install: [Visual C++ Redistributable for Visual Stu
 
 **Download & Install Chrome:**
 
-Download Chrome Here: [Download](https://www.google.com/chrome/?platform=linux)
-
-*If you already have Chrome installed, make sure it's version 108 or higher.*
-
-Choose **64 bit .deb (For Debian/Ubuntu)**
-
-Once downloaded, go to the folder it's been downloaded to, right click an empty space in the window an open the **Terminal** app.
-
-Now inside the terminal you will type:
-
-`sudo apt install ./chrome.deb`
-
-Replacing `chrome.deb` with the file name.
-
-Input your password and you're done.
-
-You should also be able to install through the Terminal with the commands:
+Run these commands in the terminal:
 
 `sudo apt update`
 
 `sudo apt install google-chrome-stable`
+
+Input your password and you're done.
+
+*If you already have Chrome installed, make sure it's version 108 or higher with:*
+
+`google-chrome-stable --version`
+
+**Download & Install The Latest Release:**
+
+Download The Latest Release Here: [Releases](https://github.com/NobilityDeviant/ZenDownloader/releases)
+
+For Debian it'll be the with the `.deb` extension.
+
+Go to the folder it's been downloaded to, right click an empty space in the window an open the **Terminal** app.
+
+Now inside the terminal you will type:
+
+`sudo apt install ./zendownloader.deb`
+
+Replacing `zendownloader.deb` with the file name.
+
+Input your password and you're done.
+
+If you wish to uninstall it, you can use the command:
+
+`sudo apt remove zendownloader` or `sudo apt remove ZenDownloader` if it complains about casing.
 
 # Linux (Red Hat Enterprise)
 
