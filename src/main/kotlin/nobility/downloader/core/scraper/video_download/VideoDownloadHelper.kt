@@ -294,11 +294,17 @@ class VideoDownloadHelper(
                     }
                 }
                 if (hslLink.isEmpty() || domain.isEmpty()) {
+                    FrogLog.writeErrorToTxt(
+                        "m3u8_link_source",
+                        frameString,
+                        "Link: $hslLink | UserAgent: " + data.userAgent
+                    )
                     return@withContext Resource.ErrorCode(
                         "Failed to find m3u8 link in the source.",
                         ErrorCode.M3U8_LINK_FAILED.code
                     )
                 }
+                FrogLog.debug("Trying to read content from: $hslLink")
                 val hslSource = readUrlLines(hslLink, data)
                 if (hslSource.data != null) {
                     val hslLines = hslSource.data.lines()
@@ -343,8 +349,18 @@ class VideoDownloadHelper(
                             }
                         }
                     }
+                } else {
+                    return@withContext Resource.Error(
+                        "Failed to read m3u8 quality source code.",
+                        hslSource.message
+                    )
                 }
                 if (downloadDatas.isEmpty()) {
+                    FrogLog.writeErrorToTxt(
+                        "m3u8_qualities_source",
+                        hslSource.data.toString(),
+                        "Link: $hslLink | UserAgent: " + data.userAgent
+                    )
                     return@withContext Resource.ErrorCode(
                         "Failed to find m3u8 qualities.",
                         ErrorCode.M3U8_LINK_FAILED.code

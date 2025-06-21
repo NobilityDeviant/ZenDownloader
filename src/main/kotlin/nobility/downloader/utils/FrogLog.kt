@@ -60,7 +60,6 @@ object FrogLog {
             }
         }
         if (exception != null) {
-            //writeMessage("Filtered Stacktrace for ${message.trimIndent()}:", true)
             @Suppress("KotlinConstantConditions")
             if (AppInfo.USE_CUSTOM_ERROR_PS) {
                 val stacktrace = filterStackTrace(exception)
@@ -153,8 +152,9 @@ object FrogLog {
         headerInfo: String = ""
     ) {
         val date = Tools.dateFormatted
-        val title = Tools.fixTitle("error_${name.replace(" ", "_")}_$date.txt")
-        val folderName = AppInfo.databasePath + "errors" + File.separator
+        val time = Tools.timeFormatted
+        val title = "error_${name.replace(" ", "_")}_$time.txt".fixForFiles()
+        val folderName = AppInfo.databasePath + "errors" + File.separator + date.fixForFiles() + File.separator
         File(folderName).mkdirs()
         val file = File(folderName + title)
         if (!file.exists() && !file.createNewFile()) {

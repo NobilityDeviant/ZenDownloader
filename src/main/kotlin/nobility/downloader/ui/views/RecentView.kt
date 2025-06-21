@@ -135,7 +135,7 @@ class RecentView: ViewPage {
                                 }
 
                                 Text(
-                                    "Last Updated: ${Tools.dateFormatted(lastUpdated, false)}",
+                                    "Last Updated: ${Tools.dateAndTimeFormatted(lastUpdated, false)}",
                                     fontSize = 16.sp,
                                     color = MaterialTheme.colorScheme.onSurface
                                 )
@@ -254,7 +254,7 @@ class RecentView: ViewPage {
             )
             Divider()
             Text(
-                text = Tools.dateFormatted(recentData.dateFound),
+                text = Tools.dateAndTimeFormatted(recentData.dateFound),
                 modifier = Modifier
                     .padding(4.dp)
                     .align(Alignment.CenterVertically)

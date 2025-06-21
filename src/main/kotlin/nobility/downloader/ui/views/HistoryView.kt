@@ -332,7 +332,7 @@ class HistoryView : ViewPage {
             }
             Divider()
             Text(
-                text = Tools.dateFormatted(seriesData.history.dateAdded),
+                text = Tools.dateAndTimeFormatted(seriesData.history.dateAdded),
                 modifier = Modifier
                     .padding(4.dp)
                     .align(Alignment.CenterVertically)

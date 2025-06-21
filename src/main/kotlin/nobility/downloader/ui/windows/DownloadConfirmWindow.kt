@@ -82,7 +82,7 @@ class DownloadConfirmWindow(
 
     @OptIn(ExperimentalFoundationApi::class)
     @Composable
-    fun seriesInfoHeader(
+    private fun SeriesInfoHeader(
         windowScope: AppWindowScope,
         coroutineScope: CoroutineScope
     ) {
@@ -239,7 +239,7 @@ class DownloadConfirmWindow(
                     modifier = Modifier.padding(bottom = it.calculateBottomPadding())
                         .fillMaxSize()
                 ) {
-                    seriesInfoHeader(this@newWindow, scope)
+                    SeriesInfoHeader(this@newWindow, scope)
                     if (!singleEpisode && !movieMode) {
                         Row(
                             modifier = Modifier.align(Alignment.End)
@@ -399,6 +399,19 @@ class DownloadConfirmWindow(
                     )
                 )
                 episodes.removeAll(ovas)
+            }
+            val special = episodes.filter {
+                it.name.contains("Special", true)
+            }
+            if (special.isNotEmpty()) {
+                seasonDataList.add(
+                    SeasonData(
+                        "${series.name} Specials",
+                        special,
+                        false
+                    )
+                )
+                episodes.removeAll(special)
             }
         } else {
             return listOf(

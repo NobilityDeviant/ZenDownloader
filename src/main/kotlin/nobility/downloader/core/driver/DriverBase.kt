@@ -17,6 +17,8 @@ import nobility.downloader.utils.fileExists
 import org.openqa.selenium.JavascriptExecutor
 import org.openqa.selenium.WebDriver
 import org.openqa.selenium.chrome.ChromeOptions
+import org.openqa.selenium.support.ui.ExpectedCondition
+import org.openqa.selenium.support.ui.WebDriverWait
 import java.time.Duration
 import java.util.*
 import java.util.logging.Level
@@ -155,6 +157,35 @@ abstract class DriverBase(
         val js = driver as JavascriptExecutor
         js.executeScript(script)
     }
+
+    fun waitForPageJs(
+        timeout: Duration = Duration.ofSeconds(
+            Defaults.TIMEOUT.int().toLong()
+        )
+    ) {
+        if (!isSetup) {
+            FrogLog.error(
+                "Failed to execute Javascript. The driver isn't set up properly."
+            )
+            return
+        }
+        if (driver !is JavascriptExecutor) {
+            FrogLog.error(
+                "Failed to execute waitForPageToLoad.",
+                "This browser doesn't support JavascriptExecutor."
+            )
+            return
+        }
+        try {
+            val wait = WebDriverWait(driver, timeout)
+            wait.until(ExpectedCondition {
+                (driver as JavascriptExecutor).executeScript("return document.readyState") == "complete"
+            })
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
 
     open fun killDriver() {
         if (nDriver != null) {

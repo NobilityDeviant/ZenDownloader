@@ -88,7 +88,7 @@ object Functions {
                 data.base.executeJs(
                     JavascriptHelper.changeUrlInternally(url)
                 )
-                delay(2000)
+                data.base.waitForPageJs()
                 //data.driver.navigate().to(url)
                 if (data.driver.source().contains("404 - Page not Found")) {
                     return@withContext Resource.Error("[Selenium] 404 Page not found.")
@@ -188,7 +188,7 @@ object Functions {
                 driverBase.executeJs(
                     JavascriptHelper.changeUrlInternally(url)
                 )
-                delay(2000)
+                driverBase.waitForPageJs()
                 //driverBase.driver.navigate().to(url)
                 if (driverBase.driver.source().contains("404 - Page not Found")) {
                     return@withContext Resource.Error("[Selenium] 404 Page not found.")
@@ -377,9 +377,22 @@ object Functions {
 
     fun killChromeProcesses() {
         if (SysUtil.isWindows) {
-            Runtime.getRuntime().exec("taskkill /F /IM chromedriver.exe /T")
+            Runtime.getRuntime().exec(arrayOf(
+                "taskkill",
+                "/F",
+                "/IM",
+                "chromedriver.exe",
+                "/T"
+            ))
             val process = Runtime.getRuntime().exec(
-                "tasklist /FI \"IMAGENAME eq chrome.exe\" /FI \"STATUS eq running\" /FO LIST"
+                arrayOf(
+                    "tasklist",
+                    "/FI",
+                    "\"IMAGENAME eq chrome.exe\"",
+                    "/FI",
+                    "\"STATUS eq running\"",
+                    "/FO LIST"
+                )
             )
             val reader = BufferedReader(InputStreamReader(process.inputStream))
             val output = reader.readText()
@@ -392,11 +405,31 @@ object Functions {
                 }
             }
             if (foundChrome) {
-                Runtime.getRuntime().exec("taskkill /F /IM chrome.exe /T")
+                Runtime.getRuntime().exec(
+                    arrayOf(
+                        "taskkill",
+                        "/F",
+                        "/IM",
+                        "chrome.exe",
+                        "/T"
+                    )
+                )
             }
         } else {
-            Runtime.getRuntime().exec("pkill -f chromedriver")
-            Runtime.getRuntime().exec("pkill -f chrome")
+            Runtime.getRuntime().exec(
+                arrayOf(
+                    "pkill",
+                    "-f",
+                    "chromedriver"
+                )
+            )
+            Runtime.getRuntime().exec(
+                arrayOf(
+                    "pkill",
+                    "-f",
+                    "chrome"
+                )
+            )
         }
     }
 

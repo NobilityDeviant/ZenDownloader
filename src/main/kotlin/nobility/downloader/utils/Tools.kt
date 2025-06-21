@@ -28,7 +28,9 @@ import javax.net.ssl.HttpsURLConnection
 
 object Tools {
 
-    private const val DATE_FORMAT = "MM/dd/yyyy hh:mm:ssa"
+    private const val DATE_TIME_FORMAT = "MM/dd/yyyy hh:mm:ssa"
+    private const val DATE_FORMAT = "MM/dd/yyyy"
+    private const val TIME_FORMAT = "hh:mm"
 
     val percentFormat: DecimalFormat get() = DecimalFormat("#.##%")
 
@@ -196,17 +198,29 @@ object Tools {
         return String.format("%.1f %cB", mBytes / 1000.0, ci.current())
     }
 
+    val dateAndTimeFormatted: String
+        get() {
+            val sdf = SimpleDateFormat(DATE_TIME_FORMAT)
+            return sdf.format(Date())
+        }
+
     val dateFormatted: String
         get() {
             val sdf = SimpleDateFormat(DATE_FORMAT)
             return sdf.format(Date())
         }
 
-    fun dateFormatted(
+    val timeFormatted: String
+        get() {
+            val sdf = SimpleDateFormat(TIME_FORMAT)
+            return sdf.format(Date())
+        }
+
+    fun dateAndTimeFormatted(
         time: Long,
         newlineForTime: Boolean = true
     ): String {
-        val sdf = SimpleDateFormat(DATE_FORMAT)
+        val sdf = SimpleDateFormat(DATE_TIME_FORMAT)
         return if (newlineForTime)
             sdf.format(time).replace(" ", "\n")
         else

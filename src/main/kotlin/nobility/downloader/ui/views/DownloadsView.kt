@@ -239,7 +239,7 @@ class DownloadsView : ViewPage {
             )
             Divider()
             Text(
-                text = Tools.dateFormatted(download.dateAdded),
+                text = Tools.dateAndTimeFormatted(download.dateAdded),
                 modifier = Modifier
                     .padding(4.dp)
                     .align(Alignment.CenterVertically)

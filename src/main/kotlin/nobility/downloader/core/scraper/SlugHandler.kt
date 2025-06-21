@@ -147,7 +147,7 @@ class SlugHandler {
                     val series = BoxMaker.makeSeries(
                         slug = seriesSlug,
                         name = videoTitle[0].text(),
-                        dateAdded = Tools.dateFormatted,
+                        dateAdded = Tools.dateAndTimeFormatted,
                         identity = identity.type,
                         episodes = listOf(
                             Episode(
@@ -221,7 +221,7 @@ class SlugHandler {
                     title,
                     imageLink = imageLink,
                     description = descriptionText,
-                    dateAdded = Tools.dateFormatted,
+                    dateAdded = Tools.dateAndTimeFormatted,
                     identity = identity.type,
                     episodes = episodes,
                     genres = genresList

@@ -34,6 +34,7 @@ import nobility.downloader.core.BoxHelper.Companion.boolean
 import nobility.downloader.core.BoxHelper.Companion.string
 import nobility.downloader.core.BoxHelper.Companion.update
 import nobility.downloader.core.Core
+import nobility.downloader.core.scraper.video_download.Functions
 import nobility.downloader.core.settings.Defaults
 import nobility.downloader.ui.components.*
 import nobility.downloader.ui.components.dialog.DialogHelper
@@ -530,6 +531,7 @@ private fun UiWrapper(
                                 ),
                                 fontColor = MaterialTheme.colorScheme.onError
                             ) {
+                                Functions.killChromeProcesses()
                                 exitProcess(2)
                             }
                         }
