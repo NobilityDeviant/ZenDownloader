@@ -365,6 +365,8 @@ class DownloadConfirmWindow(
                     || it.seasonTitle.contains(searchText, true)
         }
 
+    //todo add options to allow more control for organization
+    //keywords separated by a delimiter to be used
     private fun seasonData(): List<SeasonData> {
         if (episodes.isEmpty()) {
             return emptyList()

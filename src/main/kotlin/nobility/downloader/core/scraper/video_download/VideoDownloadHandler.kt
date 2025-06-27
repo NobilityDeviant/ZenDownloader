@@ -204,6 +204,7 @@ class VideoDownloadHandler(
                     )
                 }
                 data.retries++
+                e.printStackTrace()
             }
         }
         killDriver()

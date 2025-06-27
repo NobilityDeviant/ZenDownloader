@@ -13,6 +13,7 @@ libobjectbox-jni-linux-x64.so
 /src/main/kotlin/nobility/downloader/core/scraper/MovieUpdater.kt
 /src/main/kotlin/nobility/downloader/core/scraper/MovieScraper.kt
 /src/main/kotlin/nobility/downloader/core/scraper/WcoStreamScraper.kt
+jdks
 
 ### IntelliJ IDEA ###
 .idea/modules.xml

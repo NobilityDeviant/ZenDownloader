@@ -58,8 +58,21 @@ dependencies {
         "io.objectbox:objectbox-windows:$objectBox"
     )
 
-    if (project.gradle.startParameter.taskNames.any { it.contains("packageFatJar") }) {
+    val skikoVersion = "0.9.17"
+
+    val allSkikoLibs = listOf(
+        "org.jetbrains.skiko:skiko-awt-runtime-windows-x64:$skikoVersion",
+        "org.jetbrains.skiko:skiko-awt-runtime-linux-x64:$skikoVersion",
+        "org.jetbrains.skiko:skiko-awt-runtime-linux-arm64:$skikoVersion",
+        "org.jetbrains.skiko:skiko-awt-runtime-macos-x64:$skikoVersion",
+        "org.jetbrains.skiko:skiko-awt-runtime-macos-arm64:$skikoVersion"
+    )
+
+    if (project.gradle.startParameter.taskNames.any { it.contains("packageFatJar") || it.contains("runFatJar") }) {
         allObjectBoxLibs.forEach {
+            implementation(it)
+        }
+        allSkikoLibs.forEach {
             implementation(it)
         }
     }
@@ -147,11 +160,12 @@ compose.desktop {
     }
 }
 
-//attempting to create a universal jar.
-//keeps throwing io.objectbox.EntityInfo not found error.
-//but all other errors have been fixed so far.
+//it officially runs on linux even when built from windows.
+//only issue i see now is it doesnt detect file size or update urls.
+//its not a selenium issue its something with java.
+//might ditch httpurlconnection in favor of ktor or something.
+
 tasks.register<Jar>("packageFatJar") {
-    println("Project Name: " + project.name)
     group = "compose desktop"
     description = "Builds a fat JAR."
     archiveBaseName.set("ZenDownloader")
@@ -164,7 +178,9 @@ tasks.register<Jar>("packageFatJar") {
     }
 
     doFirst {
-        val jarFile = destinationDirectory.get().file("ZenDownloader-${project.version}-all.jar").asFile
+        val jarFile = destinationDirectory.get().file(
+            "ZenDownloader-${project.version}-all.jar"
+        ).asFile
         if (jarFile.exists()) {
             jarFile.delete()
         }
@@ -176,37 +192,29 @@ tasks.register<Jar>("packageFatJar") {
 
     from(sourceSets["main"].output)
 
-    val preservedJars = listOf(
-        "skiko",
-        "skia",
-        "org.jetbrains.compose",
-        "objectbox"
-    )
-
     from({
-        configurations.runtimeClasspath.get().flatMap { file ->
-            val name = file.name
-            val keepAsIs = preservedJars.any {
-                name.contains(it, ignoreCase = true)
-            }
-            if (keepAsIs) {
-                listOf(file)
-            } else if (file.isDirectory) {
-                listOf(file)
+        configurations.runtimeClasspath.get().map { file ->
+            if (file.isDirectory) {
+                file
             } else {
                 zipTree(file).matching {
-                    exclude("META-INF/*.SF", "META-INF/*.DSA", "META-INF/*.RSA")
+                    exclude(
+                        "META-INF/*.SF",
+                        "META-INF/*.DSA",
+                        "META-INF/*.RSA",
+                        "META-INF/*.EC"
+                    )
                 }
             }
         }
     })
 
-    //fail-safe even though they're generated or exported on first run
-    from({
-        configurations.runtimeClasspath.get().filter { file ->
-            file.name.contains("objectbox") && file.extension in listOf("so", "dll", "dylib")
-        }
-    })
+
+    //from({
+      //  configurations.runtimeClasspath.get().filter { file ->
+        //    file.name.contains("objectbox") && file.extension in listOf("so", "dll", "dylib")
+        //}
+    //})
 
     from(sourceSets["main"].resources)
 
@@ -236,6 +244,7 @@ tasks.register("runFatJar") {
         val jarFile = layout.buildDirectory.file("custom-jars/$jarName").get().asFile
 
         if (jarFile.exists()) {
+
             val injected = project.objects.newInstance<InjectedExecOps>()
 
             println("Launching: ${jarFile.absolutePath}")
@@ -250,6 +259,7 @@ tasks.register("runFatJar") {
         }
     }
 }
+
 
 
 
