@@ -21,6 +21,7 @@ import nobility.downloader.core.settings.Defaults
 import nobility.downloader.core.updates.UrlUpdater
 import nobility.downloader.ui.components.dialog.DialogHelper
 import nobility.downloader.ui.components.dialog.DialogHelper.showError
+import nobility.downloader.utils.AppInfo
 import nobility.downloader.utils.Constants
 import nobility.downloader.utils.FrogLog
 import nobility.downloader.utils.update
@@ -160,11 +161,17 @@ class CoreChild {
     private val killTimeout = 7000L
 
     private suspend fun killAllDrivers(): Nothing = withContext(Dispatchers.Default) {
-        FrogLog.info("killAllDrivers() started")
+        val tempFolderDir = AppInfo.databasePath + "udc_temp" +
+                File.separator +
+                "udc_${System.currentTimeMillis()}" +
+                File.separator
+
+        val tempFolder = File(tempFolderDir)
+
         val drivers = synchronized(runningDrivers) { runningDrivers.toMap() }
 
         if (drivers.isEmpty()) {
-            FrogLog.info("No drivers found. exiting...")
+            tempFolder.deleteRecursively()
             exitProcess(0)
         }
 
@@ -183,6 +190,7 @@ class CoreChild {
         }
 
         FrogLog.info("Driver shutdown complete. exiting...")
+        tempFolder.deleteRecursively()
         exitProcess(0)
     }
 

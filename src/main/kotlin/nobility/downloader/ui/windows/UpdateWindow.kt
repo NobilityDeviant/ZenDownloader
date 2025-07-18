@@ -449,7 +449,6 @@ class UpdateWindow(
 
     private fun fetchLatestRelease(): Resource<JsonObject> {
         try {
-            removeValidation()
             val urlConnection = URI(AppInfo.GITHUB_LATEST).toURL()
                 .openConnection() as HttpsURLConnection
             urlConnection.readTimeout = 20000
@@ -542,6 +541,7 @@ class UpdateWindow(
         return true
     }
 
+    @Suppress("UNUSED")
     private fun removeValidation() {
         val trustAllCerts = arrayOf<TrustManager>(object : X509TrustManager {
             override fun checkClientTrusted(arg0: Array<X509Certificate>, arg1: String) {}

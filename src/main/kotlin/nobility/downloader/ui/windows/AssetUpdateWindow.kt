@@ -38,7 +38,6 @@ import kotlin.system.exitProcess
 
 
 /**
- * An asset update window.
  * Since we can't manage files in use, why not update them before?
  * Note that we can't access anything from the Core/BoxHelper so it needs to be standalone.
  * If we try to use anything there, the singleton will launch, and it will crash due to an ObjectBox error.

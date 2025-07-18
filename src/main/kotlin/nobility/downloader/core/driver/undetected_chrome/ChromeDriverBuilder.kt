@@ -7,14 +7,15 @@ import nobility.downloader.core.driver.undetected_chrome.SysUtil.isLinux
 import nobility.downloader.core.driver.undetected_chrome.SysUtil.isMacOs
 import nobility.downloader.core.driver.undetected_chrome.SysUtil.path
 import nobility.downloader.core.settings.Defaults
+import nobility.downloader.utils.AppInfo
 import nobility.downloader.utils.FrogLog
 import nobility.downloader.utils.fileExists
 import org.openqa.selenium.chrome.ChromeDriver
 import org.openqa.selenium.chrome.ChromeOptions
-import java.io.*
+import java.io.File
+import java.io.IOException
 import java.net.ServerSocket
 import java.nio.charset.StandardCharsets
-import java.nio.file.Files
 import java.util.*
 import java.util.regex.Pattern
 
@@ -30,8 +31,6 @@ class ChromeDriverBuilder {
         driverExecutablePath: String,
         binaryLocation: String = "",
         headless: Boolean = false,
-        suppressWelcome: Boolean = true,
-        needPrintChromeInfo: Boolean = false,
         prefs: Map<String, Any>? = null
     ): ChromeDriver {
         //step 0, load origin args for options
@@ -55,7 +54,7 @@ class ChromeDriverBuilder {
         chromeOptions = setBinaryLocation(chromeOptions, binaryLocation)
 
         //step6, suppressWelcome
-        chromeOptions = suppressWelcome(chromeOptions, suppressWelcome)
+        chromeOptions = suppressWelcome(chromeOptions)
 
         //step7, set headless arguments
         chromeOptions = setHeadless(chromeOptions, headless)
@@ -72,7 +71,7 @@ class ChromeDriverBuilder {
         chromeOptions = fixExitType(chromeOptions)
 
         //step11, start process
-        val browser = createBrowserProcess(chromeOptions, needPrintChromeInfo)
+        val browser = createBrowserProcess(chromeOptions)
 
         //step12, make undetectedChrome chrome driver
         val undetectedChromeDriver = UndetectedChromeDriver(
@@ -92,16 +91,17 @@ class ChromeDriverBuilder {
     fun build(
         options: ChromeOptions,
         driverExecutablePath: String,
-        binaryLocation: String = "",
-        suppressWelcome: Boolean = true,
-        needPrintChromeInfo: Boolean = false
+        binaryLocation: String = ""
     ): ChromeDriver {
         var headless = false
         try {
             val argsField = options.javaClass.superclass.getDeclaredField("args")
             argsField.isAccessible = true
             val args = argsField[options] as List<String>
-            if (args.contains("--headless") || args.contains("--headless=new") || args.contains("--headless=chrome")) {
+            if (args.contains("--headless")
+                || args.contains("--headless=new")
+                || args.contains("--headless=chrome")
+            ) {
                 headless = true
             }
         } catch (e: Exception) {
@@ -113,7 +113,8 @@ class ChromeDriverBuilder {
 
         var prefs: Map<String, Any>? = null
         try {
-            val argsField = options.javaClass.superclass.getDeclaredField("experimentalOptions")
+            val argsField = options.javaClass.superclass
+                .getDeclaredField("experimentalOptions")
             argsField.isAccessible = true
             val args = argsField[options] as MutableMap<String, Any>
             if (args.containsKey("prefs")) {
@@ -132,8 +133,6 @@ class ChromeDriverBuilder {
             driverExecutablePath,
             binaryLocation,
             headless,
-            suppressWelcome,
-            needPrintChromeInfo,
             prefs
         )
     }
@@ -161,13 +160,19 @@ class ChromeDriverBuilder {
         args.forEach { arg ->
             if (arg.contains("--remote-debugging-host")) {
                 try {
-                    debugHost = arg.split("=".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()[1]
-                } catch (_: Exception) {}
+                    debugHost = arg.split("=".toRegex())
+                        .dropLastWhile { it.isEmpty() }
+                        .toTypedArray()[1]
+                } catch (_: Exception) {
+                }
             }
             if (arg.contains("--remote-debugging-port")) {
                 try {
-                    debugPort = arg.split("=".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()[1].toInt()
-                } catch (_: Exception) {}
+                    debugPort = arg.split("=".toRegex())
+                        .dropLastWhile { it.isEmpty() }
+                        .toTypedArray()[1].toInt()
+                } catch (_: Exception) {
+                }
             }
         }
         if (debugHost == null) {
@@ -184,7 +189,8 @@ class ChromeDriverBuilder {
         }
 
         try {
-            val experimentalOptions = chromeOptions.javaClass.superclass.getDeclaredField("experimentalOptions")
+            val experimentalOptions = chromeOptions.javaClass
+                .superclass.getDeclaredField("experimentalOptions")
             experimentalOptions.isAccessible = true
             val experimentals = experimentalOptions[chromeOptions] as Map<String, Any?>
             if (experimentals["debuggerAddress"] != null) {
@@ -207,24 +213,24 @@ class ChromeDriverBuilder {
     @Throws(RuntimeException::class)
     private fun setUserDataDir(chromeOptions: ChromeOptions): ChromeOptions {
         //find user data dir in chromeOptions
-        for (arg: String in args) {
-            if (arg.contains("--user-data-dir")) {
-                try {
-                    userDataDir = arg.split("=".toRegex())
-                        .dropLastWhile { it.isEmpty() }
-                        .toTypedArray()[1]
-                } catch (_: Exception) {}
-                break
+        val dirArg = args.find { it.contains("--user-data-dir") }
+        if (dirArg != null) {
+            try {
+                userDataDir = dirArg.split("=".toRegex())
+                    .dropLastWhile { it.isEmpty() }
+                    .toTypedArray()[1]
+            } catch (_: Exception) {
             }
         }
         if (userDataDir.isEmpty()) {
             //no user data dir in it
             keepUserDataDir = false
             try {
-                //create temp dir
-                userDataDir = Files.createTempDirectory("undetected_chrome_driver").toString()
-            } catch (e: Exception) {
-                e.printStackTrace()
+                userDataDir = AppInfo.databasePath + "udc_temp" +
+                        File.separator +
+                        "udc_${System.currentTimeMillis()}" +
+                        File.separator
+            } catch (_: Exception) {
                 throw RuntimeException("Failed to create temp user data directory.")
             }
             //add into options
@@ -271,7 +277,8 @@ class ChromeDriverBuilder {
                 FrogLog.error(
                     """
                         Chrome isn't installed. Install it and restart the app.
-                        For some help visit: https://github.com/NobilityDeviant/ZenDownloader/#download--install
+                        For some help visit: 
+                        https://github.com/NobilityDeviant/ZenDownloader/#download--install
                     """.trimIndent(),
                     important = true
                 )
@@ -294,15 +301,12 @@ class ChromeDriverBuilder {
      */
     private fun suppressWelcome(
         chromeOptions: ChromeOptions,
-        suppressWelcome: Boolean
     ): ChromeOptions {
-        if (suppressWelcome) {
-            if (!args.contains("--no-default-browser-check")) {
-                chromeOptions.addArguments("--no-default-browser-check")
-            }
-            if (!args.contains("--no-first-run")) {
-                chromeOptions.addArguments("--no-first-run")
-            }
+        if (!args.contains("--no-default-browser-check")) {
+            chromeOptions.addArguments("--no-default-browser-check")
+        }
+        if (!args.contains("--no-first-run")) {
+            chromeOptions.addArguments("--no-first-run")
         }
         return chromeOptions
     }
@@ -319,7 +323,10 @@ class ChromeDriverBuilder {
         headless: Boolean
     ): ChromeOptions {
         if (headless) {
-            if (!args.contains("--headless=new") || !args.contains("--headless=chrome") || !args.contains("--headless=old")) {
+            if (!args.contains("--headless=new")
+                || !args.contains("--headless=chrome")
+                || !args.contains("--headless=old")
+            ) {
                 //we consider that the chromedriver version is greater than 108.x.x.x
                 chromeOptions.addArguments("--headless=new")
                 //chromeOptions.addArguments("--headless=old")
@@ -370,24 +377,25 @@ class ChromeDriverBuilder {
     private fun handlePrefs(userDataDir: String?, prefs: Map<String, Any>) {
         val defaultPath = userDataDir + File.separator + "Default"
         val defaultFile = File(defaultPath)
-        if (!defaultFile.exists()) {
-            defaultFile.mkdirs()
+        if (!defaultFile.exists() && !defaultFile.mkdirs()) {
+            throw RuntimeException("Failed to create Default path folders.")
         }
-
         var newPrefs: MutableMap<String, Any>
 
         val prefsFilePath = defaultPath + File.separator + "Preferences"
         val prefsFile = File(prefsFilePath)
         if (prefsFile.exists()) {
             try {
-                BufferedReader(FileReader(prefsFile, StandardCharsets.ISO_8859_1)).use { br ->
+                prefsFile.bufferedReader(StandardCharsets.ISO_8859_1).use { br ->
                     var line: String?
-                    val stringBuilder: StringBuilder = StringBuilder()
+                    val sb = StringBuilder()
                     while ((br.readLine().also { line = it }) != null) {
-                        stringBuilder.append(line)
-                        stringBuilder.append("\n")
+                        sb.append(line)
+                        sb.appendLine()
                     }
-                    newPrefs = JSONObject.parseObject(stringBuilder.toString()).innerMap
+                    newPrefs = JSONObject.parseObject(
+                        sb.toString()
+                    ).innerMap
                 }
             } catch (_: Exception) {
                 throw RuntimeException("Default preferences directory not found.")
@@ -395,14 +403,18 @@ class ChromeDriverBuilder {
 
             try {
                 prefs.entries.forEach { pref ->
-                    undotMerge(pref.key, pref.value, newPrefs)
+                    undotMerge(
+                        pref.key,
+                        pref.value,
+                        newPrefs
+                    )
                 }
             } catch (_: Exception) {
                 throw RuntimeException("Failed to merge preferences.")
             }
 
             try {
-                BufferedWriter(FileWriter(prefsFilePath, StandardCharsets.ISO_8859_1)).use { bw ->
+                prefsFile.bufferedWriter(StandardCharsets.ISO_8859_1).use { bw ->
                     bw.write(JSONObject.toJSONString(newPrefs))
                     bw.flush()
                 }
@@ -419,41 +431,28 @@ class ChromeDriverBuilder {
      * @return o
      */
     private fun fixExitType(chromeOptions: ChromeOptions): ChromeOptions {
-        var reader: BufferedReader? = null
-        var writer: BufferedWriter? = null
         try {
-            val filePath = userDataDir + File.separator + "Default" + File.separator + "Preferences"
-            reader = BufferedReader(FileReader(filePath, StandardCharsets.ISO_8859_1))
-            var line: String?
+            val filePath = userDataDir + File.separator +
+                    "Default" + File.separator + "Preferences"
+            val file = File(filePath)
             val jsonStr = StringBuilder()
-            while ((reader.readLine().also { line = it }) != null) {
-                jsonStr.append(line)
-                jsonStr.append("\n")
+            file.bufferedReader(StandardCharsets.ISO_8859_1).use { reader ->
+                var line: String?
+                while ((reader.readLine().also { line = it }) != null) {
+                    jsonStr.append(line)
+                    jsonStr.appendLine()
+                }
             }
-            reader.close()
             var json = jsonStr.toString()
             val pattern = Pattern.compile("(?<=exit_type\"\":)(.*?)(?=,)")
             val matcher = pattern.matcher(json)
             if (matcher.find()) {
-                writer = BufferedWriter(FileWriter(filePath, StandardCharsets.ISO_8859_1))
                 json = json.replace(matcher.group(), "null")
-                writer.write(json)
-                writer.close()
+                file.bufferedWriter(StandardCharsets.ISO_8859_1).use { writer ->
+                    writer.write(json)
+                }
             }
         } catch (_: Exception) {
-        } finally {
-            if (reader != null) {
-                try {
-                    reader.close()
-                } catch (_: Exception) {
-                }
-            }
-            if (writer != null) {
-                try {
-                    writer.close()
-                } catch (_: Exception) {
-                }
-            }
         }
         return chromeOptions
     }
@@ -465,43 +464,11 @@ class ChromeDriverBuilder {
      * @return p
      */
     private fun createBrowserProcess(
-        chromeOptions: ChromeOptions,
-        needPrintChromeInfo: Boolean
+        chromeOptions: ChromeOptions
     ): Process {
         loadChromeOptionsArgs(chromeOptions)
         args.add(0, binaryLocation)
-        val process = ProcessBuilder(args).start()
-
-        val outputThread = Thread {
-            try {
-                val br = process.inputStream.bufferedReader()
-                br.readLines().forEach {
-                    FrogLog.debug("[BROWSER] $it")
-                }
-                br.close()
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
-        }
-
-        val errorPutThread = Thread {
-            try {
-                val er = process.errorStream.bufferedReader()
-                er.readLines().forEach {
-                    FrogLog.error("[BROWSER] $it")
-                }
-                er.close()
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
-        }
-
-        if (needPrintChromeInfo) {
-            outputThread.start()
-            errorPutThread.start()
-        }
-
-        return process
+        return ProcessBuilder(args).start()
     }
 
     private fun findFreePort(): Int {
@@ -509,14 +476,12 @@ class ChromeDriverBuilder {
         try {
             socket = ServerSocket(0)
             return socket.getLocalPort()
-        } catch (e: Exception) {
-            e.printStackTrace()
+        } catch (_: Exception) {
             return -1
         } finally {
             try {
                 socket?.close()
-            } catch (e: IOException) {
-                e.printStackTrace()
+            } catch (_: IOException) {
             }
         }
     }
