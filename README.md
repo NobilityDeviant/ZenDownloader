@@ -22,29 +22,112 @@ If you enjoy this project then please consider donating.
 
 I would greatly appreciate it. :)
 
-I have changed the donations to a custom Stripe page.
-
-[Donate](https://donate.stripe.com/6oEeV1aGb9lZgCIfYY)
+![Donate With Stripe](images/donate_stripe.png?raw=true "Donate With Stripe")(https://donate.stripe.com/6oEeV1aGb9lZgCIfYY)
 
 # Requirements
 
-**ZenDownloader** currently only supports Windows and Debian/RHEL based Linux.
+**ZenDownloader** should now support Windows, Mac and Linux.
 
-*You can still try to run it with IntelliJ if your OS supports it: [Building](https://github.com/NobilityDeviant/ZenDownloader/blob/master/README.md#building)*
+*If the new universal JAR doesn't work for you, you can still try to run it with IntelliJ: [Building](https://github.com/NobilityDeviant/ZenDownloader/blob/master/README.md#building)*
 
 It has been tested on Windows 7, Windows 10, Windows 11, Ubuntu 22.04.04, Pop!_OS 22.04 and Fedora 42.
 
-You will also need to install Chrome. This version doesn't support any other browsers right now.
+*These are tests with the old installer. The new JAR hasn't been fully tested yet.*
+
+You will also need to install Chrome. This version doesn't support any other browsers.
+
+*Windows Requires Visual C++:* [Visual C++ Redistributable for Visual Studio 2015](https://www.microsoft.com/en-us/download/details.aspx?id=48145)
 
 # Download & Install
 
 You won't need to download the JRE because it comes pre-packaged.
 
+The new packages are all labelled for different operating systems.
+
+They are each structured to be easily launchable with either a `run.bat` or a `run.sh` file.
+
+These scripts will open the `launch.jar` which is used for easy updates.
+
+**Note: You can launch the ZenDownloader JAR directly, but updates won't be supported.**
+
+# Installing Chrome
+
+*If you already have Chrome installed, make sure it's version 108 or higher.*
+
+**For Windows:**
+
+[Download & Install](https://www.google.com/chrome/?platform=windows)
+
+**For Mac:**
+
+[Download & Install](https://www.google.com/chrome/?platform=mac)
+
+**For Linux (Debian):**
+
+Run these commands in the terminal:
+
+`sudo apt update`
+
+`sudo apt install google-chrome-stable`
+
+Input your password and you're done.
+
+**For Linux (Red Hat Enterprise):**
+
+`sudo dnf config-manager setopt google-chrome.enabled=1`
+
+`sudo dnf install -y google-chrome-stable`
+
+Input your password and you're done.
+
+*You're on your own for any other version of Linux for now.*
+
+# Download Release
+
+**Download The Latest Release:** [Releases](https://github.com/NobilityDeviant/ZenDownloader/releases)
+
+Choose the right `.zip` package for your operating system.
+
+I'm not entirely sure how to check your PC hardware, but hopefully you already know.
+
+*Most Windows Are AMD64. Windows ARM64 isn't directly supported*
+*Apple Silicon = ARM64*
+*Apple Intel = AMD64*
+*AARCH64 = ARM64**
+
+# Setup & Use Release
+
+**For Windows:**
+
+Extract the zip *here* and open the `run.bat` file.
+
+**For Mac/Linux:**
+
+Extract the zip *here*, open the extracted folder, and right click inside the folder and open the terminal.
+
+If you can't do that, open the terminal somewhere else and redirect it to the extracted folder root.
+
+Command Example: `cd /home/ZenDownloader-linux-amd64/`
+
+If you're on Mac, you might need to bypass the Gatekeeper with the command:
+
+`xattr -d com.apple.quarantine run.sh`
+
+Now use the command:
+
+`./run.sh`
+
+If it fails to run due to permissions, use the command:
+
+`chmod +x run.sh`
+
+Input your password if it asks.
+
 # Ffmpeg
 
 M3U8 video files require ffmpeg to be installed in order to merge the ts files and merge the audio with the video.
 
-**For Windows:** 
+**For Windows:**
 
 Download the release build from: [https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-full.7z](https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-full.7z)
 
@@ -54,7 +137,29 @@ Example of path: `C:\Users\CuratedDev\.zen_database\ffmpeg.exe`
 
 You can find the database folder in this guide: ([https://github.com/NobilityDeviant/ZenDownloader/blob/master/database/README.md#database-folder](https://github.com/NobilityDeviant/ZenDownloader/blob/master/database/README.md#database-folder))
 
-**If you know how to set up ffmpeg as an environment variable, that will work too.**
+*If you know how to set up ffmpeg as an environment variable, that will work too.*
+
+**For Mac:**
+
+(**AMD64 & Apple Silicon/ARM64**)
+You can either install it using brew: [https://formulae.brew.sh/formula/ffmpeg](https://formulae.brew.sh/formula/ffmpeg)
+
+If installing with brew, you shouldn't need to do anything else.
+
+You can verify it's been installed in the terminal with the command:
+
+`ffmpeg -version`
+
+or
+
+(**AMD64 Only**)
+You can download it here: [https://evermeet.cx/ffmpeg/](https://evermeet.cx/ffmpeg/)
+
+Extract it and copy `ffmpeg` into the database folder.
+
+Example of path: `C:\Users\CuratedDev\.zen_database\ffmpeg`
+
+You can find the database folder in this guide: ([https://github.com/NobilityDeviant/ZenDownloader/blob/master/database/README.md#database-folder](https://github.com/NobilityDeviant/ZenDownloader/blob/master/database/README.md#database-folder))
 
 **For Linux:**
 
@@ -84,89 +189,7 @@ You can verify it's been installed with the command:
 
 `ffmpeg --help`
 
-# Windows
-
-**Download & Install Chrome:** [Download](https://www.google.com/chrome/?platform=windows)
-
-*If you already have Chrome installed, make sure it's version 108 or higher.*
-
-**Download & Install The Latest Release:** [Releases](https://github.com/NobilityDeviant/ZenDownloader/releases)
-
-For Windows it'll be the file with the `.exe` extension.
-
-You're also going to need to install: [Visual C++ Redistributable for Visual Studio 2015](https://www.microsoft.com/en-us/download/details.aspx?id=48145)
-
-# Linux (Debian)
-
-**Download & Install Chrome:**
-
-Run these commands in the terminal:
-
-`sudo apt update`
-
-`sudo apt install google-chrome-stable`
-
-Input your password and you're done.
-
-*If you already have Chrome installed, make sure it's version 108 or higher with:*
-
-`google-chrome-stable --version`
-
-**Download & Install The Latest Release:**
-
-Download The Latest Release Here: [Releases](https://github.com/NobilityDeviant/ZenDownloader/releases)
-
-For Debian it'll be the with the `.deb` extension.
-
-Go to the folder it's been downloaded to, right click an empty space in the window an open the **Terminal** app.
-
-Now inside the terminal you will type:
-
-`sudo apt install ./zendownloader.deb`
-
-Replacing `zendownloader.deb` with the file name.
-
-Input your password and you're done.
-
-If you wish to uninstall it, you can use the command:
-
-`sudo apt remove zendownloader` or `sudo apt remove ZenDownloader` if it complains about casing.
-
-# Linux (Red Hat Enterprise)
-
-**Download & Install Chrome:**
-
-Run these commands in the terminal:
-
-`sudo dnf config-manager setopt google-chrome.enabled=1`
-
-`sudo dnf install -y google-chrome-stable`
-
-Input your password and you're done.
-
-*If you already have Chrome installed, make sure it's version 108 or higher with:*
-
-`google-chrome-stable --version`
-
-**Download & Install The Latest Release:**
-
-Download The Latest Release Here: [Releases](https://github.com/NobilityDeviant/ZenDownloader/releases)
-
-For Red Hat Enterprise it'll be the with the `.rpm` extension.
-
-Go to the folder it's been downloaded to, right click an empty space in the window an open the **Terminal** app.
-
-Now inside the terminal you will type:
-
-`sudo dnf install -y ./zendownloader.rpm`
-
-Replacing `zendownloader.rpm` with the file name.
-
-Input your password and you're done.
-
-If you wish to uninstall it, you can use the command:
-
-`sudo dnf remove zendownloader` or `sudo dnf remove ZenDownloader` if it complains about casing.
+*Hopefully you can find your command if you have any other linux version.*
 
 # First Run
 
@@ -187,27 +210,59 @@ If the **Asset Updater** isn't working for you, then follow this guide to ensure
 # Custom Chrome Browser & Driver
 
 There's now an option to add your own path to the Chrome Browser and ChromeDriver.
-This works on both WIndows & Linux.
 
 First you're going to want to install Chrome from the offical website.
 You can follow the [Download & Install](https://github.com/NobilityDeviant/ZenDownloader#download--install) for that.
 
-Now when Chrome is installed, you need to find the version of it.
+You are going to need to find the version and the installed path of Chrome.
 
-**Windows**
+**Common Chrome Install Paths:**
 
-In your Chrome folder there's going to be different folders with different versions if you have multiple ones.
+*Windows:*
 
-Delete all the older version folders if you have any.
+`C:\Program Files\Google\Chrome\Application\chrome.exe`
+`C:\Program Files (x86)\Google\Chrome\Application\chrome.exe`
+`%LOCALAPPDATA%\Google\Chrome\Application\chrome.exe`
 
-![Settings](images/chrome_browser_path_windows.png?raw=true "Windows Chrome Browser Versions")
+*Mac:*
 
-Either copy the latest versions folder name or hover over the `chrome.exe`
-and use the version the tooltip provides.
+`/Applications/Google Chrome.app/Contents/MacOS/Google Chrome`
 
-**Linux**
+*Linux:*
 
-You can find your Chrome verion with this command:
+`/usr/bin/google-chrome`
+`/opt/google/chrome/google-chrome`
+`/usr/bin/google-chrome-stable`
+`/opt/google/chrome/google-chrome-stable`
+
+**Find Chrome Version:**
+
+*Universal:*
+
+The Chrome version should be displayed inside the Settings of Chrome under *About Chrome*.
+
+*Windows:*
+
+You can navigate to the install folder, find chrome.exe and hover over it.
+The Windows tooltip should show you the version.
+
+*Mac:*
+
+Open the terminal and use the command:
+
+`/Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome --version`
+
+Use the path to Chrome you found earlier.
+
+Mac commands use `\` if the directory name contains a space. Make sure to include them.
+
+*Linux:*
+
+Open the terminal and use the command:
+
+`google-chrome-stable --version`
+
+or 
 
 `google-chrome --version`
 
@@ -242,19 +297,6 @@ Linux will be a little bit different.
 Linux chromedrivers will not have an extension.
 
 The executable for Linux will be different as well. I have no clue where that would be, but I'll update this when I find out.
-
-# Cloudflare
-
-Wco is now using cloudflare. Most VPNs and public proxies won't work anymore!
-I will also have to keep track and update the useragents every now and then.
-
-If you encounter any cloudflare error, just keep trying or report it.
-
-Don't worry too much though. 
-
-**ZenDownloader** comes equipped with a Kotlin version of Undetected ChromeDriver which bypasses all basic cloudflare blocking.
-
-The only way cloudflare would work is if wco pays for their premium package, which is expensive.
 
 # MP4 Video Format
 
@@ -390,34 +432,14 @@ Now once everything is imported and downloaded, open the project tree on the lef
 
 Right click **Main.kt** and select `Run MainKt`
 
-Or even better, you can use the `run` task from Gradle.
+Or even better, you can use the `run` task from Gradle under `ZenDownload > Tasks > compose desktop`.
 
-If you want to make the `.deb` or the `.rpm` file, you need to install a couple extra things:
+**Creating OS distributables is no longer supported or encouraged**
 
-Debian:
+You can however create the JAR distributables if you want with the Gradle Task under:
 
-`sudo apt install binutils`
+`ZenDownloader > Tasks > custom jar > packageJARDistributables`
 
-`sudo apt install fakeroot`
+**Note: This will download all the JDKs for every operating system that will total in about 2GB of data.**
 
-Red Hat Enterprise:
-
-`sudo dnf install binutils`
-
-`sudo dnf install fakeroot`
-
-`sudo dnf install rpm-build`
-
-To create the distribution files, you have to use the gradle task on the right:
-
-![Gradle Distribution](guide/gradle_build_distribution.png?raw=true "Gradle Distribution")
-
-Choose your respective extension to build by double-clicking **packageExe**, **packageDeb** or **packageRpm** under the **Tasks** section.
-
-After everything is set up for the first time, all you'd have to do is update the project files for any major commit.
-
-![Update Project](guide/update_project.png?raw=true "Update Project")
-
-That's it! If you have any issues, please create an issue in Github and i'll get right on it. (Will be delayed due to other projects atm)
-
-So much readme commits.. Sorry about that.
+That's it! If you have any issues, please create an issue in Github and i'll get right on it.

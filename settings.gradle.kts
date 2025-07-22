@@ -16,3 +16,5 @@ pluginManagement {
         kotlin("jvm").version("2.2.0-RC")
     }
 }
+
+include(":app", ":bootstrap", ":common")

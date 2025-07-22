@@ -1,5 +1,11 @@
 .gradle
 build/
+app/build
+app/jdks
+app/objectbox-jni-windows-x64.dll
+app/libobjectbox-jni-linux-x64.so
+common/build
+bootstrap/build
 !gradle/wrapper/gradle-wrapper.jar
 !**/src/main/**/build/
 !**/src/test/**/build/
@@ -9,10 +15,10 @@ debug/
 objectbox-jni-windows-x64.dll
 libobjectbox-jni-linux-x64.so
 ### No one should have this kind of power anymore ###
-/src/main/kotlin/nobility/downloader/core/scraper/DatabaseScraper.kt
-/src/main/kotlin/nobility/downloader/core/scraper/MovieUpdater.kt
-/src/main/kotlin/nobility/downloader/core/scraper/MovieScraper.kt
-/src/main/kotlin/nobility/downloader/core/scraper/WcoStreamScraper.kt
+/app/src/main/kotlin/nobility/downloader/core/scraper/DatabaseScraper.kt
+/app/src/main/kotlin/nobility/downloader/core/scraper/MovieUpdater.kt
+/app/src/main/kotlin/nobility/downloader/core/scraper/MovieScraper.kt
+/app/src/main/kotlin/nobility/downloader/core/scraper/WcoStreamScraper.kt
 jdks
 
 ### IntelliJ IDEA ###
