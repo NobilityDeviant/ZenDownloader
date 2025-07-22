@@ -22,7 +22,7 @@ If you enjoy this project then please consider donating.
 
 I would greatly appreciate it. :)
 
-![Donate With Stripe](images/donate_stripe.png?raw=true "Donate With Stripe")(https://donate.stripe.com/6oEeV1aGb9lZgCIfYY)
+[<img src="images/donate_stripe.png?raw=true">]([https://link-to-your-URL/](https://donate.stripe.com/6oEeV1aGb9lZgCIfYY)),
 
 # Requirements
 
