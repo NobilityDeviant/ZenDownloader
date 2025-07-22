@@ -96,7 +96,7 @@ I'm not entirely sure how to check your PC hardware, but hopefully you already k
 
 *Apple Intel = AMD64*
 
-*AARCH64 = ARM64**
+*AARCH64 = ARM64*
 
 # Setup & Use Release
 
@@ -110,7 +110,9 @@ Extract the zip *here*, open the extracted folder, and right click inside the fo
 
 If you can't do that, open the terminal somewhere else and redirect it to the extracted folder root.
 
-Command Example: `cd /home/ZenDownloader-linux-amd64/`
+Command Example: 
+
+`cd /home/ZenDownloader-linux-amd64/`
 
 If you're on Mac, you might need to bypass the Gatekeeper with the command:
 
@@ -144,7 +146,8 @@ You can find the database folder in this guide: ([https://github.com/NobilityDev
 
 **For Mac:**
 
-(**AMD64 & Apple Silicon/ARM64**)
+*(AMD64 & Apple Silicon/ARM64)*
+
 You can either install it using brew: [https://formulae.brew.sh/formula/ffmpeg](https://formulae.brew.sh/formula/ffmpeg)
 
 If installing with brew, you shouldn't need to do anything else.
@@ -155,7 +158,8 @@ You can verify it's been installed in the terminal with the command:
 
 or
 
-(**AMD64 Only**)
+*(AMD64 Only)*
+
 You can download it here: [https://evermeet.cx/ffmpeg/](https://evermeet.cx/ffmpeg/)
 
 Extract it and copy `ffmpeg` into the database folder.
@@ -166,7 +170,7 @@ You can find the database folder in this guide: ([https://github.com/NobilityDev
 
 **For Linux:**
 
-**Debian:**
+*Debian:*
 
 Open the terminal and run the commanda:
 
@@ -180,7 +184,7 @@ You can verify it's been installed with the command:
 
 `ffmpeg -version`
 
-**Red Hat Enterprise:**
+*Red Hat Enterprise:*
 
 `sudo dnf update`
 
