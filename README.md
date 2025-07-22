@@ -28,7 +28,7 @@ I would greatly appreciate it. :)
 
 **ZenDownloader** should now support Windows, Mac and Linux.
 
-*If the new universal JAR doesn't work for you, you can still try to run it with IntelliJ: [Building](https://github.com/NobilityDeviant/ZenDownloader/blob/master/README.md#building)*
+*If the new universal JAR doesn't work for you, please report any issue here: [JAR Issue](https://github.com/NobilityDeviant/ZenDownloader/issues/38)*
 
 It has been tested on Windows 7, Windows 10, Windows 11, Ubuntu 22.04.04, Pop!_OS 22.04 and Fedora 42.
 
@@ -49,6 +49,8 @@ They are each structured to be easily launchable with either a `run.bat` or a `r
 These scripts will open the `launch.jar` which is used for easy updates.
 
 **Note: You can launch the ZenDownloader JAR directly, but updates won't be supported.**
+
+The JAR will only run on Java 21 or higher.
 
 # Installing Chrome
 
