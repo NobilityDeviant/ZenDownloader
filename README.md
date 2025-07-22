@@ -228,7 +228,9 @@ You are going to need to find the version and the installed path of Chrome.
 *Windows:*
 
 `C:\Program Files\Google\Chrome\Application\chrome.exe`
+
 `C:\Program Files (x86)\Google\Chrome\Application\chrome.exe`
+
 `%LOCALAPPDATA%\Google\Chrome\Application\chrome.exe`
 
 *Mac:*
@@ -238,8 +240,11 @@ You are going to need to find the version and the installed path of Chrome.
 *Linux:*
 
 `/usr/bin/google-chrome`
+
 `/opt/google/chrome/google-chrome`
+
 `/usr/bin/google-chrome-stable`
+
 `/opt/google/chrome/google-chrome-stable`
 
 **Find Chrome Version:**
