@@ -91,8 +91,11 @@ Choose the right `.zip` package for your operating system.
 I'm not entirely sure how to check your PC hardware, but hopefully you already know.
 
 *Most Windows Are AMD64. Windows ARM64 isn't directly supported*
+
 *Apple Silicon = ARM64*
+
 *Apple Intel = AMD64*
+
 *AARCH64 = ARM64**
 
 # Setup & Use Release
