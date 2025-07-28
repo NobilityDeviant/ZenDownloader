@@ -1,5 +1,6 @@
 package nobility.downloader.ui.windows.utils
 
+import AppInfo
 import androidx.compose.foundation.layout.Box
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -11,10 +12,10 @@ import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.WindowPlacement
 import androidx.compose.ui.window.WindowPosition
 import androidx.compose.ui.window.rememberWindowState
+import nobility.downloader.core.Core
 import nobility.downloader.ui.components.toast.ToastHostState
 import nobility.downloader.ui.components.toast.toastHost
 import nobility.downloader.ui.theme.CoreTheme
-import AppInfo
 import nobility.downloader.utils.ImageUtils
 import org.apache.commons.lang3.SystemUtils
 
@@ -98,6 +99,7 @@ class ApplicationState {
             resizable: Boolean = true,
             alwaysOnTop: Boolean = false,
             windowAlignment: Alignment = Alignment.Center,
+            isAssetWindow: Boolean = false,
             content: @Composable (AppWindowScope.() -> Unit)
         ) {
             val scope = object : AppWindowScope {
@@ -120,8 +122,8 @@ class ApplicationState {
                     Window(
                         icon = remember { ImageUtils.loadPainterFromResource(AppInfo.APP_ICON_PATH) },
                         //undecorated windows don't work on Windows 7
-                        undecorated = if (!SystemUtils.IS_OS_WINDOWS_7) undecorated else false,
-                        transparent = if (!SystemUtils.IS_OS_WINDOWS_7) transparent else false,
+                        undecorated = if (!SystemUtils.IS_OS_WINDOWS_7 || (!isAssetWindow && Core.windowFlag)) undecorated else false,
+                        transparent = if (!SystemUtils.IS_OS_WINDOWS_7 || (!isAssetWindow && Core.windowFlag)) transparent else false,
                         resizable = resizable,
                         alwaysOnTop = alwaysOnTop,
                         onCloseRequest = {

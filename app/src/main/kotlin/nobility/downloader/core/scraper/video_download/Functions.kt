@@ -77,7 +77,7 @@ object Functions {
         }
         @Suppress("KotlinConstantConditions")
         if (AppInfo.DEBUG_MODE) {
-            data.logDebug(
+            data.debug(
                 "Failed to find source code with simple mode. Moving onto full mode. " +
                         "Exception: ${exception?.localizedMessage}"
             )
@@ -321,7 +321,7 @@ object Functions {
 
         while (bis.read(buffer).also { bytesRead = it } != -1) {
             if (!Core.child.isRunning) {
-                data.writeMessage(
+                data.message(
                     "Stopping video download at ${Tools.bytesToString(totalBytesRead)}/${
                         Tools.bytesToString(
                             completeFileSize

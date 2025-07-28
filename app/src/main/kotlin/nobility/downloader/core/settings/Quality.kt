@@ -26,12 +26,18 @@ enum class Quality(
             } else if (chosenQuality == MED) {
                 return if (qualities.contains(MED)) {
                     MED
-                } else {
+                } else if (!qualities.contains(HIGH)) {
                     LOW
+                } else {
+                    HIGH
                 }
             } else if (chosenQuality == LOW) {
-                if (!qualities.contains(LOW)) {
+                if (qualities.contains(LOW)) {
+                    return LOW
+                } else if (qualities.contains(MED)) {
                     return MED
+                } else if (qualities.contains(HIGH)) {
+                    return HIGH
                 }
             }
             return LOW

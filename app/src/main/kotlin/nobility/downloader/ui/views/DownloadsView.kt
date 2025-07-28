@@ -250,10 +250,14 @@ class DownloadsView : ViewPage {
             )
             Divider()
             val time = if (download.downloading)
-                Tools.secondsToRemainingTime(download.videoDownloadSeconds.value) + download.downloadSpeed.value +
+                Tools.secondsToRemainingTime(
+                    download.videoDownloadSeconds.value,
+                    true
+                ) + download.downloadSpeed.value +
                         if (download.audioProgress.value.isNotEmpty())
-                            "\n" + download.audioProgress.value + Tools.secondsToRemainingTime(
-                                download.audioDownloadSeconds.value
+                            "\n" + download.audioProgress.value + " " + Tools.secondsToRemainingTime(
+                                download.audioDownloadSeconds.value,
+                                true
                             )
                         else ""
             else ""

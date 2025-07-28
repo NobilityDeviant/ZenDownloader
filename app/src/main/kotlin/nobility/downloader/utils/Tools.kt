@@ -291,9 +291,12 @@ object Tools {
         return@Comparator seriesCompare(first, second)
     }
 
-    fun secondsToRemainingTime(totalSeconds: Int): String {
+    fun secondsToRemainingTime(
+        totalSeconds: Int,
+        emptyIfZero: Boolean = false
+    ): String {
         if (totalSeconds <= 0) {
-            return "0:00"
+            return if (emptyIfZero) "" else "0:00"
         }
         val hours = totalSeconds / 3600
         val minutes = (totalSeconds % 3600) / 60

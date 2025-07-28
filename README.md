@@ -175,7 +175,7 @@ Input your password and you're good.
 
 You can verify it's been installed with the command:
 
-`ffmpeg -version`
+`ffmpeg --version`
 
 **Red Hat Enterprise:**
 

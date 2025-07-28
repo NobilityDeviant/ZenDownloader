@@ -1,5 +1,6 @@
 package nobility.downloader.ui.windows
 
+import AppInfo
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
@@ -56,14 +57,17 @@ class AssetUpdateWindow {
     private var shuttingDown by mutableStateOf(false)
     private var retry by mutableStateOf(false)
 
-    private val finished get() = completed.entries.map { it.value }.size == Asset.entries.size
+    private val finished get() = completed.entries.map {
+        it.value
+    }.size == Asset.entries.size
 
     fun open(onClose: (() -> Boolean)) {
         ApplicationState.newWindow(
             "Asset Updater",
             size = DpSize(400.dp, 175.dp),
-            transparent = true,
-            undecorated = true,
+            transparent = false,
+            undecorated = false,
+            isAssetWindow = true,
             onClose = onClose
         ) {
             Ui(this)

@@ -1,8 +1,8 @@
 package nobility.downloader.core.scraper
 
+import AppInfo
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import AppInfo
 import nobility.downloader.utils.FrogLog
 import nobility.downloader.utils.Tools
 import java.io.File
@@ -104,8 +104,6 @@ class MovieHandler {
     }
 
     companion object {
-        @Suppress("ConstPropertyName")
-        const val wcoMoviePlaylistLink = "https://www.wcostream.tv/playlist-cat/"
         const val DELIMITER = "<SPL>"
     }
 

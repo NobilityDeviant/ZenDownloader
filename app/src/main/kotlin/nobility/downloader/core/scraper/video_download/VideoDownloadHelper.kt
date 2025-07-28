@@ -61,6 +61,17 @@ class VideoDownloadHelper(
                                     result.message
                                 )
                             }
+
+                            ErrorCode.M3U8_SECOND_EMPTY_FRAME -> {
+                                videoDownloadData.m3u8SecondVideoCheck = false
+                                videoDownloadData.m3u8Retries = 0
+                                videoDownloadData.retries++
+                                return Resource.Error(
+                                    "Failed to find 2nd m3u8 frame. | Defaulting to regular M3U8 check.",
+                                    result.message
+                                )
+                            }
+
                             ErrorCode.CLOUDFLARE_FUCK -> {
                                 return Resource.Error(
                                     """
@@ -70,6 +81,7 @@ class VideoDownloadHelper(
                                     result.message
                                 )
                             }
+
                             ErrorCode.IFRAME_FORBIDDEN, ErrorCode.EMPTY_FRAME -> {
                                 videoDownloadData.resRetries = 3
                                 return Resource.Error(
@@ -78,6 +90,7 @@ class VideoDownloadHelper(
                                     result.message
                                 )
                             }
+
                             ErrorCode.FAILED_EXTRACT_RES -> {
                                 videoDownloadData.resRetries = 3
                                 return Resource.Error(
@@ -85,6 +98,7 @@ class VideoDownloadHelper(
                                     result.message
                                 )
                             }
+
                             ErrorCode.NO_JS -> {
                                 videoDownloadData.resRetries = 3
                                 return Resource.Error(
@@ -92,6 +106,7 @@ class VideoDownloadHelper(
                                     result.message
                                 )
                             }
+
                             ErrorCode.M3U8_LINK_FAILED -> {
                                 videoDownloadData.retries++
                                 return Resource.Error(
@@ -99,6 +114,7 @@ class VideoDownloadHelper(
                                     result.message
                                 )
                             }
+
                             ErrorCode.FAILED_PAGE_READ -> {
                                 videoDownloadData.retries++
                                 return Resource.Error(
@@ -106,6 +122,7 @@ class VideoDownloadHelper(
                                     result.message
                                 )
                             }
+
                             ErrorCode.FFMPEG_NOT_INSTALLED -> {
                                 //no retry needed, we finish the episode
                                 return Resource.Error(
@@ -113,6 +130,7 @@ class VideoDownloadHelper(
                                     result.message
                                 )
                             }
+
                             else -> {
                                 videoDownloadData.retries++
                                 return Resource.Error(
@@ -142,19 +160,17 @@ class VideoDownloadHelper(
                             preferredDownload = it
                         }
                     }
-                }/* else {
-                    data.logInfo(
-                        "Failed to find quality download links. Defaulting to ${Quality.LOW.tag} quality."
-                    )
-                    qualityOption = Quality.LOW
-                }*/
+                }
             }
         } else {
-            videoDownloadData.logDebug("Using existing qualities. Size: ${videoDownloadData.downloadDatas.size}")
+            videoDownloadData.debug("Using existing qualities. Size: ${videoDownloadData.downloadDatas.size}")
             val firstQualities = videoDownloadData.downloadDatas.filter { !it.secondFrame }
             qualityOption = Quality.bestQuality(
                 qualityOption,
                 firstQualities.map { it.quality }
+            )
+            videoDownloadData.debug(
+                "Found best quality: ${qualityOption.resolution} From: ${firstQualities.map { it.quality }.joinToString("")}"
             )
             firstQualities.forEach {
                 if (it.quality == qualityOption) {
@@ -163,10 +179,9 @@ class VideoDownloadHelper(
             }
         }
         if (preferredDownload == null || preferredDownload.downloadLink.isEmpty()) {
+            videoDownloadData.debug("Failed to find download link for quality: ${qualityOption.resolution}")
             videoDownloadData.retries++
-            return Resource.Error(
-                //"Failed to find the preferredDownload. | Retrying..."
-            )
+            return Resource.Error()
         }
         return Resource.Success(preferredDownload)
     }
@@ -177,18 +192,25 @@ class VideoDownloadHelper(
         if (videoDownloadData.driver !is JavascriptExecutor) {
             return@withContext Resource.ErrorCode(ErrorCode.NO_JS.code)
         }
+        val m3u8Check = videoDownloadData.m3u8SecondVideoCheck
         val frameIds = listOf(
             "anime-js-0",
             "anime-js-1",
             "cizgi-js-0"
         )
-        val secondFrameId = "cizgi-js-1"
+        val secondFrameIds = listOf(
+            "cizgi-js-0",
+            "cizgi-js-1"
+        )
         var m3u8Mode = false
         val fullLink = slug.slugToLink()
         val downloadDatas = mutableListOf<DownloadData>()
 
-        videoDownloadData.logDebug("Scraping quality links from $fullLink")
-        videoDownloadData.logDebug("Using UserAgent: ${videoDownloadData.userAgent}")
+        videoDownloadData.debug("Scraping quality links from $fullLink")
+        videoDownloadData.debug("Using UserAgent: ${videoDownloadData.userAgent}")
+        if (m3u8Check) {
+            videoDownloadData.debug("Using m3u8 2nd video check.")
+        }
 
         try {
             val source = readUrlLines(fullLink, videoDownloadData, false)
@@ -201,37 +223,64 @@ class VideoDownloadHelper(
             var frameLink = ""
             var secondFrameLink = ""
             val doc = Jsoup.parse(source.data.toString())
-            for (id in frameIds) {
-                val iframe = doc.getElementById(id)
-                if (iframe != null) {
-                    frameLink = iframe.attr("src")
-                    if (id == "anime-js-1") {
-                        m3u8Mode = true
+            if (m3u8Check) {
+                for (id in secondFrameIds) {
+                    val iframe = doc.getElementById(
+                        id
+                    )
+                    if (iframe != null) {
+                        frameLink = iframe.attr("src")
+                        videoDownloadData.info("Found m3u8 2nd frame with id: $id")
+                        break
                     }
-                    videoDownloadData.logInfo("Found frame with id: $id")
-                    break
+                }
+            } else {
+                for (id in frameIds) {
+                    val iframe = doc.getElementById(
+                        id
+                    )
+                    if (iframe != null) {
+                        frameLink = iframe.attr("src")
+                        if (id == "anime-js-1") {
+                            m3u8Mode = true
+                        }
+                        videoDownloadData.info("Found frame with id: $id")
+                        break
+                    }
                 }
             }
-            if (!m3u8Mode) {
-                val iframe = doc.getElementById(secondFrameId)
+
+            if (!m3u8Check) {
+                val iframe = doc.getElementById(secondFrameIds[1])
                 if (iframe != null) {
                     secondFrameLink = iframe.attr("src")
-                    videoDownloadData.logInfo("Found second frame with id: $secondFrameId")
+                    videoDownloadData.info("Found 2nd frame with id: ${secondFrameIds[1]}")
                 }
             }
+
             if (frameLink.isEmpty()) {
+                if (m3u8Check) {
+                    return@withContext Resource.ErrorCode(
+                        ErrorCode.M3U8_SECOND_EMPTY_FRAME.code
+                    )
+                }
                 return@withContext Resource.ErrorCode(
                     ErrorCode.EMPTY_FRAME.code
                 )
             }
             var sbFrame = StringBuilder()
             var sbFrameMessage: String? = ""
+
             @Suppress("UNUSED")
             for (i in 1..5) {
                 val frameSource = readUrlLines(frameLink, videoDownloadData)
                 val frameSourceData = frameSource.data
                 if (frameSourceData != null) {
                     sbFrame = frameSourceData
+                    if (m3u8Check) {
+                        //just in case?
+                        m3u8Mode = false
+                    }
                 } else {
                     sbFrameMessage = frameSource.message
                 }
@@ -239,7 +288,9 @@ class VideoDownloadHelper(
                     break
                 }
             }
+
             var sbFrame2 = StringBuilder()
+
             if (secondFrameLink.isNotEmpty()) {
                 @Suppress("UNUSED")
                 for (i in 1..5) {
@@ -253,10 +304,16 @@ class VideoDownloadHelper(
                     }
                 }
             }
+
             if (sbFrame.isEmpty()) {
-                //ok this happens sometimes with
-                //selenium 403 error. konosuba.
-                //i think we need to use the js redirect.
+                if (m3u8Check) {
+                    videoDownloadData.m3u8SecondVideoCheck = false
+                    videoDownloadData.m3u8Retries = 0
+                    return@withContext Resource.Error(
+                        "Failed to read m3u8 2nd video frame source. Defaulting to regular M3U8 check.",
+                        sbFrameMessage
+                    )
+                }
                 return@withContext Resource.Error(
                     "Failed to read frame source.",
                     sbFrameMessage
@@ -310,46 +367,60 @@ class VideoDownloadHelper(
                     )
                 }
                 FrogLog.debug("Trying to read content from: $hslLink")
+
                 val hslSource = readUrlLines(hslLink, videoDownloadData)
                 val hslSourceData = hslSource.data
+
                 if (hslSourceData != null) {
+
+                    //File("./${videoDownloadData.episode.name.fixForFiles()}_debug_.m3u8")
+                      //  .writeText(hslSourceData.toString())
+
                     val hslLines = hslSourceData.lines()
-                    hslLines.forEachIndexed { index, s ->
-                        if (s.startsWith("#EXT-X-STREAM-INF")) {
+                    val audioMap = mutableMapOf<String, String>()
+
+                    hslLines.forEach { line ->
+                        if (line.startsWith("#EXT-X-MEDIA:TYPE=AUDIO") && line.contains("LANGUAGE=\"eng")) {
+                            val groupId = Regex("""GROUP-ID="([^"]+)"""").find(line)?.groupValues?.get(1)
+                            val uri = Regex("""URI="([^"]+)"""").find(line)?.groupValues?.get(1)
+
+                            if (groupId != null && uri != null) {
+                                audioMap[groupId] = uri
+                            }
+                        }
+                    }
+
+                    hslLines.forEachIndexed { index, line ->
+                        if (line.startsWith("#EXT-X-STREAM-INF")) {
                             Quality.qualityList().forEach { quality ->
-                                if (s.contains("x${quality.resolution}")) {
-                                    var separateAudio = false
-                                    hslLines.forEach { t ->
-                                        if (t.startsWith("#EXT-X-MEDIA:TYPE=AUDIO")) {
-                                            if (t.contains("LANGUAGE=\"eng\"") || t.contains("LANGUAGE=\"eng_2\"")) {
-                                                val split = t.split(",")
-                                                var audioSplit = ""
-                                                split.forEach { splitLine ->
-                                                    if (splitLine.contains("URI=\"")) {
-                                                        audioSplit = splitLine.substringAfter("URI=\"").substringBeforeLast("\"")
-                                                    }
-                                                }
-                                                val audioUrl = "$domain/$audioSplit"
-                                                FrogLog.info("Found separate english audio for m3u8. t: $t audio url: $audioUrl quality: $quality")
-                                                separateAudio = true
-                                                downloadDatas.add(
-                                                    DownloadData(
-                                                        quality,
-                                                        domain + "/" + hslLines[index + 1],
-                                                        separateAudioLink = audioUrl
-                                                    )
-                                                )
-                                                return@forEach
-                                            }
-                                        }
-                                    }
-                                    if (!separateAudio) {
-                                        downloadDatas.add(
-                                            DownloadData(
-                                                quality,
-                                                domain + "/" + hslLines[index + 1]
-                                            )
+                                if (line.contains("x${quality.resolution}")) {
+
+                                    val videoUri = hslLines.getOrNull(index + 1)?.trim()
+
+                                    if (videoUri != null) {
+
+                                        val audioGroupId = Regex("""AUDIO="([^"]+)"""")
+                                            .find(line)?.groupValues?.get(1)
+                                        val separateAudioUrl = audioMap[audioGroupId]
+
+                                        val downloadData = DownloadData(
+                                            quality,
+                                            "$domain/$videoUri",
+                                            separateAudioLink = if (separateAudioUrl != null)
+                                                "$domain/$separateAudioUrl" else ""
                                         )
+
+                                        videoDownloadData.info(
+                                            """
+                                                Added m3u8 stream:
+                                                quality=${quality.resolution}
+                                                domain=$domain
+                                                video=$videoUri
+                                                audio=$separateAudioUrl
+                                            """.trimIndent()
+                                        )
+
+                                        downloadDatas.add(downloadData)
                                     }
                                 }
                             }
@@ -361,6 +432,7 @@ class VideoDownloadHelper(
                         hslSource.message
                     )
                 }
+
                 if (downloadDatas.isEmpty()) {
                     FrogLog.writeErrorToTxt(
                         "m3u8_qualities_source",
@@ -372,7 +444,7 @@ class VideoDownloadHelper(
                         ErrorCode.M3U8_LINK_FAILED.code
                     )
                 } else {
-                    videoDownloadData.logInfo("Successfully found m3u8 qualities.")
+                    videoDownloadData.info("Successfully found m3u8 qualities.")
                     return@withContext Resource.Success(downloadDatas)
                 }
             }
@@ -416,7 +488,10 @@ class VideoDownloadHelper(
             )
             //IDK how to execute the js, so we still have to use selenium.
             videoDownloadData.undriver.go(fullLink)
-            videoDownloadData.logDebug("Checking qualities with a timeout of ${Defaults.TIMEOUT.int()} seconds")
+            if (m3u8Check) {
+                videoDownloadData.debug("Found 2nd video for m3u8 check.")
+            }
+            videoDownloadData.debug("Checking qualities with a timeout of ${Defaults.TIMEOUT.int()} seconds")
             var qualityRetry = 0
             while (qualityRetry <= Defaults.QUALITY_RETRIES.int()) {
                 try {
@@ -430,8 +505,8 @@ class VideoDownloadHelper(
                     if (scriptError.isNotEmpty()) {
                         qualityRetry++
                         if (qualityRetry == Defaults.QUALITY_RETRIES.int() / 2) {
-                            videoDownloadData.logError(
-                                "The script has failed to find qualities. | Retrying... ($qualityRetry)",
+                            videoDownloadData.error(
+                                "The script has failed to find qualities. | Retrying ($qualityRetry)",
                                 scriptError
                             )
                         }
@@ -439,8 +514,8 @@ class VideoDownloadHelper(
                         continue
                     }
                     if (src.contains("404 Not Found") || src.contains("404 - Page not Found")) {
-                        videoDownloadData.logError(
-                            "(404) Failed to find qualities. | Retrying..."
+                        videoDownloadData.error(
+                            "(404) Failed to find qualities. | Retrying"
                         )
                         qualityRetry++
                         videoDownloadData.base.clearLogs()
@@ -452,7 +527,7 @@ class VideoDownloadHelper(
                             val dlData = DownloadData(link.quality, link.url)
                             if (!downloadDatas.contains(dlData)) {
                                 downloadDatas.add(dlData)
-                                videoDownloadData.logInfo(
+                                videoDownloadData.info(
                                     "Found ${link.quality} quality."
                                 )
                             }
@@ -463,7 +538,7 @@ class VideoDownloadHelper(
                 } catch (e: Exception) {
                     qualityRetry++
                     if (qualityRetry == Defaults.QUALITY_RETRIES.int() / 2) {
-                        videoDownloadData.logError(
+                        videoDownloadData.error(
                             "An exception was thrown when looking for quality links. | Retrying... ($qualityRetry)",
                             e.localizedMessage
                         )
@@ -473,7 +548,7 @@ class VideoDownloadHelper(
             }
             videoDownloadData.base.clearLogs()
             qualityRetry = 0
-            if (sbFrame2.isNotEmpty()) {
+            if (sbFrame2.isNotEmpty() && !m3u8Check) {
                 val src2 = sbFrame2.toString()
                 val secondLinkIndex1 = src2.indexOf(linkKey1)
                 val secondLinkIndex2 = src2.indexOf(linkKey2)
@@ -493,8 +568,8 @@ class VideoDownloadHelper(
                         if (scriptError.isNotEmpty()) {
                             qualityRetry++
                             if (qualityRetry == Defaults.QUALITY_RETRIES.int() / 2) {
-                                videoDownloadData.logError(
-                                    "(2nd) The script has failed to find qualities. | Retrying... ($qualityRetry)",
+                                videoDownloadData.error(
+                                    "(2nd) The script has failed to find qualities. | Retrying ($qualityRetry)",
                                     scriptError
                                 )
                             }
@@ -502,7 +577,7 @@ class VideoDownloadHelper(
                             continue
                         }
                         if (src.contains("404 Not Found") || src.contains("404 - Page not Found")) {
-                            videoDownloadData.logError(
+                            videoDownloadData.error(
                                 "(2nd) (404) Failed to find qualities. | Retrying..."
                             )
                             qualityRetry++
@@ -519,7 +594,7 @@ class VideoDownloadHelper(
                                 )
                                 if (!downloadDatas.contains(dlData)) {
                                     downloadDatas.add(dlData)
-                                    videoDownloadData.logInfo(
+                                    videoDownloadData.info(
                                         "(2nd) Found ${link.quality} quality."
                                     )
                                 }
@@ -530,7 +605,7 @@ class VideoDownloadHelper(
                     } catch (e: Exception) {
                         qualityRetry++
                         if (qualityRetry == Defaults.QUALITY_RETRIES.int() / 2) {
-                            videoDownloadData.logError(
+                            videoDownloadData.error(
                                 "(2nd) An exception was thrown when looking for quality links. | Retrying... ($qualityRetry)",
                                 e.localizedMessage
                             )
@@ -544,7 +619,7 @@ class VideoDownloadHelper(
                     "Failed to find quality links after ${Defaults.QUALITY_RETRIES.int()} retries.",
                 )
             } else {
-                videoDownloadData.logInfo("Successfully found qualities. Size: ${downloadDatas.size}")
+                videoDownloadData.info("Successfully found qualities. Size: ${downloadDatas.size}")
                 return@withContext Resource.Success(downloadDatas)
             }
         } catch (e: Exception) {
@@ -559,7 +634,7 @@ class VideoDownloadHelper(
         //we have to listen to the exception this way.
         //throwing an exception in listener doesn't affect this scope.
         var exx: Exception? = null
-        val job = launch(Dispatchers.Default) {
+        val errorJob = launch(Dispatchers.Default) {
             while (isActive) {
                 if (exx != null) {
                     cancel("", exx)
@@ -568,11 +643,11 @@ class VideoDownloadHelper(
         }
         val m3u8Path = System.getProperty("user.home") + "/.m3u8_files/${saveFile.nameWithoutExtension}/"
         if (saveFile.exists()) {
-            if (saveFile.length() >= 5000) {
-                if (job.isActive) {
-                    job.cancel()
+            if (saveFile.length() >= Constants.minFileSize) {
+                if (errorJob.isActive) {
+                    errorJob.cancel()
                 }
-                videoDownloadData.writeMessage("(IO) Skipping completed video.")
+                videoDownloadData.message("(IO) Skipping completed video.")
                 videoDownloadData.currentDownload.downloadPath = saveFile.absolutePath
                 videoDownloadData.currentDownload.fileSize = saveFile.length()
                 videoDownloadData.currentDownload.manualProgress = true
@@ -586,7 +661,7 @@ class VideoDownloadHelper(
         val hasSeparateAudio = downloadData.separateAudioLink.isNotEmpty()
         val videoListener = M3u8DownloadListener(
             downloadStarted = {
-                videoDownloadData.writeMessage("Starting m3u8 video download with ${downloadData.quality.tag} quality.")
+                videoDownloadData.message("Starting m3u8 video download with ${downloadData.quality.tag} quality.")
                 videoDownloadData.currentDownload.queued = false
                 videoDownloadData.currentDownload.downloading = true
                 videoDownloadData.currentDownload.manualProgress = true
@@ -597,7 +672,7 @@ class VideoDownloadHelper(
                     exx = Exception("Failed to download m3u8 file. Incomplete ts files.")
                     return@M3u8DownloadListener
                 }
-                videoDownloadData.logInfo("Finished m3u8 video download.")
+                videoDownloadData.info("Finished m3u8 video download.")
                 if (!hasSeparateAudio) {
                     videoDownloadData.currentDownload.downloading = false
                     videoDownloadData.currentDownload.update()
@@ -633,15 +708,15 @@ class VideoDownloadHelper(
                     )
                     videoDownloadData.currentDownload.fileSize = saveFile.length()
                     videoDownloadData.currentDownload.update()
-                    if (saveFile.exists() && saveFile.length() >= 5000) {
+                    if (saveFile.exists() && saveFile.length() >= Constants.minFileSize) {
                         if (!hasSeparateAudio) {
                             videoDownloadData.currentDownload.downloading = false
                             videoDownloadData.currentDownload.update()
                             Core.child.downloadThread.incrementDownloadsFinished()
-                            videoDownloadData.writeMessage("Successfully downloaded with ${downloadData.quality.tag} quality.")
+                            videoDownloadData.message("Successfully downloaded with ${downloadData.quality.tag} quality.")
                             videoDownloadData.finishEpisode()
-                            if (job.isActive) {
-                                job.cancel()
+                            if (errorJob.isActive) {
+                                errorJob.cancel()
                             }
                             File(m3u8Path).deleteRecursively()
                         }
@@ -669,7 +744,7 @@ class VideoDownloadHelper(
                     if (exx != null) {
                         return@M3u8DownloadListener
                     }
-                    videoDownloadData.logInfo("Downloading separate audio for video.")
+                    videoDownloadData.info("Downloading separate audio for video.")
                 },
                 downloadFinished = { download, success ->
                     if (exx != null) {
@@ -679,7 +754,7 @@ class VideoDownloadHelper(
                         exx = Exception("Failed to download m3u8 audio file.")
                         return@M3u8DownloadListener
                     }
-                    videoDownloadData.logInfo("Finished downloading audio file.")
+                    videoDownloadData.info("Finished downloading audio file.")
                 },
                 downloadProgress = { progress, seconds ->
                     Core.child.m3u8UpdateDownloadProgress(
@@ -736,7 +811,10 @@ class VideoDownloadHelper(
                     throw Exception("Stopped download manually.")
                 }
                 if (m3u8AudioDownload == null) {
-                    throw Exception("Failed to create seperate audio download.")
+                    throw Exception("Failed to create separate audio download.")
+                }
+                if (!saveFile.exists() || saveFile.length() < Constants.minFileSize) {
+                    throw Exception("Failed to download separate audio. The video file doesn't exist.")
                 }
                 val stoppedAudio = M3u8Downloads.download(
                     httpRequestConfig(videoDownloadData.userAgent),
@@ -747,7 +825,7 @@ class VideoDownloadHelper(
                 }
                 if (audioSaveFile.exists()) {
                     mergedVideoAndAudioFile.parentFile.mkdirs()
-                    videoDownloadData.logInfo("Finished merging audio ts files. Attempting to merge video & audio...")
+                    videoDownloadData.info("Finished merging audio ts files. Attempting to merge video & audio...")
                     val success = VideoUtil.mergeVideoAndAudio(
                         saveFile,
                         audioSaveFile,
@@ -759,7 +837,7 @@ class VideoDownloadHelper(
                         success
                     )
                     if (success) {
-                        videoDownloadData.writeMessage("Successfully merged video and audio.")
+                        videoDownloadData.message("Successfully merged video and audio.")
                         mergedVideoAndAudioFile.copyTo(
                             saveFile,
                             true
@@ -767,7 +845,7 @@ class VideoDownloadHelper(
                         audioSaveFile.delete()
                         mergedVideoAndAudioFile.parentFile.deleteRecursively()
                         Core.child.downloadThread.incrementDownloadsFinished()
-                        videoDownloadData.writeMessage(
+                        videoDownloadData.message(
                             "Successfully downloaded with ${downloadData.quality.tag} quality."
                         )
                         videoDownloadData.finishEpisode()
@@ -784,17 +862,40 @@ class VideoDownloadHelper(
                 throw (exx)
             }
         } catch (e: Exception) {
+            saveFile.delete()
             mergedVideoAndAudioFile.delete()
             audioSaveFile.delete()
-            videoDownloadData.retries++
-            videoDownloadData.logError(
-                "Failed to download m3u8 video. | Retrying...",
-                e
-            )
+
+            videoDownloadData.m3u8Retries++
+
+            if (videoDownloadData.m3u8Retries >= Defaults.M3u8_RETRIES.int()) {
+                if (videoDownloadData.mCurrentDownload != null) {
+                    Core.child.removeDownload(videoDownloadData.currentDownload)
+                    videoDownloadData.mCurrentDownload = null
+                }
+                videoDownloadData.downloadDatas.remove(downloadData)
+                if (videoDownloadData.downloadDatas.isNotEmpty()) {
+                    videoDownloadData.error(
+                        "Failed to download m3u8 video. | Retrying with different quality.",
+                        e
+                    )
+                } else {
+                    videoDownloadData.m3u8SecondVideoCheck = true
+                    videoDownloadData.error(
+                        "Failed to download m3u8 video. | Trying 2nd video.",
+                        e
+                    )
+                }
+            } else {
+                videoDownloadData.error(
+                    "Failed to download m3u8 video. | Retrying",
+                    e
+                )
+            }
             return@withContext false
         } finally {
-            if (job.isActive) {
-                job.cancel()
+            if (errorJob.isActive) {
+                errorJob.cancel()
             }
         }
         return@withContext true
@@ -807,7 +908,7 @@ class VideoDownloadHelper(
         if (qualities.isEmpty()) {
             return@withContext
         }
-        videoDownloadData.writeMessage("First video download is complete. Now downloading the second video.")
+        videoDownloadData.message("First video download is complete. Now downloading the second video.")
         var retries = 0
         var preferredDownload: DownloadData? = null
         val qualityOption = temporaryQuality ?: Quality.qualityForTag(
@@ -823,7 +924,7 @@ class VideoDownloadHelper(
             try {
                 if (retries > Defaults.VIDEO_RETRIES.int()) {
                     saveFile.delete()
-                    videoDownloadData.writeMessage("Reached max retries of ${Defaults.VIDEO_RETRIES.int()}. Skipping 2nd video download.")
+                    videoDownloadData.message("Reached max retries of ${Defaults.VIDEO_RETRIES.int()}. Skipping 2nd video download.")
                     break
                 }
                 qualities.forEach {
@@ -835,7 +936,7 @@ class VideoDownloadHelper(
                     val fileSizeRetries = Defaults.FILE_SIZE_RETRIES.int()
                     var originalFileSize = 0L
                     var headMode = true
-                    videoDownloadData.logDebug("(2nd) Checking video file size with $fileSizeRetries max retries.")
+                    videoDownloadData.debug("(2nd) Checking video file size with $fileSizeRetries max retries.")
                     for (i in 0..fileSizeRetries) {
                         originalFileSize = fileSize(
                             preferredDownload.downloadLink,
@@ -845,10 +946,10 @@ class VideoDownloadHelper(
                         if (originalFileSize <= Constants.minFileSize) {
                             headMode = headMode.not()
                             if (i == fileSizeRetries / 2) {
-                                videoDownloadData.logError(
+                                videoDownloadData.error(
                                     "(2nd) Failed to find video file size. Current retries: $i"
                                 )
-                                videoDownloadData.writeMessage(
+                                videoDownloadData.message(
                                     "(2nd) Failed to find video file size. Current retries: $i"
                                 )
                             }
@@ -859,13 +960,13 @@ class VideoDownloadHelper(
                     }
                     if (originalFileSize <= Constants.minFileSize) {
                         if (qualities.isNotEmpty()) {
-                            videoDownloadData.logError(
+                            videoDownloadData.error(
                                 "(2nd) Failed to find video file size after $fileSizeRetries retries. | Using another quality."
                             )
                             qualities.remove(preferredDownload)
                             retries++
                             if (qualities.isEmpty()) {
-                                videoDownloadData.logError(
+                                videoDownloadData.error(
                                     "(2nd) Failed to find video file size. There are no more qualities to check. | Skipping episode"
                                 )
                                 saveFile.delete()
@@ -873,14 +974,20 @@ class VideoDownloadHelper(
                             }
                             continue
                         } else {
-                            videoDownloadData.logError(
+                            videoDownloadData.error(
                                 "(2nd) Failed to find video file size. There are no more qualities to check. | Skipping episode"
                             )
                             saveFile.delete()
                             break
                         }
                     }
-                    videoDownloadData.logDebug("(2nd) Successfully found video file size of: ${Tools.bytesToString(originalFileSize)}")
+                    videoDownloadData.debug(
+                        "(2nd) Successfully found video file size of: ${
+                            Tools.bytesToString(
+                                originalFileSize
+                            )
+                        }"
+                    )
                     if (currentDownload != null) {
                         if (currentDownload.downloadPath.isEmpty()
                             || !File(currentDownload.downloadPath).exists()
@@ -890,7 +997,7 @@ class VideoDownloadHelper(
                         }
                         Core.child.addDownload(currentDownload)
                         if (currentDownload.isComplete) {
-                            videoDownloadData.writeMessage("(DB) (2nd) Skipping completed video.")
+                            videoDownloadData.message("(DB) (2nd) Skipping completed video.")
                             currentDownload.downloading = false
                             currentDownload.queued = false
                             currentDownload.update()
@@ -900,7 +1007,7 @@ class VideoDownloadHelper(
                             currentDownload.update()
                         }
                     }
-                    videoDownloadData.logInfo("(2nd) Successfully found video link with $retries retries.")
+                    videoDownloadData.info("(2nd) Successfully found video link with $retries retries.")
                     if (currentDownload == null) {
                         currentDownload = Download()
                         currentDownload.downloadPath = saveFile.absolutePath
@@ -912,13 +1019,13 @@ class VideoDownloadHelper(
                         currentDownload.fileSize = 0
                         currentDownload.queued = true
                         Core.child.addDownload(currentDownload)
-                        videoDownloadData.logInfo("(2nd) Created new download.")
+                        videoDownloadData.info("(2nd) Created new download.")
                     } else {
-                        videoDownloadData.logInfo("(2nd) Using existing download.")
+                        videoDownloadData.info("(2nd) Using existing download.")
                     }
                     if (saveFile.exists()) {
                         if (saveFile.length() >= originalFileSize) {
-                            videoDownloadData.writeMessage("(IO) (2nd) Skipping completed video.")
+                            videoDownloadData.message("(IO) (2nd) Skipping completed video.")
                             currentDownload.downloadPath = saveFile.absolutePath
                             currentDownload.fileSize = originalFileSize
                             currentDownload.downloading = false
@@ -942,7 +1049,7 @@ class VideoDownloadHelper(
                             }
                         }
                         if (!saveFile.exists()) {
-                            videoDownloadData.logError(
+                            videoDownloadData.error(
                                 "(2nd) Failed to create video file after 3 retries. | Skipping episode",
                                 fileError,
                                 true
@@ -951,7 +1058,7 @@ class VideoDownloadHelper(
                             break
                         }
                     }
-                    videoDownloadData.writeMessage("(2nd) Starting download with ${qualityOption.tag} quality.")
+                    videoDownloadData.message("(2nd) Starting download with ${qualityOption.tag} quality.")
                     currentDownload.queued = false
                     currentDownload.downloading = true
                     currentDownload.fileSize = originalFileSize
@@ -969,11 +1076,11 @@ class VideoDownloadHelper(
                     currentDownload.update()
                     if (saveFile.exists() && saveFile.length() >= originalFileSize) {
                         Core.child.downloadThread.incrementDownloadsFinished()
-                        videoDownloadData.writeMessage("(2nd) Successfully downloaded with ${qualityOption.tag} quality.")
+                        videoDownloadData.message("(2nd) Successfully downloaded with ${qualityOption.tag} quality.")
                         break
                     }
                 } else {
-                    videoDownloadData.writeMessage("(2nd) Download link is empty. There's no more qualities to check. | Skipping episode")
+                    videoDownloadData.message("(2nd) Download link is empty. There's no more qualities to check. | Skipping episode")
                     saveFile.delete()
                     break
                 }
@@ -983,7 +1090,7 @@ class VideoDownloadHelper(
                     currentDownload.downloading = false
                     currentDownload.update()
                 }
-                videoDownloadData.logError(
+                videoDownloadData.error(
                     "(2nd) Failed to download video. Retrying...",
                     e
                 )

@@ -34,14 +34,14 @@ class VideoDownloadHandler(
         Core.child.downloadThread.incrementDownloadsInProgress()
         while (Core.child.isRunning) {
             if (data.reachedMax()) {
-                continue
+                break
             }
             if (data.finished) {
                 break
             }
             val slug = episode.slug
             if (slug.isEmpty()) {
-                data.writeMessage("Skipping episode with no slug.")
+                data.message("Skipping episode with no slug.")
                 data.finishEpisode()
                 continue
             }
@@ -59,7 +59,7 @@ class VideoDownloadHandler(
                     data.finishEpisode()
                 }
                 if (!parsedResult.message.isNullOrEmpty()) {
-                    help.videoDownloadData.logError(
+                    help.videoDownloadData.error(
                         "Failed to parse qualities.",
                         parsedResult.message
                     )
@@ -78,7 +78,7 @@ class VideoDownloadHandler(
             if (!created) {
                 continue
             }
-            data.logInfo("Successfully found video link with ${data.retries} retries.")
+            data.info("Successfully found video link with ${data.retries} retries.")
             try {
                 if (downloadLink.endsWith(".m3u8")) {
                     help.handleM3U8(
@@ -89,7 +89,8 @@ class VideoDownloadHandler(
                     val fileSizeRetries = Defaults.FILE_SIZE_RETRIES.int()
                     var originalFileSize = 0L
                     var headMode = true
-                    data.logDebug("Checking video file size with $fileSizeRetries max retries.")
+                    data.debug("Checking video file size with $fileSizeRetries max retries.")
+                    var fileSizeErrorLogged = false
                     for (i in 0..fileSizeRetries) {
                         originalFileSize = fileSize(
                             downloadLink,
@@ -98,13 +99,12 @@ class VideoDownloadHandler(
                         )
                         if (originalFileSize <= Constants.minFileSize) {
                             headMode = headMode.not()
-                            if (i == fileSizeRetries / 2) {
-                                data.logError(
-                                    "Failed to find video file size. Current retries: $i"
+                            if (i == fileSizeRetries / 2 && !fileSizeErrorLogged) {
+                                data.error(
+                                    "Failed to find video file size. Current retries: $i",
+                                    important = true
                                 )
-                                data.writeMessage(
-                                    "Failed to find video file size. Current retries: $i"
-                                )
+                                fileSizeErrorLogged = true
                             }
                             continue
                         } else {
@@ -113,31 +113,37 @@ class VideoDownloadHandler(
                     }
                     if (originalFileSize <= Constants.minFileSize) {
                         if (data.downloadDatas.isNotEmpty()) {
-                            data.logError(
+                            data.error(
                                 "Failed to find video file size after $fileSizeRetries retries. | Using another quality."
                             )
                             data.resetDownload()
                             data.downloadDatas.remove(preferredDownload)
+                            if (data.mCurrentDownload != null) {
+                                Core.child.removeDownload(data.currentDownload)
+                                data.mCurrentDownload = null
+                            }
                             data.retries++
                             if (data.downloadDatas.isEmpty()) {
-                                data.logError(
-                                    "Failed to find video file size. There are no more qualities to check. | Skipping episode"
+                                data.error(
+                                    "There are no more qualities to check. | Skipping episode"
                                 )
                                 data.finishEpisode()
                             }
                             continue
                         } else {
-                            data.logError(
+                            data.error(
                                 "Failed to find video file size. There are no more qualities to check. | Skipping episode"
                             )
                             data.finishEpisode()
                             continue
                         }
                     }
-                    data.logDebug("Successfully found video file size of: ${Tools.bytesToString(originalFileSize)}")
+                    data.debug(
+                        "Successfully found video file size of: ${Tools.bytesToString(originalFileSize)}"
+                    )
                     if (saveFile.exists()) {
                         if (saveFile.length() >= originalFileSize) {
-                            data.writeMessage("(IO) Skipping completed video.")
+                            data.message("(IO) Skipping completed video.")
                             data.currentDownload.downloadPath = saveFile.absolutePath
                             data.currentDownload.fileSize = originalFileSize
                             data.currentDownload.downloading = false
@@ -162,7 +168,7 @@ class VideoDownloadHandler(
                             }
                         }
                         if (!saveFile.exists()) {
-                            data.logError(
+                            data.error(
                                 "Failed to create video file after 3 retries. | Skipping episode",
                                 fileError
                             )
@@ -170,7 +176,7 @@ class VideoDownloadHandler(
                             continue
                         }
                     }
-                    data.writeMessage("Starting download with ${qualityOption.tag} quality.")
+                    data.message("Starting download with ${qualityOption.tag} quality.")
                     data.currentDownload.queued = false
                     data.currentDownload.downloading = true
                     data.currentDownload.fileSize = originalFileSize
@@ -187,7 +193,7 @@ class VideoDownloadHandler(
                     data.currentDownload.update()
                     if (saveFile.exists() && saveFile.length() >= originalFileSize) {
                         Core.child.downloadThread.incrementDownloadsFinished()
-                        data.writeMessage("Successfully downloaded with ${qualityOption.tag} quality.")
+                        data.message("Successfully downloaded with ${qualityOption.tag} quality.")
                         help.handleSecondVideo()
                         data.finishEpisode()
                     }
@@ -197,7 +203,7 @@ class VideoDownloadHandler(
                 data.currentDownload.downloading = false
                 data.currentDownload.update()
                 if (e.message?.contains("Connection reset", true) == false) {
-                    data.logError(
+                    data.error(
                         "Failed to download video. | Retrying...",
                         e,
                         true

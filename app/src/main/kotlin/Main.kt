@@ -8,14 +8,17 @@ import nobility.downloader.ui.windows.utils.ApplicationState
 import nobility.downloader.utils.KeyEvents
 
 
-fun main() {
+fun main(args: Array<String>) {
+
+    val windowFlag = args.firstOrNull()
+
     @Suppress("KotlinConstantConditions")
     if (AppInfo.UPDATE_ASSETS_ON_LAUNCH) {
         val assetUpdateWindow = AssetUpdateWindow()
         assetUpdateWindow.open {
             //initialize the core singleton before anything besides the updater.
             //this is the root of the app.
-            Core.initialize()
+            Core.initialize(windowFlag == "full_windows")
             /**
              * The main window is needed to keep the application running.
              */
@@ -24,7 +27,7 @@ fun main() {
                 KeyEvents.shared.loadKeyEvents(),
                 maximized = true,
                 onClose = {
-                    Core.child.shutdown(false)
+                    Core.child.shutdown()
                     false
                 }
             ) {
@@ -33,13 +36,13 @@ fun main() {
             true
         }
     } else {
-        Core.initialize()
+        Core.initialize(windowFlag == "full_windows")
         ApplicationState.newWindow(
             AppInfo.TITLE,
             KeyEvents.shared.loadKeyEvents(),
             maximized = true,
             onClose = {
-                Core.child.shutdown(false)
+                Core.child.shutdown()
                 false
             }
         ) {

@@ -1,5 +1,6 @@
 package nobility.downloader.core
 
+import AppInfo
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
@@ -30,7 +31,6 @@ import nobility.downloader.ui.windows.ImageUpdaterWindow
 import nobility.downloader.ui.windows.UpdateWindow
 import nobility.downloader.ui.windows.database.DatabaseWindow
 import nobility.downloader.ui.windows.utils.AppWindowScope
-import AppInfo
 import nobility.downloader.utils.FrogLog
 import nobility.downloader.utils.fileExists
 import nobility.downloader.utils.linkToSlug
@@ -75,8 +75,10 @@ class Core private constructor() {
         var errorPrintStream: PrintStream? = null
         val exampleEpisode: String get() = "$wcoUrl${AppInfo.EXAMPLE_EPISODE}"
         val exampleSeries: String get() = "$wcoUrl${AppInfo.EXAMPLE_SERIES}"
+        var windowFlag = false
 
-        fun initialize() {
+        fun initialize(windowFlag: Boolean) {
+            this.windowFlag = windowFlag
             if (initialized) {
                 return
             }

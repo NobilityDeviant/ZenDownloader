@@ -1,5 +1,6 @@
 package nobility.downloader.utils
 
+import AppInfo
 import nobility.downloader.core.BoxHelper.Companion.boolean
 import nobility.downloader.core.Core
 import nobility.downloader.core.settings.Defaults
@@ -51,6 +52,14 @@ object FrogLog {
         )
         if (important) {
             println(fullMessage)
+
+            @Suppress("KotlinConstantConditions")
+            if (AppInfo.USE_CUSTOM_ERROR_PS) {
+                Core.errorPrintStream?.println(fullMessage)
+            } else {
+                System.err.println(fullMessage)
+            }
+
         } else {
             @Suppress("KotlinConstantConditions")
             if (AppInfo.USE_CUSTOM_ERROR_PS) {

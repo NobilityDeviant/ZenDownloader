@@ -362,10 +362,23 @@ enum class Defaults(
         """
             This is the amount of wcopremium.tv download retries.
             This is used when downloading a movie and you have added your Wco Premium Username/Password
-            If it throws an error this amount of times, it will default to the regular download method.
+            If it throws an error this amount of times, it will skip the movie entirely.
             An error can be thrown if the login fails or it fails to load the webpage or video.
             Minimum: 1 | Maximum: 100
             Default: 5
+        """.trimIndent()
+    ),
+    M3u8_RETRIES(
+        "m3u8_retries",
+        3,
+        """
+            This is the amount of retries for each m3u8 video download process.
+            After this amount of errors, it will check a new quality.
+            If there's no more qualities to check, it will then search for a 2nd video.
+            If there's no more qualities or a 2nd video, it will increase the Video Retries.
+            Increase it if you're experiencing any issues with m3u8 retries.
+            Minimum: 1 | Maximum: 100
+            Default: 3
         """.trimIndent()
     ),
     WCO_GENRES_LAST_UPDATED("wco_genres_last_updated", 0L),
@@ -441,7 +454,8 @@ enum class Defaults(
             QUALITY_RETRIES,
             SIMPLE_RETRIES,
             FULL_RETRIES,
-            PREMIUM_RETRIES
+            PREMIUM_RETRIES,
+            M3u8_RETRIES
         )
 
         val intFields get() = listOf(
@@ -452,7 +466,8 @@ enum class Defaults(
             QUALITY_RETRIES,
             SIMPLE_RETRIES,
             FULL_RETRIES,
-            PREMIUM_RETRIES
+            PREMIUM_RETRIES,
+            M3u8_RETRIES
         )
 
         val checkBoxes get() = listOf(

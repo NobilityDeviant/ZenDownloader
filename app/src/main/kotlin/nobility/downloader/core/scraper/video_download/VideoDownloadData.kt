@@ -40,6 +40,8 @@ class VideoDownloadData(
     var retries = 0
     var resRetries = 0
     var premRetries = 0
+    var m3u8Retries = 0
+    var m3u8SecondVideoCheck = false
     val downloadDatas = mutableListOf<DownloadData>()
     var finished = false
 
@@ -56,9 +58,12 @@ class VideoDownloadData(
             ) {
                 currentDownload.downloadPath = saveFile.absolutePath
             }
+            if (m3u8SecondVideoCheck) {
+                currentDownload.manualProgress = false
+            }
             Core.child.addDownload(currentDownload)
             if (currentDownload.isComplete) {
-                writeMessage("(DB) Skipping completed video.")
+                message("(DB) Skipping completed video.")
                 finishEpisode()
                 return false
             } else {
@@ -77,9 +82,9 @@ class VideoDownloadData(
             currentDownload.fileSize = 0
             currentDownload.queued = true
             Core.child.addDownload(currentDownload)
-            logInfo("Created new download.")
+            info("Created new download.")
         } else {
-            logInfo("Using existing download.")
+            info("Using existing download.")
         }
         return true
     }
@@ -99,7 +104,7 @@ class VideoDownloadData(
                     + if (seasonFolder != null) (File.separator + seasonFolder + File.separator) else ""
         )
         if (!saveFolder.exists() && !saveFolder.mkdirs()) {
-            logError(
+            this@VideoDownloadData.error(
                 "Failed to create series save folder: ${saveFolder.absolutePath} " +
                         "Defaulting to $downloadFolderPath${File.separator}NoSeries"
             )
@@ -118,7 +123,7 @@ class VideoDownloadData(
         if (temporaryQuality != null) {
             val tempDownload = downloadForSlugAndQuality(slug, temporaryQuality)
             if (tempDownload != null && tempDownload.isComplete) {
-                writeMessage("(DB) Skipping completed video.")
+                message("(DB) Skipping completed video.")
                 tempDownload.downloading = false
                 tempDownload.queued = false
                 tempDownload.update()
@@ -131,9 +136,13 @@ class VideoDownloadData(
 
     fun reachedMax(): Boolean {
         if (retries >= Defaults.VIDEO_RETRIES.int()) {
-            writeMessage("Reached max retries of ${Defaults.VIDEO_RETRIES.int()}.")
+            message("Reached max retries of ${Defaults.VIDEO_RETRIES.int()}. | Skipping episode")
             finishEpisode()
             return true
+        }
+        if (m3u8Retries >= Defaults.M3u8_RETRIES.int()) {
+            retries++
+            m3u8Retries = 0
         }
         return false
     }
@@ -157,23 +166,23 @@ class VideoDownloadData(
         }
     }
 
-    fun writeMessage(s: String) {
+    fun message(s: String) {
         FrogLog.message("$tag $s")
     }
 
-    fun logInfo(s: String) {
+    fun info(s: String) {
         FrogLog.info(
             "$tag $s"
         )
     }
 
-    fun logDebug(s: String) {
+    fun debug(s: String) {
         FrogLog.debug(
             "$tag $s"
         )
     }
 
-    fun logError(
+    fun error(
         message: String? = null,
         e: Throwable?,
         important: Boolean = false
@@ -185,7 +194,7 @@ class VideoDownloadData(
         )
     }
 
-    fun logError(
+    fun error(
         message: String,
         errorMessage: String? = null,
         important: Boolean = false

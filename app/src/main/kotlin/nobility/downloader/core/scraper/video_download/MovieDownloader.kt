@@ -26,19 +26,19 @@ object MovieDownloader {
         movie: MovieHandler.Movie,
         data: VideoDownloadData
     ) = withContext(Dispatchers.IO) {
-        data.logInfo("Detected movie for ${movie.slug}")
+        data.info("Detected movie for ${movie.slug}")
         var qualityOption = data.temporaryQuality ?: Quality.qualityForTag(
             Defaults.QUALITY.string()
         )
         var preferredDownload: DownloadData? = null
         var downloadLink = ""
-        var videoLinkError = ""
+        val videoLinkError = ""
         val downloadFolderPath = Defaults.SAVE_FOLDER.string()
         var saveFolder = File(
             downloadFolderPath + File.separator + "Movies"
         )
         if (!saveFolder.exists() && !saveFolder.mkdirs()) {
-            data.writeMessage(
+            data.message(
                 "Failed to create movies save folder: ${saveFolder.absolutePath} " +
                         "\nDefaulting to $downloadFolderPath"
             )
@@ -52,139 +52,114 @@ object MovieDownloader {
         val premPassword = Defaults.WCO_PREMIUM_PASSWORD.string()
 
         if (premUser.isNotEmpty() && premPassword.isNotEmpty()) {
-            if (data.premRetries < Defaults.PREMIUM_RETRIES.int()) {
-                if (data.downloadDatas.isEmpty()) {
-                    try {
-                        data.driver.navigate().to(
-                            "https://www.wcopremium.tv/wp-login.php"
+            if (data.downloadDatas.isEmpty()) {
+                try {
+                    data.driver.navigate().to(
+                        "https://www.wcopremium.tv/wp-login.php"
+                    )
+                    val usernameField = data.driver.findElement(By.id("user_login"))
+                    val passwordField = data.driver.findElement(By.id("user_pass"))
+                    usernameField.sendKeys(premUser)
+                    passwordField.sendKeys(premPassword)
+                    passwordField.submit()
+
+                    //look for an element only found while logged in.
+                    wait.pollingEvery(Duration.ofSeconds(1))
+                        .withTimeout(Duration.ofSeconds(Defaults.TIMEOUT.int().toLong()))
+                        .until(
+                            ExpectedConditions.presenceOfElementLocated(
+                                By.className("header-top-right")
+                            )
                         )
-                        val usernameField = data.driver.findElement(By.id("user_login"))
-                        val passwordField = data.driver.findElement(By.id("user_pass"))
-                        usernameField.sendKeys(premUser)
-                        passwordField.sendKeys(premPassword)
-                        passwordField.submit()
-                        try {
-                            //look for an element only found while logged in.
-                            wait.pollingEvery(Duration.ofSeconds(1))
-                                .withTimeout(Duration.ofSeconds(15))
-                                .until(
-                                    ExpectedConditions.presenceOfElementLocated(
-                                        By.className("header-top-right")
+
+                    try {
+                        //no error. logged in successfully
+                        data.driver.navigate().to(
+                            "https://www.wcopremium.tv/${movie.slug}"
+                        )
+                        val src = data.driver.source().lines()
+                        val hd1080 = """format: "hd1080", src: """"
+                        val hd720 = """format: "hd720", src: """"
+                        val sd576 = """format: "sd576", src: """"
+                        val endTag = """", type: "video/mp4"},"""
+                        src.forEach { line ->
+                            if (line.contains(hd1080)) {
+                                data.downloadDatas.add(
+                                    DownloadData(
+                                        Quality.HIGH,
+                                        line.substringAfter(hd1080).substringBefore(endTag)
                                     )
                                 )
-                            //no error. logged in successfully
-                            data.driver.navigate().to(
-                                "https://www.wcopremium.tv/${movie.slug}"
-                            )
-                            val src = data.driver.source().lines()
-                            val hd1080 = """format: "hd1080", src: """"
-                            val hd720 = """format: "hd720", src: """"
-                            val sd576 = """format: "sd576", src: """"
-                            val endTag = """", type: "video/mp4"},"""
-                            src.forEach { line ->
-                                if (line.contains(hd1080)) {
-                                    data.downloadDatas.add(
-                                        DownloadData(
-                                            Quality.HIGH,
-                                            line.substringAfter(hd1080).substringBefore(endTag)
-                                        )
+                                data.info("[PREM] Found ${Quality.HIGH} quality.")
+                            } else if (line.contains(hd720)) {
+                                data.downloadDatas.add(
+                                    DownloadData(
+                                        Quality.MED,
+                                        line.substringAfter(hd720).substringBefore(endTag)
                                     )
-                                    data.logInfo("[PREM] Found ${Quality.HIGH} quality.")
-                                } else if (line.contains(hd720)) {
-                                    data.downloadDatas.add(
-                                        DownloadData(
-                                            Quality.MED,
-                                            line.substringAfter(hd720).substringBefore(endTag)
-                                        )
-                                    )
-                                    data.logInfo("[PREM] Found ${Quality.MED} quality.")
-                                } else if (line.contains(sd576)) {
-                                    data.downloadDatas.add(
-                                        DownloadData(
-                                            Quality.LOW,
-                                            line.substringAfter(sd576).substringBefore(endTag)
-                                        )
-                                    )
-                                    data.logInfo("[PREM] Found ${Quality.LOW} quality.")
-                                }
-                            }
-                            if (data.downloadDatas.isNotEmpty()) {
-                                qualityOption = Quality.bestQuality(
-                                    qualityOption,
-                                    data.downloadDatas.map { it.quality }
                                 )
-                                data.downloadDatas.forEach {
-                                    if (it.quality == qualityOption) {
-                                        preferredDownload = it
-                                        downloadLink = it.downloadLink
-                                    }
+                                data.info("[PREM] Found ${Quality.MED} quality.")
+                            } else if (line.contains(sd576)) {
+                                data.downloadDatas.add(
+                                    DownloadData(
+                                        Quality.LOW,
+                                        line.substringAfter(sd576).substringBefore(endTag)
+                                    )
+                                )
+                                data.info("[PREM] Found ${Quality.LOW} quality.")
+                            }
+                        }
+                        if (data.downloadDatas.isNotEmpty()) {
+                            qualityOption = Quality.bestQuality(
+                                qualityOption,
+                                data.downloadDatas.map { it.quality }
+                            )
+                            data.downloadDatas.forEach {
+                                if (it.quality == qualityOption) {
+                                    preferredDownload = it
+                                    downloadLink = it.downloadLink
                                 }
                             }
-                        } catch (_: Exception) {
-                            data.writeMessage(
-                                "Your wcopremium.tv credentials didn't work. | Retrying..."
-                            )
-                            data.premRetries++
-                            return@withContext
+                        } else {
+                            data.error("Failed to find wcopremium.tv qualities. Make sure you have a valid subscription.")
                         }
                     } catch (e: Exception) {
-                        data.writeMessage(
-                            "Failed to log into wcopremium.tv | Retrying..."
-                        )
-                        data.logError(
-                            "Failed to log into wcopremium.tv",
+                        data.error(
+                            "Failed to scrape wcopremium.tv | Retrying...",
                             e
                         )
-                        data.retries++
+                        data.premRetries++
                         return@withContext
                     }
+                } catch (e: Exception) {
+                    data.error(
+                        "Failed to log into wcopremium.tv | Retrying...",
+                        e,
+                        true
+                    )
+                    data.retries++
+                    return@withContext
                 }
-            } else {
-                data.writeMessage("Reached max premium login retries. Using regular method.")
             }
-        }
-        if (downloadLink.isEmpty()) {
-            val link = MovieHandler.wcoMoviePlaylistLink + "${movie.tag}/${movie.slug}"
-            data.driver.navigate().to(link)
-            try {
-                val videoPlayer = data.driver.findElement(
-                    By.xpath("//*[@id=\"my-video\"]/div[2]/video")
-                )
-                wait.pollingEvery(Duration.ofSeconds(1))
-                    .withTimeout(Duration.ofSeconds(15))
-                    .until(ExpectedConditions.attributeToBeNotEmpty(videoPlayer, "src"))
-                val src = videoPlayer.getDomAttribute("src")
-                val videoError = videoPlayer.getDomAttribute("innerHTML")
-                if (src != null) {
-                    downloadLink = src
-                }
-                if (videoError != null) {
-                    videoLinkError = videoError
-                }
-                qualityOption = Quality.LOW
-            } catch (e: Exception) {
-                data.writeMessage(
-                    "Failed to find video player for movie: $link | Retrying..."
-                )
-                data.logError(
-                    "Failed to find video player for movie: $link",
-                    e
-                )
-                data.retries++
-                return@withContext
-            }
+
+        } else {
+            data.message(
+                "You can't download movies without a valid wcopremium.tv subscription. | Skipping..."
+            )
+            data.finishEpisode()
+            return@withContext
         }
         if (videoLinkError.isNotEmpty()) {
-            data.logError(
-                "Failed to find video link for movie.",
+            data.error(
+                "Failed to find video link for movie. | Retrying...",
                 videoLinkError
             )
             data.retries++
             return@withContext
         }
         if (downloadLink.isEmpty()) {
-            data.writeMessage(
-                "Failed to find video link for movie. | Retrying..."
+            data.message(
+                "Failed to find download link for movie. | Retrying..."
             )
             data.retries++
             return@withContext
@@ -209,7 +184,7 @@ object MovieDownloader {
             }
             Core.child.addDownload(data.currentDownload)
             if (data.currentDownload.isComplete) {
-                data.writeMessage("[DB] Skipping completed video.")
+                data.message("[DB] Skipping completed video.")
                 data.finishEpisode()
                 return@withContext
             } else {
@@ -217,7 +192,7 @@ object MovieDownloader {
                 Core.child.updateDownloadProgress(data.currentDownload)
             }
         }
-        data.logInfo("Successfully found movie video link with ${data.retries} retries.")
+        data.info("Successfully found movie video link with ${data.retries} retries.")
         try {
             if (data.mCurrentDownload == null) {
                 data.mCurrentDownload = Download()
@@ -230,15 +205,15 @@ object MovieDownloader {
                 data.currentDownload.fileSize = 0
                 data.currentDownload.queued = true
                 Core.child.addDownload(data.currentDownload)
-                data.logInfo("Created new download for movie.")
+                data.info("Created new download for movie.")
             } else {
-                data.logInfo("Using existing download for movie.")
+                data.info("Using existing download for movie.")
             }
             data.driver.navigate().to(downloadLink)
             val fileSizeRetries = Defaults.FILE_SIZE_RETRIES.int()
             var originalFileSize = 0L
             var headMode = true
-            data.logInfo("Checking movie file size with $fileSizeRetries retries.")
+            data.info("Checking movie file size with $fileSizeRetries retries.")
             for (i in 0..fileSizeRetries) {
                 originalFileSize = fileSize(
                     downloadLink,
@@ -248,7 +223,7 @@ object MovieDownloader {
                 if (originalFileSize <= Constants.minFileSize) {
                     headMode = headMode.not()
                     if (i == fileSizeRetries / 2) {
-                        data.writeMessage(
+                        data.message(
                             "Failed to find movie file size. Current retries: $i"
                         )
                     }
@@ -259,7 +234,7 @@ object MovieDownloader {
             }
             if (originalFileSize <= Constants.minFileSize) {
                 if (data.downloadDatas.isNotEmpty()) {
-                    data.logError(
+                    data.error(
                         "Failed to find movie file size after $fileSizeRetries retries. | Using another quality."
                     )
                     if (preferredDownload != null) {
@@ -269,17 +244,17 @@ object MovieDownloader {
                     }
                     data.retries++
                 } else {
-                    data.logError(
+                    data.error(
                         "Failed to find movie file size after $fileSizeRetries retries. | Skipping movie..."
                     )
                     data.finishEpisode()
                 }
                 return@withContext
             }
-            data.logDebug("Successfully found movie file size of: ${Tools.bytesToString(originalFileSize)}")
+            data.debug("Successfully found movie file size of: ${Tools.bytesToString(originalFileSize)}")
             if (saveFile.exists()) {
                 if (saveFile.length() >= originalFileSize) {
-                    data.writeMessage("[IO] Skipping completed movie.")
+                    data.message("[IO] Skipping completed movie.")
                     data.currentDownload.downloadPath = saveFile.absolutePath
                     data.currentDownload.fileSize = originalFileSize
                     data.currentDownload.update()
@@ -302,7 +277,7 @@ object MovieDownloader {
                     }
                 }
                 if (!saveFile.exists()) {
-                    data.logError(
+                    data.error(
                         "Failed to create movie video file after 3 retries. | Skipping movie...",
                         fileError,
                         true
@@ -311,7 +286,7 @@ object MovieDownloader {
                     return@withContext
                 }
             }
-            data.writeMessage("Starting movie download with ${qualityOption.tag} quality.")
+            data.message("Starting movie download with ${qualityOption.tag} quality.")
             data.currentDownload.queued = false
             data.currentDownload.downloading = true
             data.currentDownload.fileSize = originalFileSize
@@ -325,17 +300,17 @@ object MovieDownloader {
             data.currentDownload.update()
             if (saveFile.exists() && saveFile.length() >= originalFileSize) {
                 Core.child.downloadThread.incrementDownloadsFinished()
-                data.writeMessage("Successfully downloaded movie.")
+                data.message("Successfully downloaded movie.")
                 data.finishEpisode()
             }
         } catch (e: Exception) {
             data.currentDownload.queued = true
             data.currentDownload.downloading = false
             data.currentDownload.update()
-            data.writeMessage(
+            data.message(
                 "Failed to download movie. | Retrying..."
             )
-            data.logError(
+            data.error(
                 "Failed to download movie.",
                 e
             )

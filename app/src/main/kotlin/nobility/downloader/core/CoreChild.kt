@@ -229,8 +229,6 @@ class CoreChild {
         return false
     }
 
-
-
     private fun canStart(): Boolean {
         val downloadFolder = File(Defaults.SAVE_FOLDER.string())
         if (!downloadFolder.exists() && !downloadFolder.mkdirs()) {
@@ -247,7 +245,7 @@ class CoreChild {
                     """
                        The download folder in your settings doesn't allow write permissions.
                        If this is a USB or SD Card, you have to disable write protection.
-                       You can also try selecting a folder in the user or home folder or, running the app as admin/superuser permissions.
+                       You can try selecting a folder in the user/home folder or running the app with admin/superuser permissions.
                     """.trimIndent()
                 )
                 Core.changePage(Page.SETTINGS)
