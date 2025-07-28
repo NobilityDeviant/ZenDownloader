@@ -22,13 +22,13 @@ If you enjoy this project then please consider donating.
 
 I would greatly appreciate it. :)
 
-![Donate With Stripe](images/donate_stripe.png?raw=true "Donate With Stripe")(https://donate.stripe.com/6oEeV1aGb9lZgCIfYY)
+[<img src="images/donate_stripe.png?raw=true">](https://donate.stripe.com/6oEeV1aGb9lZgCIfYY)
 
 # Requirements
 
 **ZenDownloader** should now support Windows, Mac and Linux.
 
-*If the new universal JAR doesn't work for you, you can still try to run it with IntelliJ: [Building](https://github.com/NobilityDeviant/ZenDownloader/blob/master/README.md#building)*
+*If the new universal JAR doesn't work for you, please report any issue here: [JAR Issue](https://github.com/NobilityDeviant/ZenDownloader/issues/38)*
 
 It has been tested on Windows 7, Windows 10, Windows 11, Ubuntu 22.04.04, Pop!_OS 22.04 and Fedora 42.
 
@@ -49,6 +49,8 @@ They are each structured to be easily launchable with either a `run.bat` or a `r
 These scripts will open the `launch.jar` which is used for easy updates.
 
 **Note: You can launch the ZenDownloader JAR directly, but updates won't be supported.**
+
+The JAR will only run on Java 21 or higher.
 
 # Installing Chrome
 
@@ -91,9 +93,12 @@ Choose the right `.zip` package for your operating system.
 I'm not entirely sure how to check your PC hardware, but hopefully you already know.
 
 *Most Windows Are AMD64. Windows ARM64 isn't directly supported*
+
 *Apple Silicon = ARM64*
+
 *Apple Intel = AMD64*
-*AARCH64 = ARM64**
+
+*AARCH64 = ARM64*
 
 # Setup & Use Release
 
@@ -107,7 +112,9 @@ Extract the zip *here*, open the extracted folder, and right click inside the fo
 
 If you can't do that, open the terminal somewhere else and redirect it to the extracted folder root.
 
-Command Example: `cd /home/ZenDownloader-linux-amd64/`
+Command Example: 
+
+`cd /home/ZenDownloader-linux-amd64/`
 
 If you're on Mac, you might need to bypass the Gatekeeper with the command:
 
@@ -141,7 +148,8 @@ You can find the database folder in this guide: ([https://github.com/NobilityDev
 
 **For Mac:**
 
-(**AMD64 & Apple Silicon/ARM64**)
+*(AMD64 & Apple Silicon/ARM64)*
+
 You can either install it using brew: [https://formulae.brew.sh/formula/ffmpeg](https://formulae.brew.sh/formula/ffmpeg)
 
 If installing with brew, you shouldn't need to do anything else.
@@ -152,7 +160,8 @@ You can verify it's been installed in the terminal with the command:
 
 or
 
-(**AMD64 Only**)
+*(AMD64 Only)*
+
 You can download it here: [https://evermeet.cx/ffmpeg/](https://evermeet.cx/ffmpeg/)
 
 Extract it and copy `ffmpeg` into the database folder.
@@ -163,7 +172,7 @@ You can find the database folder in this guide: ([https://github.com/NobilityDev
 
 **For Linux:**
 
-**Debian:**
+*Debian:*
 
 Open the terminal and run the commanda:
 
@@ -177,7 +186,7 @@ You can verify it's been installed with the command:
 
 `ffmpeg --version`
 
-**Red Hat Enterprise:**
+*Red Hat Enterprise:*
 
 `sudo dnf update`
 
@@ -221,7 +230,9 @@ You are going to need to find the version and the installed path of Chrome.
 *Windows:*
 
 `C:\Program Files\Google\Chrome\Application\chrome.exe`
+
 `C:\Program Files (x86)\Google\Chrome\Application\chrome.exe`
+
 `%LOCALAPPDATA%\Google\Chrome\Application\chrome.exe`
 
 *Mac:*
@@ -231,8 +242,11 @@ You are going to need to find the version and the installed path of Chrome.
 *Linux:*
 
 `/usr/bin/google-chrome`
+
 `/opt/google/chrome/google-chrome`
+
 `/usr/bin/google-chrome-stable`
+
 `/opt/google/chrome/google-chrome-stable`
 
 **Find Chrome Version:**
