@@ -84,7 +84,7 @@ If it doesn't exist or it's incomplete, it will download each image 1 by 1.
 
 The `series_images` folder goes inside the database folder as well.
 
-Example of path: `C:\Users\CuratedDev\.zb\series_images\`
+Example of path: `C:\Users\CuratedDev\.zen_database\series_images\`
 
 # Download Series Images (Last Updated: 2/13/2025)
 
