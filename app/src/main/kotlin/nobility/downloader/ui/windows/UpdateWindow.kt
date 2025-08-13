@@ -171,7 +171,7 @@ class UpdateWindow(
                         }
                     }
                 }
-                ApplicationState.addToastToWindow(this)
+                ApplicationState.AddToastToWindow(this)
             }
         }
     }

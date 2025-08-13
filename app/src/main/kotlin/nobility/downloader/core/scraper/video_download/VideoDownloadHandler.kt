@@ -59,7 +59,7 @@ class VideoDownloadHandler(
                     data.finishEpisode()
                 }
                 if (!parsedResult.message.isNullOrEmpty()) {
-                    help.videoDownloadData.error(
+                    data.error(
                         "Failed to parse qualities.",
                         parsedResult.message
                     )

@@ -369,7 +369,7 @@ class DatabaseWindow {
                         }
                     }
                 }
-                ApplicationState.addToastToWindow(this)
+                ApplicationState.AddToastToWindow(this)
             }
         }
     }

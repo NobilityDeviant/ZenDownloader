@@ -196,7 +196,7 @@ class ImageUpdaterWindow() {
                         }
                     }
                 }
-                ApplicationState.addToastToWindow(this)
+                ApplicationState.AddToastToWindow(this)
             }
         }
     }

@@ -20,7 +20,7 @@ import nobility.downloader.core.BoxHelper.Companion.float
 import nobility.downloader.core.settings.Defaults
 
 @Composable
-fun toast(
+fun Toast(
     modifier: Modifier = Modifier,
     action: @Composable (() -> Unit)? = null,
     dismissAction: @Composable (() -> Unit)? = null,
@@ -45,7 +45,7 @@ fun toast(
             val textStyle = ToastTheme.SupportingTextFont
             val actionTextStyle = ToastTheme.ActionLabelTextFont
             CompositionLocalProvider(LocalTextStyle provides textStyle) {
-                coreToaster(
+                CoreToaster(
                     text = content,
                     action = action,
                     dismissAction = dismissAction,
@@ -60,7 +60,7 @@ fun toast(
 
 
 @Composable
-fun toast(
+fun Toast(
     toastData: ToastData,
     modifier: Modifier = Modifier,
     shape: Shape = ToastDefaults.shape,
@@ -102,7 +102,7 @@ fun toast(
         modifier = Modifier.fillMaxSize(),
         contentAlignment = Alignment.Center
     ) {
-        toast(
+        Toast(
             modifier = modifier.padding(12.dp),//.offset(y = 20.dp),
             action = actionComposable,
             dismissAction = dismissActionComposable,
@@ -125,7 +125,7 @@ fun toast(
 }
 
 @Composable
-private fun coreToaster(
+private fun CoreToaster(
     text: @Composable () -> Unit,
     action: @Composable (() -> Unit)?,
     dismissAction: @Composable (() -> Unit)?,
@@ -170,7 +170,7 @@ private fun coreToaster(
 }
 
 /**
- * Contains the default values used for [toast].
+ * Contains the default values used for [Toast].
  */
 object ToastDefaults {
     /** Default shape of a snackbar. */

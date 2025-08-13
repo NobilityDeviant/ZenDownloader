@@ -4,6 +4,7 @@ import AppInfo
 import nobility.downloader.core.BoxHelper.Companion.boolean
 import nobility.downloader.core.Core
 import nobility.downloader.core.settings.Defaults
+import org.jsoup.Jsoup
 import java.io.File
 import java.nio.file.Files
 
@@ -155,10 +156,12 @@ object FrogLog {
         }
     }
 
+
     fun writeErrorToTxt(
         name: String,
         error: String,
-        headerInfo: String = ""
+        headerInfo: String = "",
+        html: Boolean = true
     ) {
         val date = Tools.dateFormatted
         val time = Tools.timeFormatted
@@ -181,7 +184,14 @@ object FrogLog {
         }
         sb.appendLine()
         sb.appendLine()
-        sb.appendLine(error)
+        if (html) {
+            val doc = Jsoup.parse(error)
+            doc.outputSettings().prettyPrint(true)
+                .indentAmount(4)
+            sb.appendLine(doc.html())
+        } else {
+            sb.appendLine(error)
+        }
         Files.writeString(
             file.toPath(),
             sb.toString()

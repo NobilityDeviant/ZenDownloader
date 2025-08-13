@@ -36,6 +36,5 @@ sealed class Resource<T>(
     }
 
     val isFailed: Boolean get() = !message.isNullOrEmpty() || this is Error || this is ErrorCode
-    val isSuccess: Boolean get() = !isFailed
 
 }

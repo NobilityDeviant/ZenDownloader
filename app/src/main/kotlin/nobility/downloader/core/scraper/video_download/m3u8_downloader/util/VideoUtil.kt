@@ -1,10 +1,8 @@
 package nobility.downloader.core.scraper.video_download.m3u8_downloader.util
 
-import nobility.downloader.core.scraper.video_download.m3u8_downloader.util.CollUtil.newArrayListWithCapacity
 import AppInfo
+import nobility.downloader.core.scraper.video_download.m3u8_downloader.util.CollUtil.newArrayListWithCapacity
 import nobility.downloader.utils.FrogLog
-import nobility.downloader.utils.fileExists
-import org.apache.commons.lang3.SystemUtils
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.io.BufferedReader
@@ -18,46 +16,25 @@ object VideoUtil {
 
     private val log: Logger = LoggerFactory.getLogger(VideoUtil::class.java)
 
-    @Suppress("KotlinConstantConditions")
-    private fun loadFfmpegPath(): String {
-        if (FfmpegPathHolder.useLocalFfmpeg) {
-            if (SystemUtils.IS_OS_WINDOWS) {
-                val path = AppInfo.databasePath + "ffmpeg.exe"
-                if (path.fileExists()) {
-                    FrogLog.info("Found ffmpeg.exe for windows.")
-                    return path
-                }
+    private fun findDatabaseFfmpeg(): String {
+        val database = File(AppInfo.databasePath)
+        val children = database.listFiles()
+        children?.forEach {
+            if (it.name.contains("ffmpeg", true)) {
+                return it.absolutePath
             }
-            if (execCommand(listOf("ffmpeg", "-version"))) {
-                FrogLog.info("Found ffmpeg installed.")
-                return "ffmpeg"
-            }
-            return ""
         }
-        try {
-            // try load from lib
-            val ffmpegClazz = Class.forName("org.bytedeco.ffmpeg.ffmpeg")
-            val loaderClazz = Class.forName("org.bytedeco.javacpp.Loader")
-            // Loader.load(org.bytedeco.ffmpeg.ffmpeg.class);
-            val loadMethod = loaderClazz.getDeclaredMethod("load", Class::class.java)
-            val result = loadMethod.invoke(loaderClazz, ffmpegClazz)
-            if (result is String) {
-                return result
-            }
-        } catch (_: ClassNotFoundException) {
-            if (SystemUtils.IS_OS_WINDOWS) {
-                val path = AppInfo.databasePath + "ffmpeg.exe"
-                if (path.fileExists()) {
-                    FrogLog.info("Found ffmpeg.exe for windows.")
-                    return path
-                }
-            }
-            if (execCommand(listOf("ffmpeg", "-version"))) {
-                FrogLog.info("Found ffmpeg installed.")
-                return "ffmpeg"
-            }
-        } catch (_: Exception) {
-            return ""
+        return ""
+    }
+
+    private fun loadFfmpegPath(): String {
+        val databaseFfmpeg = findDatabaseFfmpeg()
+        if (databaseFfmpeg.isNotEmpty()) {
+            return databaseFfmpeg
+        }
+        if (execCommand(listOf("ffmpeg", "-version"))) {
+            //FrogLog.info("Found ffmpeg installed.")
+            return "ffmpeg"
         }
         return ""
     }
@@ -205,7 +182,7 @@ object VideoUtil {
     }
 
     private fun execCommand(commands: List<String>): Boolean {
-        FrogLog.info("execCommand ${commands.joinToString(" ")}")
+        //FrogLog.info("execCommand ${commands.joinToString(" ")}")
         try {
             val videoProcess = ProcessBuilder(commands)
                 .redirectErrorStream(true)
@@ -216,7 +193,7 @@ object VideoUtil {
                 log.warn(s)
             }
             val code = videoProcess.waitFor()
-            FrogLog.info("execCommand code=$code")
+            //FrogLog.info("execCommand code=$code")
             return code == 0
         } catch (e: Exception) {
             FrogLog.error(
@@ -227,9 +204,31 @@ object VideoUtil {
         }
     }
 
-    @Suppress("ConstPropertyName")
+    private fun findDatabaseFfplay(): String {
+        val database = File(AppInfo.databasePath)
+        val children = database.listFiles()
+        children?.forEach {
+            if (it.name.contains("ffplay", true)) {
+                return it.absolutePath
+            }
+        }
+        return ""
+    }
+
+    private fun loadFfplayPath(): String {
+        val databaseFfplay = findDatabaseFfplay()
+        if (databaseFfplay.isNotEmpty()) {
+            return databaseFfplay
+        }
+        if (execCommand(listOf("ffplay", "-version"))) {
+            //FrogLog.info("Found ffplay installed.")
+            return "ffplay"
+        }
+        return ""
+    }
+
     object FfmpegPathHolder {
-        const val useLocalFfmpeg = true
         val ffmpegPath = loadFfmpegPath()
+        val ffplayPath = loadFfplayPath()
     }
 }

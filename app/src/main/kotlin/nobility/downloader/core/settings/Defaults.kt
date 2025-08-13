@@ -152,7 +152,7 @@ enum class Defaults(
             The path to your Chrome browser's executable file.
             You can adjust this if the app is failing to use your correct chrome version.
             You don't need to use this option as the program will find chrome for you.
-            Example: C:\Users\CuratedDev\Desktop\portable-chrome\chrome.exe
+            Example: C:\\Users\\CuratedDev\\Desktop\\portable-chrome\\chrome.exe
             Default: Empty
             Requires: Chrome Driver Path
         """.trimIndent()
@@ -164,10 +164,24 @@ enum class Defaults(
             The path to your ChromeDriver file.
             You can adjust this if the app is failing to use your correct chrome version.
             You don't need to use this option as the program will get it for you.
-            Example: C:\Users\CuratedDev\Desktop\chromedriver-win64\chromedriver.exe
+            Example: C:\\Users\\CuratedDev\\Desktop\\chromedriver-win64\\chromedriver.exe
             Default: Empty
             Requires: Chrome Browser Path
         """.trimIndent()
+    ),
+    VLC_PATH(
+        "vlc_path",
+        "",
+        """
+            Your custom path to VLC to play videos.
+            This path has to be pointed to a vlc executable.
+            In Windows it'll be vlc.exe and yes it can be the portable version.
+            Mac & Linux will also have an executable called vlc.
+            If VLC is installed and usable in the command prompt or terminal, this path isn't needed.
+            Example: "C:\\Program Files\\VideoLAN\\VLC\\vlc.exe"
+            Default: Empty
+        """.trimIndent(),
+        "VLC Path"
     ),
     DISABLE_USER_AGENTS_UPDATE(
         "disable_ua_update",
@@ -368,7 +382,7 @@ enum class Defaults(
             Default: 5
         """.trimIndent()
     ),
-    M3u8_RETRIES(
+    M3U8_RETRIES(
         "m3u8_retries",
         3,
         """
@@ -380,6 +394,27 @@ enum class Defaults(
             Minimum: 1 | Maximum: 100
             Default: 3
         """.trimIndent()
+    ),
+    EPISODE_ORGANIZERS(
+        "eps_org",
+        "\"Movie, Film\", OVA, Special",
+        """
+            These are the keywords that can organize series episodes inside the Series Details window.
+            For instance, lets say you add the keyword 'Final'. Now every episode with the word 'Final' 
+            inside of it's title will have it's own section.
+            You can also group more than 1 keyword by encasing them inside of double quotes like so: "movie, film"
+            Keywords or keyword groups must be split by a comma [,] to be counted.
+            Notes: 
+            - By default nothing is case sensitive and keywords can't contain double quotes or commas.
+            - By default keywords get checked as "contains", so if you use the keyword 'Special', it will add 'Specials' as well.
+            - If you want to match as "exact", you have to append your keyword with a *. such as: 'Specials*;
+            - Matching as exact is case sensitive.
+            - The order is first to last and duplicates won't be counted even in groups.
+            - The keyword "Season" is not changeable. That will always be enabled and used after the organizer
+            keywords.
+            Default: "Movie, Film", OVA, Special
+        """.trimIndent(),
+        "Episode Organizer Keywords"
     ),
     WCO_GENRES_LAST_UPDATED("wco_genres_last_updated", 0L),
     WCO_RECENT_LAST_UPDATED("wco_recent_last_updated", 0L),
@@ -455,7 +490,9 @@ enum class Defaults(
             SIMPLE_RETRIES,
             FULL_RETRIES,
             PREMIUM_RETRIES,
-            M3u8_RETRIES
+            M3U8_RETRIES,
+            EPISODE_ORGANIZERS,
+            VLC_PATH
         )
 
         val intFields get() = listOf(
@@ -467,7 +504,7 @@ enum class Defaults(
             SIMPLE_RETRIES,
             FULL_RETRIES,
             PREMIUM_RETRIES,
-            M3u8_RETRIES
+            M3U8_RETRIES
         )
 
         val checkBoxes get() = listOf(

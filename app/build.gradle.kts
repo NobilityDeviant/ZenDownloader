@@ -13,7 +13,6 @@ buildscript {
         mavenCentral()
     }
     dependencies {
-        //4.3.0 finally doesn't break!
         classpath("io.objectbox:objectbox-gradle-plugin:4.3.0")
     }
 }
@@ -31,7 +30,7 @@ kotlin {
 }
 
 group = "nobility.downloader"
-version = "1.2.5"
+version = "1.2.6"
 
 repositories {
     maven("https://maven.pkg.jetbrains.space/public/p/compose/dev")
@@ -39,9 +38,17 @@ repositories {
     google()
 }
 
+fun isFatJarBuild(): Boolean {
+    return project.gradle.startParameter.taskNames.any {
+        it.contains("packageFatJar", ignoreCase = true) ||
+                it.contains("runFatJar", ignoreCase = true) ||
+                it.contains("packageJARDistributables", ignoreCase = true)
+    }
+}
+
+
 dependencies {
 
-    implementation(compose.desktop.currentOs)
     implementation(project(":common"))
 
     when {
@@ -73,18 +80,15 @@ dependencies {
         "org.jetbrains.skiko:skiko-awt-runtime-macos-arm64:$skikoVersion"
     )
 
-    if (project.gradle.startParameter.taskNames.any {
-            it.contains("packageFatJar")
-                    || it.contains("runFatJar")
-                    || it.contains("packageJARDistributables")
-        }
-    ) {
+    if (isFatJarBuild()) {
         allObjectBoxLibs.forEach {
             implementation(it)
         }
         allSkikoLibs.forEach {
             implementation(it)
         }
+    } else {
+        implementation(compose.desktop.currentOs)
     }
 
     kapt("io.objectbox:objectbox-processor:$objectBox")
@@ -106,8 +110,6 @@ dependencies {
     implementation("io.coil-kt.coil3:coil-compose:3.2.0")
     implementation("io.coil-kt.coil3:coil-network-okhttp:3.2.0")
     implementation("com.darkrockstudios:mpfilepicker:3.1.0")
-    //for unzipping assets
-    implementation("net.lingala.zip4j:zip4j:2.11.5")
     //m3u8 downloading
     implementation("org.apache.commons:commons-lang3:3.17.0")
     implementation("org.apache.commons:commons-collections4:4.4")
@@ -116,7 +118,6 @@ dependencies {
     implementation("io.netty:netty-common:4.2.1.Final")
     implementation("org.jctools:jctools-core:4.0.5")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.8.1")
-    implementation("org.apache.commons:commons-compress:1.26.1")
 }
 
 compose.desktop {
@@ -133,6 +134,7 @@ interface InjectedExecOps {
 
 val graalVersion = "21.0.2"
 val baseUrl = "https://github.com/graalvm/graalvm-ce-builds/releases/download/jdk-$graalVersion"
+val projectName = "ZenDownloader"
 
 enum class GraalJDK(
     val folderName: String,
@@ -295,7 +297,7 @@ tasks.register("packageJARDistributables") {
 
     doLast {
 
-        val jarName = "ZenDownloader-${project.version}.jar"
+        val jarName = "$projectName-${project.version}.jar"
         val outputJar = file("build/custom-jars/$jarName")
         val jdkFolder = file("jdks")
         val distRoot = file("build/distributions")
@@ -320,13 +322,6 @@ tasks.register("packageJARDistributables") {
             )
             distDir.deleteRecursively()
             distDir.mkdirs()
-
-            /*val appDir = File(
-                distDir,
-                "app"
-            ).also { it.mkdirs() }
-
-            outputJar.copyTo(File(appDir, jarName), overwrite = true)*/
 
             val appDir = File(distDir, "app").also { it.mkdirs() }
 
@@ -368,7 +363,7 @@ tasks.register("packageJARDistributables") {
                 }
             }
 
-            val zipFile = File(distRoot, "ZenDownloader-${graalJDK.folderName}.zip")
+            val zipFile = File(distRoot, "$jarName-${graalJDK.folderName}.zip")
             ant.withGroovyBuilder {
                 "zip"("destfile" to zipFile.absolutePath) {
                     "fileset"(
@@ -386,9 +381,10 @@ tasks.register("packageJARDistributables") {
 }
 
 tasks.register<Jar>("packageFatJar") {
+
     group = "custom jar"
     description = "Builds a fat JAR."
-    archiveBaseName.set("ZenDownloader")
+    archiveBaseName.set(projectName)
     //archiveClassifier.set("all")
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
     destinationDirectory.set(layout.buildDirectory.dir("custom-jars"))
@@ -399,7 +395,7 @@ tasks.register<Jar>("packageFatJar") {
 
     doFirst {
         val jarFile = destinationDirectory.get().file(
-            "ZenDownloader-${project.version}.jar"
+            "$projectName-${project.version}.jar"
         ).asFile
         if (jarFile.exists()) {
             jarFile.delete()
@@ -432,7 +428,7 @@ tasks.register<Jar>("packageFatJar") {
     from(sourceSets["main"].resources)
 
     doLast {
-        val jarFile = destinationDirectory.get().file("ZenDownloader-${project.version}.jar").asFile
+        val jarFile = destinationDirectory.get().file("$projectName-${project.version}.jar").asFile
         if (jarFile.exists()) {
             println("The fatJar has been created in: ${jarFile.absolutePath}")
         } else {
@@ -442,13 +438,14 @@ tasks.register<Jar>("packageFatJar") {
 }
 
 tasks.register("runFatJar") {
+
     group = "custom jar"
     description = "Builds and runs the fat JAR."
 
     dependsOn("packageFatJar")
 
     doLast {
-        val jarName = "ZenDownloader-${project.version}.jar"
+        val jarName = "$projectName-${project.version}.jar"
         val jarFile = layout.buildDirectory.file("custom-jars/$jarName").get().asFile
 
         if (jarFile.exists()) {
@@ -467,7 +464,3 @@ tasks.register("runFatJar") {
         }
     }
 }
-
-
-
-

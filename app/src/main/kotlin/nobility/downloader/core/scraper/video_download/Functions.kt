@@ -1,5 +1,6 @@
 package nobility.downloader.core.scraper.video_download
 
+import AppInfo
 import Resource
 import kotlinx.coroutines.*
 import nobility.downloader.core.BoxHelper.Companion.int
@@ -48,20 +49,24 @@ object Functions {
                 }
                 if (sb.contains("404 - Page not Found")) {
                     return@withContext Resource.Error("404 Page not found.")
-                }
-                if (sb.contains("403 Forbidden")) {
+                } else if (sb.contains("403 Forbidden")) {
                     simpleRetries++
                     delay(500)
                     exception = Exception("403 Forbidden")
                     continue
-                }
-                if (sb.contains("Sorry, you have been blocked")) {
+                } else if (sb.contains("Sorry, you have been blocked")) {
                     simpleRetries++
                     delay(500)
                     exception = Exception("Blocked by Cloudflare")
                     continue
+                } else if (sb.contains("Just a moment...")) {
+                    simpleRetries++
+                    delay(500)
+                    exception = Exception("Blocked by Cloudflare")
+                    continue
+                } else {
+                    return@withContext Resource.Success(sb)
                 }
-                return@withContext Resource.Success(sb)
             } catch (e: Exception) {
                 exception = e
                 simpleRetries++
@@ -102,6 +107,11 @@ object Functions {
                     delay(500)
                     continue
                 }
+                /*if (data.driver.title().contains("Just a moment")) {
+                    fullModeRetries++
+                    delay(500)
+                    continue
+                }*/
                 val sb = StringBuilder()
                 data.driver.source().lines().forEach {
                     sb.appendLine(it)
@@ -147,20 +157,25 @@ object Functions {
                 }
                 if (sb.contains("404 - Page not Found")) {
                     return@withContext Resource.Error("404 Page not found.")
-                }
-                if (sb.contains("403 Forbidden")) {
+                } else if (sb.contains("403 Forbidden")) {
                     simpleRetries++
                     delay(500)
                     exception = Exception("403 Forbidden")
                     continue
-                }
-                if (sb.contains("Sorry, you have been blocked")) {
+                } else if (sb.contains("Sorry, you have been blocked")) {
                     simpleRetries++
                     delay(500)
                     exception = Exception("Blocked by Cloudflare")
                     continue
+                } else if (sb.contains("<title>Just a moment")) {
+                    FrogLog.error("Blocked by cloudflare. Just a moment...")
+                    simpleRetries++
+                    delay(500)
+                    exception = Exception("Blocked by Cloudflare")
+                    continue
+                } else {
+                    return@withContext Resource.Success(sb)
                 }
-                return@withContext Resource.Success(sb)
             } catch (e: Exception) {
                 exception = e
                 simpleRetries++
@@ -202,6 +217,11 @@ object Functions {
                     delay(500)
                     continue
                 }
+                /*if (driverBase.driver.title().contains("Just a moment")) {
+                    fullModeRetries++
+                    delay(500)
+                    continue
+                }*/
                 val sb = StringBuilder()
                 driverBase.driver.source().lines().forEach {
                     sb.appendLine(it)

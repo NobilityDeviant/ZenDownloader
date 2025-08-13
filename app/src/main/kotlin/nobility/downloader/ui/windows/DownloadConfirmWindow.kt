@@ -1,5 +1,6 @@
 package nobility.downloader.ui.windows
 
+import AppInfo
 import Resource
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.animateFloatAsState
@@ -33,10 +34,7 @@ import compose.icons.EvaIcons
 import compose.icons.evaicons.Fill
 import compose.icons.evaicons.fill.ChevronDown
 import compose.icons.evaicons.fill.Star
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
+import kotlinx.coroutines.*
 import nobility.downloader.core.BoxHelper
 import nobility.downloader.core.BoxHelper.Companion.string
 import nobility.downloader.core.BoxMaker
@@ -45,6 +43,7 @@ import nobility.downloader.core.entities.Episode
 import nobility.downloader.core.entities.data.SeriesIdentity
 import nobility.downloader.core.scraper.SeriesUpdater
 import nobility.downloader.core.scraper.data.ToDownload
+import nobility.downloader.core.scraper.player.VideoPlayerHandler
 import nobility.downloader.core.settings.Defaults
 import nobility.downloader.core.settings.Quality
 import nobility.downloader.ui.components.*
@@ -74,6 +73,7 @@ class DownloadConfirmWindow(
     private var shiftHeld by mutableStateOf(false)
     private var searchText by mutableStateOf("")
     private var favorited by mutableStateOf(BoxHelper.isSeriesFavorited(series))
+    private val scope = CoroutineScope(Dispatchers.IO)
 
     init {
         if (toDownload.episode != null) {
@@ -226,21 +226,25 @@ class DownloadConfirmWindow(
             keyEvents = { focused, it ->
                 shiftHeld = it.isShiftPressed
                 false
+            },
+            onClose = {
+                scope.cancel()
+                return@newWindow true
             }
         ) {
-            val scope = rememberCoroutineScope()
+            val composeScope = rememberCoroutineScope()
             val episodesListState = rememberLazyListState()
             Scaffold(
                 modifier = Modifier.fillMaxSize(50f),
                 bottomBar = {
-                    BottomBar(this, scope)
+                    BottomBar(this)
                 }
             ) { it ->
                 Column(
                     modifier = Modifier.padding(bottom = it.calculateBottomPadding())
                         .fillMaxSize()
                 ) {
-                    SeriesInfoHeader(this@newWindow, scope)
+                    SeriesInfoHeader(this@newWindow, composeScope)
                     if (!singleEpisode && !movieMode) {
                         Row(
                             modifier = Modifier.align(Alignment.End)
@@ -294,7 +298,7 @@ class DownloadConfirmWindow(
                                     end = verticalScrollbarEndPadding
                                 ).fillMaxSize().draggable(
                                     state = rememberDraggableState {
-                                        scope.launch {
+                                        composeScope.launch {
                                             episodesListState.scrollBy(-it)
                                         }
                                     },
@@ -316,7 +320,7 @@ class DownloadConfirmWindow(
                             if (toDownload.episode != null) {
                                 LaunchedEffect(Unit) {
                                     val index = indexForEpisode(toDownload.episode)
-                                    if (index != -1) {
+                                    if (index >= 1) {
                                         //-1 due to sticky headers
                                         episodesListState.animateScrollToItem(index - 1)
                                     }
@@ -326,7 +330,7 @@ class DownloadConfirmWindow(
                     }
                 }
             }
-            ApplicationState.addToastToWindow(this@newWindow)
+            ApplicationState.AddToastToWindow(this@newWindow)
         }
     }
 
@@ -353,10 +357,10 @@ class DownloadConfirmWindow(
                 }
             } else {
                 seasonData().sortedWith { data1, data2 ->
-                        val num1 = data1.seasonTitle.filter { it.isDigit() }.toIntOrNull() ?: -1
-                        val num2 = data2.seasonTitle.filter { it.isDigit() }.toIntOrNull() ?: -1
-                        num1.compareTo(num2)
-                    }
+                    val num1 = data1.seasonTitle.filter { it.isDigit() }.toIntOrNull() ?: -1
+                    val num2 = data2.seasonTitle.filter { it.isDigit() }.toIntOrNull() ?: -1
+                    num1.compareTo(num2)
+                }
             }
         }
 
@@ -366,8 +370,27 @@ class DownloadConfirmWindow(
                     || it.seasonTitle.contains(searchText, true)
         }
 
-    //todo add options to allow more control for organization
-    //keywords separated by a delimiter to be used
+    fun parseKeywords(input: String): List<List<String>> {
+        val regex = Regex("""\s*"([^"]+)"\s*|\s*([^,]+)\s*""")
+
+        return regex.findAll(input).map { match ->
+            val quoted = match.groups[1]?.value
+            val unquoted = match.groups[2]?.value
+
+            when {
+                !quoted.isNullOrBlank() ->
+                    quoted.split(",")
+                        .map { it.trim() }
+                        .filter { it.isNotEmpty() }
+
+                !unquoted.isNullOrBlank() ->
+                    listOf(unquoted.trim())
+
+                else -> emptyList()
+            }
+        }.filter { it.isNotEmpty() }.toList()
+    }
+
     private fun seasonData(): List<SeasonData> {
         if (episodes.isEmpty()) {
             return emptyList()
@@ -376,45 +399,40 @@ class DownloadConfirmWindow(
         val seasonDataList = mutableListOf<SeasonData>()
         val episodes = episodes.toMutableList()
         if (!movieMode) {
-            val movies = episodes.filter {
-                it.name.contains("Movie", true)
-                        || it.name.contains("Film", true)
-            }
-            if (movies.isNotEmpty()) {
-                seasonDataList.add(
-                    SeasonData(
-                        "${series.name} Movies",
-                        movies,
-                        false
+
+            val keywords = parseKeywords(Defaults.EPISODE_ORGANIZERS.string())
+
+            for (group in keywords) {
+
+                val matches = episodes.filter { ep ->
+                    group.any { keyword ->
+                        if (keyword.endsWith("*")) {
+                            val exact = keyword.removeSuffix("*")
+                            Regex("\\b${Regex.escape(exact)}\\b")
+                                .containsMatchIn(ep.name)
+                        } else {
+                            ep.name.contains(keyword, ignoreCase = true)
+                        }
+                    }
+                }
+
+                if (matches.isNotEmpty()) {
+
+                    val title = if (group.size > 1) {
+                        "${series.name} (${group.joinToString(" | ")})"
+                    } else {
+                        "${series.name} ${group.first()}"
+                    }
+
+                    seasonDataList.add(
+                        SeasonData(
+                            title,
+                            matches,
+                            false
+                        )
                     )
-                )
-                episodes.removeAll(movies)
-            }
-            val ovas = episodes.filter {
-                it.name.contains("OVA", true)
-            }
-            if (ovas.isNotEmpty()) {
-                seasonDataList.add(
-                    SeasonData(
-                        "${series.name} OVA",
-                        ovas,
-                        false
-                    )
-                )
-                episodes.removeAll(ovas)
-            }
-            val special = episodes.filter {
-                it.name.contains("Special", true)
-            }
-            if (special.isNotEmpty()) {
-                seasonDataList.add(
-                    SeasonData(
-                        "${series.name} Specials",
-                        special,
-                        false
-                    )
-                )
-                episodes.removeAll(special)
+                    episodes.removeAll(matches)
+                }
             }
         } else {
             return listOf(
@@ -436,7 +454,7 @@ class DownloadConfirmWindow(
                     "Random"
                 }
             }.mapValues { map -> map.value.distinctBy { episode -> episode.name } }
-            return seasonDataList.plus(subLists.map {
+            seasonDataList.addAll(subLists.map {
                 SeasonData(
                     if (it.key == "Random") "${series.name} ${it.key}" else "${series.name} Season ${it.key}",
                     it.value,
@@ -444,7 +462,7 @@ class DownloadConfirmWindow(
                 )
             }.sortedBy { data ->
                 val number = data.seasonTitle.filter { ch -> ch.isDigit() }.toIntOrNull()
-                return@sortedBy number?.toString()?: data.seasonTitle
+                return@sortedBy number?.toString() ?: data.seasonTitle
 
             })
         } else {
@@ -457,8 +475,15 @@ class DownloadConfirmWindow(
                     )
                 )
             }
-            return seasonDataList
         }
+        if (seasonDataList.size == 1) {
+            return listOf(
+                seasonDataList.first().copy(
+                    expandOnStart = true
+                )
+            )
+        }
+        return seasonDataList
     }
 
     private fun indexForEpisode(
@@ -512,7 +537,9 @@ class DownloadConfirmWindow(
     }
 
     @Composable
-    private fun EpisodeRow(episode: Episode) {
+    private fun EpisodeRow(
+        episode: Episode
+    ) {
         var checked = selectedEpisodes.contains(episode)
         val highlighted = highlightedEpisodes.contains(
             indexForEpisode(episode, false)
@@ -582,6 +609,21 @@ class DownloadConfirmWindow(
                     MaterialTheme.colorScheme.onSurfaceVariant
                         .tone(80.0)
             )
+            if (!shiftHeld) {
+                DefaultButton(
+                    "Watch Online",
+                    modifier = Modifier.width(100.dp)
+                        .height(30.dp)
+                ) {
+                    ApplicationState.newWindow(AppInfo.TITLE) {}
+                    scope.launch {
+                        VideoPlayerHandler.playEpisode(
+                            episode,
+                            temporaryQuality
+                        )
+                    }
+                }
+            }
             if (!singleEpisode && !shiftHeld) {
                 Checkbox(
                     checked,
@@ -619,7 +661,8 @@ class DownloadConfirmWindow(
         expanded: Boolean,
         onHeaderClicked: () -> Unit
     ) {
-        Row(modifier = Modifier
+        Row(
+            modifier = Modifier
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
                 indication = ripple(
@@ -749,8 +792,7 @@ class DownloadConfirmWindow(
 
     @Composable
     private fun BottomBar(
-        windowScope: AppWindowScope,
-        coroutineScope: CoroutineScope
+        windowScope: AppWindowScope
     ) {
         Column(
             modifier = Modifier.fillMaxWidth().height(bottomBarHeight)
@@ -832,7 +874,7 @@ class DownloadConfirmWindow(
                                 enabled = checkForEpisodesButtonEnabled,
                             ) {
                                 windowScope.showToast("Checking for new episodes...")
-                                coroutineScope.launch {
+                                scope.launch {
                                     val result = checkForNewEpisodes()
                                     val data = result.data
                                     if (data != null) {
@@ -872,6 +914,7 @@ class DownloadConfirmWindow(
                                     )
                                     if (added > 0) {
                                         windowScope.showToast("Added movie to current queue.")
+                                        windowScope.closeWindow()
                                     } else {
                                         windowScope.showToast(
                                             "Movie is already in queue."
@@ -917,7 +960,10 @@ class DownloadConfirmWindow(
                                             selectedEpisodes.map { it }
                                     )
                                     if (added > 0) {
-                                        windowScope.showToast("Added $added episode(s) to current queue.")
+                                        windowScope.showToast(
+                                            "Added $added episode(s) to current queue."
+                                        )
+                                        windowScope.closeWindow()
                                     } else {
                                         windowScope.showToast(
                                             "No episodes have been added to current queue. They have already been added before."

@@ -132,73 +132,23 @@ Input your password if it asks.
 
 # Ffmpeg
 
-M3U8 video files require ffmpeg to be installed in order to merge the ts files and merge the audio with the video.
+FFmpeg is used to merge m3u8 ts files and to merge video and audio files.
 
-**For Windows:**
+FFplay is used to play videos directly instead of downloading them.
 
-Download the release build from: [https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-full.7z](https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-full.7z)
+ZenDownloader will now auto download FFmpeg and FFplay at launch.
 
-Extract it, open the `bin` folder and copy `ffmpeg.exe` into the database folder.
+If that fails, or you want to prepare beforehand, you can find all the binaries for every operating system here: 
 
-Example of path: `C:\Users\CuratedDev\.zen_database\ffmpeg.exe`
+[https://github.com/Tyrrrz/FFmpegBin/releases/tag/7.1.1](https://github.com/Tyrrrz/FFmpegBin/releases/tag/7.1.1) 
 
-You can find the database folder in this guide: ([https://github.com/NobilityDeviant/ZenDownloader/blob/master/database/README.md#database-folder](https://github.com/NobilityDeviant/ZenDownloader/blob/master/database/README.md#database-folder))
-
-*If you know how to set up ffmpeg as an environment variable, that will work too.*
-
-**For Mac:**
-
-*(AMD64 & Apple Silicon/ARM64)*
-
-You can either install it using brew: [https://formulae.brew.sh/formula/ffmpeg](https://formulae.brew.sh/formula/ffmpeg)
-
-If installing with brew, you shouldn't need to do anything else.
-
-You can verify it's been installed in the terminal with the command:
-
-`ffmpeg -version`
-
-or
-
-*(AMD64 Only)*
-
-You can download it here: [https://evermeet.cx/ffmpeg/](https://evermeet.cx/ffmpeg/)
-
-Extract it and copy `ffmpeg` into the database folder.
+Once downloaded, extract *here* and copy the files`ffmpeg`& `ffplay` into the database folder.
 
 Example of path: `C:\Users\CuratedDev\.zen_database\ffmpeg`
 
 You can find the database folder in this guide: ([https://github.com/NobilityDeviant/ZenDownloader/blob/master/database/README.md#database-folder](https://github.com/NobilityDeviant/ZenDownloader/blob/master/database/README.md#database-folder))
 
-**For Linux:**
-
-*Debian:*
-
-Open the terminal and run the commanda:
-
-`sudo apt update`
-
-`sudo apt install ffmpeg`
-
-Input your password and you're good.
-
-You can verify it's been installed with the command:
-
-`ffmpeg --version`
-
-*Red Hat Enterprise:*
-
-`sudo dnf update`
-
-`sudo dnf install -y ffmpeg`
-
-Input your password and you're good.
-
-You can verify it's been installed with the command:
-
-`ffmpeg --help`
-
-*Hopefully you can find your command if you have any other linux version.*
+*Windows files will have the `.exe` extension.*
 
 # First Run
 

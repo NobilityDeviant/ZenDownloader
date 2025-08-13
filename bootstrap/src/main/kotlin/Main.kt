@@ -135,7 +135,6 @@ private suspend fun downloadUpdate(
         con.addRequestProperty("Accept-Encoding", "gzip, deflate, br")
         con.addRequestProperty("Accept-Language", "en-US,en;q=0.9")
         con.addRequestProperty("Connection", "keep-alive")
-        //con.addRequestProperty("User-Agent", UserAgents.random)
         con.connectTimeout = 30_000
         con.readTimeout = 30_000
         bis = BufferedInputStream(con.inputStream)

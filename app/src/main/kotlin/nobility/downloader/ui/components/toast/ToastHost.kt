@@ -21,22 +21,22 @@ import kotlinx.coroutines.sync.withLock
 import kotlin.coroutines.resume
 
 /**
- * State of the [toastHost], which controls the queue and the current [toast] being shown
- * inside the [toastHost].
+ * State of the [ToastHost], which controls the queue and the current [Toast] being shown
+ * inside the [ToastHost].
  *
- * This state is usually [remember]ed and used to provide a [toastHost] to a [Scaffold].
+ * This state is usually [remember]ed and used to provide a [ToastHost] to a [Scaffold].
  */
 @Stable
 class ToastHostState {
 
     /**
-     * Only one [toast] can be shown at a time. Since a suspending Mutex is a fair queue, this
+     * Only one [Toast] can be shown at a time. Since a suspending Mutex is a fair queue, this
      * manages our message queue and we don't have to maintain one.
      */
     private val mutex = Mutex()
 
     /**
-     * The current [ToastData] being shown by the [toastHost], or `null` if none.
+     * The current [ToastData] being shown by the [ToastHost], or `null` if none.
      */
     var currentToastData by mutableStateOf<ToastData?>(null)
         private set
@@ -125,10 +125,10 @@ class ToastHostState {
 }
 
 @Composable
-fun toastHost(
+fun ToastHost(
     hostState: ToastHostState,
     modifier: Modifier = Modifier,
-    toastData: @Composable (ToastData) -> Unit = { toast(it) }
+    toastData: @Composable (ToastData) -> Unit = { Toast(it) }
 ) {
     val currentToastData = hostState.currentToastData
     val accessibilityManager = LocalAccessibilityManager.current
@@ -150,7 +150,7 @@ fun toastHost(
 }
 
 /**
- * Interface to represent the visuals of one particular [toast] as a piece of the [ToastData].
+ * Interface to represent the visuals of one particular [Toast] as a piece of the [ToastData].
  *
  * @property message text to be shown in the Snackbar
  * @property actionLabel optional action label to show as button in the Snackbar
@@ -168,10 +168,10 @@ interface ToastVisuals {
 }
 
 /**
- * Interface to represent the data of one particular [toast] as a piece of the
+ * Interface to represent the data of one particular [Toast] as a piece of the
  * [ToastHostState].
  *
- * @property visuals Holds the visual representation for a particular [toast].
+ * @property visuals Holds the visual representation for a particular [Toast].
  */
 @Stable
 interface ToastData {
@@ -193,18 +193,18 @@ interface ToastData {
  */
 enum class ToastResult {
     /**
-     * [toast] that is shown has been dismissed either by timeout of by user
+     * [Toast] that is shown has been dismissed either by timeout of by user
      */
     Dismissed,
 
     /**
-     * Action on the [toast] has been clicked before the time out passed
+     * Action on the [Toast] has been clicked before the time out passed
      */
     ActionPerformed,
 }
 
 /**
- * Possible durations of the [toast] in [toastHost]
+ * Possible durations of the [Toast] in [ToastHost]
  */
 enum class ToastDuration {
     /**
@@ -263,7 +263,7 @@ private fun fadeInFadeOutWithScale(
                 val duration = if (isVisible) ToastFadeInMillis else ToastFadeOutMillis
                 val delay = ToastFadeOutMillis + ToastInBetweenDelayMillis
                 val animationDelay = if (isVisible && keys.filterNotNull().size != 1) delay else 0
-                val opacity = animatedOpacity(
+                val opacity = AnimatedOpacity(
                     animation = tween(
                         easing = LinearEasing,
                         delayMillis = animationDelay,
@@ -278,7 +278,7 @@ private fun fadeInFadeOutWithScale(
                         }
                     }
                 )
-                val scale = animatedScale(
+                val scale = AnimatedScale(
                     animation = tween(
                         easing = FastOutSlowInEasing,
                         delayMillis = animationDelay,
@@ -330,7 +330,7 @@ private data class FadeInFadeOutAnimationItem<T>(
 private typealias FadeInFadeOutTransition = @Composable (content: @Composable () -> Unit) -> Unit
 
 @Composable
-private fun animatedOpacity(
+private fun AnimatedOpacity(
     animation: AnimationSpec<Float>,
     visible: Boolean,
     onAnimationFinish: () -> Unit = {}
@@ -347,7 +347,7 @@ private fun animatedOpacity(
 }
 
 @Composable
-private fun animatedScale(animation: AnimationSpec<Float>, visible: Boolean): State<Float> {
+private fun AnimatedScale(animation: AnimationSpec<Float>, visible: Boolean): State<Float> {
     val scale = remember { Animatable(if (!visible) 1f else 0.8f) }
     LaunchedEffect(visible) {
         scale.animateTo(

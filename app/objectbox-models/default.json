@@ -394,9 +394,33 @@
         }
       ],
       "relations": []
+    },
+    {
+      "id": "10:3535300152518641183",
+      "lastPropertyId": "3:4763851261309085361",
+      "name": "Ignore",
+      "properties": [
+        {
+          "id": "1:8399088841526546674",
+          "name": "id",
+          "type": 6,
+          "flags": 1
+        },
+        {
+          "id": "2:2417145739315926582",
+          "name": "seriesSlug",
+          "type": 9
+        },
+        {
+          "id": "3:4763851261309085361",
+          "name": "website",
+          "type": 9
+        }
+      ],
+      "relations": []
     }
   ],
-  "lastEntityId": "9:7049152544636722855",
+  "lastEntityId": "10:3535300152518641183",
   "lastIndexId": "6:699691749525484072",
   "lastRelationId": "3:4891888090529785738",
   "lastSequenceId": "0:0",

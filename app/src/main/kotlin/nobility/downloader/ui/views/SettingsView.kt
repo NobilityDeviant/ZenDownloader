@@ -149,11 +149,13 @@ class SettingsView : ViewPage {
                             focusManager.clearFocus(true)
                         }
                 ) {
-                    FieldRow(Defaults.SAVE_FOLDER, true)
-                    FieldRow(Defaults.CHROME_BROWSER_PATH, true)
-                    FieldRow(Defaults.CHROME_DRIVER_PATH, true)
-                    FieldRow(Defaults.WCO_PREMIUM_USERNAME, true)
-                    FieldRow(Defaults.WCO_PREMIUM_PASSWORD, true)
+                    FieldRow(Defaults.SAVE_FOLDER)
+                    FieldRow(Defaults.CHROME_BROWSER_PATH)
+                    FieldRow(Defaults.CHROME_DRIVER_PATH)
+                    FieldRow(Defaults.WCO_PREMIUM_USERNAME)
+                    FieldRow(Defaults.WCO_PREMIUM_PASSWORD)
+                    FieldRow(Defaults.EPISODE_ORGANIZERS)
+                    //FieldRow(Defaults.VLC_PATH) todo fails without headers? I will try more later
                     FieldDropdown(Defaults.QUALITY)
                     FlowRow(
                         verticalArrangement = Arrangement.spacedBy(5.dp),
@@ -184,14 +186,14 @@ class SettingsView : ViewPage {
     @Composable
     private fun FieldRow(
         setting: Defaults,
-        fullWidth: Boolean
+        fullWidth: Boolean = true
     ) {
         val option = stringOptions[setting] ?: return
         val title = setting.alternativeName.ifEmpty {
             setting.name.normalizeEnumName()
         }
-        val modifier = Modifier.height(30.dp)
-            .then(if (fullWidth) Modifier.width(300.dp) else Modifier)
+        val fieldModifier = Modifier.height(40.dp)
+            .then(if (fullWidth) Modifier.width(400.dp) else Modifier)
             .then(focusModifier)
         Row(
             horizontalArrangement = Arrangement.spacedBy(5.dp),
@@ -215,7 +217,8 @@ class SettingsView : ViewPage {
                                 updateSaveButton()
                             },
                             passwordMode = !showOption.value,
-                            modifier = modifier
+                            modifier = fieldModifier,
+                            textStyle = MaterialTheme.typography.labelLarge
                         )
                         DefaultCheckbox(
                             showOption.value,
@@ -245,12 +248,13 @@ class SettingsView : ViewPage {
                             option.value = text
                             updateSaveButton()
                         },
-                        modifier = modifier
+                        modifier = fieldModifier,
+                        textStyle = MaterialTheme.typography.labelLarge
                     )
                     var showFilePicker by remember { mutableStateOf(false) }
                     DirectoryPicker(
                         show = showFilePicker,
-                        initialDirectory = option.value,
+                        initialDirectory = Defaults.SAVE_FOLDER.value.toString(),
                         title = "Choose Save Folder"
                     ) {
                         if (it != null) {
@@ -269,6 +273,38 @@ class SettingsView : ViewPage {
                     }
                 }
 
+                Defaults.VLC_PATH -> {
+                    DefaultSettingsTextField(
+                        option.value,
+                        { text ->
+                            option.value = text
+                            updateSaveButton()
+                        },
+                        modifier = fieldModifier,
+                        textStyle = MaterialTheme.typography.labelLarge
+                    )
+                    var showFilePicker by remember { mutableStateOf(false) }
+                    FilePicker(
+                        show = showFilePicker,
+                        initialDirectory = option.value,
+                        title = "Choose VLC Executable File"
+                    ) {
+                        if (it != null) {
+                            option.value = it.path
+                            updateSaveButton()
+                        }
+                        showFilePicker = false
+                    }
+                    DefaultButton(
+                        "Set File",
+                        Modifier.height(30.dp)
+                            .width(80.dp),
+                        contentPadding = PaddingValues(0.dp)
+                    ) {
+                        showFilePicker = true
+                    }
+                }
+
                 Defaults.CHROME_BROWSER_PATH -> {
                     DefaultSettingsTextField(
                         option.value,
@@ -276,7 +312,8 @@ class SettingsView : ViewPage {
                             option.value = text
                             updateSaveButton()
                         },
-                        modifier = modifier
+                        modifier = fieldModifier,
+                        textStyle = MaterialTheme.typography.labelLarge
                     )
                     var showFilePicker by remember { mutableStateOf(false) }
                     FilePicker(
@@ -307,7 +344,8 @@ class SettingsView : ViewPage {
                             option.value = text
                             updateSaveButton()
                         },
-                        modifier = modifier
+                        modifier = fieldModifier,
+                        textStyle = MaterialTheme.typography.labelLarge
                     )
                     var showFilePicker by remember { mutableStateOf(false) }
                     FilePicker(
@@ -338,7 +376,8 @@ class SettingsView : ViewPage {
                             option.value = it
                             updateSaveButton()
                         },
-                        modifier = modifier
+                        modifier = fieldModifier,
+                        textStyle = MaterialTheme.typography.labelLarge
                     )
                 }
             }

@@ -75,7 +75,7 @@ object DialogHelper {
             alwaysOnTop = true,
             size = size
         ) {
-            dialogWrapper(
+            DialogWrapper(
                 title,
                 message,
                 supportLinks
@@ -119,7 +119,7 @@ object DialogHelper {
             },
             size = size
         ) {
-            dialogWrapper(
+            DialogWrapper(
                 title,
                 message,
                 supportLinks
@@ -157,7 +157,7 @@ object DialogHelper {
             alwaysOnTop = true,
             size = size
         ) {
-            dialogWrapper(
+            DialogWrapper(
                 title,
                 message
             ) {
@@ -186,7 +186,7 @@ object DialogHelper {
             alwaysOnTop = true,
             size = size
         ) {
-            dialogWrapper(
+            DialogWrapper(
                 title,
                 message + if (e != null) "\nError: ${e.localizedMessage}" else "",
                 themeColor = MaterialTheme.colorScheme.error

@@ -1,5 +1,6 @@
 package nobility.downloader.core
 
+import AppInfo
 import io.objectbox.Box
 import io.objectbox.BoxStore
 import io.objectbox.query.QueryBuilder
@@ -9,7 +10,10 @@ import nobility.downloader.core.entities.settings.SettingsMeta
 import nobility.downloader.core.entities.settings.SettingsMeta_
 import nobility.downloader.core.settings.Defaults
 import nobility.downloader.core.settings.Quality
-import nobility.downloader.utils.*
+import nobility.downloader.utils.FrogLog
+import nobility.downloader.utils.findUniqueOrFirst
+import nobility.downloader.utils.findUniqueOrNull
+import nobility.downloader.utils.fixedSlug
 import java.io.File
 
 /**
@@ -37,6 +41,10 @@ class BoxHelper {
 
     private var favoriteBoxStore: BoxStore = MyObjectBox.builder()
         .directory(File(AppInfo.databasePath + "my_data/favorites"))
+        .build()
+
+    private var ignoreBoxStore: BoxStore = MyObjectBox.builder()
+        .directory(File(AppInfo.databasePath + "my_data/ignores"))
         .build()
 
     //cached website series links
@@ -74,6 +82,7 @@ class BoxHelper {
     val downloadBox: Box<Download> = dataBoxStore.boxFor(Download::class.java)
     val historyBox: Box<SeriesHistory> = dataBoxStore.boxFor(SeriesHistory::class.java)
     val favoriteBox: Box<Favorite> = favoriteBoxStore.boxFor(Favorite::class.java)
+    val ignoreBox: Box<Ignore> = ignoreBoxStore.boxFor(Ignore::class.java)
     val dubbedSeriesBox: Box<Series> = dubbedBoxStore.boxFor(Series::class.java)
     val dubbedEpisodeBox: Box<Episode> = dubbedBoxStore.boxFor(Episode::class.java)
     val subbedSeriesBox: Box<Series> = subbedBoxStore.boxFor(Series::class.java)
@@ -567,6 +576,25 @@ class BoxHelper {
                 .build().use {
                     val genre = it.findUniqueOrNull()
                     return genre ?: Genre(name)
+                }
+        }
+
+        fun isSeriesIgnored(series: Series): Boolean {
+            shared.ignoreBox.query()
+                .equal(Ignore_.seriesSlug, series.slug, QueryBuilder.StringOrder.CASE_SENSITIVE)
+                .build().use {
+                    return it.findUniqueOrNull() != null
+                }
+        }
+
+        fun removeSeriesIgnored(slug: String) {
+            shared.ignoreBox.query()
+                .equal(Ignore_.seriesSlug, slug, QueryBuilder.StringOrder.CASE_SENSITIVE)
+                .build().use {
+                    val favorite = it.findUniqueOrNull()
+                    if (favorite != null) {
+                        shared.ignoreBox.remove(favorite)
+                    }
                 }
         }
 

@@ -41,6 +41,15 @@ fun WebDriver.url(): String {
     }
 }
 
+fun WebDriver.title(): String {
+    val title = title
+    return if (!title.isNullOrEmpty()) {
+        title
+    } else {
+        ""
+    }
+}
+
 fun Color.tone(tone: Double): Color {
     return toHct()
         .withTone(tone)
@@ -80,8 +89,10 @@ fun String.capitalizeFirst(): String {
 }
 
 fun String.normalizeEnumName(): String {
-    return this.replace("_", " ").split(" ").joinToString(" ") {
-        it.capitalizeFirst()
+    return this.replace("_", " ")
+        .split(" ")
+        .joinToString(" ") {
+            it.capitalizeFirst()
     }
 }
 

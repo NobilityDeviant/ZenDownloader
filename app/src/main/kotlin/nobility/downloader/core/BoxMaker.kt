@@ -121,6 +121,26 @@ object BoxMaker {
             }
     }
 
+    fun makeIgnore(
+        seriesSlug: String,
+        website: String = Website.WCOFUN.name
+    ) {
+        BoxHelper.shared.ignoreBox.query()
+            .equal(Ignore_.seriesSlug, seriesSlug, QueryBuilder.StringOrder.CASE_SENSITIVE)
+            .build().use {
+                var ignore = it.findUniqueOrNull()
+                if (ignore != null) {
+                    ignore.website = website
+                } else {
+                    ignore = Ignore(
+                        seriesSlug = seriesSlug,
+                        website = website
+                    )
+                }
+                BoxHelper.shared.ignoreBox.put(ignore)
+            }
+    }
+
     @Suppress("UNUSED")
     fun makeGenre(
         name: String = "",

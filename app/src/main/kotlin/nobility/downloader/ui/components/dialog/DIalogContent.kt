@@ -22,7 +22,7 @@ import nobility.downloader.ui.components.LinkifyText
 import nobility.downloader.utils.tone
 
 @Composable
-fun dialogHeader(
+fun DialogHeader(
     dialogTitle: String,
     dialogContent: String,
     supportLinks: Boolean = true,
@@ -112,11 +112,12 @@ fun dialogHeader(
 }
 
 @Composable
-fun dialogWrapper(
+fun DialogWrapper(
     title: String = "",
     message: String = "",
     supportLinks: Boolean = true,
     themeColor: Color = MaterialTheme.colorScheme.primary,
+    backgroundColor: Color = MaterialTheme.colorScheme.surfaceVariant,
     bottomBarContent: @Composable () -> Unit = {}
 ) {
     Scaffold(
@@ -126,14 +127,14 @@ fun dialogWrapper(
                 color = themeColor,
                 shape = RoundedCornerShape(10.dp)
             ).background(
-                color = MaterialTheme.colorScheme.surfaceVariant,
+                color = backgroundColor,
                 shape = RoundedCornerShape(10.dp)
             ),
         bottomBar = {
             Column(
                 modifier = Modifier.fillMaxWidth()
                     .background(
-                        color = MaterialTheme.colorScheme.surfaceVariant
+                        color = backgroundColor
                     ),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
@@ -153,11 +154,11 @@ fun dialogWrapper(
                 .fillMaxSize()
                 .padding(it)
                 .background(
-                    color = MaterialTheme.colorScheme.surfaceVariant,
+                    color = backgroundColor,
                     shape = RoundedCornerShape(10.dp)
                 )
         ) {
-            dialogHeader(
+            DialogHeader(
                 title,
                 message,
                 supportLinks,

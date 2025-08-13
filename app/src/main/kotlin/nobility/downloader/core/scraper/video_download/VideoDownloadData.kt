@@ -140,7 +140,7 @@ class VideoDownloadData(
             finishEpisode()
             return true
         }
-        if (m3u8Retries >= Defaults.M3u8_RETRIES.int()) {
+        if (m3u8Retries >= Defaults.M3U8_RETRIES.int()) {
             retries++
             m3u8Retries = 0
         }

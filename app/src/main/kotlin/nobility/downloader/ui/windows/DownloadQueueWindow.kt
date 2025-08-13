@@ -6,10 +6,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.CursorDropdownMenu
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
-import androidx.compose.material3.VerticalDivider
-import androidx.compose.material3.ripple
+import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -22,44 +19,81 @@ import compose.icons.evaicons.Fill
 import compose.icons.evaicons.fill.*
 import nobility.downloader.core.Core
 import nobility.downloader.core.entities.Episode
-import nobility.downloader.ui.components.DefaultDropdownItem
-import nobility.downloader.ui.components.HeaderItem
-import nobility.downloader.ui.components.SortedLazyColumn
+import nobility.downloader.ui.components.*
 import nobility.downloader.ui.components.dialog.DialogHelper
 import nobility.downloader.ui.windows.utils.ApplicationState
+import nobility.downloader.utils.Constants
+import nobility.downloader.utils.Constants.mediumIconSize
 import nobility.downloader.utils.hover
 
 class DownloadQueueWindow {
 
+    @OptIn(ExperimentalMaterial3Api::class)
     fun open() {
         ApplicationState.newWindow(
             "Download Queue"
         ) {
-            val scrollState = rememberLazyListState()
-            SortedLazyColumn(
-                listOf(
-                    HeaderItem(
-                        "Name"
-                    ) { it.name },
-                    HeaderItem(
-                        "Position",
-                        0.1f
+            Scaffold(
+                Modifier.fillMaxSize(),
+                topBar = {
+                    TopAppBar(
+                        modifier = Modifier.height(Constants.topBarHeight),
+                        title = {},
+                        actions = {
+                            TooltipIconButton(
+                                "Clear All",
+                                EvaIcons.Fill.Trash2,
+                                mediumIconSize,
+                                onClick = {
+                                    if (Core.child.downloadThread.downloadQueue.isEmpty()) {
+                                        showToast("No downloads are in the queue.")
+                                        return@TooltipIconButton
+                                    }
+                                    DialogHelper.showConfirm(
+                                        """
+                                                    This will remove all queued downloads.
+                                                    Are you sure you want to remove everything?
+                                                """.trimIndent()
+                                    ) {
+                                        Core.child.downloadThread.clear()
+                                    }
+                                },
+                                iconColor = MaterialTheme.colorScheme.tertiary,
+                                spacePosition = SpacePosition.START,
+                                space = 10.dp
+                            )
+                        }
+                    )
+                }
+            ) { paddingValues ->
+                val scrollState = rememberLazyListState()
+                SortedLazyColumn(
+                    listOf(
+                        HeaderItem(
+                            "Name"
+                        ) { it.name },
+                        HeaderItem(
+                            "Position",
+                            0.1f
+                        ),
                     ),
-                ),
-                Core.child.downloadThread.downloadQueue,
-                key = { it.name + it.id },
-                lazyListState = scrollState,
-                headerColor = MaterialTheme.colorScheme.tertiary
-            ) { index, item ->
-                EpisodeRow(
-                    item,
-                    index
-                )
-            }
-            LaunchedEffect(
-                Core.child.downloadThread.downloadQueue.size
-            ) {
-                scrollState.animateScrollToItem(0)
+                    Core.child.downloadThread.downloadQueue,
+                    key = { it.name + it.id },
+                    lazyListState = scrollState,
+                    headerColor = MaterialTheme.colorScheme.tertiary,
+                    modifier = Modifier.padding(paddingValues)
+                ) { index, item ->
+                    EpisodeRow(
+                        item,
+                        index
+                    )
+                }
+                LaunchedEffect(
+                    Core.child.downloadThread.downloadQueue.size
+                ) {
+                    scrollState.animateScrollToItem(0)
+                }
+                ApplicationState.AddToastToWindow(this)
             }
         }
     }
@@ -120,20 +154,6 @@ class DownloadQueueWindow {
             ) {
                 closeMenu()
                 Core.child.downloadThread.removeFromQueue(episode)
-            }
-            DefaultDropdownItem(
-                "Remove All",
-                EvaIcons.Fill.Trash2
-            ) {
-                closeMenu()
-                DialogHelper.showConfirm(
-                    """
-                        This will remove all queued downloads.
-                        Are you sure you want to remove everything?
-                    """.trimIndent()
-                ) {
-                    Core.child.downloadThread.clear()
-                }
             }
         }
 

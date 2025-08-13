@@ -359,7 +359,7 @@ class VideoDownloadHelper(
                     FrogLog.writeErrorToTxt(
                         "m3u8_link_source",
                         frameString,
-                        "Link: $hslLink | UserAgent: " + videoDownloadData.userAgent
+                        "Link: $fullLink | UserAgent: " + videoDownloadData.userAgent
                     )
                     return@withContext Resource.ErrorCode(
                         "Failed to find m3u8 link in the source.",
@@ -437,7 +437,7 @@ class VideoDownloadHelper(
                     FrogLog.writeErrorToTxt(
                         "m3u8_qualities_source",
                         hslSource.data.toString(),
-                        "Link: $hslLink | UserAgent: " + videoDownloadData.userAgent
+                        "Slug: $slug | UserAgent: " + videoDownloadData.userAgent
                     )
                     return@withContext Resource.ErrorCode(
                         "Failed to find m3u8 qualities.",
@@ -868,7 +868,7 @@ class VideoDownloadHelper(
 
             videoDownloadData.m3u8Retries++
 
-            if (videoDownloadData.m3u8Retries >= Defaults.M3u8_RETRIES.int()) {
+            if (videoDownloadData.m3u8Retries >= Defaults.M3U8_RETRIES.int()) {
                 if (videoDownloadData.mCurrentDownload != null) {
                     Core.child.removeDownload(videoDownloadData.currentDownload)
                     videoDownloadData.mCurrentDownload = null

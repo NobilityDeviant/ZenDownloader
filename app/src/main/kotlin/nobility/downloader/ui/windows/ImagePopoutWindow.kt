@@ -44,7 +44,7 @@ object ImagePopoutWindow {
                     imagePath,
                     urlBackup,
                     pointerIcon = null
-                ) {}
+                )
             }
         }
     }

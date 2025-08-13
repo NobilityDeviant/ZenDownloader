@@ -551,7 +551,7 @@ private fun UiWrapper(
                 ) {
                     content()
                 }
-                ApplicationState.addToastToWindow(windowScope)
+                ApplicationState.AddToastToWindow(windowScope)
             }
         )
     }

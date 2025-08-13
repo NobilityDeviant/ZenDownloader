@@ -17,12 +17,15 @@ import java.awt.datatransfer.DataFlavor
 import java.awt.datatransfer.StringSelection
 import java.io.*
 import java.net.URI
+import java.nio.file.Files
+import java.nio.file.StandardCopyOption
 import java.text.CharacterIterator
 import java.text.DecimalFormat
 import java.text.SimpleDateFormat
 import java.text.StringCharacterIterator
 import java.util.*
 import java.util.regex.Pattern
+import java.util.zip.ZipInputStream
 import javax.net.ssl.HttpsURLConnection
 
 
@@ -604,6 +607,51 @@ object Tools {
             1f,
             ColorSpaces.Srgb
         )
+    }
+
+    fun unzipFile(
+        source: File,
+        outputDir: File
+    ) {
+        ZipInputStream(Files.newInputStream(source.toPath())).use { zis ->
+            var entry = zis.nextEntry
+            while (entry != null) {
+                val newFile = outputDir.toPath().resolve(entry.name)
+                if (entry.isDirectory) {
+                    Files.createDirectories(newFile)
+                } else {
+                    Files.createDirectories(newFile.parent)
+                    Files.copy(zis, newFile, StandardCopyOption.REPLACE_EXISTING)
+                }
+                entry = zis.nextEntry
+            }
+        }
+    }
+
+    fun openFollowingRedirects(
+        url: String,
+        maxRedirects: Int = 5
+    ): HttpsURLConnection {
+        var currentUrl = url
+        repeat(maxRedirects) {
+            val con = URI(currentUrl).toURL().openConnection() as HttpsURLConnection
+            con.setRequestProperty("Accept-Encoding", "identity")
+            con.connectTimeout = 30_000
+            con.readTimeout = 30_000
+            con.setRequestProperty("User-Agent", UserAgents.random)
+            con.instanceFollowRedirects = false
+
+            val code = con.responseCode
+            if (code in 300..399) {
+                val newLocation = con.getHeaderField("Location")
+                    ?: throw IOException("Redirect without Location header.")
+                con.disconnect()
+                currentUrl = newLocation
+            } else {
+                return con
+            }
+        }
+        throw IOException("Too many redirects")
     }
 
 }

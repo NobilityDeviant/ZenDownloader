@@ -772,7 +772,6 @@ private fun <T> CustomHeader(
  * The major downside is the weights and dividers needed for the row.
  * Maybe there can be a row class? IDK ill figure it out one day.
  * It could also use some more customization parameters.
- * <And adjustable column widths: should be doable by changing the header item's weight on drag>
  * @author NobilityDev
  */
 @Composable

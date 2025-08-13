@@ -16,7 +16,6 @@ object SeriesUpdater {
     suspend fun getNewEpisodes(
         series: Series
     ): Resource<NewEpisodes> = withContext(Dispatchers.IO) {
-        //FrogLog.writeMessage("Looking for new episodes for: ${series.name}")
         val result = gatherSeriesEpisodes(series)
         val data = result.data
         if (data != null) {
@@ -38,6 +37,31 @@ object SeriesUpdater {
             )
         }
         return@withContext Resource.Error()
+    }
+
+    suspend fun getNewEpisodesAlwaysSuccess(
+        series: Series
+    ): Resource<NewEpisodes> = withContext(Dispatchers.IO) {
+        val result = gatherSeriesEpisodes(series)
+        val data = result.data
+        if (data != null) {
+            return@withContext Resource.Success(
+                NewEpisodes(
+                    compareForNewEpisodes(
+                        series,
+                        data
+                    ),
+                    data
+                )
+            )
+        } else {
+            return@withContext Resource.Success(
+                NewEpisodes(
+                    emptyList(),
+                    emptyList()
+                )
+            )
+        }
     }
 
     private suspend fun gatherSeriesEpisodes(

@@ -8,6 +8,7 @@ import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 
+@Suppress("UNUSED")
 object ToastTheme {
     val ActionFocusLabelTextColor: Color @Composable get() = MaterialTheme.colorScheme.inversePrimary
     val ActionHoverLabelTextColor: Color @Composable get() = MaterialTheme.colorScheme.inversePrimary

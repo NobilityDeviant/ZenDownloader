@@ -22,16 +22,20 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import net.lingala.zip4j.ZipFile
 import nobility.downloader.core.AssetBoxHelper
 import nobility.downloader.core.settings.Defaults
 import nobility.downloader.ui.components.defaultButton
 import nobility.downloader.ui.windows.utils.AppWindowScope
 import nobility.downloader.ui.windows.utils.ApplicationState
-import nobility.downloader.utils.*
+import nobility.downloader.utils.Tools
+import nobility.downloader.utils.fileExists
+import nobility.downloader.utils.folderIsEmpty
+import nobility.downloader.utils.isDirectory
 import org.jsoup.Jsoup
-import java.io.*
-import java.net.URI
+import java.io.BufferedOutputStream
+import java.io.File
+import java.io.FileOutputStream
+import java.io.StringReader
 import java.text.SimpleDateFormat
 import java.util.*
 import javax.net.ssl.HttpsURLConnection
@@ -235,9 +239,6 @@ class AssetUpdateWindow {
         downloadText = "Accessing $asset online"
         downloadProgress = 0f
         var con: HttpsURLConnection? = null
-        var bis: BufferedInputStream? = null
-        var fos: FileOutputStream? = null
-        var bos: BufferedOutputStream? = null
         val assetFile = File(asset.path)
         if (assetFile.isDirectory) {
             assetFile.mkdirs()
@@ -258,20 +259,7 @@ class AssetUpdateWindow {
             val formatter = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'")
             formatter.timeZone = TimeZone.getTimeZone("GMT")
             val formattedDate = formatter.parse(commitDate)
-            con = URI(asset.link)
-                .toURL()
-                .openConnection() as HttpsURLConnection
-            con.addRequestProperty(
-                "Accept",
-                "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7"
-            )
-            if (!asset.fileName.endsWith(".txt")) {
-                con.addRequestProperty("Accept-Encoding", "gzip, deflate, br")
-            }
-            con.addRequestProperty("Accept-Language", "en-US,en;q=0.9")
-            con.addRequestProperty("User-Agent", UserAgents.random)
-            con.connectTimeout = 30_000
-            con.readTimeout = 30_000
+            con = Tools.openFollowingRedirects(asset.link)
             val completeFileSize = con.contentLengthLong
             if (completeFileSize == -1L) {
                 throw Exception("Failed to find file size for asset: $asset.")
@@ -285,41 +273,41 @@ class AssetUpdateWindow {
             ) { //4-hour difference
                 started[asset.fileName] = true
                 println("Detected new update for: $asset. Online Last Modified: $onlineLastModified Compared to Local Last Modified: $localLastModified Difference: $modifiedDifference")
-                bis = BufferedInputStream(con.inputStream)
-                val buffer = ByteArray(8192)
                 val downloadFile = File(
                     assetFile.parent + File.separator + asset.fileName
                 )
-                fos = FileOutputStream(downloadFile, true)
-                bos = BufferedOutputStream(fos, buffer.size)
-                var count: Int
-                var total = 0L
-                while (bis.read(buffer).also { count = it } != -1) {
-                    if (shuttingDown) {
-                        downloadText = shuttingDownText
-                        break
-                    }
-                    total += count.toLong()
-                    bos.write(buffer, 0, count)
-                    downloadText = "Downloading $asset: " + Tools.bytesToString(total) + "/" +
-                            Tools.bytesToString(completeFileSize)
-                    downloadProgress = ((total.toFloat() / completeFileSize.toFloat()))
+                if (assetFile.extension == "txt") {
+                    assetFile.delete()
                 }
-                try {
-                    bos.flush()
-                    bos.close()
-                } catch (_: Exception) {}
-                try {
-                    fos.flush()
-                    fos.close()
-                } catch (_: Exception) {}
+                var bytesRead: Int
+                var total = 0L
+
+                con.inputStream.use { input ->
+                    BufferedOutputStream(FileOutputStream(downloadFile, true)).use { output ->
+                        val buffer = ByteArray(8192)
+                        while (input.read(buffer).also { bytesRead = it } != -1) {
+                            if (shuttingDown) {
+                                downloadText = shuttingDownText
+                                break
+                            }
+                            total += bytesRead
+                            output.write(buffer, 0, bytesRead)
+                            downloadText = "Downloading $asset: " + Tools.bytesToString(total) + "/" +
+                                    Tools.bytesToString(completeFileSize)
+                            downloadProgress = ((total.toFloat() / completeFileSize.toFloat()))
+                        }
+                    }
+                }
+
                 val finished = total >= completeFileSize
                 if (finished) {
                     if (downloadFile.name.endsWith(".zip")) {
                         downloadText = "Finished downloading $asset | Unzipping file..."
                         println("Successfully downloaded: $asset | Unzipping file...")
-                        val zipFile = ZipFile(downloadFile)
-                        zipFile.extractAll(File(asset.path).parent)
+                        Tools.unzipFile(
+                            downloadFile,
+                            File(asset.path).parentFile
+                        )
                         downloadFile.delete()
                     } else {
                         downloadText = "Finished downloading $asset"
@@ -341,15 +329,6 @@ class AssetUpdateWindow {
             e.printStackTrace()
         } finally {
             con?.disconnect()
-            bis?.close()
-            try {
-                bos?.close()
-            } catch (_: Exception) {
-            }
-            try {
-                fos?.close()
-            } catch (_: Exception) {
-            }
         }
     }
 

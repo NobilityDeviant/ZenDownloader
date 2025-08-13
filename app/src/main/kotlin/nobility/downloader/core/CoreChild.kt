@@ -23,14 +23,13 @@ import nobility.downloader.core.updates.UrlUpdater
 import nobility.downloader.ui.components.dialog.DialogHelper
 import nobility.downloader.ui.components.dialog.DialogHelper.showError
 import nobility.downloader.utils.Constants
+import nobility.downloader.utils.FFmpegDownloader
 import nobility.downloader.utils.FrogLog
 import nobility.downloader.utils.update
 import org.openqa.selenium.WebDriver
 import java.io.File
 import java.net.URI
 import java.util.*
-import java.util.logging.Level
-import java.util.logging.Logger
 import kotlin.system.exitProcess
 
 
@@ -59,12 +58,18 @@ class CoreChild {
                 UrlUpdater.updateWcoUrl()
             }
             movieHandler.loadMovies()
-            val logger = Logger.getLogger("org.openqa.selenium.remote.http.WebSocket")
-            logger.setLevel(Level.SEVERE)
-
             WebDriverManager.chromedriver().setup()
             launch {
                 downloadThread.run()
+            }
+            launch {
+                val ffmpegResult = FFmpegDownloader.downloadLatestFFmpeg()
+                if (ffmpegResult.isFailed) {
+                    FrogLog.error(
+                        "Failed to download ffmpeg and ffplay for OS.",
+                        ffmpegResult.message
+                    )
+                }
             }
         }
     }

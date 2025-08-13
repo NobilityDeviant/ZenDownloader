@@ -4,6 +4,7 @@ import AppInfo
 import androidx.compose.foundation.layout.Box
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.awt.ComposeWindow
 import androidx.compose.ui.input.key.KeyEvent
 import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.unit.DpSize
@@ -13,11 +14,13 @@ import androidx.compose.ui.window.WindowPlacement
 import androidx.compose.ui.window.WindowPosition
 import androidx.compose.ui.window.rememberWindowState
 import nobility.downloader.core.Core
+import nobility.downloader.ui.components.toast.ToastHost
 import nobility.downloader.ui.components.toast.ToastHostState
-import nobility.downloader.ui.components.toast.toastHost
 import nobility.downloader.ui.theme.CoreTheme
+import nobility.downloader.utils.FrogLog
 import nobility.downloader.utils.ImageUtils
 import org.apache.commons.lang3.SystemUtils
+import java.awt.Frame
 
 /**
  * My implementation of Jetpacks multi window example.
@@ -37,11 +40,27 @@ class ApplicationState {
     val windows = mutableStateListOf<WindowData>()
 
     fun addWindow(data: WindowData) {
-        if (windows.any { it.scope.windowId == data.scope.windowId }) {
+        val existing = windows.find { it.scope.windowId == data.scope.windowId }
+        if (existing != null) {
+            try {
+                existing.scope.composeWindow?.apply {
+                    if (extendedState and Frame.ICONIFIED != 0) {
+                        extendedState = extendedState and Frame.ICONIFIED.inv()
+                    }
+                    toFront()
+                    requestFocus()
+                }
+            } catch (e: Exception) {
+                FrogLog.error(
+                    "Failed to bring existing window to the front.",
+                    e
+                )
+            }
             return
         }
         windows.add(data)
     }
+
 
     companion object {
 
@@ -69,12 +88,12 @@ class ApplicationState {
         )
 
         @Composable
-        fun addToastToWindow(scope: AppWindowScope) {
+        fun AddToastToWindow(scope: AppWindowScope) {
             val toastHostState = remember { ToastHostState() }
             Box(
                 contentAlignment = Alignment.Center
             ) {
-                toastHost(
+                ToastHost(
                     hostState = toastHostState
                 )
             }
@@ -103,7 +122,6 @@ class ApplicationState {
             content: @Composable (AppWindowScope.() -> Unit)
         ) {
             val scope = object : AppWindowScope {
-                //use the title so the same window can't be opened twice
                 override val windowId: String = title
                 override var open = mutableStateOf(true)
                 override var focused = mutableStateOf(false)
@@ -112,6 +130,7 @@ class ApplicationState {
                 override fun closeWindow() {
                     removeWindowWithId(windowId)
                 }
+                override var composeWindow: ComposeWindow? = null
             }
             shared.addWindow(defaultWindowData(
                 title,
@@ -150,6 +169,7 @@ class ApplicationState {
                             )?: false
                         },
                         content = {
+                            scope.composeWindow = window
                             val focused = LocalWindowInfo.current.isWindowFocused
                             LaunchedEffect(focused) {
                                 scope.focused.value = focused
