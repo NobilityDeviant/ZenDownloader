@@ -363,7 +363,7 @@ tasks.register("packageJARDistributables") {
                 }
             }
 
-            val zipFile = File(distRoot, "$jarName-${graalJDK.folderName}.zip")
+            val zipFile = File(distRoot, "$projectName-${graalJDK.folderName}.zip")
             ant.withGroovyBuilder {
                 "zip"("destfile" to zipFile.absolutePath) {
                     "fileset"(
