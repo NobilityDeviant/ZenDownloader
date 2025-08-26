@@ -1,5 +1,7 @@
 # ZenDownloader
 
+> ⚠️ **Cloudflare is Active:** wco has enabled the premium plan for cloudflare. this program can't function right now.
+
 A Kotlin & Jetpack Compose program used to download episodes, series and movies from: https://www.wcoflix.tv/
 
 If you check that website out, it's one of the best video sites for free cartoons and anime. It's also the most vulnerable.
