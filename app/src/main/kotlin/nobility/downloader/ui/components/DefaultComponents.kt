@@ -16,7 +16,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.CursorDropdownMenu
 import androidx.compose.material.DropdownMenuItem
-import androidx.compose.material.Icon
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -59,6 +58,8 @@ import nobility.downloader.utils.tone
 data class DropdownOption(
     val title: String,
     val modifier: Modifier = Modifier,
+    val startIcon: ImageVector? = null,
+    val endIcon: ImageVector? = null,
     val onClick: () -> Unit
 )
 
@@ -68,26 +69,27 @@ fun DefaultDropdown(
     label: String,
     expanded: Boolean,
     dropdownOptions: List<DropdownOption>,
-    dropdownModifier: Modifier = Modifier,
-    boxWidth: Dp = 120.dp,
-    boxHeight: Dp = Dp.Unspecified,
-    boxPadding: Dp = 0.dp,
+    dropdownModifier: Modifier = Modifier.wrapContentWidth(),
+    dropdownColor: Color = MaterialTheme.colorScheme.background,
     boxColor: Color = MaterialTheme.colorScheme.surfaceVariant,
     boxTextColor: Color = MaterialTheme.colorScheme.onSurfaceVariant,
+    boxShape: Shape = RoundedCornerShape(4.dp),
+    boxModifier: Modifier = Modifier.width(140.dp)
+        .height(50.dp),
+    labelFontSize: TextUnit = 12.sp,
+    labelFontWeight: FontWeight = FontWeight.Bold,
     centerBoxText: Boolean = false,
     onTextClick: () -> Unit = {},
     onDismissRequest: () -> Unit = {}
 ) {
     Box {
         Row(
-            modifier = Modifier
-                .width(boxWidth)
-                .height(boxHeight)
-                .padding(boxPadding)
+            modifier = boxModifier
                 .background(
                     boxColor,
-                    RoundedCornerShape(4.dp)
-                ).onClick { onTextClick() },
+                    boxShape
+                ).onClick { onTextClick() }
+                .pointerHoverIcon(PointerIcon.Hand),
             horizontalArrangement = Arrangement.spacedBy(4.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -95,8 +97,8 @@ fun DefaultDropdown(
                 label,
                 modifier = Modifier.padding(top = 8.dp, bottom = 12.dp, start = 5.dp)
                     .weight(1f),
-                fontSize = 11.sp,
-                fontWeight = FontWeight.Bold,
+                fontSize = labelFontSize,
+                fontWeight = labelFontWeight,
                 textAlign = if (centerBoxText) TextAlign.Center else TextAlign.Start,
                 color = boxTextColor
             )
@@ -111,15 +113,23 @@ fun DefaultDropdown(
         CursorDropdownMenu(
             expanded,
             onDismissRequest,
-            modifier = Modifier.background(
-                MaterialTheme.colorScheme.background
-            ).then(dropdownModifier)
+            modifier = dropdownModifier
+                .background(dropdownColor)
+                .border(1.dp, dropdownColor.toColorOnThis())
         ) {
-            dropdownOptions.forEach {
+            dropdownOptions.forEachIndexed { index, option ->
                 DefaultDropdownItem(
-                    it.title
+                    option.title,
+                    option.startIcon,
+                    option.endIcon,
+                    contentColor = dropdownColor.toColorOnThis()
                 ) {
-                    it.onClick()
+                    option.onClick()
+                }
+                if (index != dropdownOptions.lastIndex) {
+                    HorizontalDivider(
+                        color = boxTextColor
+                    )
                 }
             }
         }
@@ -133,10 +143,10 @@ fun DefaultDropdownItem(
     endIcon: ImageVector? = null,
     enabled: Boolean = true,
     modifier: Modifier = Modifier,
-    iconColor: Color = MaterialTheme.colorScheme.onSurface,
+    contentColor: Color = MaterialTheme.colorScheme.onSurface,
     onClick: () -> Unit
 ) {
-    val interaction =  remember { MutableInteractionSource() }
+    val interaction = remember { MutableInteractionSource() }
     val hovered by interaction.collectIsHoveredAsState()
     DropdownMenuItem(
         onClick = onClick,
@@ -158,21 +168,21 @@ fun DefaultDropdownItem(
                     startIcon,
                     "",
                     modifier = Modifier.size(24.dp),
-                    iconColor
+                    contentColor
                 )
             }
             Text(
                 text,
                 fontSize = 12.sp,
                 modifier = Modifier.offset(y = (-3).dp),
-                color = iconColor
+                color = contentColor
             )
             if (endIcon != null) {
                 Icon(
                     endIcon,
                     "",
                     modifier = Modifier.size(24.dp),
-                    iconColor
+                    contentColor
                 )
             }
         }
@@ -241,7 +251,7 @@ fun DefaultSettingsTextField(
     numbersOnly: Boolean = false,
     modifier: Modifier = Modifier.height(40.dp),
     settingsDescription: String = "",
-    textStyle: TextStyle = MaterialTheme.typography.labelSmall,
+    textStyle: TextStyle = MaterialTheme.typography.labelLarge,
     requestFocus: Boolean = false,
     focusRequester: FocusRequester = remember { FocusRequester() },
     passwordMode: Boolean = false,
@@ -785,6 +795,7 @@ fun <T> SortedLazyColumn(
     key: ((T) -> Any)? = null,
     lazyListState: LazyListState = rememberLazyListState(),
     scope: CoroutineScope = rememberCoroutineScope(),
+    scrollToPredicate: ((T) -> Boolean)? = null,
     lazyColumnRow: @Composable (Int, T) -> Unit
 ) {
     val sortState: MutableState<HeaderSort?> = remember {
@@ -859,6 +870,20 @@ fun <T> SortedLazyColumn(
                 }
             }
             VerticalScrollbar(lazyListState)
+        }
+
+        var checkedScroll by remember {
+            mutableStateOf(false)
+        }
+
+        LaunchedEffect(sortedItems) {
+            if (!checkedScroll && sortedItems.isNotEmpty() && scrollToPredicate != null) {
+                val index = sortedItems.indexOfFirst(scrollToPredicate)
+                if (index >= 0) {
+                    lazyListState.animateScrollToItem(index)
+                }
+                checkedScroll = true
+            }
         }
     }
 }

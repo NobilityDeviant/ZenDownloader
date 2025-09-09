@@ -13,7 +13,7 @@ import nobility.downloader.core.settings.Quality
 import nobility.downloader.utils.FrogLog
 import nobility.downloader.utils.findUniqueOrFirst
 import nobility.downloader.utils.findUniqueOrNull
-import nobility.downloader.utils.fixedSlug
+import nobility.downloader.utils.fixedAnimeSlug
 import java.io.File
 
 /**
@@ -45,6 +45,10 @@ class BoxHelper {
 
     private var ignoreBoxStore: BoxStore = MyObjectBox.builder()
         .directory(File(AppInfo.databasePath + "my_data/ignores"))
+        .build()
+
+    var downloadedEpisodeBoxStore: BoxStore = MyObjectBox.builder()
+        .directory(File(AppInfo.databasePath + "my_data/episode_history"))
         .build()
 
     //cached website series links
@@ -83,6 +87,7 @@ class BoxHelper {
     val historyBox: Box<SeriesHistory> = dataBoxStore.boxFor(SeriesHistory::class.java)
     val favoriteBox: Box<Favorite> = favoriteBoxStore.boxFor(Favorite::class.java)
     val ignoreBox: Box<Ignore> = ignoreBoxStore.boxFor(Ignore::class.java)
+    val downloadedEpisodeBox: Box<DownloadedEpisode> = downloadedEpisodeBoxStore.boxFor(DownloadedEpisode::class.java)
     val dubbedSeriesBox: Box<Series> = dubbedBoxStore.boxFor(Series::class.java)
     val dubbedEpisodeBox: Box<Episode> = dubbedBoxStore.boxFor(Episode::class.java)
     val subbedSeriesBox: Box<Series> = subbedBoxStore.boxFor(Series::class.java)
@@ -466,6 +471,72 @@ class BoxHelper {
             return null
         }
 
+        fun episodeForName(
+            episodeName: String
+        ): Episode? {
+            SeriesIdentity.entries.forEach { identity ->
+                val query: QueryBuilder<Episode> = when (identity) {
+                    SeriesIdentity.DUBBED ->
+                        shared.dubbedEpisodeBox.query()
+
+                    SeriesIdentity.SUBBED ->
+                        shared.subbedEpisodeBox.query()
+
+                    SeriesIdentity.MOVIE ->
+                        shared.moviesEpisodeBox.query()
+
+                    SeriesIdentity.CARTOON ->
+                        shared.cartoonEpisodeBox.query()
+
+                    else -> shared.miscEpisodeBox.query()
+                }
+                query.equal(
+                    Episode_.name,
+                    episodeName,
+                    QueryBuilder.StringOrder.CASE_INSENSITIVE)
+                    .build().use {
+                        val episode = it.findUniqueOrNull()
+                        if (episode != null) {
+                            return episode
+                        }
+                    }
+            }
+            return null
+        }
+
+        fun episodeForSlug(
+            episodeSlug: String
+        ): Episode? {
+            SeriesIdentity.entries.forEach { identity ->
+                val query: QueryBuilder<Episode> = when (identity) {
+                    SeriesIdentity.DUBBED ->
+                        shared.dubbedEpisodeBox.query()
+
+                    SeriesIdentity.SUBBED ->
+                        shared.subbedEpisodeBox.query()
+
+                    SeriesIdentity.MOVIE ->
+                        shared.moviesEpisodeBox.query()
+
+                    SeriesIdentity.CARTOON ->
+                        shared.cartoonEpisodeBox.query()
+
+                    else -> shared.miscEpisodeBox.query()
+                }
+                query.equal(
+                    Episode_.slug,
+                    episodeSlug,
+                    QueryBuilder.StringOrder.CASE_SENSITIVE)
+                    .build().use {
+                        val episode = it.findUniqueOrNull()
+                        if (episode != null) {
+                            return episode
+                        }
+                    }
+            }
+            return null
+        }
+
         fun seriesForEpisodeSlug(
             slug: String
         ): Pair<Series?, Episode>? {
@@ -562,7 +633,7 @@ class BoxHelper {
         }
 
         fun identityForSeriesSlug(slug: String): SeriesIdentity {
-            val fixedSlug = slug.fixedSlug()
+            val fixedSlug = slug.fixedAnimeSlug()
             val categoryLink = identityLinkForSeriesSlug(fixedSlug)
             if (categoryLink != null) {
                 return categoryLink.identity
@@ -579,9 +650,51 @@ class BoxHelper {
                 }
         }
 
+        fun isDownloadedEpisode(episode: Episode): DownloadedEpisode? {
+            shared.downloadedEpisodeBox.query()
+                .equal(
+                    DownloadedEpisode_.episodeSlug,
+                    episode.slug,
+                    QueryBuilder.StringOrder.CASE_SENSITIVE)
+                .build().use {
+                    return it.findUniqueOrNull()
+                }
+        }
+
+        fun removeDownloadedEpisode(downloadedEpisode: DownloadedEpisode) {
+            shared.downloadedEpisodeBox.query()
+                .equal(
+                    DownloadedEpisode_.episodeSlug,
+                    downloadedEpisode.episodeSlug,
+                    QueryBuilder.StringOrder.CASE_SENSITIVE)
+                .build().use {
+                    val downloaded = it.findUniqueOrNull()
+                    if (downloaded != null) {
+                        shared.downloadedEpisodeBox.remove(downloaded)
+                    }
+                }
+        }
+
+        fun removeDownloadedEpisode(episode: Episode) {
+            shared.downloadedEpisodeBox.query()
+                .equal(
+                    DownloadedEpisode_.episodeSlug,
+                    episode.slug,
+                    QueryBuilder.StringOrder.CASE_SENSITIVE)
+                .build().use {
+                    val downloaded = it.findUniqueOrNull()
+                    if (downloaded != null) {
+                        shared.downloadedEpisodeBox.remove(downloaded)
+                    }
+                }
+        }
+
         fun isSeriesIgnored(series: Series): Boolean {
             shared.ignoreBox.query()
-                .equal(Ignore_.seriesSlug, series.slug, QueryBuilder.StringOrder.CASE_SENSITIVE)
+                .equal(
+                    Ignore_.seriesSlug,
+                    series.slug,
+                    QueryBuilder.StringOrder.CASE_SENSITIVE)
                 .build().use {
                     return it.findUniqueOrNull() != null
                 }

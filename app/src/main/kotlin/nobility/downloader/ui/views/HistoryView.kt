@@ -1,7 +1,7 @@
 package nobility.downloader.ui.views
 
-import androidx.compose.foundation.*
-import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -11,14 +11,16 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.pointer.PointerButton
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import compose.icons.EvaIcons
 import compose.icons.evaicons.Fill
 import compose.icons.evaicons.Outline
-import compose.icons.evaicons.fill.*
+import compose.icons.evaicons.fill.Info
+import compose.icons.evaicons.fill.Search
+import compose.icons.evaicons.fill.Star
+import compose.icons.evaicons.fill.Trash
 import compose.icons.evaicons.outline.Star
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -85,9 +87,9 @@ class HistoryView : ViewPage {
                     modifier = Modifier.fillMaxWidth().height(bottomBarHeight)
                 ) {
                     Row(
-                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
                         modifier = Modifier.align(Alignment.CenterHorizontally)
-                            .padding(10.dp)
+                            .padding(8.dp)
                     ) {
                         DefaultButton(
                             "Clear History",
@@ -117,7 +119,8 @@ class HistoryView : ViewPage {
                                 return@DefaultButton
                             }
                             val window = EpisodeUpdaterWindow(
-                                seriesDatas.map { it.series },
+                                seriesDatas.sortedByDescending { it.history.dateAdded }
+                                    .map { it.series },
                                 "History"
                             )
                             window.open()
@@ -220,15 +223,15 @@ class HistoryView : ViewPage {
             ) {
                 closeMenu()
                 val window = EpisodeUpdaterWindow(
-                    listOf(seriesData.series),
+                    seriesData.series,
                     "History: ${seriesData.series.name}"
                 )
                 window.open()
             }
 
-            val ignored by remember {
-                mutableStateOf(BoxHelper.isSeriesIgnored(seriesData.series))
-            }
+            //val ignored by remember {
+              //  mutableStateOf(BoxHelper.isSeriesIgnored(seriesData.series))
+            //}
 
             val favorited by remember {
                 mutableStateOf(BoxHelper.isSeriesFavorited(seriesData.series))
@@ -239,7 +242,7 @@ class HistoryView : ViewPage {
                     "Remove From Favorite" else "Add To Favorite",
                 if (favorited)
                     EvaIcons.Fill.Star else EvaIcons.Outline.Star,
-                iconColor = if (favorited)
+                contentColor = if (favorited)
                     Color.Yellow else LocalContentColor.current
             ) {
                 closeMenu()
@@ -250,7 +253,7 @@ class HistoryView : ViewPage {
                 }
             }
 
-            DefaultDropdownItem(
+            /*DefaultDropdownItem(
                 if (ignored)
                 "Remove From Ignored" else "Add To Ignored",
                 EvaIcons.Fill.MinusSquare
@@ -262,7 +265,7 @@ class HistoryView : ViewPage {
                     BoxMaker.makeIgnore(seriesData.series.slug)
                     this@HistoryView.seriesDatas.remove(seriesData)
                 }
-            }
+            }*/
 
             DefaultDropdownItem(
                 "Remove From History",
@@ -275,16 +278,17 @@ class HistoryView : ViewPage {
         }
         Row(
             modifier = Modifier
-                .onClick(
-                    matcher = PointerMatcher.mouse(PointerButton.Secondary)
-                ) { showFileMenu = showFileMenu.not() }
-                .clickable(
-                    interactionSource = remember { MutableInteractionSource() },
+                .multiClickable(
                     indication = ripple(
                         color = MaterialTheme.colorScheme
                             .secondaryContainer.hover()
-                    )
-                ) { showFileMenu = showFileMenu.not() }
+                    ),
+                    onSecondaryClick = {
+                        showFileMenu = showFileMenu.not()
+                    }
+                ) {
+                    showFileMenu = showFileMenu.not()
+                }
                 .background(
                     color = MaterialTheme.colorScheme.secondaryContainer,
                     shape = RoundedCornerShape(5.dp)

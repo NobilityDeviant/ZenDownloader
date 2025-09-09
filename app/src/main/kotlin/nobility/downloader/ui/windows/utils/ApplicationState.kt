@@ -66,11 +66,16 @@ class ApplicationState {
 
         val shared = ApplicationState()
 
-        fun removeWindowWithId(id: String) {
+        fun removeWindowWithId(
+            id: String,
+            triggerOnClose: Boolean = true
+        ) {
             shared.windows.forEach {
                 if (it.scope.windowId == id) {
                     it.scope.open.value = false
-                    it.scope.onClose?.invoke()
+                    if (triggerOnClose) {
+                        it.scope.onClose?.invoke()
+                    }
                     shared.windows.remove(it)
                     return@forEach
                 }
@@ -127,8 +132,8 @@ class ApplicationState {
                 override var focused = mutableStateOf(false)
                 override var toastContent = mutableStateOf("")
                 override var onClose: (() -> Boolean)? = onClose
-                override fun closeWindow() {
-                    removeWindowWithId(windowId)
+                override fun closeWindow(triggerOnClose: Boolean) {
+                    removeWindowWithId(windowId, triggerOnClose)
                 }
                 override var composeWindow: ComposeWindow? = null
             }
@@ -181,6 +186,19 @@ class ApplicationState {
                     )
                 }
             })
+        }
+
+        fun bringMainToFront() {
+            newWindow(AppInfo.TITLE) {}
+        }
+
+        private fun mainWindowScope(): AppWindowScope? {
+            val main = shared.windows.find { it.title == AppInfo.TITLE }
+            return main?.scope
+        }
+
+        fun showToastForMain(message: String) {
+            mainWindowScope()?.showToast(message)
         }
     }
 }

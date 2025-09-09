@@ -7,6 +7,8 @@ import nobility.downloader.core.BoxHelper.Companion.boolean
 import nobility.downloader.core.BoxHelper.Companion.int
 import nobility.downloader.core.Core
 import nobility.downloader.core.entities.Episode
+import nobility.downloader.core.scraper.data.DownloadQueue
+import nobility.downloader.core.scraper.data.M3U8Data
 import nobility.downloader.core.scraper.video_download.VideoDownloadHandler
 import nobility.downloader.core.settings.Defaults
 import nobility.downloader.utils.FrogLog
@@ -19,7 +21,8 @@ import java.util.concurrent.atomic.AtomicInteger
  */
 class DownloadThread {
 
-    val downloadQueue: MutableList<Episode> = Collections.synchronizedList(mutableStateListOf())
+    val downloadQueue: MutableList<DownloadQueue> = Collections
+        .synchronizedList(mutableStateListOf())
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private var currentJobs = AtomicInteger(0)
     private var stopJob: Job? = null
@@ -95,8 +98,25 @@ class DownloadThread {
 
     private fun hasFinished(): Boolean {
         val noJobs = currentJobs.get() <= 0
-        val nothingToDownload = downloadQueue.isEmpty()
+        val nothingToDownload = isQueueEmpty
         return noJobs && nothingToDownload
+    }
+
+    fun addToQueue(
+        episode: Episode,
+        m3U8Data: M3U8Data
+    ): Boolean {
+        if (!isInQueue(episode)) {
+            downloadQueue.add(
+                DownloadQueue(
+                    episode,
+                    m3U8Data
+                )
+            )
+            synchronizeDownloadsInQueue()
+            return true
+        }
+        return false
     }
 
     fun addToQueue(vararg downloads: Episode): Int {
@@ -107,7 +127,9 @@ class DownloadThread {
         var added = 0
         for (dl in downloads) {
             if (!isInQueue(dl)) {
-                downloadQueue.add(dl)
+                downloadQueue.add(
+                    DownloadQueue(dl)
+                )
                 added++
             }
         }
@@ -115,13 +137,17 @@ class DownloadThread {
         return added
     }
 
-    fun removeFromQueue(episode: Episode) {
-        downloadQueue.remove(episode)
+    fun removeFromQueue(
+        queue: DownloadQueue
+    ) {
+        downloadQueue.removeIf {
+            it.episode.matches(queue.episode)
+        }
         synchronizeDownloadsInQueue()
     }
 
     @get:Synchronized
-    private val nextDownload: Episode?
+    private val nextDownload: DownloadQueue?
         get() {
             if (downloadQueue.isEmpty()) {
                 return null
@@ -133,7 +159,9 @@ class DownloadThread {
         }
 
     private fun isInQueue(episode: Episode): Boolean {
-        return downloadQueue.any { it.matches(episode) }
+        return downloadQueue.any {
+            it.episode.matches(episode)
+        }
     }
 
     fun clear() {
@@ -165,5 +193,7 @@ class DownloadThread {
             downloadsInProgress.value--
         }
     }
+
+    val isQueueEmpty get() = downloadQueue.isEmpty()
 
 }

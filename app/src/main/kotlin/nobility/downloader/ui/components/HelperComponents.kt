@@ -2,9 +2,7 @@
 
 package nobility.downloader.ui.components
 
-import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.TooltipArea
-import androidx.compose.foundation.TooltipPlacement
+import androidx.compose.foundation.*
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.padding
@@ -17,7 +15,9 @@ import androidx.compose.foundation.text.selection.TextSelectionColors
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.composed
 import androidx.compose.ui.graphics.*
+import androidx.compose.ui.input.pointer.PointerButton
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.PointerType
 import androidx.compose.ui.input.pointer.pointerInput
@@ -260,4 +260,31 @@ fun rememberScrollSpeed(
     }
 
     return isFastScrolling
+}
+
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+fun Modifier.multiClickable(
+    enabled: Boolean = true,
+    interactionSource: MutableInteractionSource = remember { MutableInteractionSource() },
+    indication: Indication? = null,
+    onSecondaryClick: () -> Unit = {},
+    onPrimaryClick: () -> Unit = {}
+): Modifier = composed {
+    this
+        .indication(interactionSource, indication)
+        .onClick(
+            enabled,
+            interactionSource = interactionSource,
+            matcher = PointerMatcher.mouse(PointerButton.Primary)
+        ) {
+            onPrimaryClick()
+        }
+        .onClick(
+            enabled,
+            interactionSource = interactionSource,
+            matcher = PointerMatcher.mouse(PointerButton.Secondary)
+        ) {
+            onSecondaryClick()
+        }
 }

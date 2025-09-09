@@ -1,5 +1,6 @@
 package nobility.downloader.ui.views
 
+import AppInfo
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.HorizontalDivider
@@ -29,9 +30,12 @@ import nobility.downloader.core.BoxHelper.Companion.long
 import nobility.downloader.core.BoxHelper.Companion.string
 import nobility.downloader.core.BoxHelper.Companion.update
 import nobility.downloader.core.Core
+import nobility.downloader.core.scraper.player.PlayVideoWithMpv
 import nobility.downloader.core.settings.Defaults
 import nobility.downloader.core.settings.Quality
+import nobility.downloader.core.settings.VideoPlayer
 import nobility.downloader.ui.components.*
+import nobility.downloader.ui.components.dialog.DialogHelper
 import nobility.downloader.ui.windows.utils.AppWindowScope
 import nobility.downloader.ui.windows.utils.ApplicationState
 import nobility.downloader.utils.Constants.bottomBarHeight
@@ -39,6 +43,7 @@ import nobility.downloader.utils.Constants.maxThreads
 import nobility.downloader.utils.Constants.maxTimeout
 import nobility.downloader.utils.Constants.minThreads
 import nobility.downloader.utils.Constants.minTimeout
+import nobility.downloader.utils.Tools
 import nobility.downloader.utils.fileExists
 import nobility.downloader.utils.normalizeEnumName
 import java.io.File
@@ -157,6 +162,7 @@ class SettingsView : ViewPage {
                     FieldRow(Defaults.EPISODE_ORGANIZERS)
                     //FieldRow(Defaults.VLC_PATH) todo fails without headers? I will try more later
                     FieldDropdown(Defaults.QUALITY)
+                    FieldDropdown(Defaults.VIDEO_PLAYER)
                     FlowRow(
                         verticalArrangement = Arrangement.spacedBy(5.dp),
                         horizontalArrangement = Arrangement.spacedBy(5.dp),
@@ -288,6 +294,38 @@ class SettingsView : ViewPage {
                         show = showFilePicker,
                         initialDirectory = option.value,
                         title = "Choose VLC Executable File"
+                    ) {
+                        if (it != null) {
+                            option.value = it.path
+                            updateSaveButton()
+                        }
+                        showFilePicker = false
+                    }
+                    DefaultButton(
+                        "Set File",
+                        Modifier.height(30.dp)
+                            .width(80.dp),
+                        contentPadding = PaddingValues(0.dp)
+                    ) {
+                        showFilePicker = true
+                    }
+                }
+
+                Defaults.MPV_PATH -> {
+                    DefaultSettingsTextField(
+                        option.value,
+                        { text ->
+                            option.value = text
+                            updateSaveButton()
+                        },
+                        modifier = fieldModifier,
+                        textStyle = MaterialTheme.typography.labelLarge
+                    )
+                    var showFilePicker by remember { mutableStateOf(false) }
+                    FilePicker(
+                        show = showFilePicker,
+                        initialDirectory = option.value,
+                        title = "Choose MPV Executable File"
                     ) {
                         if (it != null) {
                             option.value = it.path
@@ -470,7 +508,6 @@ class SettingsView : ViewPage {
         }
     }
 
-    @Suppress("SameParameterValue")
     @Composable
     private fun FieldDropdown(
         setting: Defaults
@@ -480,9 +517,9 @@ class SettingsView : ViewPage {
             setting.name.normalizeEnumName()
         }
         Row(
-            horizontalArrangement = Arrangement.spacedBy(5.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.padding(10.dp)
+            modifier = Modifier.padding(8.dp)
         ) {
             Tooltip(setting.description) {
                 Text(
@@ -507,7 +544,59 @@ class SettingsView : ViewPage {
                         onTextClick = { expanded = true }
                     ) { expanded = false }
                 }
+            } else if (setting == Defaults.VIDEO_PLAYER) {
+                var expanded by remember { mutableStateOf(false) }
+                val options = VideoPlayer.entries.map {
+                    DropdownOption(it.name) {
+                        expanded = false
+                        option.value = it.name
+                        updateSaveButton()
+                    }
+                }
+                Tooltip(setting.description) {
+                    DefaultDropdown(
+                        option.value,
+                        expanded,
+                        options,
+                        onTextClick = { expanded = true }
+                    ) { expanded = false }
+                }
+                if (option.value == VideoPlayer.FFPLAY.name) {
+                    DefaultButton(
+                        "Check For FFplay"
+                    ) {
+                        val downloaded = Tools.ffSetFound()
+                        windowScope.showToast("FFplay Downloaded: $downloaded")
+                        if (!downloaded) {
+                            Core.openFfsetDownloaderWindow()
+                        }
+                    }
+                } else if (option.value == VideoPlayer.MPV.name) {
+                    DefaultButton(
+                        "Check For Mpv Install"
+                    ) {
+                        val customPath = stringOptions[Defaults.MPV_PATH]?.value
+                        val installed = if (!customPath.isNullOrEmpty()) {
+                            PlayVideoWithMpv.isMpvInstalled(customPath)
+                        } else {
+                            PlayVideoWithMpv.isMpvInstalled()
+                        }
+                        windowScope.showToast("Mpv Installed: $installed")
+                        if (!installed) {
+                            DialogHelper.showLinkPrompt(
+                                AppInfo.MPV_GUIDE_URL,
+                                """
+                                    Mpv wasn't found or executable. 
+                                    Would you like to visit the installation guide?
+                                """.trimIndent()
+                            )
+                        }
+                    }
+                }
             }
+        }
+        if (option.value == VideoPlayer.MPV.name) {
+            FieldRow(Defaults.MPV_PATH)
         }
     }
 

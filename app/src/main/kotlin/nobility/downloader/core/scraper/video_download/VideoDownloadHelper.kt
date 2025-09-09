@@ -6,10 +6,12 @@ import kotlinx.coroutines.*
 import nobility.downloader.core.BoxHelper.Companion.downloadForNameAndQuality
 import nobility.downloader.core.BoxHelper.Companion.int
 import nobility.downloader.core.BoxHelper.Companion.string
+import nobility.downloader.core.BoxMaker
 import nobility.downloader.core.Core
+import nobility.downloader.core.CoreChild
 import nobility.downloader.core.entities.Download
-import nobility.downloader.core.entities.Episode
 import nobility.downloader.core.scraper.data.DownloadData
+import nobility.downloader.core.scraper.data.DownloadQueue
 import nobility.downloader.core.scraper.video_download.Functions.downloadVideo
 import nobility.downloader.core.scraper.video_download.Functions.fileSize
 import nobility.downloader.core.scraper.video_download.Functions.httpRequestConfig
@@ -21,22 +23,34 @@ import nobility.downloader.core.scraper.video_download.m3u8_downloader.core.M3u8
 import nobility.downloader.core.scraper.video_download.m3u8_downloader.util.VideoUtil
 import nobility.downloader.core.settings.Defaults
 import nobility.downloader.core.settings.Quality
+import nobility.downloader.ui.windows.m3u8.SubtitleOption
 import nobility.downloader.utils.*
 import org.jsoup.Jsoup
+import org.openqa.selenium.By
 import org.openqa.selenium.JavascriptExecutor
+import org.openqa.selenium.support.ui.ExpectedConditions
+import org.openqa.selenium.support.ui.WebDriverWait
 import java.io.File
+import java.time.Duration
 
 /**
  * Just used to make the video handler smaller and easier to manage.
  */
+
+//ok if the m3u8data isnt null then we need to skip the parsing and use the
+//user agent to download.
+//todo fix all that and it should be good
+//also remember to add right click to add "Already downloaded" in dl confirm
 class VideoDownloadHelper(
-    private val episode: Episode,
+    private val queue: DownloadQueue,
     val temporaryQuality: Quality?
 ) {
 
     val videoDownloadData = VideoDownloadData(
-        episode,
-        temporaryQuality
+        queue,
+        temporaryQuality,
+        userAgent = if (queue.m3U8Data != null)
+        queue.m3U8Data.userAgent else UserAgents.random
     )
 
     suspend fun parseQualities(
@@ -170,7 +184,9 @@ class VideoDownloadHelper(
                 firstQualities.map { it.quality }
             )
             videoDownloadData.debug(
-                "Found best quality: ${qualityOption.resolution} From: ${firstQualities.map { it.quality }.joinToString("")}"
+                "Found best quality: ${qualityOption.resolution} From: ${
+                    firstQualities.map { it.quality }.joinToString("")
+                }"
             )
             firstQualities.forEach {
                 if (it.quality == qualityOption) {
@@ -186,7 +202,7 @@ class VideoDownloadHelper(
         return Resource.Success(preferredDownload)
     }
 
-    suspend fun detectAvailableQualities(
+    private suspend fun detectAvailableQualities(
         slug: String
     ): Resource<List<DownloadData>> = withContext(Dispatchers.IO) {
         if (videoDownloadData.driver !is JavascriptExecutor) {
@@ -211,9 +227,12 @@ class VideoDownloadHelper(
         if (m3u8Check) {
             videoDownloadData.debug("Using m3u8 2nd video check.")
         }
-
         try {
-            val source = readUrlLines(fullLink, videoDownloadData, false)
+            val source = readUrlLines(
+                fullLink,
+                videoDownloadData,
+                false
+            )
             if (source.isFailed) {
                 return@withContext Resource.ErrorCode(
                     source.message,
@@ -254,7 +273,9 @@ class VideoDownloadHelper(
                 val iframe = doc.getElementById(secondFrameIds[1])
                 if (iframe != null) {
                     secondFrameLink = iframe.attr("src")
-                    videoDownloadData.info("Found 2nd frame with id: ${secondFrameIds[1]}")
+                    videoDownloadData.info(
+                        "Found 2nd frame with id: ${secondFrameIds[1]}"
+                    )
                 }
             }
 
@@ -273,12 +294,51 @@ class VideoDownloadHelper(
 
             @Suppress("UNUSED")
             for (i in 1..5) {
-                val frameSource = readUrlLines(frameLink, videoDownloadData)
+                val frameSource = readUrlLines(
+                    frameLink,
+                    videoDownloadData,
+                    skipSimpleMode = true
+                ) { base ->
+                    try {
+                        val wait = WebDriverWait(
+                            base.driver,
+                            Duration.ofSeconds(10)
+                        )
+                        wait.pollingEvery(Duration.ofSeconds(1))
+                            .until(
+                                ExpectedConditions.presenceOfElementLocated(
+                                    By.id("announcement")
+                                )
+                            )
+                        try {
+                            wait.pollingEvery(Duration.ofSeconds(1))
+                                .withTimeout(Duration.ofSeconds(5))
+                                .until(
+                                    ExpectedConditions.presenceOfElementLocated(
+                                        By.id("close-btn")
+                                    )
+                                )
+                            val closeButton = base.driver.findElement(
+                                By.id("close-btn")
+                            )
+                            try {
+                                withTimeout(12_000) {
+                                    while (!closeButton.isEnabled) {
+                                        delay(100)
+                                    }
+                                }
+                            } catch (_: TimeoutCancellationException) {
+                            }
+                        } catch (_: Exception) {
+                            delay(12_000)
+                        }
+                        base.executeJs(JavascriptHelper.HIDE_AD)
+                    } catch (e: Exception) {}
+                }
                 val frameSourceData = frameSource.data
                 if (frameSourceData != null) {
                     sbFrame = frameSourceData
                     if (m3u8Check) {
-                        //just in case?
                         m3u8Mode = false
                     }
                 } else {
@@ -294,7 +354,46 @@ class VideoDownloadHelper(
             if (secondFrameLink.isNotEmpty()) {
                 @Suppress("UNUSED")
                 for (i in 1..5) {
-                    val frameSource = readUrlLines(secondFrameLink, videoDownloadData)
+                    val frameSource = readUrlLines(
+                        secondFrameLink,
+                        videoDownloadData,
+                        skipSimpleMode = true
+                    ) { base ->
+                        try {
+                            val wait = WebDriverWait(
+                                base.driver,
+                                Duration.ofSeconds(5)
+                            )
+                            wait.pollingEvery(Duration.ofSeconds(1))
+                                .until(
+                                    ExpectedConditions.presenceOfElementLocated(
+                                        By.id("announcement")
+                                    )
+                                )
+                            try {
+                                wait.pollingEvery(Duration.ofSeconds(1))
+                                    .until(
+                                        ExpectedConditions.presenceOfElementLocated(
+                                            By.id("close-btn")
+                                        )
+                                    )
+                                val closeButton = base.driver.findElement(
+                                    By.id("close-btn")
+                                )
+                                try {
+                                    withTimeout(12_000) {
+                                        while (!closeButton.isEnabled) {
+                                            delay(100)
+                                        }
+                                    }
+                                } catch (_: TimeoutCancellationException) {
+                                }
+                            } catch (_: Exception) {
+                                delay(12_000)
+                            }
+                            base.executeJs(JavascriptHelper.HIDE_AD)
+                        } catch (e: Exception) {}
+                    }
                     val frameSourceData = frameSource.data
                     if (frameSourceData != null) {
                         sbFrame2 = frameSourceData
@@ -335,14 +434,14 @@ class VideoDownloadHelper(
                     hslLink = source.attr("src")
                     domain = hslLink.substringBeforeLast("/")
                 } else {
-                    val linkKey = "\"src\": \"ht"
-                    for (line in sbFrame.lines()) {
-                        if (line.contains(linkKey)) {
-                            hslLink = line.substringAfter("\"src\": \"")
-                                .substringBeforeLast("\"")
-                            domain = hslLink.substringBeforeLast("/")
-                            break
-                        }
+                    val linkKey1 = "\"src\": \""
+                    val linkKey2 = "index.m3u8"
+                    if (sbFrame.contains(linkKey1)) {
+                        hslLink = sbFrame.substring(
+                            sbFrame.indexOf(linkKey1),
+                            sbFrame.indexOf(linkKey2) + linkKey2.length
+                        )
+                        domain = hslLink.substringBeforeLast("/")
                     }
                 }
                 if (hslLink.isEmpty() || domain.isEmpty()) {
@@ -367,20 +466,22 @@ class VideoDownloadHelper(
                     )
                 }
                 FrogLog.debug("Trying to read content from: $hslLink")
-
                 val hslSource = readUrlLines(hslLink, videoDownloadData)
                 val hslSourceData = hslSource.data
 
                 if (hslSourceData != null) {
 
-                    //File("./${videoDownloadData.episode.name.fixForFiles()}_debug_.m3u8")
-                      //  .writeText(hslSourceData.toString())
-
+                    //val debug = File("./${videoDownloadData.episode.name.fixForFiles()}_debug_.m3u8")
+                    //debug.writeText(hslSourceData.toString())
+                    //Tools.openFile(debug.absolutePath)
+                    videoDownloadData.m3u8MasterLink = hslLink
                     val hslLines = hslSourceData.lines()
                     val audioMap = mutableMapOf<String, String>()
 
                     hslLines.forEach { line ->
+
                         if (line.startsWith("#EXT-X-MEDIA:TYPE=AUDIO") && line.contains("LANGUAGE=\"eng")) {
+
                             val groupId = Regex("""GROUP-ID="([^"]+)"""").find(line)?.groupValues?.get(1)
                             val uri = Regex("""URI="([^"]+)"""").find(line)?.groupValues?.get(1)
 
@@ -445,6 +546,8 @@ class VideoDownloadHelper(
                     )
                 } else {
                     videoDownloadData.info("Successfully found m3u8 qualities.")
+                    videoDownloadData.m3u8Domain = domain
+                    videoDownloadData.m3u8Source = hslSourceData
                     return@withContext Resource.Success(downloadDatas)
                 }
             }
@@ -460,7 +563,7 @@ class VideoDownloadHelper(
                 FrogLog.writeErrorToTxt(
                     "Missing linkKey1",
                     src,
-                    "User Agent: ${videoDownloadData.userAgent}"
+                    "Link: $fullLink | User Agent: ${videoDownloadData.userAgent} "
                 )
                 return@withContext Resource.Error(
                     "Source code doesn't contain linkKey1. UserAgent: ${videoDownloadData.userAgent}"
@@ -475,7 +578,7 @@ class VideoDownloadHelper(
                 FrogLog.writeErrorToTxt(
                     "Missing linkKey2",
                     src,
-                    "User Agent: ${videoDownloadData.userAgent}"
+                    "Link: $fullLink | User Agent: ${videoDownloadData.userAgent}"
                 )
                 return@withContext Resource.Error(
                     "Source code doesn't contain linkKey2. UserAgent: ${videoDownloadData.userAgent}"
@@ -491,7 +594,9 @@ class VideoDownloadHelper(
             if (m3u8Check) {
                 videoDownloadData.debug("Found 2nd video for m3u8 check.")
             }
-            videoDownloadData.debug("Checking qualities with a timeout of ${Defaults.TIMEOUT.int()} seconds")
+            videoDownloadData.debug(
+                "Checking qualities with a timeout of ${Defaults.TIMEOUT.int()} seconds"
+            )
             var qualityRetry = 0
             while (qualityRetry <= Defaults.QUALITY_RETRIES.int()) {
                 try {
@@ -641,7 +746,10 @@ class VideoDownloadHelper(
                 }
             }
         }
-        val m3u8Path = System.getProperty("user.home") + "/.m3u8_files/${saveFile.nameWithoutExtension}/"
+
+        val m3u8Path = System.getProperty("user.home") +
+                "/.m3u8_files/${saveFile.nameWithoutExtension}/"
+
         if (saveFile.exists()) {
             if (saveFile.length() >= Constants.minFileSize) {
                 if (errorJob.isActive) {
@@ -654,11 +762,20 @@ class VideoDownloadHelper(
                 videoDownloadData.currentDownload.downloading = false
                 videoDownloadData.currentDownload.queued = false
                 videoDownloadData.currentDownload.update()
+                BoxMaker.makeDownloadedEpisode(
+                    videoDownloadData.currentDownload.slug
+                )
                 videoDownloadData.finishEpisode()
                 return@withContext false
             }
         }
-        val hasSeparateAudio = downloadData.separateAudioLink.isNotEmpty()
+
+        val videoLink = downloadData.downloadLink
+        val audioLink = downloadData.separateAudioLink
+        val subtitleOption = downloadData.subtitleOption
+
+        val hasSeparateAudio = audioLink.isNotEmpty()
+
         val videoListener = M3u8DownloadListener(
             downloadStarted = {
                 videoDownloadData.message("Starting m3u8 video download with ${downloadData.quality.tag} quality.")
@@ -682,8 +799,8 @@ class VideoDownloadHelper(
                 Core.child.m3u8UpdateDownloadProgress(
                     videoDownloadData.currentDownload,
                     progress,
-                    true,
-                    seconds
+                    seconds,
+                    CoreChild.M3U8FileType.VIDEO
                 )
             },
             downloadSizeUpdated = {
@@ -693,18 +810,18 @@ class VideoDownloadHelper(
             onMergeStarted = {
                 Core.child.m3u8UpdateDownloadProgress(
                     videoDownloadData.currentDownload,
-                    "Merging video ts files",
-                    true,
-                    0
+                    "Merging ts files",
+                    0,
+                    CoreChild.M3U8FileType.VIDEO
                 )
             },
             onMergeFinished = { download, ex ->
                 if (ex == null) {
                     Core.child.m3u8UpdateDownloadProgress(
                         videoDownloadData.currentDownload,
-                        "Finalizing video",
-                        true,
-                        0
+                        "Finalizing",
+                        0,
+                        CoreChild.M3U8FileType.VIDEO
                     )
                     videoDownloadData.currentDownload.fileSize = saveFile.length()
                     videoDownloadData.currentDownload.update()
@@ -729,7 +846,7 @@ class VideoDownloadHelper(
             }
         )
         val m3u8VideoDownload = m3u8Download(
-            downloadData.downloadLink,
+            videoLink,
             saveFile,
             videoListener
         )
@@ -737,6 +854,11 @@ class VideoDownloadHelper(
         val audioSaveFile = File(
             saveFile.parent,
             saveFile.nameWithoutExtension + ".m4a"
+        )
+        var m3u8SubtitleDownload: M3u8Download? = null
+        val subtitleSaveFile = File(
+            saveFile.parent,
+            saveFile.nameWithoutExtension + ".srt"
         )
         if (hasSeparateAudio) {
             val audioListener = M3u8DownloadListener(
@@ -760,8 +882,8 @@ class VideoDownloadHelper(
                     Core.child.m3u8UpdateDownloadProgress(
                         videoDownloadData.currentDownload,
                         progress,
-                        false,
-                        seconds
+                        seconds,
+                        CoreChild.M3U8FileType.AUDIO
                     )
                 },
                 onMergeStarted = {
@@ -770,9 +892,9 @@ class VideoDownloadHelper(
                     }
                     Core.child.m3u8UpdateDownloadProgress(
                         videoDownloadData.currentDownload,
-                        "Merging audio ts files",
-                        false,
-                        0
+                        "Merging ts files",
+                        0,
+                        CoreChild.M3U8FileType.AUDIO
                     )
                 },
                 onMergeFinished = { download, ex ->
@@ -781,9 +903,9 @@ class VideoDownloadHelper(
                     }
                     Core.child.m3u8UpdateDownloadProgress(
                         videoDownloadData.currentDownload,
-                        "Finalizing audio",
-                        false,
-                        0
+                        "Finalizing",
+                        0,
+                        CoreChild.M3U8FileType.AUDIO
                     )
                     if (ex != null) {
                         exx = Exception("Failed to merge audio file. Error: ${ex.localizedMessage}")
@@ -792,9 +914,68 @@ class VideoDownloadHelper(
                 }
             )
             m3u8AudioDownload = m3u8Download(
-                downloadData.separateAudioLink,
+                audioLink,
                 audioSaveFile,
                 audioListener
+            )
+        }
+        if (subtitleOption != null && subtitleOption != SubtitleOption.none) {
+            val subtitleListener = M3u8DownloadListener(
+                downloadStarted = {
+                    if (exx != null) {
+                        return@M3u8DownloadListener
+                    }
+                    videoDownloadData.info("Downloading separate subtitle for video (${subtitleOption.name})")
+                },
+                downloadFinished = { download, success ->
+                    if (exx != null) {
+                        return@M3u8DownloadListener
+                    }
+                    if (!success) {
+                        exx = Exception("Failed to download m3u8 subtitle file.")
+                        return@M3u8DownloadListener
+                    }
+                    videoDownloadData.info("Finished downloading m3u8 subtitle file.")
+                },
+                downloadProgress = { progress, seconds ->
+                    Core.child.m3u8UpdateDownloadProgress(
+                        videoDownloadData.currentDownload,
+                        progress,
+                        seconds,
+                        CoreChild.M3U8FileType.SUBTITLES
+                    )
+                },
+                onMergeStarted = {
+                    if (exx != null) {
+                        return@M3u8DownloadListener
+                    }
+                    Core.child.m3u8UpdateDownloadProgress(
+                        videoDownloadData.currentDownload,
+                        "Merging ts files",
+                        0,
+                        CoreChild.M3U8FileType.SUBTITLES
+                    )
+                },
+                onMergeFinished = { download, ex ->
+                    if (exx != null) {
+                        return@M3u8DownloadListener
+                    }
+                    Core.child.m3u8UpdateDownloadProgress(
+                        videoDownloadData.currentDownload,
+                        "Finalizing",
+                        0,
+                        CoreChild.M3U8FileType.SUBTITLES
+                    )
+                    if (ex != null) {
+                        exx = Exception("Failed to merge subtitle file. Error: ${ex.localizedMessage}")
+                        audioSaveFile.delete()
+                    }
+                }
+            )
+            m3u8SubtitleDownload = m3u8Download(
+                subtitleOption.uri,
+                subtitleSaveFile,
+                subtitleListener
             )
         }
         val mergedVideoAndAudioFile = File(
@@ -831,12 +1012,41 @@ class VideoDownloadHelper(
                         audioSaveFile,
                         mergedVideoAndAudioFile
                     )
-                    Core.child.finalizeM3u8DownloadProgress(
-                        videoDownloadData.currentDownload,
-                        mergedVideoAndAudioFile.length(),
-                        success
-                    )
                     if (success) {
+                        if (m3u8SubtitleDownload != null) {
+                            val stoppedSubtitle = M3u8Downloads.download(
+                                httpRequestConfig(videoDownloadData.userAgent),
+                                m3u8SubtitleDownload
+                            )
+                            if (stoppedSubtitle) {
+                                throw Exception("Stopped subtitle download manually.")
+                            }
+                            if (subtitleSaveFile.exists()) {
+                                videoDownloadData.info(
+                                    "Removing unneeded lines from subtitles."
+                                )
+                                val updatedText = subtitleSaveFile.readLines()
+                                    .filter { !it.contains("WEBVTT", ignoreCase = true) } // remove lines with word
+                                    .joinToString("\n")
+
+                                subtitleSaveFile.writeText(updatedText)
+                                if (subtitleSaveFile.exists()) {
+                                    videoDownloadData.info(
+                                        "Successfully removed unneeded lines from subtitles."
+                                    )
+                                } else {
+                                    videoDownloadData.error(
+                                        "Failed to remove unneeded lines from subtitles.",
+                                        "The updated file doesn't exist."
+                                    )
+                                }
+                            }
+                        }
+                        Core.child.finalizeM3u8DownloadProgress(
+                            videoDownloadData.currentDownload,
+                            mergedVideoAndAudioFile.length(),
+                            true
+                        )
                         videoDownloadData.message("Successfully merged video and audio.")
                         mergedVideoAndAudioFile.copyTo(
                             saveFile,
@@ -848,8 +1058,16 @@ class VideoDownloadHelper(
                         videoDownloadData.message(
                             "Successfully downloaded with ${downloadData.quality.tag} quality."
                         )
+                        BoxMaker.makeDownloadedEpisode(
+                            videoDownloadData.currentDownload.slug
+                        )
                         videoDownloadData.finishEpisode()
                     } else {
+                        Core.child.finalizeM3u8DownloadProgress(
+                            videoDownloadData.currentDownload,
+                            mergedVideoAndAudioFile.length(),
+                            false
+                        )
                         mergedVideoAndAudioFile.delete()
                         saveFile.delete()
                         audioSaveFile.delete()
@@ -914,7 +1132,7 @@ class VideoDownloadHelper(
         val qualityOption = temporaryQuality ?: Quality.qualityForTag(
             Defaults.QUALITY.string()
         )
-        val episodeName = episode.name.fixForFiles() + "-01"
+        val episodeName = queue.episode.name.fixForFiles() + "-01"
         val saveFile = videoDownloadData.generateEpisodeSaveFile(qualityOption, "-01")
         var currentDownload = downloadForNameAndQuality(
             episodeName,
@@ -1000,6 +1218,10 @@ class VideoDownloadHelper(
                             videoDownloadData.message("(DB) (2nd) Skipping completed video.")
                             currentDownload.downloading = false
                             currentDownload.queued = false
+                            BoxMaker.makeDownloadedEpisode(
+                                currentDownload.slug,
+                                true
+                            )
                             currentDownload.update()
                             break
                         } else {
@@ -1012,8 +1234,8 @@ class VideoDownloadHelper(
                         currentDownload = Download()
                         currentDownload.downloadPath = saveFile.absolutePath
                         currentDownload.name = episodeName
-                        currentDownload.slug = episode.slug
-                        currentDownload.seriesSlug = episode.seriesSlug
+                        currentDownload.slug = queue.episode.slug
+                        currentDownload.seriesSlug = queue.episode.seriesSlug
                         currentDownload.resolution = qualityOption.resolution
                         currentDownload.dateAdded = System.currentTimeMillis()
                         currentDownload.fileSize = 0
@@ -1031,6 +1253,10 @@ class VideoDownloadHelper(
                             currentDownload.downloading = false
                             currentDownload.queued = false
                             currentDownload.update()
+                            BoxMaker.makeDownloadedEpisode(
+                                currentDownload.slug,
+                                true
+                            )
                             break
                         }
                     } else {
@@ -1077,6 +1303,9 @@ class VideoDownloadHelper(
                     if (saveFile.exists() && saveFile.length() >= originalFileSize) {
                         Core.child.downloadThread.incrementDownloadsFinished()
                         videoDownloadData.message("(2nd) Successfully downloaded with ${qualityOption.tag} quality.")
+                        BoxMaker.makeDownloadedEpisode(
+                            videoDownloadData.currentDownload.slug
+                        )
                         break
                     }
                 } else {

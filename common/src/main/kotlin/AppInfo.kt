@@ -12,6 +12,7 @@ object AppInfo {
     const val GITHUB_LATEST = "https://api.github.com/repos/NobilityDeviant/ZenDownloader/releases/latest"
     const val GITHUB_URL = "https://github.com/NobilityDeviant/ZenDownloader"
     const val FFMPEG_GUIDE_URL = "https://github.com/NobilityDeviant/ZenDownloader/blob/master/README.md#ffmpeg"
+    const val MPV_GUIDE_URL = "https://github.com/NobilityDeviant/ZenDownloader/blob/master/README.md#mpv"
     const val EXAMPLE_SERIES = "anime/negima"
     const val EXAMPLE_EPISODE = "strange-planet-episode-1-the-flying-machine"
     const val WCOFUN_WEBSITE_URLS_LINK = "https://raw.githubusercontent.com/NobilityDeviant/ZenDownloader/master/assets/wco_urls.txt"

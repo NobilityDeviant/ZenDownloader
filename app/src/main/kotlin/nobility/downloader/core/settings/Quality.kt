@@ -1,5 +1,7 @@
 package nobility.downloader.core.settings
 
+import nobility.downloader.core.scraper.data.M3U8Data
+
 enum class Quality(
     val resolution: Int,
     val htmlText: String,
@@ -79,6 +81,16 @@ enum class Quality(
                 }
             }
             return LOW
+        }
+
+        fun qualityForM3U8Data(
+            m3U8Data: M3U8Data
+        ): Quality {
+            return entries.find {
+                m3U8Data.videoOption
+                    .resolution
+                    .contains(it.resolution.toString())
+            }?: return MED
         }
     }
 }

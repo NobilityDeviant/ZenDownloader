@@ -25,12 +25,10 @@ import nobility.downloader.ui.components.console.Console
 import nobility.downloader.ui.components.dialog.DialogHelper
 import nobility.downloader.ui.components.dialog.DialogHelper.showError
 import nobility.downloader.ui.views.*
-import nobility.downloader.ui.windows.DownloadConfirmWindow
-import nobility.downloader.ui.windows.DownloadQueueWindow
-import nobility.downloader.ui.windows.ImageUpdaterWindow
-import nobility.downloader.ui.windows.UpdateWindow
+import nobility.downloader.ui.windows.*
 import nobility.downloader.ui.windows.database.DatabaseWindow
 import nobility.downloader.ui.windows.utils.AppWindowScope
+import nobility.downloader.ui.windows.utils.ApplicationState
 import nobility.downloader.utils.FrogLog
 import nobility.downloader.utils.fileExists
 import nobility.downloader.utils.linkToSlug
@@ -266,6 +264,13 @@ class Core private constructor() {
             downloadQueueWindow.open()
         }
 
+        fun openDownloadedEpisodesWindow(
+            initialEpisodeSlug: String = ""
+        ) {
+            val window = DownloadedEpisodesWindow(initialEpisodeSlug)
+            window.open()
+        }
+
         fun openUpdate(
             justCheck: Boolean = false
         ) {
@@ -305,7 +310,7 @@ class Core private constructor() {
                     """.trimIndent()
                 )
                 taskScope.launch {
-                    val result = DownloadHandler.run(url)
+                    val result = DownloadHandler.launchForDownload(url)
                     if (result.isFailed) {
                         withContext(Dispatchers.Main) {
                             showError(
@@ -318,6 +323,16 @@ class Core private constructor() {
             } else {
                 openDownloadConfirm(ToDownload(series, episode))
             }
+        }
+
+        fun openSettings() {
+            changePage(Page.SETTINGS)
+            ApplicationState.bringMainToFront()
+        }
+
+        fun openFfsetDownloaderWindow() {
+            val window = FFSetDownloaderWindow()
+            window.open()
         }
 
         val wcoUrl: String

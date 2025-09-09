@@ -88,6 +88,17 @@ enum class Defaults(
         """.trimIndent(),
         "Download Quality"
     ),
+    VIDEO_PLAYER(
+        "video_player",
+        VideoPlayer.FFPLAY.name,
+        """
+            The video player used for the "Watch Online" feature.
+            - Ffplay should be inside the database folder.
+            - Mpv should be installed and be usable via the command prompt or terminal. (command: mpv)
+            Default: ${VideoPlayer.FFPLAY.name}
+        """.trimIndent(),
+        "Watch Online Video Player"
+    ),
     SHOW_TOOLTIPS(
         "show_tooltips",
         true,
@@ -182,6 +193,22 @@ enum class Defaults(
             Default: Empty
         """.trimIndent(),
         "VLC Path"
+    ),
+    MPV_PATH(
+        "mpv_path",
+        "",
+        """
+            Your custom path to MPV to play videos.
+            This path has to be pointed to a mpv executable.
+            In Windows it'll be mpv.exe.
+            Mac & Linux will also have an executable called mpv.
+            If MPV is installed and usable in the command prompt or terminal, this path isn't needed.
+            This path will override any installs. Keep it empty if it's already installed.
+            Example: "C:\\Program Files\\MPV\\mpv.exe"
+            Example: "C:\Users\Score\Desktop\mpv-macos-15-arm\mpv.app\Contents\MacOs\mpv"
+            Default: Empty
+        """.trimIndent(),
+        "MPV Path"
     ),
     DISABLE_USER_AGENTS_UPDATE(
         "disable_ua_update",
@@ -314,7 +341,7 @@ enum class Defaults(
     ),
     VIDEO_RETRIES(
         "vid_retries",
-        15,
+        10,
         """
             This is the amount of retries for each video download process.
             After this amount of errors, it will skip the video entirely.
@@ -416,13 +443,27 @@ enum class Defaults(
         """.trimIndent(),
         "Episode Organizer Keywords"
     ),
+    CHOOSE_M3U8_STREAM(
+      "choose_m3_stream",
+        false,
+        """
+            For every single m3u8 video found, it will show a window to allow you to choose
+            m3u8 options such as video quality, audio and subtitles before downloading or watching online.
+            Subtitles will have minimum support as I learn how to incorporate them.
+            This will only show the options that are actually available for the video.
+            Not every video will have the same options.
+            Default: false
+        """.trimIndent()
+    ),
     WCO_GENRES_LAST_UPDATED("wco_genres_last_updated", 0L),
     WCO_RECENT_LAST_UPDATED("wco_recent_last_updated", 0L),
     DB_LAST_SCROLL_POS("db_last_scroll_pos", 0),
     DB_LAST_TYPE_USED("db_last_type", DatabaseType.ALL.id),
     DB_LAST_SORT_USED("db_last_sort", DatabaseSort.NAME.id),
     DB_SEARCH_GENRE("db_search_genre", true),
-    DB_SEARCH_DESC("db_search_desc", true);
+    DB_SEARCH_DESC("db_search_desc", true),
+    EPISODE_UPDATER_THREADS("ep_updater_threads", 3)
+    ;
 
     companion object {
 
@@ -455,6 +496,10 @@ enum class Defaults(
             }
         }
 
+        /**
+         * Since there are a lot of Defaults, everything that will be used
+         * inside SettingsView has to be included in here to be auto loaded.
+         */
         val settings get() = listOf(
             DOWNLOAD_THREADS,
             TIMEOUT,
@@ -492,9 +537,15 @@ enum class Defaults(
             PREMIUM_RETRIES,
             M3U8_RETRIES,
             EPISODE_ORGANIZERS,
-            VLC_PATH
+            VLC_PATH,
+            VIDEO_PLAYER,
+            MPV_PATH,
+            CHOOSE_M3U8_STREAM
         )
 
+        /**
+         * Used for integer options inside SettingsView
+         */
         val intFields get() = listOf(
             DOWNLOAD_THREADS,
             TIMEOUT,
@@ -507,6 +558,9 @@ enum class Defaults(
             M3U8_RETRIES
         )
 
+        /**
+         * Used for checkboxes inside the SettingsView
+         */
         val checkBoxes get() = listOf(
             SEPARATE_SEASONS,
             SHOW_TOOLTIPS,
@@ -516,9 +570,13 @@ enum class Defaults(
             HEADLESS_MODE,
             SHOW_DEBUG_MESSAGES,
             ENABLE_RANDOM_SERIES,
-            AUTO_SCROLL_RANDOM_SERIES
+            AUTO_SCROLL_RANDOM_SERIES,
+            CHOOSE_M3U8_STREAM
         )
 
+        /**
+         * Used for disabling auto updates
+         */
         val updateCheckBoxes get() = listOf(
             DISABLE_USER_AGENTS_UPDATE,
             DISABLE_WCO_URLS_UPDATE,

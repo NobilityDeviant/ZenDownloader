@@ -5,6 +5,7 @@ import kotlinx.coroutines.withContext
 import nobility.downloader.core.BoxHelper.Companion.downloadForSlugAndQuality
 import nobility.downloader.core.BoxHelper.Companion.int
 import nobility.downloader.core.BoxHelper.Companion.string
+import nobility.downloader.core.BoxMaker
 import nobility.downloader.core.Core
 import nobility.downloader.core.entities.Download
 import nobility.downloader.core.scraper.MovieHandler
@@ -47,7 +48,12 @@ object MovieDownloader {
         if (data.quickCheckVideoExists(movie.slug)) {
             return@withContext
         }
-        val wait = WebDriverWait(data.driver, Duration.ofSeconds(15))
+        val wait = WebDriverWait(
+            data.driver,
+            Duration.ofSeconds(
+                Defaults.TIMEOUT.int().toLong()
+            )
+        )
         val premUser = Defaults.WCO_PREMIUM_USERNAME.string()
         val premPassword = Defaults.WCO_PREMIUM_PASSWORD.string()
 
@@ -65,7 +71,6 @@ object MovieDownloader {
 
                     //look for an element only found while logged in.
                     wait.pollingEvery(Duration.ofSeconds(1))
-                        .withTimeout(Duration.ofSeconds(Defaults.TIMEOUT.int().toLong()))
                         .until(
                             ExpectedConditions.presenceOfElementLocated(
                                 By.className("header-top-right")
@@ -185,6 +190,7 @@ object MovieDownloader {
             Core.child.addDownload(data.currentDownload)
             if (data.currentDownload.isComplete) {
                 data.message("[DB] Skipping completed video.")
+                BoxMaker.makeDownloadedEpisode(data.currentDownload.slug)
                 data.finishEpisode()
                 return@withContext
             } else {
@@ -197,9 +203,9 @@ object MovieDownloader {
             if (data.mCurrentDownload == null) {
                 data.mCurrentDownload = Download()
                 data.currentDownload.downloadPath = saveFile.absolutePath
-                data.currentDownload.name = data.episode.name
-                data.currentDownload.slug = data.episode.slug
-                data.currentDownload.seriesSlug = data.episode.seriesSlug
+                data.currentDownload.name = data.queue.episode.name
+                data.currentDownload.slug = data.queue.episode.slug
+                data.currentDownload.seriesSlug = data.queue.episode.seriesSlug
                 data.currentDownload.resolution = qualityOption.resolution
                 data.currentDownload.dateAdded = System.currentTimeMillis()
                 data.currentDownload.fileSize = 0
@@ -258,6 +264,7 @@ object MovieDownloader {
                     data.currentDownload.downloadPath = saveFile.absolutePath
                     data.currentDownload.fileSize = originalFileSize
                     data.currentDownload.update()
+                    BoxMaker.makeDownloadedEpisode(data.currentDownload.slug)
                     data.finishEpisode()
                     return@withContext
                 }
@@ -301,6 +308,9 @@ object MovieDownloader {
             if (saveFile.exists() && saveFile.length() >= originalFileSize) {
                 Core.child.downloadThread.incrementDownloadsFinished()
                 data.message("Successfully downloaded movie.")
+                BoxMaker.makeDownloadedEpisode(
+                    data.currentDownload.slug
+                )
                 data.finishEpisode()
             }
         } catch (e: Exception) {

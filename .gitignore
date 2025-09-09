@@ -12,6 +12,8 @@ bootstrap/build
 assets/
 update_log.txt
 debug/
+local_files/
+.kotlin/errors/
 objectbox-jni-windows-x64.dll
 libobjectbox-jni-linux-x64.so
 ### No one should have this kind of power anymore ###

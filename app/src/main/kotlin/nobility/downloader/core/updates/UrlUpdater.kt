@@ -1,5 +1,6 @@
 package nobility.downloader.core.updates
 
+import AppInfo
 import com.google.api.client.http.GenericUrl
 import com.google.api.client.http.javanet.NetHttpTransport
 import kotlinx.coroutines.Dispatchers
@@ -10,10 +11,10 @@ import nobility.downloader.core.BoxHelper.Companion.string
 import nobility.downloader.core.BoxHelper.Companion.update
 import nobility.downloader.core.Core
 import nobility.downloader.core.settings.Defaults
-import AppInfo
 import nobility.downloader.utils.Constants
 import nobility.downloader.utils.FrogLog
 import nobility.downloader.utils.Tools
+import nobility.downloader.utils.domainFromLink
 import java.io.BufferedReader
 import java.io.IOException
 import java.io.InputStreamReader
@@ -99,7 +100,7 @@ object UrlUpdater {
                     FrogLog.debug(
                         "Received status code 200 for $u"
                     )
-                    val domainWithoutExtension = Tools.extractDomainFromLink(newUrl)
+                    val domainWithoutExtension = newUrl.domainFromLink()
                     val extension = Tools.extractExtensionFromLink(newUrl)
                     FrogLog.debug(
                         "Found Domain: $domainWithoutExtension Extension: $extension"

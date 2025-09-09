@@ -129,15 +129,42 @@ object BoxMaker {
             .equal(Ignore_.seriesSlug, seriesSlug, QueryBuilder.StringOrder.CASE_SENSITIVE)
             .build().use {
                 var ignore = it.findUniqueOrNull()
-                if (ignore != null) {
-                    ignore.website = website
-                } else {
+                if (ignore == null) {
                     ignore = Ignore(
                         seriesSlug = seriesSlug,
                         website = website
                     )
+                    BoxHelper.shared.ignoreBox.put(ignore)
                 }
-                BoxHelper.shared.ignoreBox.put(ignore)
+            }
+    }
+
+    fun makeDownloadedEpisode(
+        episodeSlug: String,
+        downloadedSecond: Boolean = false,
+        website: String = Website.WCOFUN.name
+    ): DownloadedEpisode {
+        val date = Tools.currentTime
+        BoxHelper.shared.downloadedEpisodeBox.query()
+            .equal(
+                DownloadedEpisode_.episodeSlug,
+                episodeSlug,
+                QueryBuilder.StringOrder.CASE_SENSITIVE)
+            .build().use {
+                var downloaded = it.findUniqueOrNull()
+                if (downloaded == null) {
+                    downloaded = DownloadedEpisode(
+                        episodeSlug = episodeSlug,
+                        downloadedDate = date,
+                        downloadedSecond = downloadedSecond,
+                        website = website
+                    )
+                } else {
+                    downloaded.downloadedSecond = downloadedSecond
+                    downloaded.website = website
+                }
+                BoxHelper.shared.downloadedEpisodeBox.put(downloaded)
+                return downloaded
             }
     }
 

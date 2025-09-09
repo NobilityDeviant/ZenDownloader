@@ -15,7 +15,7 @@ sealed class Resource<T>(
                     message = (if (!message.isNullOrEmpty())
                         "$message | "
                     else "") + if (exception != null)
-                        "Error: " + exception.localizedMessage else ""//"No error found."
+                        "Error: " + exception.localizedMessage.replace("Error:", "") else ""//"No error found."
                 )
         constructor(ex: Throwable?) : this("", exception = ex)
         constructor() : this("")

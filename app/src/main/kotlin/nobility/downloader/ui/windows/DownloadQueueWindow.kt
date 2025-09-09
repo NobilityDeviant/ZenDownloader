@@ -1,7 +1,7 @@
 package nobility.downloader.ui.windows
 
-import androidx.compose.foundation.*
-import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -11,14 +11,13 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.pointer.PointerButton
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import compose.icons.EvaIcons
 import compose.icons.evaicons.Fill
 import compose.icons.evaicons.fill.*
 import nobility.downloader.core.Core
-import nobility.downloader.core.entities.Episode
+import nobility.downloader.core.scraper.data.DownloadQueue
 import nobility.downloader.ui.components.*
 import nobility.downloader.ui.components.dialog.DialogHelper
 import nobility.downloader.ui.windows.utils.ApplicationState
@@ -27,6 +26,8 @@ import nobility.downloader.utils.Constants.mediumIconSize
 import nobility.downloader.utils.hover
 
 class DownloadQueueWindow {
+
+    private val thread get() = Core.child.downloadThread
 
     @OptIn(ExperimentalMaterial3Api::class)
     fun open() {
@@ -45,7 +46,7 @@ class DownloadQueueWindow {
                                 EvaIcons.Fill.Trash2,
                                 mediumIconSize,
                                 onClick = {
-                                    if (Core.child.downloadThread.downloadQueue.isEmpty()) {
+                                    if (thread.isQueueEmpty) {
                                         showToast("No downloads are in the queue.")
                                         return@TooltipIconButton
                                     }
@@ -55,7 +56,7 @@ class DownloadQueueWindow {
                                                     Are you sure you want to remove everything?
                                                 """.trimIndent()
                                     ) {
-                                        Core.child.downloadThread.clear()
+                                        thread.clear()
                                     }
                                 },
                                 iconColor = MaterialTheme.colorScheme.tertiary,
@@ -71,25 +72,25 @@ class DownloadQueueWindow {
                     listOf(
                         HeaderItem(
                             "Name"
-                        ) { it.name },
+                        ) { it.episode.name },
                         HeaderItem(
                             "Position",
                             0.1f
                         ),
                     ),
-                    Core.child.downloadThread.downloadQueue,
-                    key = { it.name + it.id },
+                    thread.downloadQueue,
+                    key = { it.episode.name + it.episode.id },
                     lazyListState = scrollState,
                     headerColor = MaterialTheme.colorScheme.tertiary,
                     modifier = Modifier.padding(paddingValues)
                 ) { index, item ->
-                    EpisodeRow(
+                    DownloadQueueRow(
                         item,
                         index
                     )
                 }
                 LaunchedEffect(
-                    Core.child.downloadThread.downloadQueue.size
+                    thread.downloadQueue.size
                 ) {
                     scrollState.animateScrollToItem(0)
                 }
@@ -101,8 +102,8 @@ class DownloadQueueWindow {
     //downloads really do need a priority.
     @OptIn(ExperimentalFoundationApi::class)
     @Composable
-    private fun EpisodeRow(
-        episode: Episode,
+    private fun DownloadQueueRow(
+        queue: DownloadQueue,
         index: Int
     ) {
         var showFileMenu by remember {
@@ -123,7 +124,7 @@ class DownloadQueueWindow {
             ) {
                 closeMenu()
                 Core.openSeriesDetails(
-                    episode.seriesSlug
+                    queue.episode.seriesSlug
                 )
             }
             if (index != 0) {
@@ -132,20 +133,24 @@ class DownloadQueueWindow {
                     EvaIcons.Fill.ArrowUp
                 ) {
                     closeMenu()
-                    val currentIndex = Core.child.downloadThread.downloadQueue.indexOf(episode)
-                    Core.child.downloadThread.downloadQueue.removeAt(currentIndex)
-                    Core.child.downloadThread.downloadQueue.add(currentIndex - 1, episode)
+                    val currentIndex = thread.downloadQueue.indexOfFirst {
+                        it.episode.matches(queue.episode)
+                    }
+                    thread.downloadQueue.removeAt(currentIndex)
+                    thread.downloadQueue.add(currentIndex - 1, queue)
                 }
             }
-            if (index != Core.child.downloadThread.downloadQueue.lastIndex) {
+            if (index != thread.downloadQueue.lastIndex) {
                 DefaultDropdownItem(
                     "Move Down",
                     EvaIcons.Fill.ArrowDown
                 ) {
                     closeMenu()
-                    val currentIndex = Core.child.downloadThread.downloadQueue.indexOf(episode)
-                    Core.child.downloadThread.downloadQueue.removeAt(currentIndex)
-                    Core.child.downloadThread.downloadQueue.add(currentIndex + 1, episode)
+                    val currentIndex = thread.downloadQueue.indexOfFirst {
+                        it.episode.matches(queue.episode)
+                    }
+                    thread.downloadQueue.removeAt(currentIndex)
+                    thread.downloadQueue.add(currentIndex + 1, queue)
                 }
             }
             DefaultDropdownItem(
@@ -153,22 +158,23 @@ class DownloadQueueWindow {
                 EvaIcons.Fill.Trash
             ) {
                 closeMenu()
-                Core.child.downloadThread.removeFromQueue(episode)
+                thread.removeFromQueue(queue)
             }
         }
 
         Row(
             modifier = Modifier
-                .onClick(
-                    matcher = PointerMatcher.mouse(PointerButton.Secondary)
-                ) { showFileMenu = showFileMenu.not() }
-                .clickable(
-                    interactionSource = remember { MutableInteractionSource() },
+                .multiClickable(
                     indication = ripple(
                         color = MaterialTheme.colorScheme
                             .tertiaryContainer.hover()
-                    )
-                ) { showFileMenu = showFileMenu.not() }
+                    ),
+                    onSecondaryClick = {
+                        showFileMenu = showFileMenu.not()
+                    }
+                ) {
+                    showFileMenu = showFileMenu.not()
+                }
                 .background(
                     color = MaterialTheme.colorScheme.tertiaryContainer,
                     shape = RoundedCornerShape(5.dp)
@@ -178,7 +184,7 @@ class DownloadQueueWindow {
             horizontalArrangement = Arrangement.spacedBy(4.dp)
         ) {
             Text(
-                text = episode.name,
+                text = queue.episode.name,
                 color = MaterialTheme.colorScheme.onTertiaryContainer,
                 fontSize = MaterialTheme.typography.bodyMedium.fontSize,
                 modifier = Modifier

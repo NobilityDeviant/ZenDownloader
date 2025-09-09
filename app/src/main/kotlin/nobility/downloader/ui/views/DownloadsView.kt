@@ -1,7 +1,7 @@
 package nobility.downloader.ui.views
 
-import androidx.compose.foundation.*
-import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -14,7 +14,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.pointer.PointerButton
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
@@ -29,6 +28,7 @@ import nobility.downloader.ui.components.DefaultDropdownItem
 import nobility.downloader.ui.components.HeaderItem
 import nobility.downloader.ui.components.SortedLazyColumn
 import nobility.downloader.ui.components.dialog.DialogHelper
+import nobility.downloader.ui.components.multiClickable
 import nobility.downloader.ui.windows.utils.AppWindowScope
 import nobility.downloader.utils.Tools
 import nobility.downloader.utils.hover
@@ -59,7 +59,7 @@ class DownloadsView : ViewPage {
                 HeaderItem(
                     "Progress",
                     PROGRESS_WEIGHT
-                ) { it.videoProgress.value }
+                ) { it.downloadProgress.value }
             ),
             Core.child.downloadList,
             key = { it.nameAndResolution() },
@@ -201,16 +201,16 @@ class DownloadsView : ViewPage {
         }
         Row(
             modifier = Modifier
-                .onClick(
-                    matcher = PointerMatcher.mouse(PointerButton.Secondary)
-                ) { showFileMenu = showFileMenu.not() }
-                .clickable(
-                    interactionSource = remember { MutableInteractionSource() },
+                .multiClickable(
                     indication = ripple(
-                        color = MaterialTheme.colorScheme
-                            .secondaryContainer.hover()
-                    )
-                ) { showFileMenu = showFileMenu.not() }
+                        color = MaterialTheme.colorScheme.secondaryContainer.hover()
+                    ),
+                    onSecondaryClick = {
+                        showFileMenu = showFileMenu.not()
+                    }
+                ) {
+                    showFileMenu = showFileMenu.not()
+                }
                 .background(
                     color = MaterialTheme.colorScheme.secondaryContainer,
                     shape = RoundedCornerShape(5.dp)
@@ -251,17 +251,11 @@ class DownloadsView : ViewPage {
             Divider()
             val time = if (download.downloading)
                 Tools.secondsToRemainingTime(
-                    download.videoDownloadSeconds.value,
+                    download.downloadSeconds.value,
                     true
-                ) + download.downloadSpeed.value +
-                        if (download.audioProgress.value.isNotEmpty())
-                            "\n" + download.audioProgress.value + " " + Tools.secondsToRemainingTime(
-                                download.audioDownloadSeconds.value,
-                                true
-                            )
-                        else ""
+                )
             else ""
-            val text = download.videoProgress.value + " $time"
+            val text = download.downloadProgress.value + " $time"
             Text(
                 text = text,
                 modifier = Modifier

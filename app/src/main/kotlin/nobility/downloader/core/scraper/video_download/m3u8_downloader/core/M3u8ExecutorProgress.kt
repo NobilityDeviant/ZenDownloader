@@ -62,10 +62,10 @@ class M3u8ExecutorProgress : Runnable {
         )
     }
 
-    companion object {
-        const val VIDEO_TAG = "(VIDEO)"
-        const val AUDIO_TAG = "(AUDIO)"
-    }
+    //companion object {
+      //  const val VIDEO_TAG = "(VIDEO)"
+        //const val AUDIO_TAG = "(AUDIO)"
+    //}
 
     private class M3u8Progress(
         val m3u8Download: M3u8Download,
@@ -76,11 +76,11 @@ class M3u8ExecutorProgress : Runnable {
         private var endSeconds: Long = 0
         private val nowBytes = AtomicLong(0)
         private val lastBytes = AtomicLong(0)
-        private val tag = if (m3u8Download.fileName.endsWith("mp4"))
+        /*private val tag = if (m3u8Download.fileName.endsWith("mp4"))
             VIDEO_TAG
         else if (m3u8Download.fileName.endsWith("m4a"))
             AUDIO_TAG
-        else ""
+        else ""*/
 
         fun alreadyEnd(): Boolean {
             return endSeconds > 0
@@ -149,14 +149,14 @@ class M3u8ExecutorProgress : Runnable {
                     this.endSeconds = it
                 })
                 m3u8Download.downloadListener?.downloadProgress?.invoke(
-                    "$tag 100%",
+                    "100%",
                     0
                 )
                 return true
             }
 
             m3u8Download.downloadListener?.downloadProgress?.invoke(
-                "$tag $progressPercent",
+                "$progressPercent",
                 remainingSeconds.toInt()
             )
 

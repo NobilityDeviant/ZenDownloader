@@ -1,5 +1,6 @@
 package nobility.downloader.utils
 
+import AppInfo
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.colorspace.ColorSpaces
 import kotlinx.coroutines.Dispatchers
@@ -652,6 +653,27 @@ object Tools {
             }
         }
         throw IOException("Too many redirects")
+    }
+
+    fun ffSetFound(
+        outputDirectoryFile: File = File(AppInfo.databasePath)
+    ): Boolean {
+        outputDirectoryFile.mkdirs()
+        val currentFiles = outputDirectoryFile.listFiles()
+        var hasFfmpeg = false
+        var hasffPlay = false
+        currentFiles?.forEach {
+            if (it.name.contains("ffmpeg", true)) {
+                hasFfmpeg = true
+            }
+            if (it.name.contains("ffplay", true)) {
+                hasffPlay = true
+            }
+            if (it.name.contains("ffprobe", true)) {
+                it.delete()
+            }
+        }
+        return (hasFfmpeg && hasffPlay)
     }
 
 }

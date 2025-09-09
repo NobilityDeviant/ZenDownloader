@@ -1,6 +1,5 @@
 package nobility.downloader.ui.windows
 
-import AppInfo
 import Resource
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.animateFloatAsState
@@ -14,6 +13,7 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.*
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.CursorDropdownMenu
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.Saver
@@ -32,8 +32,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import compose.icons.EvaIcons
 import compose.icons.evaicons.Fill
-import compose.icons.evaicons.fill.ChevronDown
-import compose.icons.evaicons.fill.Star
+import compose.icons.evaicons.fill.*
 import kotlinx.coroutines.*
 import nobility.downloader.core.BoxHelper
 import nobility.downloader.core.BoxHelper.Companion.string
@@ -392,6 +391,7 @@ class DownloadConfirmWindow(
     }
 
     private fun seasonData(): List<SeasonData> {
+
         if (episodes.isEmpty()) {
             return emptyList()
         }
@@ -536,6 +536,7 @@ class DownloadConfirmWindow(
         }
     }
 
+    @OptIn(ExperimentalFoundationApi::class)
     @Composable
     private fun EpisodeRow(
         episode: Episode
@@ -544,6 +545,54 @@ class DownloadConfirmWindow(
         val highlighted = highlightedEpisodes.contains(
             indexForEpisode(episode, false)
         )
+        var downloaded by remember {
+            mutableStateOf(BoxHelper.isDownloadedEpisode(episode))
+        }
+
+        var showFileMenu by remember {
+            mutableStateOf(false)
+        }
+        val closeMenu = { showFileMenu = false }
+
+        CursorDropdownMenu(
+            expanded = showFileMenu,
+            onDismissRequest = { closeMenu() },
+            modifier = Modifier.background(
+                MaterialTheme.colorScheme.background
+            )
+        ) {
+            if (downloaded != null) {
+                DefaultDropdownItem(
+                    "Remove From Downloaded",
+                    EvaIcons.Fill.Trash
+                ) {
+                    closeMenu()
+                    BoxHelper.removeDownloadedEpisode(episode)
+                    downloaded = null
+                }
+            } else {
+                DefaultDropdownItem(
+                    "Mark As Downloaded",
+                    EvaIcons.Fill.Info
+                ) {
+                    closeMenu()
+                    downloaded = BoxMaker.makeDownloadedEpisode(
+                        episode.slug
+                    )
+                }
+            }
+            if (downloaded != null) {
+                DefaultDropdownItem(
+                    "View Downloaded Episode",
+                    EvaIcons.Fill.Eye
+                ) {
+                    closeMenu()
+                    Core.openDownloadedEpisodesWindow(
+                        episode.slug
+                    )
+                }
+            }
+        }
         Row(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.height(55.dp).background(
@@ -553,8 +602,7 @@ class DownloadConfirmWindow(
                     MaterialTheme.colorScheme.primary
                         .tone(40.0),
                 shape = RoundedCornerShape(5.dp)
-            ).clickable(
-                interactionSource = remember { MutableInteractionSource() },
+            ).multiClickable(
                 indication = ripple(
                     color = if (!highlighted)
                         MaterialTheme.colorScheme.secondaryContainer.hover()
@@ -562,7 +610,10 @@ class DownloadConfirmWindow(
                         MaterialTheme.colorScheme.primary
                             .tone(40.0)
                             .hover()
-                )
+                ),
+                onSecondaryClick = {
+                    showFileMenu = showFileMenu.not()
+                }
             ) {
                 if (shiftHeld) {
                     val index = indexForEpisode(episode, false)
@@ -609,13 +660,28 @@ class DownloadConfirmWindow(
                     MaterialTheme.colorScheme.onSurfaceVariant
                         .tone(80.0)
             )
+            if (downloaded != null) {
+                Tooltip(
+                    "Downloaded On: " +
+                            Tools.dateAndTimeFormatted(downloaded!!.downloadedDate, false)
+                ) {
+                    DefaultIcon(
+                        EvaIcons.Fill.Info,
+                        Modifier.size(30.dp)
+                            .padding(end = 8.dp)
+                    ) {
+                        Core.openDownloadedEpisodesWindow(episode.slug)
+                    }
+                }
+            }
             if (!shiftHeld) {
                 DefaultButton(
                     "Watch Online",
                     modifier = Modifier.width(100.dp)
                         .height(30.dp)
+                        .padding(end = 4.dp)
                 ) {
-                    ApplicationState.newWindow(AppInfo.TITLE) {}
+                    ApplicationState.bringMainToFront()
                     scope.launch {
                         VideoPlayerHandler.playEpisode(
                             episode,
@@ -913,7 +979,9 @@ class DownloadConfirmWindow(
                                         movieEpisode
                                     )
                                     if (added > 0) {
-                                        windowScope.showToast("Added movie to current queue.")
+                                        ApplicationState.showToastForMain(
+                                            "Added movie to current queue."
+                                        )
                                         windowScope.closeWindow()
                                     } else {
                                         windowScope.showToast(
@@ -925,7 +993,7 @@ class DownloadConfirmWindow(
                                 Core.child.softStart()
                                 Core.child.downloadThread.addToQueue(movieEpisode)
                                 Core.child.launchStopJob()
-                                FrogLog.message("Successfully launched video downloader for movie.")
+                                ApplicationState.showToastForMain("Launched video downloader for movie.")
                                 windowScope.closeWindow()
                             }
                         } else {
@@ -949,9 +1017,7 @@ class DownloadConfirmWindow(
                                     windowScope.showToast("You must select at least 1 episode.")
                                     return@DefaultButton
                                 }
-                                BoxMaker.makeHistory(
-                                    series.slug
-                                )
+                                BoxMaker.makeHistory(series.slug)
                                 if (Core.child.isRunning) {
                                     val added = Core.child.downloadThread.addToQueue(
                                         if (singleEpisode)
@@ -960,7 +1026,7 @@ class DownloadConfirmWindow(
                                             selectedEpisodes.map { it }
                                     )
                                     if (added > 0) {
-                                        windowScope.showToast(
+                                        ApplicationState.showToastForMain(
                                             "Added $added episode(s) to current queue."
                                         )
                                         windowScope.closeWindow()
@@ -979,7 +1045,7 @@ class DownloadConfirmWindow(
                                     selectedEpisodes.sortedWith(Tools.baseEpisodesComparator)
                                 )
                                 Core.child.launchStopJob()
-                                FrogLog.message("Successfully launched video downloader for ${selectedEpisodes.size} episode(s).")
+                                ApplicationState.showToastForMain("Launched video downloader for ${selectedEpisodes.size} episode(s).")
                                 windowScope.closeWindow()
                             }
                         }
@@ -1000,8 +1066,8 @@ class DownloadConfirmWindow(
                                 },
                                 boxColor = MaterialTheme.colorScheme.primary,
                                 boxTextColor = MaterialTheme.colorScheme.onPrimary,
-                                boxWidth = 140.dp,
-                                boxHeight = bottomBarButtonHeight,
+                                boxModifier = Modifier.width(140.dp)
+                                    .height(bottomBarButtonHeight),
                                 centerBoxText = true,
                                 onTextClick = { openQuality = true },
                             ) { openQuality = false }

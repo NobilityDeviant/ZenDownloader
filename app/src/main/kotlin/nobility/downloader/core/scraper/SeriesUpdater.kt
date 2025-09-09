@@ -7,7 +7,9 @@ import nobility.downloader.core.entities.Episode
 import nobility.downloader.core.entities.Series
 import nobility.downloader.core.scraper.data.NewEpisodes
 import nobility.downloader.core.scraper.video_download.Functions
+import nobility.downloader.utils.FrogLog
 import nobility.downloader.utils.Tools
+import nobility.downloader.utils.UserAgents
 import nobility.downloader.utils.slugToLink
 import org.jsoup.Jsoup
 
@@ -45,22 +47,23 @@ object SeriesUpdater {
         val result = gatherSeriesEpisodes(series)
         val data = result.data
         if (data != null) {
-            return@withContext Resource.Success(
-                NewEpisodes(
-                    compareForNewEpisodes(
-                        series,
+            if (data.size > series.episodesSize) {
+                return@withContext Resource.Success(
+                    NewEpisodes(
+                        compareForNewEpisodes(
+                            series,
+                            data
+                        ),
                         data
-                    ),
-                    data
+                    )
                 )
-            )
+            } else {
+                return@withContext Resource.Success(
+                    NewEpisodes()
+                )
+            }
         } else {
-            return@withContext Resource.Success(
-                NewEpisodes(
-                    emptyList(),
-                    emptyList()
-                )
-            )
+            return@withContext Resource.Error(result.message)
         }
     }
 
@@ -68,12 +71,14 @@ object SeriesUpdater {
         series: Series
     ): Resource<List<Episode>> = withContext(Dispatchers.IO) {
         val seriesLink = series.slug.slugToLink()
+        val userAgent = UserAgents.random
         val result = Functions.readUrlLines(
             seriesLink,
-            "New Episodes: ${series.slug}"
+            "New Episodes: ${series.slug}",
+            userAgent = userAgent
         )
         val source = result.data
-        if (source != null) {
+        if (!source.isNullOrEmpty()) {
             val doc = Jsoup.parse(source.toString())
             val existsCheck = doc.getElementsByClass("recent-release")
             if (existsCheck.text().lowercase().contains("page not found")) {
@@ -96,9 +101,22 @@ object SeriesUpdater {
                     episodes.add(episode)
                 }
                 return@withContext Resource.Success(episodes)
+            } else {
+                FrogLog.writeErrorToTxt(
+                    "Source For ${series.slug}",
+                    source.toString(),
+                    "UserAgent: $userAgent"
+                )
+                return@withContext Resource.Error(
+                    "Failed to find episode list in webpage. (cat-eps)"
+                )
             }
+        } else {
+            return@withContext Resource.Error(
+                "Failed to read webpage.",
+                result.message
+            )
         }
-        return@withContext Resource.Error()
     }
 
     private fun compareForNewEpisodes(

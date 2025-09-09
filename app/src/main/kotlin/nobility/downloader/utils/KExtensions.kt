@@ -16,13 +16,28 @@ import nobility.downloader.core.entities.Download
 import nobility.downloader.core.settings.Defaults
 import org.apache.commons.io.FileUtils
 import org.apache.commons.lang3.StringUtils
+import org.openqa.selenium.By
 import org.openqa.selenium.WebDriver
+import org.openqa.selenium.WebElement
 import java.io.File
 
 val KeyEvent.isUp: Boolean get() = type == KeyEventType.KeyUp
 
-//fix the new selenium pageSource being nullable.
-//why?
+@Suppress("UNUSED")
+fun WebDriver.findElementOrNull(
+    by: By,
+    printError: Boolean = false
+): WebElement? {
+    return try {
+        findElement(by)
+    } catch (e: Exception) {
+        if (printError) {
+            e.printStackTrace()
+        }
+        null
+    }
+}
+
 fun WebDriver.source(): String {
     val src = pageSource
     return if (!src.isNullOrEmpty()) {
@@ -100,6 +115,10 @@ fun String.ordinalIndexOf(searchString: String, ordinal: Int): Int {
     return StringUtils.ordinalIndexOf(this, searchString, ordinal)
 }
 
+fun String.domainFromLink(): String {
+    return Tools.extractDomainFromLink(this)
+}
+
 fun String.fixForFiles(): String {
     return Tools.fixTitle(this)
 }
@@ -112,7 +131,7 @@ fun String.linkToSlug(): String {
     return Tools.extractSlugFromLink(this)
 }
 
-fun String.fixedSlug(): String {
+fun String.fixedAnimeSlug(): String {
     return this.replace("anime/", "")
 }
 

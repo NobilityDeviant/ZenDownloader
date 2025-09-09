@@ -4,13 +4,15 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 import nobility.downloader.core.BoxHelper.Companion.int
+import nobility.downloader.core.BoxHelper.Companion.string
 import nobility.downloader.core.Core
 import nobility.downloader.core.entities.Episode
-import nobility.downloader.core.scraper.video_download.Functions
+import nobility.downloader.core.scraper.data.DownloadQueue
 import nobility.downloader.core.scraper.video_download.Functions.fileSize
 import nobility.downloader.core.scraper.video_download.VideoDownloadHelper
 import nobility.downloader.core.settings.Defaults
 import nobility.downloader.core.settings.Quality
+import nobility.downloader.core.settings.VideoPlayer
 import nobility.downloader.utils.Constants
 import nobility.downloader.utils.FrogLog
 
@@ -26,7 +28,7 @@ object VideoPlayerHandler {
     ) = withContext(Dispatchers.IO) {
 
         val help = VideoDownloadHelper(
-            episode,
+            DownloadQueue(episode),
             temporaryQuality
         )
         val data = help.videoDownloadData
@@ -67,15 +69,34 @@ object VideoPlayerHandler {
             val qualityOption = preferredDownload.quality
 
             if (downloadLink.endsWith(".m3u8")) {
-                FrogLog.info("Found m3u8. Attempting to play it with ffplay on the default stream.")
-                val play = PlayVideoWithFfplay.play(
-                    downloadLink,
-                    data.userAgent,
-                    episode.name + " (${qualityOption.tag})"
-                )
+
+                val m3u8MasterLink = data.m3u8MasterLink
+
+                val finalLink = if (m3u8MasterLink != null) {
+                    m3u8MasterLink
+                } else {
+                    FrogLog.error(
+                        "Failed to find m3u8 master link. Defaulting to found quality link."
+                    )
+                    downloadLink
+                }
+
+                FrogLog.info("Found m3u8. Attempting to play it with ${Defaults.VIDEO_PLAYER.string()} on the default stream.")
+                val play = if (VideoPlayer.playerForSetting() == VideoPlayer.FFPLAY)
+                    PlayVideoWithFfplay.play(
+                        finalLink,
+                        data.userAgent,
+                        episode.name + " (${qualityOption.tag})"
+                    )
+                else
+                    PlayVideoWithMpv.play(
+                        finalLink,
+                        data.userAgent,
+                        episode.name + " (${qualityOption.tag})"
+                    )
                 if (play.isFailed) {
                     data.error(
-                        "Failed to play m3u8 video with ffplay.",
+                        "Failed to play m3u8 video.",
                         play.message
                     )
                     return ReturnCheck.ERROR
@@ -128,20 +149,23 @@ object VideoPlayerHandler {
                         return ReturnCheck.ERROR
                     }
                 }
-                data.message("Found valid video link. Attempting to play it with ffplay.")
+                data.message("Found valid video link. Attempting to play it with: ${Defaults.VIDEO_PLAYER.string()}.")
 
-                val con = Functions.wcoConnection(
-                    downloadLink,
-                    data.userAgent
-                )
-                val play = PlayVideoWithFfplay.play(
-                    downloadLink,
-                    con,
-                    episode.name + " (${qualityOption.tag})"
-                )
+                val play = if (VideoPlayer.playerForSetting() == VideoPlayer.FFPLAY)
+                    PlayVideoWithFfplay.play(
+                        downloadLink,
+                        data.userAgent,
+                        episode.name + " (${qualityOption.tag})"
+                    )
+                else
+                    PlayVideoWithMpv.play(
+                        downloadLink,
+                        data.userAgent,
+                        episode.name + " (${qualityOption.tag})"
+                    )
                 if (play.isFailed) {
                     data.error(
-                        "Failed to play video with ffplay.",
+                        "Failed to play video online.",
                         play.message
                     )
                     return ReturnCheck.ERROR

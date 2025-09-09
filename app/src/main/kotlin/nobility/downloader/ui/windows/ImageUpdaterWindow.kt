@@ -1,5 +1,6 @@
 package nobility.downloader.ui.windows
 
+import Resource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -26,7 +27,6 @@ import nobility.downloader.ui.components.FullBox
 import nobility.downloader.ui.components.dialog.DialogHelper
 import nobility.downloader.ui.windows.utils.AppWindowScope
 import nobility.downloader.ui.windows.utils.ApplicationState
-import Resource
 import nobility.downloader.utils.Tools
 import java.io.BufferedReader
 import java.io.File
@@ -340,7 +340,7 @@ class ImageUpdaterWindow() {
         if (downloadScope.isActive) {
             downloadScope.cancel()
         }
-        appWindowScope?.closeWindow()
+        appWindowScope?.closeWindow(false)
     }
 
     private fun message(s: String) {

@@ -5,6 +5,7 @@ import Resource
 import kotlinx.coroutines.*
 import nobility.downloader.core.BoxHelper.Companion.int
 import nobility.downloader.core.Core
+import nobility.downloader.core.driver.DriverBase
 import nobility.downloader.core.driver.DriverBaseImpl
 import nobility.downloader.core.driver.undetected_chrome.SysUtil
 import nobility.downloader.core.entities.Download
@@ -28,64 +29,68 @@ object Functions {
     suspend fun readUrlLines(
         url: String,
         data: VideoDownloadData,
-        addReferer: Boolean = true
+        addReferer: Boolean = true,
+        skipSimpleMode: Boolean = false,
+        fullModeFunction: (suspend (DriverBase) -> Unit)? = null
     ): Resource<StringBuilder> = withContext(Dispatchers.IO) {
         var simpleRetries = 0
         var exception: Exception? = null
-        while (simpleRetries < Defaults.SIMPLE_RETRIES.int()) {
-            var con: HttpsURLConnection? = null
-            var reader: BufferedReader? = null
-            val sb = StringBuilder()
-            try {
-                con = wcoConnection(
-                    url,
-                    data.userAgent,
-                    false,
-                    addReferer
-                )
-                reader = con.inputStream.bufferedReader()
-                reader.readLines().forEach {
-                    sb.appendLine(it)
-                }
-                if (sb.contains("404 - Page not Found")) {
-                    return@withContext Resource.Error("404 Page not found.")
-                } else if (sb.contains("403 Forbidden")) {
-                    simpleRetries++
-                    delay(500)
-                    exception = Exception("403 Forbidden")
-                    continue
-                } else if (sb.contains("Sorry, you have been blocked")) {
-                    simpleRetries++
-                    delay(500)
-                    exception = Exception("Blocked by Cloudflare")
-                    continue
-                } else if (sb.contains("Just a moment...")) {
-                    simpleRetries++
-                    delay(500)
-                    exception = Exception("Blocked by Cloudflare")
-                    continue
-                } else {
-                    return@withContext Resource.Success(sb)
-                }
-            } catch (e: Exception) {
-                exception = e
-                simpleRetries++
-                delay(500)
-                continue
-            } finally {
+        if (!skipSimpleMode) {
+            while (simpleRetries < Defaults.SIMPLE_RETRIES.int()) {
+                var con: HttpsURLConnection? = null
+                var reader: BufferedReader? = null
+                val sb = StringBuilder()
                 try {
-                    con?.disconnect()
-                    reader?.close()
-                } catch (_: Exception) {
+                    con = wcoConnection(
+                        url,
+                        data.userAgent,
+                        false,
+                        addReferer
+                    )
+                    reader = con.inputStream.bufferedReader()
+                    reader.readLines().forEach {
+                        sb.appendLine(it)
+                    }
+                    if (sb.contains("404 - Page not Found")) {
+                        return@withContext Resource.Error("404 Page not found.")
+                    } else if (sb.contains("403 Forbidden")) {
+                        simpleRetries++
+                        delay(500)
+                        exception = Exception("403 Forbidden")
+                        continue
+                    } else if (sb.contains("Sorry, you have been blocked")) {
+                        simpleRetries++
+                        delay(500)
+                        exception = Exception("Blocked by Cloudflare")
+                        continue
+                    } else if (sb.contains("Just a moment...")) {
+                        simpleRetries++
+                        delay(500)
+                        exception = Exception("Blocked by Cloudflare")
+                        continue
+                    } else {
+                        return@withContext Resource.Success(sb)
+                    }
+                } catch (e: Exception) {
+                    exception = e
+                    simpleRetries++
+                    delay(500)
+                    continue
+                } finally {
+                    try {
+                        con?.disconnect()
+                        reader?.close()
+                    } catch (_: Exception) {
+                    }
                 }
             }
-        }
-        @Suppress("KotlinConstantConditions")
-        if (AppInfo.DEBUG_MODE) {
-            data.debug(
-                "Failed to find source code with simple mode. Moving onto full mode. " +
-                        "Exception: ${exception?.localizedMessage}"
-            )
+            @Suppress("KotlinConstantConditions")
+            if (AppInfo.DEBUG_MODE) {
+                data.error(
+                    "Failed to find source code with simple mode.",
+                    exception
+                )
+            }
         }
         var fullModeRetries = 0
         var fullModeException: Exception? = null
@@ -95,23 +100,17 @@ object Functions {
                     JavascriptHelper.changeUrlInternally(url)
                 )
                 data.base.waitForPageJs()
-                //data.driver.navigate().to(url)
-                if (data.driver.source().contains("404 - Page not Found")) {
+                fullModeFunction?.invoke(data.base)
+                val source = data.base.driver.source()
+                if (source.contains("404 - Page not Found")) {
                     return@withContext Resource.Error("[Selenium] 404 Page not found.")
-                }
-                if (data.driver.source().contains("403 Forbidden")) {
+                } else if (source.contains("403 Forbidden")) {
                     return@withContext Resource.Error("[Selenium] 403 Forbidden")
+                } else if (source.contains("Sorry, you have been blocked")) {
+                    return@withContext Resource.Error("[Selenium] Blocked by Cloudflare")
+                } else if (source.contains("<title>Just a moment")) {
+                    return@withContext Resource.Error("[Selenium] Blocked by Cloudflare")
                 }
-                if (data.driver.source().contains("Sorry, you have been blocked")) {
-                    fullModeRetries++
-                    delay(500)
-                    continue
-                }
-                /*if (data.driver.title().contains("Just a moment")) {
-                    fullModeRetries++
-                    delay(500)
-                    continue
-                }*/
                 val sb = StringBuilder()
                 data.driver.source().lines().forEach {
                     sb.appendLine(it)
@@ -124,7 +123,6 @@ object Functions {
             }
         }
         return@withContext Resource.Error(
-            "Failed to read lines with selenium.",
             fullModeException
         )
     }
@@ -135,66 +133,70 @@ object Functions {
     suspend fun readUrlLines(
         url: String,
         customTag: String = "readUrlLines",
-        addReferer: Boolean = true
+        addReferer: Boolean = true,
+        userAgent: String = UserAgents.random,
+        skipSimpleMode: Boolean = false,
+        fullModeFunction: (suspend (DriverBase) -> Unit)? = null
     ): Resource<StringBuilder> = withContext(Dispatchers.IO) {
-        val userAgent = UserAgents.random
         var simpleRetries = 0
         var exception: Exception? = null
-        while (simpleRetries < Defaults.SIMPLE_RETRIES.int()) {
-            var con: HttpsURLConnection? = null
-            var reader: BufferedReader? = null
-            val sb = StringBuilder()
-            try {
-                con = wcoConnection(
-                    url,
-                    userAgent,
-                    false,
-                    addReferer
-                )
-                reader = con.inputStream.bufferedReader()
-                reader.readLines().forEach {
-                    sb.appendLine(it)
-                }
-                if (sb.contains("404 - Page not Found")) {
-                    return@withContext Resource.Error("404 Page not found.")
-                } else if (sb.contains("403 Forbidden")) {
-                    simpleRetries++
-                    delay(500)
-                    exception = Exception("403 Forbidden")
-                    continue
-                } else if (sb.contains("Sorry, you have been blocked")) {
-                    simpleRetries++
-                    delay(500)
-                    exception = Exception("Blocked by Cloudflare")
-                    continue
-                } else if (sb.contains("<title>Just a moment")) {
-                    FrogLog.error("Blocked by cloudflare. Just a moment...")
-                    simpleRetries++
-                    delay(500)
-                    exception = Exception("Blocked by Cloudflare")
-                    continue
-                } else {
-                    return@withContext Resource.Success(sb)
-                }
-            } catch (e: Exception) {
-                exception = e
-                simpleRetries++
-                delay(500)
-                continue
-            } finally {
+        if (!skipSimpleMode) {
+            while (simpleRetries < Defaults.SIMPLE_RETRIES.int()) {
+                var con: HttpsURLConnection? = null
+                var reader: BufferedReader? = null
+                val sb = StringBuilder()
                 try {
-                    con?.disconnect()
-                    reader?.close()
-                } catch (_: Exception) {
+                    con = wcoConnection(
+                        url,
+                        userAgent,
+                        false,
+                        addReferer
+                    )
+                    reader = con.inputStream.bufferedReader()
+                    reader.readLines().forEach {
+                        sb.appendLine(it)
+                    }
+                    if (sb.contains("404 - Page not Found")) {
+                        return@withContext Resource.Error("404 Page not found.")
+                    } else if (sb.contains("403 Forbidden")) {
+                        simpleRetries++
+                        delay(500)
+                        exception = Exception("403 Forbidden")
+                        continue
+                    } else if (sb.contains("Sorry, you have been blocked")) {
+                        simpleRetries++
+                        delay(500)
+                        exception = Exception("Blocked by Cloudflare")
+                        continue
+                    } else if (sb.contains("<title>Just a moment")) {
+                        FrogLog.error("Blocked by cloudflare. Just a moment...")
+                        simpleRetries++
+                        delay(500)
+                        exception = Exception("Blocked by Cloudflare")
+                        continue
+                    } else {
+                        return@withContext Resource.Success(sb)
+                    }
+                } catch (e: Exception) {
+                    exception = e
+                    simpleRetries++
+                    delay(500)
+                    continue
+                } finally {
+                    try {
+                        con?.disconnect()
+                        reader?.close()
+                    } catch (_: Exception) {
+                    }
                 }
             }
-        }
-        @Suppress("KotlinConstantConditions")
-        if (AppInfo.DEBUG_MODE) {
-            FrogLog.error(
-                "[$customTag] Failed to read webpage with simple mode. Moving on to full mode.",
-                exception
-            )
+            @Suppress("KotlinConstantConditions")
+            if (AppInfo.DEBUG_MODE) {
+                FrogLog.error(
+                    "[$customTag] Failed to read webpage with simple mode.",
+                    exception
+                )
+            }
         }
         val driverBase = DriverBaseImpl(userAgent = userAgent)
         var fullModeRetries = 0
@@ -205,25 +207,19 @@ object Functions {
                     JavascriptHelper.changeUrlInternally(url)
                 )
                 driverBase.waitForPageJs()
-                //driverBase.driver.navigate().to(url)
-                if (driverBase.driver.source().contains("404 - Page not Found")) {
+                fullModeFunction?.invoke(driverBase)
+                val source = driverBase.driver.source()
+                if (source.contains("404 - Page not Found")) {
                     return@withContext Resource.Error("[Selenium] 404 Page not found.")
-                }
-                if (driverBase.driver.source().contains("403 Forbidden")) {
+                } else if (source.contains("403 Forbidden")) {
                     return@withContext Resource.Error("[Selenium] 403 Forbidden")
+                } else if (source.contains("Sorry, you have been blocked")) {
+                    return@withContext Resource.Error("[Selenium] Blocked by Cloudflare")
+                } else if (source.contains("<title>Just a moment")) {
+                    return@withContext Resource.Error("[Selenium] Blocked by Cloudflare")
                 }
-                if (driverBase.driver.source().contains("Sorry, you have been blocked")) {
-                    fullModeRetries++
-                    delay(500)
-                    continue
-                }
-                /*if (driverBase.driver.title().contains("Just a moment")) {
-                    fullModeRetries++
-                    delay(500)
-                    continue
-                }*/
                 val sb = StringBuilder()
-                driverBase.driver.source().lines().forEach {
+                source.lines().forEach {
                     sb.appendLine(it)
                 }
                 return@withContext Resource.Success(sb)
@@ -236,7 +232,6 @@ object Functions {
             }
         }
         return@withContext Resource.Error(
-            "[$customTag] Failed to read lines with selenium.",
             fullModeException
         )
     }
@@ -388,7 +383,7 @@ object Functions {
             .addHttpHeader("Accept", "*/*")
             .addHttpHeader("Cache-Control", "no-cache")
             .addListener(downloadListener)
-        if (saveFile.extension == "m4a") {
+        if (saveFile.extension == "m4a" || saveFile.extension == "srt") {
             builder.apply {
                 mergeWithoutConvertToMp4()
             }

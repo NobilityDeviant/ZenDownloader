@@ -65,106 +65,24 @@ object JavascriptHelper {
         return Y.replace(CHANGE_KEY, link)
     }
 
-    const val SPAWN_MOVIE =
-        """
-// Regular expressions to extract player ID and report URL
-const playerIdRegex = /\$\(\s*"#(?<playerId>[^"]+)"\s*\)\.attr\("src"/m;
-const reportUrlRegex = /"(?<path>\/report\/\?[^"]+)"/m;
-
-/**
- * Extracts player info and parameters from a parent HTML element.
- * @param {Element} parentElement - The parent HTML element containing script tags.
- * @returns {Object} - An object containing h, t, pid, and playerId.
- */
-function extractPlayerData(parentElement) {
-    const scriptTags = parentElement.querySelectorAll('script[type="text/javascript"]');
-    let reportUrl, playerId;
-
-    for (const script of scriptTags) {
-        // Try to find a report URL
-        const reportPath = reportUrlRegex.exec(script.innerText)?.groups?.path;
-        if (reportPath) {
-            reportUrl = new URL(reportPath, location.origin);
-            // Try to find the player ID from the same script
-            playerId = playerIdRegex.exec(script.innerText)?.groups?.playerId;
+    //thanks for not doing this in php brother
+    const val HIDE_AD = """
+      const announcement = document.getElementById('announcement');
+      const backdrop = document.getElementById('backdrop');
+      
+	  function doClose() {
+        if (announcement === null) {
+            return;
         }
-    }
+        announcement.style.opacity = '0';
+        backdrop.style.opacity = '0';
+        announcement.style.display = 'none';
+        backdrop.style.display = 'none';
+        var cerceve = "https://embed.wcostream.com/inc/embed/video-js.php" + window.location.search;
+        window.location.replace(cerceve);
+      }
+	  
 
-    if (!reportUrl) throw new Error("Report URL not found");
-    if (!playerId) throw new Error("Player ID not found");
-
-    const pid = reportUrl.searchParams.get("pid");
-    const h = reportUrl.searchParams.get("h");
-    const t = reportUrl.searchParams.get("t");
-
-    if (!pid || !h || !t) throw new Error("Report URL is invalid");
-
-    return {
-        h,
-        t,
-        pid,
-        playerId
-    };
-}
-
-/**
- * Embeds a video iframe if not already present.
- */
-function embedPlayer() {
-    // Check if the iframe is already embedded
-    const existingIframes = document.querySelectorAll('iframe[id^="frameNew"]');
-    if (existingIframes.length > 0) return;
-
-    // Look for the meta tag containing the embed URL
-    const embedMetaTags = document.querySelectorAll('meta[itemprop="embedURL"]');
-    if (embedMetaTags.length === 0) throw new Error("Embed URL element not found");
-
-    for (const metaTag of embedMetaTags) {
-        const embedFile = new URL(metaTag.content, location.origin).searchParams.get("file");
-        if (!embedFile) throw new Error("Embed URL is invalid");
-
-        const {
-            h,
-            t,
-            pid,
-            playerId
-        } = extractPlayerData(metaTag.parentElement);
-
-        // Create and configure the iframe
-        const iframe = document.createElement("iframe");
-        iframe.id = playerId;
-
-        const iframeSrc = new URL("https://embed.watchanimesub.net/inc/embed/video-js.php");
-        iframeSrc.searchParams.set("file", embedFile);
-        iframeSrc.searchParams.set("fullhd", "1");
-        iframeSrc.searchParams.set("pid", pid);
-        iframeSrc.searchParams.set("h", h);
-        iframeSrc.searchParams.set("t", t);
-        iframeSrc.searchParams.set("embed", "neptun");
-
-        iframe.src = iframeSrc.href;
-        iframe.width = "530";
-        iframe.height = "440";
-        iframe.frameBorder = "0";
-        iframe.scrolling = "no";
-        iframe.setAttribute("webkitallowfullscreen", "true");
-        iframe.setAttribute("mozallowfullscreen", "true");
-        iframe.setAttribute("requestfullscreen", "true");
-        iframe.setAttribute("msrequestfullscreen", "true");
-        iframe.setAttribute("allowfullscreen", "");
-        iframe.setAttribute("rel", "nofollow");
-        iframe.setAttribute("data-type", "wco-embed");
-
-        // Replace the sibling element before the meta tag with the iframe
-        metaTag.previousElementSibling?.replaceWith(iframe);
-    }
-}
-
-// Run embedPlayer only if on the correct domain
-if (window.location.hostname === "www.wcostream.tv") {
-    embedPlayer();
-}
-
-        """
-
+        doClose();
+    """
 }

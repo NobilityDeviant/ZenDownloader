@@ -44,7 +44,8 @@ object DialogHelper {
             showConfirm(
                 message,
                 "Link Manager",
-                supportLinks = false
+                supportLinks = false,
+                size = linkWindowSize
             ) { openLink(link) }
         } else {
             openLink(link)
@@ -230,6 +231,7 @@ object DialogHelper {
         )
     }
 
-    val smallWindowSize = DpSize(300.dp, 200.dp)
+    val smallWindowSize = DpSize(300.dp, 250.dp)
+    val linkWindowSize = DpSize(400.dp, 250.dp)
     val mediumWindowSize = DpSize(400.dp, 300.dp)
 }

@@ -29,9 +29,10 @@ import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onKeyEvent
+import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.input.pointer.PointerIcon
+import androidx.compose.ui.input.pointer.onPointerEvent
 import androidx.compose.ui.input.pointer.pointerHoverIcon
-import androidx.compose.ui.input.pointer.pointerMoveFilter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.style.TextAlign
@@ -137,12 +138,11 @@ class DownloaderView : ViewPage {
                         bottom = padding.calculateBottomPadding(),
                         top = padding.calculateTopPadding()
                     )
-                    .pointerMoveFilter(
-                        onMove = { offset ->
-                            popupOffset.value = offset
-                            false
-                        }
-                    )
+                    .onPointerEvent(PointerEventType.Move) {
+                        popupOffset.value = it.changes.first().position
+                    }
+                    .onPointerEvent(PointerEventType.Enter) {}
+                    .onPointerEvent(PointerEventType.Exit) {}
             ) {
 
                 val density = LocalDensity.current
@@ -327,16 +327,15 @@ class DownloaderView : ViewPage {
                                             MaterialTheme.colorScheme.primary,
                                         RectangleShape
                                     ).hoverable(interaction)
-                                        .pointerMoveFilter(
-                                            onMove = { offset ->
-                                                hoveredSeries.value = series
-                                                false
-                                            },
-                                            onExit = {
-                                                hoveredSeries.value = null
-                                                false
-                                            }
-                                        )
+                                        .onPointerEvent(PointerEventType.Move) {
+                                            it.changes.first().position
+                                            hoveredSeries.value = series
+                                        }
+                                        .onPointerEvent(PointerEventType.Enter) {
+                                        }
+                                        .onPointerEvent(PointerEventType.Exit) {
+                                            hoveredSeries.value = null
+                                        }
 
                                 ) {
                                     DefaultImage(
@@ -409,16 +408,14 @@ class DownloaderView : ViewPage {
                                             MaterialTheme.colorScheme.primary,
                                         RectangleShape
                                     ).hoverable(interaction)
-                                        .pointerMoveFilter(
-                                            onMove = {
-                                                hoveredSeries.value = series
-                                                false
-                                            },
-                                            onExit = {
-                                                hoveredSeries.value = null
-                                                false
-                                            }
-                                        )
+                                        .onPointerEvent(PointerEventType.Move) {
+                                            hoveredSeries.value = series
+                                        }
+                                        .onPointerEvent(PointerEventType.Enter) {
+                                        }
+                                        .onPointerEvent(PointerEventType.Exit) {
+                                            hoveredSeries.value = null
+                                        }
 
                                 ) {
                                     DefaultImage(

@@ -28,17 +28,10 @@ data class Download(
     var queued = false
 
     @Transient
-    var videoProgress = mutableStateOf("0%")
+    var downloadProgress = mutableStateOf("0%")
 
     @Transient
-    var audioProgress = mutableStateOf("")
-
-    @Transient
-    var videoDownloadSeconds = mutableStateOf(0)
-        private set
-
-    @Transient
-    var audioDownloadSeconds = mutableStateOf(0)
+    var downloadSeconds = mutableStateOf(0)
         private set
 
     @Transient
@@ -70,11 +63,8 @@ data class Download(
         if (manualProgress != download.manualProgress) {
             manualProgress = download.manualProgress
         }
-        if (videoProgress.value != download.videoProgress.value) {
-            videoProgress.value = download.videoProgress.value
-        }
-        if (audioProgress.value != download.audioProgress.value) {
-            audioProgress.value = download.audioProgress.value
+        if (downloadProgress.value != download.downloadProgress.value) {
+            downloadProgress.value = download.downloadProgress.value
         }
         if (updateProperties) {
             updateProgress()
@@ -92,10 +82,10 @@ data class Download(
 
     fun updateProgress() {
         if (queued) {
-            setVideoProgressValue("Queued")
+            setProgress("Queued")
             return
         } else if (paused) {
-            setVideoProgressValue("Paused")
+            setProgress("Paused")
             return
         }
         if (manualProgress && downloading) {
@@ -104,42 +94,26 @@ data class Download(
         val video = downloadFile()
         if (video != null && video.exists()) {
             if (manualProgress) {
-                setVideoProgressValue("100%")
+                setProgress("100%")
             } else {
                 val ratio = video.length() / fileSize.toDouble()
-                setVideoProgressValue(Tools.percentFormat.format(ratio))
+                setProgress(Tools.percentFormat.format(ratio))
             }
         } else {
-            setVideoProgressValue("File Not Found")
+            setProgress("File Not Found")
         }
     }
 
-    fun updateVideoSeconds(seconds: Int) {
-        videoDownloadSeconds.value = seconds
+    fun setSeconds(seconds: Int) {
+        downloadSeconds.value = seconds
     }
 
-    fun updateAudioSeconds(seconds: Int) {
-        audioDownloadSeconds.value = seconds
-    }
-
-    fun updateDownloadSpeed(bps: Long) {
+    fun setDownloadSpeed(bps: Long) {
         downloadSpeed.value = " (${Tools.bytesToString(bps)}ps)"
     }
 
-    fun setVideoProgressValue(
-        value: String
-    ) {
-        if (videoProgress.value != value) {
-            videoProgress.value = value
-        }
-    }
-
-    fun updateProgress(value: String, video: Boolean) {
-        if (video) {
-            videoProgress.value = value
-        } else {
-            audioProgress.value = value
-        }
+    fun setProgress(value: String) {
+        downloadProgress.value = value
     }
 
     fun downloadFile(): File? {

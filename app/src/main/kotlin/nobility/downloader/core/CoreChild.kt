@@ -22,10 +22,7 @@ import nobility.downloader.core.settings.Defaults
 import nobility.downloader.core.updates.UrlUpdater
 import nobility.downloader.ui.components.dialog.DialogHelper
 import nobility.downloader.ui.components.dialog.DialogHelper.showError
-import nobility.downloader.utils.Constants
-import nobility.downloader.utils.FFmpegDownloader
-import nobility.downloader.utils.FrogLog
-import nobility.downloader.utils.update
+import nobility.downloader.utils.*
 import org.openqa.selenium.WebDriver
 import java.io.File
 import java.net.URI
@@ -44,6 +41,7 @@ class CoreChild {
     var shutdownProgressIndex by mutableStateOf(0)
     var shutdownProgressTotal by mutableStateOf(0)
     val runningDrivers: MutableMap<String, WebDriver> = Collections.synchronizedMap(mutableMapOf())
+    val runningProcesses: MutableList<Process> = Collections.synchronizedList(mutableListOf())
     val downloadList: MutableList<Download> = Collections.synchronizedList(mutableStateListOf())
     lateinit var movieHandler: MovieHandler
     var forceStopped = false
@@ -62,14 +60,12 @@ class CoreChild {
             launch {
                 downloadThread.run()
             }
-            launch {
-                val ffmpegResult = FFmpegDownloader.downloadLatestFFmpeg()
-                if (ffmpegResult.isFailed) {
-                    FrogLog.error(
-                        "Failed to download ffmpeg and ffplay for OS.",
-                        ffmpegResult.message
-                    )
-                }
+            val ffSetFound = Tools.ffSetFound()
+            if (!ffSetFound) {
+                FrogLog.message(
+                    "FFmpeg or FFplay wasn't found. Opening downloader."
+                )
+                Core.openFfsetDownloaderWindow()
             }
         }
     }
@@ -85,7 +81,7 @@ class CoreChild {
         softStart()
         val url = Core.currentUrl
         Core.taskScope.launch {
-            val result = DownloadHandler.run(url)
+            val result = DownloadHandler.launchForDownload(url)
             if (result.isFailed) {
                 withContext(Dispatchers.Main) {
                     stop()
@@ -176,6 +172,16 @@ class CoreChild {
                 File.separator
 
         val tempFolder = File(tempFolderDir)
+
+        if (runningProcesses.isNotEmpty()) {
+            runningProcesses.forEach {
+                try {
+                    if (it.isAlive) {
+                        it.destroy()
+                    }
+                } catch (_: Exception) {}
+            }
+        }
 
         val drivers = synchronized(runningDrivers) { runningDrivers.toMap() }
 
@@ -338,7 +344,9 @@ class CoreChild {
 
     fun removeDownload(download: Download) {
         downloadList.remove(download)
-        BoxHelper.shared.downloadBox.remove(download)
+        try {
+            BoxHelper.shared.downloadBox.remove(download)
+        } catch (_: Exception) {}
     }
 
     fun finalizeM3u8DownloadProgress(
@@ -348,14 +356,13 @@ class CoreChild {
     ) {
         val index = indexForDownload(download)
         if (index != -1) {
-            downloadList[index].updateVideoSeconds(0)
-            downloadList[index].updateAudioSeconds(0)
+            downloadList[index].setSeconds(0)
             if (success) {
-                downloadList[index].updateProgress("", true)
+                downloadList[index].setProgress("")
             } else {
-                downloadList[index].updateProgress("Failed to merge", true)
+                downloadList[index].setProgress("Failed to merge files")
             }
-            downloadList[index].updateProgress("", false)
+            //downloadList[index].updateProgress("")
             downloadList[index].downloading = false
             downloadList[index].manualProgress = true
             if (success) {
@@ -365,32 +372,24 @@ class CoreChild {
         }
     }
 
+    enum class M3U8FileType {
+        VIDEO, AUDIO, SUBTITLES
+    }
+
     fun m3u8UpdateDownloadProgress(
         download: Download,
         progress: String,
-        isVideo: Boolean,
         remainingSeconds: Int = -1,
+        fileType: M3U8FileType
     ) {
         val index = indexForDownload(download)
         if (index != -1) {
             if (remainingSeconds > -1) {
-                if (isVideo) {
-                    downloadList[index].updateVideoSeconds(remainingSeconds)
-                } else {
-                    downloadList[index].updateAudioSeconds(remainingSeconds)
-                }
+                downloadList[index].setSeconds(remainingSeconds)
             }
-            if (isVideo) {
-                downloadList[index].updateProgress(
-                    progress,
-                    true
-                )
-            } else {
-                downloadList[index].updateProgress(
-                    progress,
-                    false
-                )
-            }
+            downloadList[index].setProgress(
+                "[${fileType.name.normalizeEnumName()}] $progress"
+            )
         }
     }
 
@@ -414,10 +413,10 @@ class CoreChild {
         val index = indexForDownload(download)
         if (index != -1) {
             if (remainingSeconds > -1) {
-                downloadList[index].updateVideoSeconds(remainingSeconds)
+                downloadList[index].setSeconds(remainingSeconds)
             }
             if (downloadSpeed > -1) {
-                downloadList[index].updateDownloadSpeed(downloadSpeed)
+                downloadList[index].setDownloadSpeed(downloadSpeed)
             }
             downloadList[index].updateProgress()
         }

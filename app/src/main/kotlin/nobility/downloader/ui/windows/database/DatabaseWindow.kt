@@ -2,7 +2,6 @@ package nobility.downloader.ui.windows.database
 
 import androidx.compose.foundation.*
 import androidx.compose.foundation.gestures.*
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
@@ -556,7 +555,7 @@ class DatabaseWindow {
                     "Remove From Favorite" else "Add To Favorite",
                 if (favorited)
                     EvaIcons.Fill.Star else EvaIcons.Outline.Star,
-                iconColor = if (favorited)
+                contentColor = if (favorited)
                     Color.Yellow else LocalContentColor.current
             ) {
                 closeMenu()
@@ -596,16 +595,17 @@ class DatabaseWindow {
         }
         Row(
             modifier = Modifier
-                .onClick(
-                    matcher = PointerMatcher.mouse(PointerButton.Secondary)
-                ) { showFileMenu = showFileMenu.not() }
-                .clickable(
-                    interactionSource = remember { MutableInteractionSource() },
+                .multiClickable(
                     indication = ripple(
                         color = MaterialTheme.colorScheme
                             .secondaryContainer.hover()
-                    )
-                ) { showFileMenu = showFileMenu.not() }
+                    ),
+                    onSecondaryClick = {
+                        showFileMenu = showFileMenu.not()
+                    }
+                ) {
+                    showFileMenu = showFileMenu.not()
+                }
                 .background(
                     color = MaterialTheme.colorScheme.secondaryContainer,
                     shape = RoundedCornerShape(5.dp)
@@ -902,17 +902,19 @@ class DatabaseWindow {
                             key = { it.name }
                         ) { genre ->
                             Column(
-                                modifier = Modifier.fillMaxWidth().height(35.dp)
-                                    .onClick(
-                                        matcher = PointerMatcher.mouse(PointerButton.Secondary)
-                                    ) { Core.databaseSearchText.value = genre.name }
-                                    .clickable(
-                                        interactionSource = remember { MutableInteractionSource() },
+                                modifier = Modifier.fillMaxWidth()
+                                    .height(35.dp)
+                                    .multiClickable(
                                         indication = ripple(
                                             color = MaterialTheme.colorScheme
                                                 .secondaryContainer.hover()
-                                        )
-                                    ) { Core.databaseSearchText.value = genre.name }
+                                        ),
+                                        onSecondaryClick = {
+                                            Core.databaseSearchText.value = genre.name
+                                        }
+                                    ) {
+                                        Core.databaseSearchText.value = genre.name
+                                    }
                                     .background(
                                         color = MaterialTheme.colorScheme.secondaryContainer,
                                         shape = RoundedCornerShape(5.dp)

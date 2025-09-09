@@ -1,15 +1,19 @@
 package nobility.downloader.core.scraper.video_download
 
+import Resource
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import nobility.downloader.core.BoxHelper.Companion.int
+import nobility.downloader.core.BoxMaker
 import nobility.downloader.core.Core
-import nobility.downloader.core.entities.Episode
+import nobility.downloader.core.scraper.data.DownloadData
+import nobility.downloader.core.scraper.data.DownloadQueue
 import nobility.downloader.core.scraper.video_download.Functions.downloadVideo
 import nobility.downloader.core.scraper.video_download.Functions.fileSize
 import nobility.downloader.core.scraper.video_download.MovieDownloader.handleMovie
 import nobility.downloader.core.settings.Defaults
 import nobility.downloader.core.settings.Quality
+import nobility.downloader.ui.windows.m3u8.ChooseM3U8Window
 import nobility.downloader.utils.Constants
 import nobility.downloader.utils.Tools
 import nobility.downloader.utils.update
@@ -19,12 +23,12 @@ import nobility.downloader.utils.update
  * This class is used to organize the executions in an easy-to-read manner (for my sanity).
  */
 class VideoDownloadHandler(
-    private val episode: Episode,
+    private val queue: DownloadQueue,
     temporaryQuality: Quality? = null
 ) {
 
     private val help = VideoDownloadHelper(
-        episode,
+        queue,
         temporaryQuality
     )
 
@@ -39,7 +43,7 @@ class VideoDownloadHandler(
             if (data.finished) {
                 break
             }
-            val slug = episode.slug
+            val slug = queue.episode.slug
             if (slug.isEmpty()) {
                 data.message("Skipping episode with no slug.")
                 data.finishEpisode()
@@ -53,20 +57,31 @@ class VideoDownloadHandler(
                 handleMovie(movie, data)
                 continue
             }
-            val parsedResult = help.parseQualities(slug)
-            if (parsedResult.isFailed) {
-                if (parsedResult.errorCode == ErrorCode.FFMPEG_NOT_INSTALLED.code) {
-                    data.finishEpisode()
+            val m3U8Data = queue.m3U8Data
+            var parsedResult: Resource<DownloadData>? = null
+            if (m3U8Data == null) {
+                parsedResult = help.parseQualities(slug)
+                if (parsedResult.isFailed) {
+                    if (parsedResult.errorCode == ErrorCode.FFMPEG_NOT_INSTALLED.code) {
+                        data.finishEpisode()
+                    }
+                    if (!parsedResult.message.isNullOrEmpty()) {
+                        data.error(
+                            "Failed to parse qualities.",
+                            parsedResult.message
+                        )
+                    }
+                    continue
                 }
-                if (!parsedResult.message.isNullOrEmpty()) {
-                    data.error(
-                        "Failed to parse qualities.",
-                        parsedResult.message
-                    )
-                }
-                continue
             }
-            val preferredDownload = parsedResult.data!!
+            val preferredDownload = if (m3U8Data != null) {
+                DownloadData(
+                    Quality.qualityForM3U8Data(m3U8Data),
+                    m3U8Data.videoOption.uri,
+                    separateAudioLink = m3U8Data.audioOption?.uri ?: "",
+                    subtitleOption = m3U8Data.subtitleOption
+                )
+            } else parsedResult!!.data!! //idk how to do this im tired will fix later
             val downloadLink = preferredDownload.downloadLink
             val qualityOption = preferredDownload.quality
             val saveFile = data.generateEpisodeSaveFile(qualityOption)
@@ -81,10 +96,29 @@ class VideoDownloadHandler(
             data.info("Successfully found video link with ${data.retries} retries.")
             try {
                 if (downloadLink.endsWith(".m3u8")) {
-                    help.handleM3U8(
-                        preferredDownload,
-                        saveFile
-                    )
+                    val m3u8Source = data.m3u8Source
+                    val m3u8Domain = data.m3u8Domain
+                    val m3u8MasterLink = data.m3u8MasterLink
+                    //only open the window when the m3u8 data is null.
+                    //m3u8data is only passed when downloaded from ChooseM3U8Window
+                    if (queue.m3U8Data == null && m3u8Source != null
+                        && m3u8Domain != null
+                        && m3u8MasterLink != null) {
+                        data.finishEpisode(true)
+                        val window = ChooseM3U8Window(
+                            m3u8MasterLink,
+                            m3u8Domain,
+                            data.userAgent,
+                            m3u8Source,
+                            queue.episode
+                        )
+                        window.open()
+                    } else {
+                        help.handleM3U8(
+                            preferredDownload,
+                            saveFile
+                        )
+                    }
                 } else {
                     val fileSizeRetries = Defaults.FILE_SIZE_RETRIES.int()
                     var originalFileSize = 0L
@@ -149,6 +183,7 @@ class VideoDownloadHandler(
                             data.currentDownload.downloading = false
                             data.currentDownload.queued = false
                             data.currentDownload.update()
+                            BoxMaker.makeDownloadedEpisode(data.currentDownload.slug)
                             data.finishEpisode()
                             continue
                         }
@@ -194,6 +229,9 @@ class VideoDownloadHandler(
                     if (saveFile.exists() && saveFile.length() >= originalFileSize) {
                         Core.child.downloadThread.incrementDownloadsFinished()
                         data.message("Successfully downloaded with ${qualityOption.tag} quality.")
+                        BoxMaker.makeDownloadedEpisode(
+                            data.currentDownload.slug
+                        )
                         help.handleSecondVideo()
                         data.finishEpisode()
                     }

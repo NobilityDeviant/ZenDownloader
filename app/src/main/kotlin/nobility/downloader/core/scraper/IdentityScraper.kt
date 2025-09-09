@@ -48,7 +48,7 @@ object IdentityScraper {
                     if (s.startsWith("/")) {
                         s = s.replaceFirst("/", "")
                     }
-                    s = s.fixedSlug()
+                    s = s.fixedAnimeSlug()
                     slugs.add(s)
                 }
             }
@@ -114,7 +114,7 @@ object IdentityScraper {
     suspend fun findIdentityForSlugOnline(
         slug: String
     ): Resource<SeriesIdentity> = withContext(Dispatchers.IO) {
-        val fixedSlug = slug.fixedSlug()
+        val fixedSlug = slug.fixedAnimeSlug()
         val fullSeriesLink = slug.slugToLink()
         FrogLog.message("Looking for identity for $fixedSlug online")
         for (identity in SeriesIdentity.filteredValues()) {

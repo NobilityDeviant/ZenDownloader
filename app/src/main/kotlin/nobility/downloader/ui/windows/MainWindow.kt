@@ -215,6 +215,13 @@ private fun UiWrapper(
                                 }
                             }
                             TooltipIconButton(
+                                "Downloaded Episodes History",
+                                icon = EvaIcons.Fill.Save,
+                                iconSize = mediumIconSize
+                            ) {
+                                Core.openDownloadedEpisodesWindow()
+                            }
+                            TooltipIconButton(
                                 "Open Download Folder",
                                 icon = EvaIcons.Fill.Folder,
                                 iconSize = mediumIconSize

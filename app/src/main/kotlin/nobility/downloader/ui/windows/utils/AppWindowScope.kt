@@ -16,7 +16,9 @@ interface AppWindowScope {
      * The open variable and this are needed to help.
      */
     var onClose: (() -> Boolean)?
-    fun closeWindow()
+    fun closeWindow(
+        triggerOnClose: Boolean = true
+    )
     fun showToast(content: String) {
         toastContent.value = content
     }

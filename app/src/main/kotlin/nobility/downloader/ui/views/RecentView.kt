@@ -1,7 +1,7 @@
 package nobility.downloader.ui.views
 
-import androidx.compose.foundation.*
-import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -11,7 +11,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.pointer.PointerButton
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -227,16 +226,17 @@ class RecentView: ViewPage {
         }
         Row(
             modifier = Modifier
-                .onClick(
-                    matcher = PointerMatcher.mouse(PointerButton.Secondary)
-                ) { showFileMenu = showFileMenu.not() }
-                .clickable(
-                    interactionSource = remember { MutableInteractionSource() },
+                .multiClickable(
                     indication = ripple(
                         color = MaterialTheme.colorScheme
                             .secondaryContainer.hover()
-                    )
-                ) { showFileMenu = showFileMenu.not() }
+                    ),
+                    onSecondaryClick = {
+                        showFileMenu = showFileMenu.not()
+                    }
+                ) {
+                    showFileMenu = showFileMenu.not()
+                }
                 .background(
                     color = MaterialTheme.colorScheme.secondaryContainer,
                     shape = RoundedCornerShape(5.dp)

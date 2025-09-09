@@ -5,18 +5,16 @@ import nobility.downloader.core.BoxHelper.Companion.downloadForSlugAndQuality
 import nobility.downloader.core.BoxHelper.Companion.int
 import nobility.downloader.core.BoxHelper.Companion.seriesForSlug
 import nobility.downloader.core.BoxHelper.Companion.string
+import nobility.downloader.core.BoxMaker
 import nobility.downloader.core.Core
 import nobility.downloader.core.driver.DriverBaseImpl
 import nobility.downloader.core.driver.undetected_chrome.UndetectedChromeDriver
 import nobility.downloader.core.entities.Download
-import nobility.downloader.core.entities.Episode
 import nobility.downloader.core.scraper.data.DownloadData
+import nobility.downloader.core.scraper.data.DownloadQueue
 import nobility.downloader.core.settings.Defaults
 import nobility.downloader.core.settings.Quality
-import nobility.downloader.utils.FrogLog
-import nobility.downloader.utils.Tools
-import nobility.downloader.utils.fixForFiles
-import nobility.downloader.utils.update
+import nobility.downloader.utils.*
 import org.openqa.selenium.WebDriver
 import java.io.File
 
@@ -25,15 +23,15 @@ import java.io.File
  * We use it in a separate class to be able to pass the data to any other function.
  */
 class VideoDownloadData(
-    val episode: Episode,
+    val queue: DownloadQueue,
     val temporaryQuality: Quality? = null,
-    private val customTag: String? = null
+    private val customTag: String? = null,
+    val userAgent: String = UserAgents.random
 ) {
 
-    val base = DriverBaseImpl()
+    val base = DriverBaseImpl(userAgent)
     val driver: WebDriver get() = base.driver
     val undriver: UndetectedChromeDriver get() = base.undriver
-    val userAgent = base.userAgent
     val pageChangeWaitTime = 5_000L //in milliseconds
     var mCurrentDownload: Download? = null
     val currentDownload get() = mCurrentDownload!!
@@ -43,6 +41,9 @@ class VideoDownloadData(
     var m3u8Retries = 0
     var m3u8SecondVideoCheck = false
     val downloadDatas = mutableListOf<DownloadData>()
+    var m3u8Source: StringBuilder? = null
+    var m3u8MasterLink: String? = null
+    var m3u8Domain: String? = null
     var finished = false
 
     fun createDownload(
@@ -64,6 +65,7 @@ class VideoDownloadData(
             Core.child.addDownload(currentDownload)
             if (currentDownload.isComplete) {
                 message("(DB) Skipping completed video.")
+                BoxMaker.makeDownloadedEpisode(currentDownload.slug)
                 finishEpisode()
                 return false
             } else {
@@ -74,9 +76,9 @@ class VideoDownloadData(
         if (mCurrentDownload == null) {
             mCurrentDownload = Download()
             currentDownload.downloadPath = saveFile.absolutePath
-            currentDownload.name = episode.name
-            currentDownload.slug = episode.slug
-            currentDownload.seriesSlug = episode.seriesSlug
+            currentDownload.name = queue.episode.name
+            currentDownload.slug = queue.episode.slug
+            currentDownload.seriesSlug = queue.episode.seriesSlug
             currentDownload.resolution = qualityOption.resolution
             currentDownload.dateAdded = System.currentTimeMillis()
             currentDownload.fileSize = 0
@@ -93,9 +95,9 @@ class VideoDownloadData(
         updatedQuality: Quality,
         extraName: String = ""
     ): File {
-        val series = seriesForSlug(episode.seriesSlug)
+        val series = seriesForSlug(queue.episode.seriesSlug)
         val downloadFolderPath = Defaults.SAVE_FOLDER.string()
-        val episodeName = episode.name.fixForFiles() + extraName
+        val episodeName = queue.episode.name.fixForFiles() + extraName
         val seasonFolder = if (Defaults.SEPARATE_SEASONS.boolean())
             Tools.findSeasonFromEpisode(episodeName) else null
         var saveFolder = File(
@@ -119,14 +121,15 @@ class VideoDownloadData(
         return saveFile
     }
 
-    fun quickCheckVideoExists(slug: String): Boolean {
+    fun quickCheckVideoExists(downloadSlug: String): Boolean {
         if (temporaryQuality != null) {
-            val tempDownload = downloadForSlugAndQuality(slug, temporaryQuality)
+            val tempDownload = downloadForSlugAndQuality(downloadSlug, temporaryQuality)
             if (tempDownload != null && tempDownload.isComplete) {
                 message("(DB) Skipping completed video.")
                 tempDownload.downloading = false
                 tempDownload.queued = false
                 tempDownload.update()
+                BoxMaker.makeDownloadedEpisode(downloadSlug)
                 finishEpisode()
                 return true
             }
@@ -147,11 +150,19 @@ class VideoDownloadData(
         return false
     }
 
-    fun finishEpisode() {
+    fun finishEpisode(
+        removeDownload: Boolean = false
+    ) {
         if (mCurrentDownload != null) {
-            currentDownload.queued = false
-            currentDownload.downloading = false
-            currentDownload.update()
+            if (removeDownload) {
+                try {
+                    Core.child.removeDownload(currentDownload)
+                } catch (_: Exception) {}
+            } else {
+                currentDownload.queued = false
+                currentDownload.downloading = false
+                currentDownload.update()
+            }
             mCurrentDownload = null
         }
         Core.child.downloadThread.decrementDownloadsInProgress()
@@ -208,5 +219,5 @@ class VideoDownloadData(
 
     private val tag get() = if (!customTag.isNullOrEmpty())
         "[$customTag]"
-    else "[S] [${episode.name}]"
+    else "[S] [${queue.episode.name}]"
 }

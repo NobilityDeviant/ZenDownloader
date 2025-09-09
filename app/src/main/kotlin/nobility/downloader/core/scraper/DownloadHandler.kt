@@ -3,7 +3,6 @@ package nobility.downloader.core.scraper
 import Resource
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import nobility.downloader.Page
 import nobility.downloader.core.BoxHelper
 import nobility.downloader.core.BoxHelper.Companion.string
 import nobility.downloader.core.BoxMaker
@@ -18,7 +17,7 @@ import java.io.File
 
 object DownloadHandler {
 
-    suspend fun run(
+    suspend fun launchForDownload(
         url: String
     ): Resource<Boolean> = withContext(Dispatchers.IO) {
 
@@ -63,7 +62,7 @@ object DownloadHandler {
                 toDownload = resultData
                 FrogLog.message("Successfully scraped episode from: $url")
             } else {
-                return@withContext Resource.Error("Failed to find data for download.")
+                return@withContext Resource.Error("Failed to find series or episode data for $url")
             }
         } else if (!result.message.isNullOrEmpty()) {
             return@withContext Resource.Error(result.message)
@@ -71,12 +70,12 @@ object DownloadHandler {
 
         if (toDownload == null) {
             return@withContext Resource.Error(
-                "Failed to find a series or episode for this link."
+                "Failed to find a series or episode for: $url"
             )
         }
         val saveDir = File(Defaults.SAVE_FOLDER.string())
         if (!saveDir.exists() && !saveDir.mkdirs()) {
-            Core.changePage(Page.SETTINGS)
+            Core.openSettings()
             return@withContext Resource.Error(
                 """
                     Your download folder doesn't exist and wasn't able to be created.
@@ -95,9 +94,50 @@ object DownloadHandler {
                 return@withContext Resource.Success(true)
             } else {
                 return@withContext Resource.Error(
-                    "An episode wasn't found or provided."
+                    "An episode wasn't found or provided for $url"
                 )
             }
+        }
+    }
+
+    suspend fun launchForEpisodeData(
+        url: String
+    ): Resource<Episode> = withContext(Dispatchers.IO) {
+
+        val slug = Tools.extractSlugFromLink(url)
+        if (slug == "anime/movies") {
+            return@withContext Resource.Error(
+                "You can't scrape the movies series. Please use the database window instead."
+            )
+        }
+
+        if (!url.contains("/anime/")) {
+            val episode = BoxHelper.episodeForSlug(slug)
+            if (episode != null) {
+                return@withContext Resource.Success(episode)
+            }
+        } else {
+            return@withContext Resource.Error(
+                "This function is only used for episode slugs."
+            )
+        }
+        FrogLog.message(
+            "Failed to find cached episode for: $url | Attempting to scrape it."
+        )
+        val scraper = SlugHandler()
+        val result = scraper.handleSlug(slug)
+        val resultData = result.data
+        if (resultData != null) {
+            if (resultData.episode != null) {
+                FrogLog.message("Successfully scraped episode from: $url")
+                return@withContext Resource.Success(resultData.episode)
+            } else {
+                return@withContext Resource.Error("Failed to find episode for $url")
+            }
+        } else if (!result.message.isNullOrEmpty()) {
+            return@withContext Resource.Error(result.message)
+        } else {
+            return@withContext Resource.Error("Failed to find episode for $url | No error was found.")
         }
     }
 }

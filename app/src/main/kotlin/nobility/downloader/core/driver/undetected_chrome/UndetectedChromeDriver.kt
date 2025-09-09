@@ -26,6 +26,7 @@ class UndetectedChromeDriver(
             headless()
         }
         cdcProps()
+        //stealth()
         if (catchError) {
             try {
                 super.get(url)

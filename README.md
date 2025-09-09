@@ -136,7 +136,7 @@ FFmpeg is used to merge m3u8 ts files and to merge video and audio files.
 
 FFplay is used to play videos directly instead of downloading them.
 
-ZenDownloader will now auto download FFmpeg and FFplay at launch.
+ZenDownloader will now show a window to download FFmpeg and FFplay at launch.
 
 If that fails, or you want to prepare beforehand, you can find all the binaries for every operating system here: 
 
@@ -149,6 +149,32 @@ Example of path: `C:\Users\CuratedDev\.zen_database\ffmpeg`
 You can find the database folder in this guide: ([https://github.com/NobilityDeviant/ZenDownloader/blob/master/database/README.md#database-folder](https://github.com/NobilityDeviant/ZenDownloader/blob/master/database/README.md#database-folder))
 
 *Windows files will have the `.exe` extension.*
+
+# MPV
+
+Mpv is now an option to use for using the "Watch Online" feature.
+
+It comes with it's own UI unlike ffplay and allows you to choose all the m3u8 options available.
+
+Right-clicking one of the icons on the bottom of the mpv window will show the list of options.
+
+You can find downloads for mpv here: [https://mpv.io/installation/](https://mpv.io/installation/)
+
+Choose whatever download you need for your operating system. You should know your OS at this point.
+
+Once downloaded, you will have to choose mpv in the new `Watch Online Video Player` setting.
+
+When choosing mpv as the option, it will show a new option to choose your own mpv path. 
+
+*This path must point to an mpv executable.*
+
+If mpv is executable in the command prompt or terminal, you should keep the custom path blank.
+
+*The custom mpv path will override the mpv command even if it doesn't exist.*
+
+Test this by opening the command prompt/terminal and executing the command: `mpv`
+
+I will not give much info on installing mpv, but if you have any issues, create a ticket and I will try to help.
 
 # First Run
 
