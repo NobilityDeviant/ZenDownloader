@@ -224,7 +224,7 @@ class BoxHelper {
 
         private fun longSetting(setting: Defaults): Long {
             val meta = metaForKey(setting.key)
-            return meta?.longVal() ?: 0L
+            return meta?.longVal() ?: integerSetting(setting).toLong()
         }
 
         private fun floatSetting(setting: Defaults): Float {
@@ -659,6 +659,12 @@ class BoxHelper {
                 .build().use {
                     return it.findUniqueOrNull()
                 }
+        }
+
+        fun isAnyDownloadedEpisode(episodes: List<Episode>): Boolean {
+            return episodes.any {
+                isDownloadedEpisode(it) != null
+            }
         }
 
         fun removeDownloadedEpisode(downloadedEpisode: DownloadedEpisode) {

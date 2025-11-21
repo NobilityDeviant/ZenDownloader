@@ -25,6 +25,7 @@ import nobility.downloader.core.settings.Defaults
 import nobility.downloader.core.settings.Quality
 import nobility.downloader.ui.windows.m3u8.SubtitleOption
 import nobility.downloader.utils.*
+import nobility.downloader.utils.user_agents.UserAgents
 import org.jsoup.Jsoup
 import org.openqa.selenium.By
 import org.openqa.selenium.JavascriptExecutor

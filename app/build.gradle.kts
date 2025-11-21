@@ -30,7 +30,7 @@ kotlin {
 }
 
 group = "nobility.downloader"
-version = "1.2.7"
+version = "1.2.8"
 
 repositories {
     maven("https://maven.pkg.jetbrains.space/public/p/compose/dev")
@@ -94,7 +94,7 @@ dependencies {
     kapt("io.objectbox:objectbox-processor:$objectBox")
 
     //network
-    implementation("org.jsoup:jsoup:1.20.1")
+    implementation("org.jsoup:jsoup:1.21.1")
     implementation("org.seleniumhq.selenium:selenium-java:4.33.0")
     implementation("io.github.bonigarcia:webdrivermanager:6.1.0")
     implementation("ch.qos.logback:logback-classic:1.5.18")
@@ -111,7 +111,7 @@ dependencies {
     implementation("io.coil-kt.coil3:coil-network-okhttp:3.2.0")
     implementation("com.darkrockstudios:mpfilepicker:3.1.0")
     //m3u8 downloading
-    implementation("org.apache.commons:commons-lang3:3.17.0")
+    implementation("org.apache.commons:commons-lang3:3.18.0")
     implementation("org.apache.commons:commons-collections4:4.4")
     implementation("org.bouncycastle:bcprov-jdk18on:1.80")
     implementation("org.apache.httpcomponents.client5:httpclient5:5.5")

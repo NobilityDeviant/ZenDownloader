@@ -56,7 +56,4 @@ object ImageUtils {
         val image: BufferedImage = ImageIO.read(inputStream)
         return BitmapPainter(image.toComposeImageBitmap())
     }
-
-
-
 }

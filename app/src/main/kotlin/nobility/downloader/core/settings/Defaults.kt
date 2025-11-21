@@ -311,16 +311,6 @@ enum class Defaults(
         "show_wco_prem_password",
         false
     ),
-    LAST_DOWNLOAD("last_dl", ""),
-    DENIED_UPDATE("denied_update", false),
-    UPDATE_VERSION("update_version", "1.0"),
-    WCO_DOMAIN("wco_website", "wcofun"), //used to combat the constantly changing domain
-    WCO_EXTENSION("wco_ext", "org"), //used to combat the constantly changing domain
-    WCO_LAST_UPDATED("wco_last_update", 0L),
-    ENABLE_PROXY("enable_proxy", false),
-    FIRST_LAUNCH("1st-launch", false),
-    DARK_MODE("dark_mode", true),
-    ELSE("else", false),
     ENABLE_RANDOM_SERIES(
         "enable_random_series",
         true,
@@ -424,7 +414,7 @@ enum class Defaults(
     ),
     EPISODE_ORGANIZERS(
         "eps_org",
-        "\"Movie, Film\", OVA, Special",
+        "\"Movie, Film*\", OVA, Special*",
         """
             These are the keywords that can organize series episodes inside the Series Details window.
             For instance, lets say you add the keyword 'Final'. Now every episode with the word 'Final' 
@@ -434,12 +424,11 @@ enum class Defaults(
             Notes: 
             - By default nothing is case sensitive and keywords can't contain double quotes or commas.
             - By default keywords get checked as "contains", so if you use the keyword 'Special', it will add 'Specials' as well.
-            - If you want to match as "exact", you have to append your keyword with a *. such as: 'Specials*;
+            - If you want to match as "exact", you have to append your keyword with a *. such as: Specials*
             - Matching as exact is case sensitive.
             - The order is first to last and duplicates won't be counted even in groups.
-            - The keyword "Season" is not changeable. That will always be enabled and used after the organizer
-            keywords.
-            Default: "Movie, Film", OVA, Special
+            - The keyword "Season" is not changeable. That will always be enabled and used after the organizer keywords.
+            Default: "Movie, Film*", OVA, Special*
         """.trimIndent(),
         "Episode Organizer Keywords"
     ),
@@ -455,14 +444,36 @@ enum class Defaults(
             Default: false
         """.trimIndent()
     ),
-    WCO_GENRES_LAST_UPDATED("wco_genres_last_updated", 0L),
+    AUTOMATIC_USER_AGENT_DOWNLOAD(
+      "auto_ua_dl",
+        true,
+        """
+            Expired UserAgents are a very big reason why cloudflare blocks browsers.
+            On every launch, this will update the new auto_user_agents.txt if the update criteria is met.
+            The update criteria is every 2 days by default.
+            When this is disabled, the auto_user_agents.txt will not be used.
+            Default: true
+        """.trimIndent()
+    ),
+    USER_AGENTS_LAST_UPDATED("ua_last_updated", 0L),
+    WCO_GENRES_LAST_UPDATED("wco_genres_last_updated", 0L), //unused
     WCO_RECENT_LAST_UPDATED("wco_recent_last_updated", 0L),
     DB_LAST_SCROLL_POS("db_last_scroll_pos", 0),
     DB_LAST_TYPE_USED("db_last_type", DatabaseType.ALL.id),
     DB_LAST_SORT_USED("db_last_sort", DatabaseSort.NAME.id),
     DB_SEARCH_GENRE("db_search_genre", true),
     DB_SEARCH_DESC("db_search_desc", true),
-    EPISODE_UPDATER_THREADS("ep_updater_threads", 3)
+    EPISODE_UPDATER_THREADS("ep_updater_threads", 3),
+    LAST_DOWNLOAD("last_dl", ""),
+    DENIED_UPDATE("denied_update", false),
+    UPDATE_VERSION("update_version", "1.0"),
+    WCO_DOMAIN("wco_website", "wcofun"), //used to combat the constantly changing domain
+    WCO_EXTENSION("wco_ext", "org"), //used to combat the constantly changing domain
+    WCO_LAST_UPDATED("wco_last_update", 0L),
+    ENABLE_PROXY("enable_proxy", false),
+    FIRST_LAUNCH("1st-launch", false),
+    DARK_MODE("dark_mode", true),
+    ELSE("else", false),
     ;
 
     companion object {
@@ -540,7 +551,8 @@ enum class Defaults(
             VLC_PATH,
             VIDEO_PLAYER,
             MPV_PATH,
-            CHOOSE_M3U8_STREAM
+            CHOOSE_M3U8_STREAM,
+            AUTOMATIC_USER_AGENT_DOWNLOAD
         )
 
         /**
@@ -571,7 +583,8 @@ enum class Defaults(
             SHOW_DEBUG_MESSAGES,
             ENABLE_RANDOM_SERIES,
             AUTO_SCROLL_RANDOM_SERIES,
-            CHOOSE_M3U8_STREAM
+            CHOOSE_M3U8_STREAM,
+            AUTOMATIC_USER_AGENT_DOWNLOAD
         )
 
         /**

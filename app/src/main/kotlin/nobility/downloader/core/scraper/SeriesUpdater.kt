@@ -9,7 +9,7 @@ import nobility.downloader.core.scraper.data.NewEpisodes
 import nobility.downloader.core.scraper.video_download.Functions
 import nobility.downloader.utils.FrogLog
 import nobility.downloader.utils.Tools
-import nobility.downloader.utils.UserAgents
+import nobility.downloader.utils.user_agents.UserAgents
 import nobility.downloader.utils.slugToLink
 import org.jsoup.Jsoup
 

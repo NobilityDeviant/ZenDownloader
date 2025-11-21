@@ -43,6 +43,7 @@ import nobility.downloader.utils.Constants.maxThreads
 import nobility.downloader.utils.Constants.maxTimeout
 import nobility.downloader.utils.Constants.minThreads
 import nobility.downloader.utils.Constants.minTimeout
+import nobility.downloader.utils.FrogLog
 import nobility.downloader.utils.Tools
 import nobility.downloader.utils.fileExists
 import nobility.downloader.utils.normalizeEnumName
@@ -260,7 +261,7 @@ class SettingsView : ViewPage {
                     var showFilePicker by remember { mutableStateOf(false) }
                     DirectoryPicker(
                         show = showFilePicker,
-                        initialDirectory = Defaults.SAVE_FOLDER.value.toString(),
+                        initialDirectory = option.value.ifEmpty { Defaults.SAVE_FOLDER.value.toString() } ,
                         title = "Choose Save Folder"
                     ) {
                         if (it != null) {
@@ -742,6 +743,14 @@ class SettingsView : ViewPage {
             if (!file.exists() && !file.mkdirs()) {
                 windowScope.showToast("The download folder doesn't exist and couldn't be created.")
                 return false
+            }
+            if (!Tools.isFolderWritable(saveFolder.value)) {
+                FrogLog.error(
+                    """
+                            Your download folder isn't writable and couldn't be set to writable.
+                            If download files fail to create, either choose another folder, fix any write permissions or launch this program with Admin/SU Permissions.
+                        """.trimIndent()
+                )
             }
         }
         val chromePath = stringOptions[Defaults.CHROME_BROWSER_PATH]

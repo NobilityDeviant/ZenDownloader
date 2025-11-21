@@ -36,10 +36,12 @@ import nobility.downloader.core.scraper.SeriesUpdater
 import nobility.downloader.core.settings.Defaults
 import nobility.downloader.ui.components.*
 import nobility.downloader.ui.components.dialog.DialogHelper
+import nobility.downloader.ui.components.dialog.DialogHelper.smallWindowSize
 import nobility.downloader.ui.windows.utils.AppWindowScope
 import nobility.downloader.ui.windows.utils.ApplicationState
 import nobility.downloader.utils.Constants.bottomBarHeight
 import nobility.downloader.utils.FrogLog
+import nobility.downloader.utils.normalizeEnumName
 
 class EpisodeUpdaterWindow(
     nSeries: List<Series>,
@@ -88,7 +90,8 @@ class EpisodeUpdaterWindow(
                             New episodes have been found.
                             Closing this window won't allow you to download them here.
                             Do you want to close the window?
-                        """.trimIndent()
+                        """.trimIndent(),
+                        size = smallWindowSize
                     ) {
                         running = false
                         scope.cancel()
@@ -260,6 +263,13 @@ class EpisodeUpdaterWindow(
                 }
             }
             ApplicationState.AddToastToWindow(this)
+            LaunchedEffect(Unit) {
+                if (seriesList.size == 1 && !complete) {
+                    scope.launch {
+                        start()
+                    }
+                }
+            }
         }
     }
 
@@ -303,8 +313,11 @@ class EpisodeUpdaterWindow(
                 textAlign = TextAlign.Center
             )
             Divider()
+
             Text(
-                text = if (seriesUpdate.complete.value) "Finished" else "Not Checked",
+                text = State.fromOrdinal(seriesUpdate.state.value)
+                    .name
+                    .normalizeEnumName(),
                 modifier = Modifier
                     .padding(4.dp)
                     .align(Alignment.CenterVertically)
@@ -333,14 +346,15 @@ class EpisodeUpdaterWindow(
             return@withContext
         }
         running = true
-        val incomplete = seriesList.filter { !it.complete.value }
+        val incomplete = seriesList.filter { it.state.value < State.COMPLETE.ordinal }
         if (incomplete.isEmpty()) {
             windowScope.showToast("There's no more series to check.")
             return@withContext
         }
         val threads = if (threads <= 5) threads else 5
         val jobs = mutableListOf<Job>()
-        val split = Lists.partition(
+        val split = if (incomplete.size == 1)
+            listOf(incomplete) else Lists.partition(
             incomplete,
             incomplete.size / threads
         )
@@ -351,6 +365,10 @@ class EpisodeUpdaterWindow(
                         if (!running) {
                             return@forEach
                         }
+                        updateState(
+                            seriesUpdate,
+                            state = State.CHECKING
+                        )
                         val result = SeriesUpdater.getNewEpisodesAlwaysSuccess(
                             seriesUpdate.series
                         )
@@ -359,9 +377,10 @@ class EpisodeUpdaterWindow(
                             if (data.updatedEpisodes.isNotEmpty()) {
                                 seriesUpdate.series.updateEpisodes(data.updatedEpisodes)
                             }
-                            markAsComplete(
+                            updateState(
                                 seriesUpdate,
-                                data.newEpisodes
+                                data.newEpisodes,
+                                State.COMPLETE
                             )
                             newEpisodesFound += data.newEpisodes.size
                         } else {
@@ -370,7 +389,10 @@ class EpisodeUpdaterWindow(
                                 result.message
                             )
                             failed++
-                            markAsComplete(seriesUpdate)
+                            updateState(
+                                seriesUpdate,
+                                state = State.COMPLETE
+                            )
                         }
                         checkedSeries++
                     }
@@ -456,9 +478,10 @@ class EpisodeUpdaterWindow(
         }
     }
 
-    private fun markAsComplete(
+    private fun updateState(
         seriesUpdate: SeriesUpdate,
-        newEpisodes: List<Episode> = emptyList()
+        newEpisodes: List<Episode> = emptyList(),
+        state: State
     ) {
         seriesList.forEachIndexed { i, s ->
             if (s.series.name == seriesUpdate.series.name) {
@@ -469,7 +492,7 @@ class EpisodeUpdaterWindow(
                         }
                     )
                 }
-                seriesList[i].complete.value = true
+                seriesList[i].state.value = state.ordinal
                 return@forEachIndexed
             }
         }
@@ -480,8 +503,19 @@ class EpisodeUpdaterWindow(
         data class SeriesUpdate(
             val series: Series,
             var newEpisodeSlugs: SnapshotStateList<String> = mutableStateListOf(),
-            var complete: MutableState<Boolean> = mutableStateOf(false)
+            var state: MutableState<Int> = mutableStateOf(0)
         )
+
+        private enum class State {
+            NOT_CHECKED, CHECKING, COMPLETE;
+
+            companion object {
+
+                fun fromOrdinal(ordinal: Int): State {
+                    return entries.find { it.ordinal == ordinal }?: NOT_CHECKED
+                }
+            }
+        }
 
         private const val TITLE = "New Episode Checker"
         private val rowHeight = 85.dp

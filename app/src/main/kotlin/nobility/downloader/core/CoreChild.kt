@@ -23,6 +23,7 @@ import nobility.downloader.core.updates.UrlUpdater
 import nobility.downloader.ui.components.dialog.DialogHelper
 import nobility.downloader.ui.components.dialog.DialogHelper.showError
 import nobility.downloader.utils.*
+import nobility.downloader.utils.user_agents.UserAgents
 import org.openqa.selenium.WebDriver
 import java.io.File
 import java.net.URI
@@ -52,6 +53,7 @@ class CoreChild {
         }
         movieHandler = MovieHandler()
         Core.taskScope.launch(Dispatchers.IO) {
+            UserAgents.init()
             launch {
                 UrlUpdater.updateWcoUrl()
             }

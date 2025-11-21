@@ -13,7 +13,11 @@ import nobility.downloader.core.scraper.video_download.m3u8_downloader.core.M3u8
 import nobility.downloader.core.scraper.video_download.m3u8_downloader.core.M3u8DownloadListener
 import nobility.downloader.core.scraper.video_download.m3u8_downloader.http.config.HttpRequestManagerConfig
 import nobility.downloader.core.settings.Defaults
-import nobility.downloader.utils.*
+import nobility.downloader.utils.FrogLog
+import nobility.downloader.utils.JavascriptHelper
+import nobility.downloader.utils.Tools
+import nobility.downloader.utils.source
+import nobility.downloader.utils.user_agents.UserAgents
 import java.io.*
 import java.net.URI
 import javax.net.ssl.HttpsURLConnection
@@ -198,7 +202,11 @@ object Functions {
                 )
             }
         }
-        val driverBase = DriverBaseImpl(userAgent = userAgent)
+        val driverBase = DriverBaseImpl(
+            userAgent = userAgent,
+            manualSetup = true
+        )
+        driverBase.setup()
         var fullModeRetries = 0
         var fullModeException: Exception? = null
         while (fullModeRetries <= Defaults.FULL_RETRIES.int()) {

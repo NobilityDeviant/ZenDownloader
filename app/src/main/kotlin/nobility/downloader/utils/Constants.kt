@@ -16,4 +16,5 @@ object Constants {
     const val maxThreads = 10
     const val minFileSize = 3000 //in bytes
     const val daysToUpdateWcoUrl = 7
+    const val daysToUpdateUserAgents = 2
 }

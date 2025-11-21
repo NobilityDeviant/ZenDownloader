@@ -118,7 +118,7 @@ object UrlUpdater {
                         Core.currentUrlHint = Core.exampleSeries
                         FrogLog.message("Successfully updated main url to: $newUrl")
                     }
-                    Defaults.WCO_LAST_UPDATED.update(Date().time)
+                    Defaults.WCO_LAST_UPDATED.update(Tools.currentTime)
                     break
                 } else {
                     FrogLog.debug(

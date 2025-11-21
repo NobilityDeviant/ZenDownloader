@@ -9,7 +9,6 @@ import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.gestures.draggable
 import androidx.compose.foundation.gestures.rememberDraggableState
 import androidx.compose.foundation.gestures.scrollBy
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -46,6 +45,7 @@ import nobility.downloader.core.scraper.player.VideoPlayerHandler
 import nobility.downloader.core.settings.Defaults
 import nobility.downloader.core.settings.Quality
 import nobility.downloader.ui.components.*
+import nobility.downloader.ui.components.dialog.DialogHelper
 import nobility.downloader.ui.windows.utils.AppWindowScope
 import nobility.downloader.ui.windows.utils.ApplicationState
 import nobility.downloader.utils.*
@@ -553,7 +553,6 @@ class DownloadConfirmWindow(
             mutableStateOf(false)
         }
         val closeMenu = { showFileMenu = false }
-
         CursorDropdownMenu(
             expanded = showFileMenu,
             onDismissRequest = { closeMenu() },
@@ -725,19 +724,23 @@ class DownloadConfirmWindow(
     fun SeasonHeader(
         seasonData: SeasonData,
         expanded: Boolean,
-        onHeaderClicked: () -> Unit
+        onHeaderClicked: () -> Unit,
+        onHeaderRightClick: () -> Unit
     ) {
         Row(
             modifier = Modifier
-            .clickable(
-                interactionSource = remember { MutableInteractionSource() },
-                indication = ripple(
-                    color = MaterialTheme.colorScheme.primaryContainer
+                .multiClickable(
+                    true,
+                    indication = ripple(
+                        color = MaterialTheme.colorScheme.primaryContainer
+                    ),
+                    onPrimaryClick = onHeaderClicked,
+                    onSecondaryClick = onHeaderRightClick
                 )
-            ) { onHeaderClicked() }
-            .background(MaterialTheme.colorScheme.primary)
-            .height(seasonDataHeaderHeight)
-            .padding(vertical = 1.dp)) {
+                .background(MaterialTheme.colorScheme.primary)
+                .height(seasonDataHeaderHeight)
+                .padding(vertical = 1.dp)
+        ) {
             Text(
                 text = seasonData.seasonTitle + " (${seasonData.episodes.size})",
                 style = MaterialTheme.typography.headlineSmall,
@@ -792,12 +795,112 @@ class DownloadConfirmWindow(
         isExpanded: Boolean,
         onHeaderClick: () -> Unit
     ) {
+        var updateRowsKey by mutableStateOf(0)
         if (!seasonData.searchMode) {
             stickyHeader(UUID.randomUUID().toString()) {
+                var downloaded by remember {
+                    mutableStateOf(
+                        BoxHelper.isAnyDownloadedEpisode(seasonData.episodes)
+                    )
+                }
+                var showFileMenu by remember {
+                    mutableStateOf(false)
+                }
+                val closeMenu = { showFileMenu = false }
+                CursorDropdownMenu(
+                    expanded = showFileMenu,
+                    onDismissRequest = { closeMenu() },
+                    modifier = Modifier.background(
+                        MaterialTheme.colorScheme.background
+                    )
+                ) {
+                    if (downloaded) {
+                        DefaultDropdownItem(
+                            "Remove All From Downloaded",
+                            EvaIcons.Fill.Trash
+                        ) {
+                            closeMenu()
+                            if (seasonData.episodes.size > 250) {
+                                DialogHelper.showConfirm(
+                                    """
+                                        Due to the large number of episodes, it's advised to be cautious.
+                                        This can potentially lag and crash the program.
+                                        Do you wish to continue?
+                                    """.trimIndent(),
+                                    "Mass Update Downloaded Warning"
+                                ) {
+                                    seasonData.episodes.forEach {
+                                        BoxHelper.removeDownloadedEpisode(it)
+                                    }
+                                    downloaded = false
+                                    if (updateRowsKey < 4000) {
+                                        updateRowsKey++
+                                    } else {
+                                        updateRowsKey = 0
+                                    }
+                                }
+                            } else {
+                                seasonData.episodes.forEach {
+                                    BoxHelper.removeDownloadedEpisode(it)
+                                }
+                                downloaded = false
+                                if (updateRowsKey < 4000) {
+                                    updateRowsKey++
+                                } else {
+                                    updateRowsKey = 0
+                                }
+                            }
+                        }
+                    } else {
+                        DefaultDropdownItem(
+                            "Mark All As Downloaded",
+                            EvaIcons.Fill.Info
+                        ) {
+                            closeMenu()
+                            if (seasonData.episodes.size > 250) {
+                                DialogHelper.showConfirm(
+                                    """
+                                        Due to the large number of episodes, it's advised to be cautious.
+                                        This can potentially lag and crash the program.
+                                        Do you wish to continue?
+                                    """.trimIndent(),
+                                    "Mass Update Downloaded Warning"
+                                ) {
+                                    seasonData.episodes.forEach {
+                                        BoxMaker.makeDownloadedEpisode(
+                                            it.slug
+                                        )
+                                    }
+                                    downloaded = true
+                                    if (updateRowsKey < 4000) {
+                                        updateRowsKey++
+                                    } else {
+                                        updateRowsKey = 0
+                                    }
+                                }
+                            } else {
+                                seasonData.episodes.forEach {
+                                    BoxMaker.makeDownloadedEpisode(
+                                        it.slug
+                                    )
+                                }
+                                downloaded = true
+                                if (updateRowsKey < 4000) {
+                                    updateRowsKey++
+                                } else {
+                                    updateRowsKey = 0
+                                }
+                            }
+                        }
+                    }
+                }
                 SeasonHeader(
                     seasonData = seasonData,
                     expanded = isExpanded,
-                    onHeaderClicked = onHeaderClick
+                    onHeaderClicked = onHeaderClick,
+                    onHeaderRightClick = {
+                        showFileMenu = true
+                    }
                 )
             }
             if (isExpanded) {
@@ -805,7 +908,9 @@ class DownloadConfirmWindow(
                     seasonData.episodes,
                     key = { UUID.randomUUID().toString() }
                 ) {
-                    EpisodeRow(it)
+                    key(updateRowsKey) {
+                        EpisodeRow(it)
+                    }
                 }
             }
         } else {

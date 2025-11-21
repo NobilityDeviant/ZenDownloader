@@ -11,14 +11,14 @@ import java.text.CharacterIterator
 import java.text.StringCharacterIterator
 import javax.net.ssl.HttpsURLConnection
 
-fun main() {
+fun main(args: Array<String>) {
 
     val latestJar = findJar()
 
     if (latestJar == null) {
         println(
             """
-                ZenDownload JAR wasn't found.
+                The ZenDownloader JAR wasn't found.
                 Make sure to keep the file structure the same as it was downloaded.
                 The JAR should be located inside the app folder.
             """.trimIndent()
@@ -26,7 +26,7 @@ fun main() {
         return
     }
 
-    val exitCode = launchJar(latestJar).waitFor()
+    val exitCode = launchJar(latestJar, args).waitFor()
 
     if (exitCode == AppInfo.UPDATE_CODE) {
 
@@ -44,7 +44,7 @@ fun main() {
                     if (downloadData.extension == "jar") {
                         println("Update complete. Restarting...")
                         latestJar.delete()
-                        launchJar(downloadData).waitFor()
+                        launchJar(downloadData, args).waitFor()
                     } else {
                         println(
                             """
@@ -77,14 +77,21 @@ fun main() {
     }
 }
 
-private fun launchJar(jar: File): Process {
+private fun launchJar(
+    jar: File,
+    args: Array<String>
+): Process {
     val javaBin = File("runtime/bin/java")
-    return ProcessBuilder(
+    val command = mutableListOf(
         javaBin.absolutePath,
         "-Xmx3G",
         "-jar",
         jar.absolutePath
-    ).inheritIO().start()
+    )
+    command.addAll(args)
+    return ProcessBuilder(command)
+        .inheritIO()
+        .start()
 }
 
 private fun findJar(): File? {
@@ -113,10 +120,19 @@ private fun extractVersion(name: String): List<Int> {
 private suspend fun downloadUpdate(
     update: Update
 ): Resource<File> = withContext(Dispatchers.IO) {
+    val downloadFolderPath = ".${File.separator}app${File.separator}"
+    val downloadFolder = File(downloadFolderPath)
+    if (!downloadFolder.exists() && !downloadFolder.mkdirs()) {
+        return@withContext Resource.Error(
+            """
+                Failed to find or make the download folder.
+                Make sure the ZenDownloader folder has the correct permissions for writing.
+            """.trimIndent()
+        )
+    }
     val downloadedUpdate = File(
-        ".${File.separator}app${File.separator}" + update.downloadName
+        downloadFolderPath + update.downloadName
     )
-    downloadedUpdate.mkdirs()
     var con: HttpsURLConnection? = null
     var bis: BufferedInputStream? = null
     var fos: FileOutputStream? = null

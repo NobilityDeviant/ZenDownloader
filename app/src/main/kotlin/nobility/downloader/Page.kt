@@ -1,8 +1,5 @@
 package nobility.downloader
 
-import nobility.downloader.Page.entries
-
-
 enum class Page(val title: String) {
     DOWNLOADER("Downloader"),
     DOWNLOADS("Downloads"),

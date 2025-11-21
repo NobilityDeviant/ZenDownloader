@@ -50,12 +50,13 @@ import nobility.downloader.core.entities.Series
 import nobility.downloader.core.entities.data.SeriesIdentity
 import nobility.downloader.core.settings.Defaults
 import nobility.downloader.ui.components.*
-import nobility.downloader.ui.components.dialog.DialogHelper
 import nobility.downloader.ui.windows.MovieEditorWindow
 import nobility.downloader.ui.windows.utils.AppWindowScope
 import nobility.downloader.ui.windows.utils.ApplicationState
-import nobility.downloader.utils.*
 import nobility.downloader.utils.Constants.mediumIconSize
+import nobility.downloader.utils.Tools
+import nobility.downloader.utils.hover
+import nobility.downloader.utils.linkToSlug
 import java.util.regex.Pattern
 
 /**
@@ -781,37 +782,7 @@ class DatabaseWindow {
                             ?.let { result ->
                                 if (result.tag == GENRE_TAG) {
                                     val genre = BoxHelper.genreForName(result.item.trim())
-                                    DialogHelper.showOptions(
-                                        "Genre Options",
-                                        "Genre: ${genre.name}\nWhat would you like to do?",
-                                        size = DpSize(450.dp, 200.dp),
-                                        buttonWidth = 110.dp,
-                                        options = listOf(
-                                            Option("Cancel"),
-                                            Option("Search For Genre") {
-                                                Core.databaseSearchText.value = genre.name
-                                            },
-                                            Option("Open Genre Link") {
-                                                if (genre.slug.isNotEmpty()) {
-                                                    val link = genre.slug.slugToLink()
-                                                    DialogHelper.showLinkPrompt(
-                                                        link,
-                                                        """
-                                                            Genre: ${genre.name}
-                                            
-                                                            Do you want to open:
-                                                            $link
-                                                            in your default browser?
-                                                        """.trimIndent()
-                                                    )
-                                                } else {
-                                                    DialogHelper.showError(
-                                                        "No slug found for this genre.",
-                                                        size = DpSize(300.dp, 200.dp)
-                                                    )
-                                                }
-                                            }
-                                        ))
+                                    Core.databaseSearchText.value = genre.name
                                 }
                             }
                     }

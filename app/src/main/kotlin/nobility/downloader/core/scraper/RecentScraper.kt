@@ -12,7 +12,7 @@ import nobility.downloader.core.settings.Defaults
 import Resource
 import nobility.downloader.utils.Tools
 import nobility.downloader.utils.Tools.titleForImages
-import nobility.downloader.utils.UserAgents
+import nobility.downloader.utils.user_agents.UserAgents
 import org.jsoup.Jsoup
 import java.io.File
 

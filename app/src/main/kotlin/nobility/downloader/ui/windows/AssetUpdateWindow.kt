@@ -32,10 +32,8 @@ import nobility.downloader.utils.fileExists
 import nobility.downloader.utils.folderIsEmpty
 import nobility.downloader.utils.isDirectory
 import org.jsoup.Jsoup
-import java.io.BufferedOutputStream
-import java.io.File
-import java.io.FileOutputStream
-import java.io.StringReader
+import java.io.*
+import java.net.URI
 import java.text.SimpleDateFormat
 import java.util.*
 import javax.net.ssl.HttpsURLConnection
@@ -45,7 +43,7 @@ import kotlin.system.exitProcess
 /**
  * Since we can't manage files in use, why not update them before?
  * Note that we can't access anything from the Core/BoxHelper so it needs to be standalone.
- * If we try to use anything there, the singleton will launch, and it will crash due to an ObjectBox error.
+ * If we try to use anything there, the singleton will launch, and it will crash because the ObjectBox boxes are in use already.
  * Comes with a shutdown/fail feature to ensure incomplete downloads get handled.
  * All assets are very low in download size.
  * We don't really need to worry about much besides available file space for unzipping.
@@ -259,7 +257,9 @@ class AssetUpdateWindow {
             val formatter = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'")
             formatter.timeZone = TimeZone.getTimeZone("GMT")
             val formattedDate = formatter.parse(commitDate)
-            con = Tools.openFollowingRedirects(asset.link)
+            con = openFollowingRedirects(
+                asset.link
+            )
             val completeFileSize = con.contentLengthLong
             if (completeFileSize == -1L) {
                 throw Exception("Failed to find file size for asset: $asset.")
@@ -436,10 +436,37 @@ class AssetUpdateWindow {
         )
     }
 
+    private fun openFollowingRedirects(
+        url: String,
+        maxRedirects: Int = 5
+    ): HttpsURLConnection {
+        var currentUrl = url
+        repeat(maxRedirects) {
+            val con = URI(currentUrl)
+                .toURL().openConnection() as HttpsURLConnection
+            con.setRequestProperty("Accept-Encoding", "identity")
+            con.connectTimeout = 30_000
+            con.readTimeout = 30_000
+            con.instanceFollowRedirects = false
+
+            val code = con.responseCode
+            if (code in 300..399) {
+                val newLocation = con.getHeaderField("Location")
+                    ?: throw IOException("Redirect without Location header.")
+                con.disconnect()
+                currentUrl = newLocation
+            } else {
+                return con
+            }
+        }
+        throw IOException("Too many redirects")
+    }
+
     companion object {
         private val databasePath = AppInfo.databasePath
         private val movieListPath = databasePath + "movies.txt"
         val userAgentsPath = databasePath + "user_agents.txt"
+        val autoUserAgentsPath = databasePath + "auto_user_agents.txt"
         private val linksPath = databasePath + "wco" + File.separator + "links" + File.separator
         private val wcoDataPath = databasePath + "wco" + File.separator + "data" + File.separator
         private val seriesPath = databasePath + "series" + File.separator

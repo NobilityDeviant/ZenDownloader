@@ -12,6 +12,7 @@ import nobility.downloader.core.scraper.video_download.Functions
 import nobility.downloader.core.settings.Defaults
 import nobility.downloader.ui.components.dialog.DialogHelper
 import nobility.downloader.ui.windows.utils.AppWindowScope
+import nobility.downloader.utils.user_agents.UserAgents
 import java.awt.Desktop
 import java.awt.Toolkit
 import java.awt.datatransfer.DataFlavor
@@ -446,14 +447,14 @@ object Tools {
         if (!output.name.endsWith(".txt")) {
             con.addRequestProperty("Accept-Encoding", "gzip, deflate, br")
         }
-        con.addRequestProperty("Accept-Language", "en-US,en;q=0.9")
+        //con.addRequestProperty("Accept-Language", "en-US,en;q=0.9")
         //not even sure if these are needed
-        con.addRequestProperty("Connection", "keep-alive")
-        con.addRequestProperty("Sec-Fetch-Dest", "document")
-        con.addRequestProperty("Sec-Fetch-Mode", "navigate")
-        con.addRequestProperty("Sec-Fetch-Site", "cross-site")
-        con.addRequestProperty("Sec-Fetch-User", "?1")
-        con.addRequestProperty("Upgrade-Insecure-Requests", "1")
+        //con.addRequestProperty("Connection", "keep-alive")
+        //con.addRequestProperty("Sec-Fetch-Dest", "document")
+        //con.addRequestProperty("Sec-Fetch-Mode", "navigate")
+        //con.addRequestProperty("Sec-Fetch-Site", "cross-site")
+        //con.addRequestProperty("Sec-Fetch-User", "?1")
+        //con.addRequestProperty("Upgrade-Insecure-Requests", "1")
         con.connectTimeout = timeout
         con.readTimeout = timeout
         con.addRequestProperty("Range", "bytes=$offset-")
@@ -637,8 +638,8 @@ object Tools {
         repeat(maxRedirects) {
             val con = URI(currentUrl).toURL().openConnection() as HttpsURLConnection
             con.setRequestProperty("Accept-Encoding", "identity")
-            con.connectTimeout = 30_000
-            con.readTimeout = 30_000
+            con.connectTimeout = Defaults.TIMEOUT.int() * 1000
+            con.readTimeout = Defaults.TIMEOUT.int() * 1000
             con.setRequestProperty("User-Agent", UserAgents.random)
             con.instanceFollowRedirects = false
 
@@ -675,5 +676,53 @@ object Tools {
         }
         return (hasFfmpeg && hasffPlay)
     }
+
+    fun isFolderWritable(
+        path: String,
+        debug: Boolean = false
+    ): Boolean {
+
+        val dir = File(path)
+
+        if (!dir.exists()) {
+            if (debug) {
+                FrogLog.debug("Directory does not exist. Attempting to create: $path")
+            }
+            if (!dir.mkdirs()) {
+                if (debug) {
+                    FrogLog.debug("Failed to create directory: $path")
+                }
+                return false
+            }
+        }
+
+        if (!dir.canWrite()) {
+            if (debug) {
+                FrogLog.debug("Directory is not writable. Attempting to set it.")
+            }
+            if (!dir.setWritable(true)) {
+                if (debug) {
+                    FrogLog.debug("setWritable(true) failed.")
+                }
+            }
+        }
+
+        val testFile = File(
+            dir,
+            "._write_test_.tmp"
+        )
+        return try {
+            testFile.writeText("test")
+            testFile.delete()
+            true
+        } catch (e: IOException) {
+            if (debug) {
+                FrogLog.debug("Failed to write dummy file: ${e.message}")
+                e.printStackTrace()
+            }
+            false
+        }
+    }
+
 
 }

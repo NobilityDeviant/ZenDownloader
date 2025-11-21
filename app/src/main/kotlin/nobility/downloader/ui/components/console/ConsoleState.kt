@@ -12,6 +12,7 @@ class ConsoleState(
     private val errorMode: Boolean
 ) {
 
+    private val showTime = false
     private val lines = mutableStateListOf<String>()
     val consoleText get() = lines.joinToString("\n")
     var consolePoppedOut by mutableStateOf(false)
@@ -57,7 +58,7 @@ class ConsoleState(
             return
         }
 
-        val prefix = if (errorMode) "" else "[${time()}] "
+        val prefix = if (!showTime || errorMode) "" else "[${time()}] "
         rawLine.chunked(maxLineChars).forEachIndexed { index, chunk ->
             val line = if (index == 0) "$prefix$chunk" else "→ $chunk"
             lines += line

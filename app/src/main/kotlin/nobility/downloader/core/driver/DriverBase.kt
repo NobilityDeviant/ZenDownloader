@@ -12,8 +12,8 @@ import nobility.downloader.core.settings.Defaults
 import nobility.downloader.core.settings.Quality
 import nobility.downloader.utils.FrogLog
 import nobility.downloader.utils.JavascriptHelper
-import nobility.downloader.utils.UserAgents
 import nobility.downloader.utils.fileExists
+import nobility.downloader.utils.user_agents.UserAgents
 import org.openqa.selenium.JavascriptExecutor
 import org.openqa.selenium.WebDriver
 import org.openqa.selenium.chrome.ChromeOptions
@@ -25,7 +25,8 @@ import java.util.logging.Level
 
 abstract class DriverBase(
     var userAgent: String = "",
-    headless: Boolean? = null
+    headless: Boolean? = null,
+    manualSetup: Boolean = false
 ) {
 
     private val id = UUID.randomUUID().toString()
@@ -40,6 +41,15 @@ abstract class DriverBase(
 
 
     init {
+        if (!manualSetup) {
+            setup()
+        }
+    }
+
+    fun setup() {
+        if (isSetup) {
+            return
+        }
         try {
             setupDriver()
             //discovered you can actually read the browsers console logs
@@ -69,7 +79,6 @@ abstract class DriverBase(
             )
         }
     }
-
     /**
      * Used to set up the web driver.
      * This should only be called once unless you are debugging.
@@ -165,7 +174,7 @@ abstract class DriverBase(
     ) {
         if (!isSetup) {
             FrogLog.error(
-                "Failed to execute Javascript. The driver isn't set up properly."
+                "Failed to execute JS wait. The driver isn't set up properly."
             )
             return
         }

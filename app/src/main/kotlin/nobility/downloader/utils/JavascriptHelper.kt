@@ -82,7 +82,6 @@ object JavascriptHelper {
         window.location.replace(cerceve);
       }
 	  
-
         doClose();
     """
 }

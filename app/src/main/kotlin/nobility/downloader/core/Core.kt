@@ -29,6 +29,7 @@ import nobility.downloader.ui.windows.*
 import nobility.downloader.ui.windows.database.DatabaseWindow
 import nobility.downloader.ui.windows.utils.AppWindowScope
 import nobility.downloader.ui.windows.utils.ApplicationState
+import nobility.downloader.utils.ErrorStreamFilter
 import nobility.downloader.utils.FrogLog
 import nobility.downloader.utils.fileExists
 import nobility.downloader.utils.linkToSlug
@@ -109,6 +110,7 @@ class Core private constructor() {
                         PrintStream(errorConsole)
                     }
                 }
+                System.setErr(ErrorStreamFilter(System.err))
             }
             if (!Defaults.FIRST_LAUNCH.boolean()) {
                 FrogLog.message("Welcome to ${AppInfo.TITLE}!")

@@ -15,6 +15,7 @@ import nobility.downloader.core.scraper.data.DownloadQueue
 import nobility.downloader.core.settings.Defaults
 import nobility.downloader.core.settings.Quality
 import nobility.downloader.utils.*
+import nobility.downloader.utils.user_agents.UserAgents
 import org.openqa.selenium.WebDriver
 import java.io.File
 
@@ -103,7 +104,7 @@ class VideoDownloadData(
         var saveFolder = File(
             downloadFolderPath + File.separator
                     + (series?.name?.fixForFiles() ?: "NoSeries")
-                    + if (seasonFolder != null) (File.separator + seasonFolder + File.separator) else ""
+                    + if (seasonFolder != null) (File.separator + seasonFolder + File.separator) else File.separator
         )
         if (!saveFolder.exists() && !saveFolder.mkdirs()) {
             this@VideoDownloadData.error(
@@ -111,6 +112,7 @@ class VideoDownloadData(
                         "Defaulting to $downloadFolderPath${File.separator}NoSeries"
             )
             saveFolder = File(downloadFolderPath + File.separator + "NoSeries")
+            saveFolder.mkdirs()
         }
         val extraQualityName = if (updatedQuality != Quality.LOW)
             " (${updatedQuality.tag})" else ""
