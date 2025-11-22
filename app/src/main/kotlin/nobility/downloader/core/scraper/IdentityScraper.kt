@@ -8,7 +8,10 @@ import nobility.downloader.core.BoxHelper.Companion.addIdentityLinkWithSlug
 import nobility.downloader.core.BoxHelper.Companion.addIdentityLinksWithSlug
 import nobility.downloader.core.entities.data.SeriesIdentity
 import nobility.downloader.core.scraper.video_download.Functions
-import nobility.downloader.utils.*
+import nobility.downloader.utils.FrogLog
+import nobility.downloader.utils.Tools
+import nobility.downloader.utils.removeSeasonExtra
+import nobility.downloader.utils.slugToLink
 import org.jsoup.Jsoup
 
 /**
@@ -17,7 +20,7 @@ import org.jsoup.Jsoup
  */
 object IdentityScraper {
 
-    private suspend fun scrapeLinksToSlugs(
+    suspend fun scrapeLinksToSlugs(
         identity: SeriesIdentity
     ) = withContext(Dispatchers.Default) {
         val fullIdentityLink = identity.slug.slugToLink()
@@ -48,7 +51,7 @@ object IdentityScraper {
                     if (s.startsWith("/")) {
                         s = s.replaceFirst("/", "")
                     }
-                    s = s.fixedAnimeSlug()
+                    s = s.removeSeasonExtra()
                     slugs.add(s)
                 }
             }
@@ -114,7 +117,7 @@ object IdentityScraper {
     suspend fun findIdentityForSlugOnline(
         slug: String
     ): Resource<SeriesIdentity> = withContext(Dispatchers.IO) {
-        val fixedSlug = slug.fixedAnimeSlug()
+        val fixedSlug = slug.removeSeasonExtra()
         val fullSeriesLink = slug.slugToLink()
         FrogLog.message("Looking for identity for $fixedSlug online")
         for (identity in SeriesIdentity.filteredValues()) {

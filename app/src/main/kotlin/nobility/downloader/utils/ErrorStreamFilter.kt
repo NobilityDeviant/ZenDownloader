@@ -10,7 +10,16 @@ class ErrorStreamFilter(
     private var skipping = false
 
     override fun write(b: Int) {
-        val c = b.toChar()
+        processChar(b.toChar())
+    }
+
+    override fun write(buf: ByteArray, off: Int, len: Int) {
+        for (i in off until (off + len)) {
+            processChar(buf[i].toInt().toChar())
+        }
+    }
+
+    private fun processChar(c: Char) {
         buffer.append(c)
 
         if (c == '\n') {
@@ -32,6 +41,7 @@ class ErrorStreamFilter(
         }
 
         if (skipping) {
+
             val trimmed = line.trim()
 
             if (trimmed.startsWith("at ")) {

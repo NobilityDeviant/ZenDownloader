@@ -105,8 +105,13 @@ class SlugHandler {
             if (existsCheck.text().lowercase().contains("page not found")) {
                 return@withContext Resource.Error("Page not found.")
             }
+
             val categoryEpisodes = doc.getElementsByClass("cat-eps")
-            return@withContext Resource.Success(categoryEpisodes.isNotEmpty())
+            val episodeList = doc.getElementById("episodeList")
+
+            return@withContext Resource.Success(
+                episodeList != null || categoryEpisodes.isNotEmpty()
+            )
         } catch (e: Exception) {
             return@withContext Resource.Error(
                 "Failed to load $link",
@@ -178,65 +183,88 @@ class SlugHandler {
                 }
             }
 
-            val videoTitle = doc.getElementsByClass("video-title")
-            val categoryEpisodes = doc.getElementsByClass("cat-eps")
-            if (categoryEpisodes.isNotEmpty()) {
-                categoryEpisodes.reverse()
-                for (element in categoryEpisodes) {
-                    val episodeTitle = element.select("a").text()
-                    val episodeLink = element.select("a").attr("href")
+            if (doc.getElementById("episodeList") != null) {
+
+                val episodesList = doc.select("#episodeList a.dark-episode-item")
+
+                for (a in episodesList) {
+                    val link = a.attr("href")
+                    val title = a.selectFirst("span")?.text() ?: "No Title"
+
                     val episode = Episode(
-                        episodeTitle,
-                        Tools.extractSlugFromLink(episodeLink),
+                        title,
+                        Tools.extractSlugFromLink(link)
+                            .replaceFirst("/", ""),
                         seriesSlug
                     )
                     episodes.add(episode)
                 }
-                var title = ""
-                if (videoTitle.isNotEmpty()) {
-                    title = videoTitle[0].text()
-                }
-                val image = doc.getElementsByClass("img5")
-                var imageLink = ""
-                if (image.isNotEmpty()) {
-                    imageLink = "https:${image.attr("src")}"
-                }
-                var descriptionText = ""
-                val description = doc.getElementsByTag("p")
-                if (description.isNotEmpty()) {
-                    descriptionText = description[0].text()
-                }
-                val genres = doc.getElementsByClass("genre-buton")
-                val genresList = mutableListOf<Genre>()
-                if (genres.isNotEmpty()) {
-                    for (genre in genres) {
-                        val linkElement = genre.attr("href")
-                        if (linkElement.contains("search-by-genre")) {
-                            genresList.add(
-                                Genre(
-                                    name = genre.text(),
-                                    slug = Tools.extractSlugFromLink(linkElement)
-                                )
-                            )
-                        }
-                    }
-                }
-                val series = BoxMaker.makeSeries(
-                    seriesSlug,
-                    title,
-                    imageLink = imageLink,
-                    description = descriptionText,
-                    dateAdded = Tools.dateAndTimeFormatted,
-                    identity = identity.type,
-                    episodes = episodes,
-                    genres = genresList
-                )
-                ImageUtils.downloadSeriesImage(series)
-                return@withContext Resource.Success(series)
             } else {
+                val categoryEpisodes = doc.getElementsByClass("cat-eps")
+                if (categoryEpisodes.isNotEmpty()) {
+                    categoryEpisodes.reverse()
+                    for (element in categoryEpisodes) {
+                        val episodeTitle = element.select("a").text()
+                        val episodeLink = element.select("a").attr("href")
+                        val episode = Episode(
+                            episodeTitle,
+                            Tools.extractSlugFromLink(episodeLink),
+                            seriesSlug
+                        )
+                        episodes.add(episode)
+                    }
+                } else {
+                    FrogLog.message("Failed to find episodes for: $seriesSlug")
+                }
+            }
+
+            if (episodes.isEmpty()) {
                 delay(5000)
                 throw Exception("No episodes were found.")
             }
+
+            val videoTitle = doc.getElementsByClass("video-title")
+            var title = ""
+            if (videoTitle.isNotEmpty()) {
+                title = videoTitle[0].text()
+            }
+            val image = doc.getElementsByClass("img5")
+            var imageLink = ""
+            if (image.isNotEmpty()) {
+                imageLink = "https:${image.attr("src")}"
+            }
+            var descriptionText = ""
+            val description = doc.getElementsByTag("p")
+            if (description.isNotEmpty()) {
+                descriptionText = description[0].text()
+            }
+            val genres = doc.getElementsByClass("genre-buton")
+            val genresList = mutableListOf<Genre>()
+            if (genres.isNotEmpty()) {
+                for (genre in genres) {
+                    val linkElement = genre.attr("href")
+                    if (linkElement.contains("search-by-genre")) {
+                        genresList.add(
+                            Genre(
+                                name = genre.text(),
+                                slug = Tools.extractSlugFromLink(linkElement)
+                            )
+                        )
+                    }
+                }
+            }
+            val series = BoxMaker.makeSeries(
+                seriesSlug,
+                title,
+                imageLink = imageLink,
+                description = descriptionText,
+                dateAdded = Tools.dateAndTimeFormatted,
+                identity = identity.type,
+                episodes = episodes,
+                genres = genresList
+            )
+            ImageUtils.downloadSeriesImage(series)
+            return@withContext Resource.Success(series)
         } catch (e: Exception) {
             return@withContext Resource.Error(e)
         }

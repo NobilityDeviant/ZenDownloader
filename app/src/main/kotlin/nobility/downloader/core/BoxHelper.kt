@@ -428,33 +428,33 @@ class BoxHelper {
             when (identity) {
                 SeriesIdentity.DUBBED -> {
                     shared.dubbedSeriesBox.query()
-                        .equal(Series_.slug, slug, QueryBuilder.StringOrder.CASE_SENSITIVE)
+                        .equal(Series_.slug, slug, QueryBuilder.StringOrder.CASE_INSENSITIVE)
                         .build()
-                        .use { query -> return query.findUniqueOrNull() }
+                        .use { query -> return query.findFirst() }
                 }
                 SeriesIdentity.SUBBED -> {
                     shared.subbedSeriesBox.query()
-                        .equal(Series_.slug, slug, QueryBuilder.StringOrder.CASE_SENSITIVE)
+                        .equal(Series_.slug, slug, QueryBuilder.StringOrder.CASE_INSENSITIVE)
                         .build()
-                        .use { query -> return query.findUniqueOrNull() }
+                        .use { query -> return query.findFirst() }
                 }
                 SeriesIdentity.MOVIE -> {
                     shared.moviesSeriesBox.query()
-                        .equal(Series_.slug, slug, QueryBuilder.StringOrder.CASE_SENSITIVE)
+                        .equal(Series_.slug, slug, QueryBuilder.StringOrder.CASE_INSENSITIVE)
                         .build()
-                        .use { query -> return query.findUniqueOrNull() }
+                        .use { query -> return query.findFirst() }
                 }
                 SeriesIdentity.CARTOON -> {
                     shared.cartoonSeriesBox.query()
-                        .equal(Series_.slug, slug, QueryBuilder.StringOrder.CASE_SENSITIVE)
+                        .equal(Series_.slug, slug, QueryBuilder.StringOrder.CASE_INSENSITIVE)
                         .build()
-                        .use { query -> return query.findUniqueOrNull() }
+                        .use { query -> return query.findFirst() }
                 }
                 else -> {
                     shared.miscSeriesBox.query()
-                        .equal(Series_.slug, slug, QueryBuilder.StringOrder.CASE_SENSITIVE)
+                        .equal(Series_.slug, slug, QueryBuilder.StringOrder.CASE_INSENSITIVE)
                         .build()
-                        .use { query -> return query.findUniqueOrNull() }
+                        .use { query -> return query.findFirst() }
                 }
             }
         }

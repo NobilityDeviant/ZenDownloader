@@ -3,22 +3,29 @@ package nobility.downloader.core.scraper
 import Resource
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import nobility.downloader.core.driver.DriverBase
 import nobility.downloader.core.entities.Episode
 import nobility.downloader.core.entities.Series
+import nobility.downloader.core.entities.data.SeriesIdentity
 import nobility.downloader.core.scraper.data.NewEpisodes
 import nobility.downloader.core.scraper.video_download.Functions
-import nobility.downloader.utils.FrogLog
 import nobility.downloader.utils.Tools
-import nobility.downloader.utils.user_agents.UserAgents
 import nobility.downloader.utils.slugToLink
 import org.jsoup.Jsoup
 
 object SeriesUpdater {
 
     suspend fun getNewEpisodes(
-        series: Series
+        series: Series,
+        driverBase: DriverBase? = null
     ): Resource<NewEpisodes> = withContext(Dispatchers.IO) {
-        val result = gatherSeriesEpisodes(series)
+        if (series.seriesIdentity == SeriesIdentity.MOVIE) {
+            return@withContext Resource.Error(
+                "Failed to find new episodes for ${series.name}",
+                "Movies don't have episodes."
+            )
+        }
+        val result = gatherSeriesEpisodes(series, driverBase)
         val data = result.data
         if (data != null) {
             if (data.size > series.episodesSize) {
@@ -42,9 +49,16 @@ object SeriesUpdater {
     }
 
     suspend fun getNewEpisodesAlwaysSuccess(
-        series: Series
+        series: Series,
+        driverBase: DriverBase? = null
     ): Resource<NewEpisodes> = withContext(Dispatchers.IO) {
-        val result = gatherSeriesEpisodes(series)
+        if (series.seriesIdentity == SeriesIdentity.MOVIE) {
+            return@withContext Resource.Error(
+                "Failed to find new episodes for ${series.name}",
+                "Movies don't have episodes."
+            )
+        }
+        val result = gatherSeriesEpisodes(series, driverBase)
         val data = result.data
         if (data != null) {
             if (data.size > series.episodesSize) {
@@ -68,14 +82,14 @@ object SeriesUpdater {
     }
 
     private suspend fun gatherSeriesEpisodes(
-        series: Series
+        series: Series,
+        driverBase: DriverBase? = null
     ): Resource<List<Episode>> = withContext(Dispatchers.IO) {
         val seriesLink = series.slug.slugToLink()
-        val userAgent = UserAgents.random
         val result = Functions.readUrlLines(
             seriesLink,
             "New Episodes: ${series.slug}",
-            userAgent = userAgent
+            driverBase = driverBase
         )
         val source = result.data
         if (!source.isNullOrEmpty()) {
@@ -84,32 +98,50 @@ object SeriesUpdater {
             if (existsCheck.text().lowercase().contains("page not found")) {
                 return@withContext Resource.Error("Series not found.")
             }
-            val seriesEpisodes = doc.getElementsByClass("cat-eps")
-            if (seriesEpisodes.isNotEmpty()) {
-                val episodes = mutableListOf<Episode>()
-                seriesEpisodes.reverse()
-                for (element in seriesEpisodes) {
-                    val episodeTitle = element.select("a").text()
-                    val episodeSlug = Tools.extractSlugFromLink(
-                        element.select("a").attr("href")
+
+            val episodes = mutableListOf<Episode>()
+
+            if (doc.getElementById("episodeList") != null) {
+                val episodesList = doc.select("#episodeList a.dark-episode-item")
+                if (episodesList.isNotEmpty()) {
+                    for (a in episodesList) {
+                        val link = a.attr("href")
+                        val title = a.selectFirst("span")?.text() ?: "No Title"
+
+                        val episode = Episode(
+                            title,
+                            Tools.extractSlugFromLink(link)
+                                .replaceFirst("/", ""),
+                            series.slug
+                        )
+                        episodes.add(episode)
+                    }
+                    return@withContext Resource.Success(episodes)
+                } else {
+                    return@withContext Resource.Error(
+                        "Failed to find episode list in webpage. (episodeList)"
                     )
-                    val episode = Episode(
-                        episodeTitle,
-                        episodeSlug,
-                        series.slug
-                    )
-                    episodes.add(episode)
                 }
-                return@withContext Resource.Success(episodes)
             } else {
-                FrogLog.writeErrorToTxt(
-                    "Source For ${series.slug}",
-                    source.toString(),
-                    "UserAgent: $userAgent"
-                )
-                return@withContext Resource.Error(
-                    "Failed to find episode list in webpage. (cat-eps)"
-                )
+                val categoryEpisodes = doc.getElementsByClass("cat-eps")
+                if (categoryEpisodes.isNotEmpty()) {
+                    categoryEpisodes.reverse()
+                    for (element in categoryEpisodes) {
+                        val episodeTitle = element.select("a").text()
+                        val episodeLink = element.select("a").attr("href")
+                        val episode = Episode(
+                            episodeTitle,
+                            Tools.extractSlugFromLink(episodeLink),
+                            series.slug
+                        )
+                        episodes.add(episode)
+                    }
+                    return@withContext Resource.Success(episodes)
+                } else {
+                    return@withContext Resource.Error(
+                        "Failed to find episode list in webpage. (cat-eps)"
+                    )
+                }
             }
         } else {
             return@withContext Resource.Error(

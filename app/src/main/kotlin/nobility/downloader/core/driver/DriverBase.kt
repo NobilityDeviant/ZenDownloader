@@ -79,6 +79,18 @@ abstract class DriverBase(
             )
         }
     }
+
+    suspend fun waitForSetup() {
+        var checks = 0
+        while (!isSetup) {
+            delay(500)
+            checks++
+            if (checks >= 250) {
+                throw Exception("waitForSetup took too long.")
+            }
+        }
+    }
+
     /**
      * Used to set up the web driver.
      * This should only be called once unless you are debugging.

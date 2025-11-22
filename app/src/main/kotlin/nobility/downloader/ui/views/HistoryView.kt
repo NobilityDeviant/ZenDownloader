@@ -118,6 +118,10 @@ class HistoryView : ViewPage {
                                 windowScope.showToast("There's no history to check.")
                                 return@DefaultButton
                             }
+                            if (!Core.child.canSoftStart()) {
+                                windowScope.showToast("Failed to check for new episodes. Check the console.")
+                                return@DefaultButton
+                            }
                             val window = EpisodeUpdaterWindow(
                                 seriesDatas.sortedByDescending { it.history.dateAdded }
                                     .map { it.series },
@@ -222,6 +226,10 @@ class HistoryView : ViewPage {
                 EvaIcons.Fill.Search
             ) {
                 closeMenu()
+                if (!Core.child.canSoftStart()) {
+                    windowScope.showToast("Failed to check for new episodes. Check the console.")
+                    return@DefaultDropdownItem
+                }
                 val window = EpisodeUpdaterWindow(
                     seriesData.series,
                     "History: ${seriesData.series.name}"

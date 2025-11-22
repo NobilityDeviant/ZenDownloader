@@ -1070,6 +1070,10 @@ class DownloadConfirmWindow(
                                 padding = 0.dp,
                                 enabled = downloadButtonEnabled,
                             ) {
+                                if (!Core.child.canSoftStart()) {
+                                    windowScope.showToast("Failed to start download. Check the console.")
+                                    return@DefaultButton
+                                }
                                 BoxMaker.makeHistory(
                                     series.slug
                                 )
@@ -1114,6 +1118,10 @@ class DownloadConfirmWindow(
                                 padding = 0.dp,
                                 enabled = downloadButtonEnabled,
                             ) {
+                                if (!Core.child.canSoftStart()) {
+                                    windowScope.showToast("Failed to start download. Check the console.")
+                                    return@DefaultButton
+                                }
                                 if (series.episodes.isEmpty()) {
                                     windowScope.showToast("There's no episodes to download.")
                                     return@DefaultButton

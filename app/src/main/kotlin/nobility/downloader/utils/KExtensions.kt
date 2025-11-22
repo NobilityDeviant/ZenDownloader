@@ -133,6 +133,11 @@ fun String.linkToSlug(): String {
 
 fun String.fixedAnimeSlug(): String {
     return this.replace("anime/", "")
+        .removeSeasonExtra()
+}
+
+fun String.removeSeasonExtra(): String {
+    return this.replace(Regex("/season=[^/&]+&lang=[^/&]+"), "")
 }
 
 fun String.fileExists(): Boolean {

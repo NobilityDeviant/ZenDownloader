@@ -10,7 +10,6 @@ import androidx.compose.ui.unit.dp
 import io.github.bonigarcia.wdm.WebDriverManager
 import kotlinx.coroutines.*
 import nobility.downloader.Page
-import nobility.downloader.core.BoxHelper.Companion.int
 import nobility.downloader.core.BoxHelper.Companion.string
 import nobility.downloader.core.driver.undetected_chrome.ChromeDriverBuilder
 import nobility.downloader.core.driver.undetected_chrome.UndetectedChromeDriver
@@ -22,7 +21,10 @@ import nobility.downloader.core.settings.Defaults
 import nobility.downloader.core.updates.UrlUpdater
 import nobility.downloader.ui.components.dialog.DialogHelper
 import nobility.downloader.ui.components.dialog.DialogHelper.showError
-import nobility.downloader.utils.*
+import nobility.downloader.utils.FrogLog
+import nobility.downloader.utils.Tools
+import nobility.downloader.utils.normalizeEnumName
+import nobility.downloader.utils.update
 import nobility.downloader.utils.user_agents.UserAgents
 import org.openqa.selenium.WebDriver
 import java.io.File
@@ -77,7 +79,7 @@ class CoreChild {
      * I have replaced every other use of it with a better solution.
      */
     fun start() {
-        if (!canStart()) {
+        if (!canStartManully()) {
             return
         }
         softStart()
@@ -242,7 +244,49 @@ class CoreChild {
         return false
     }
 
-    private fun canStart(): Boolean {
+    fun canSoftStart(): Boolean {
+        val downloadFolder = File(Defaults.SAVE_FOLDER.string())
+        if (!downloadFolder.exists() && !downloadFolder.mkdirs()) {
+            FrogLog.error(
+                "Your download folder doesn't exist and wasn't able to be created.",
+                "Be sure to set it inside the settings before downloading videos."
+            )
+            return false
+        }
+        try {
+            if (!downloadFolder.canWrite()) {
+                FrogLog.error(
+                    """
+                       The download folder in your settings doesn't allow write permissions.
+                       If this is a USB or SD Card, you have to disable write protection.
+                       You can try selecting a folder in the user/home folder or running the app with admin/superuser permissions.
+                    """.trimIndent()
+                )
+                return false
+            }
+        } catch (e: Exception) {
+            FrogLog.error(
+                "Failed to start downloading. Failed to check for write permissions.",
+                e
+            )
+            return false
+        }
+
+        if (!ChromeDriverBuilder.isDriverSetup()) {
+            FrogLog.error(
+                """
+                    The ChromeDriver isn't setup properly.
+                    WebDriverManager is still setting it up.
+                    Please wait a couple of minutes for it to download and try again.
+                """.trimIndent()
+            )
+            return false
+        }
+
+        return true
+    }
+
+    private fun canStartManully(): Boolean {
         val downloadFolder = File(Defaults.SAVE_FOLDER.string())
         if (!downloadFolder.exists() && !downloadFolder.mkdirs()) {
             showError(
@@ -301,20 +345,21 @@ class CoreChild {
             Core.openWco(url)
             return false
         }
-        val threads = Defaults.DOWNLOAD_THREADS.int()
-        if (threads < Constants.minThreads) {
-            showError("Your download threads must be at least ${Constants.minThreads}.")
-            return false
-        }
-        if (threads > Constants.maxThreads) {
-            showError("Your download threads can't be higher than ${Constants.maxThreads}.")
-            return false
-        }
         if (!ChromeDriverBuilder.isChromeInstalled()) {
             showError(
                 """
                     Chrome isn't installed. Install it and restart the app.
                     For some help visit: https://github.com/NobilityDeviant/ZenDownloader/#download--install
+                """.trimIndent()
+            )
+            return false
+        }
+        if (!ChromeDriverBuilder.isDriverSetup()) {
+            showError(
+                """
+                    The ChromeDriver isn't setup properly.
+                    WebDriverManager is still setting it up.
+                    Please wait a couple of minutes for it to download and try again.
                 """.trimIndent()
             )
             return false

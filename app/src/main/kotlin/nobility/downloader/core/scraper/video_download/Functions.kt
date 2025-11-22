@@ -140,6 +140,7 @@ object Functions {
         addReferer: Boolean = true,
         userAgent: String = UserAgents.random,
         skipSimpleMode: Boolean = false,
+        driverBase: DriverBase? = null,
         fullModeFunction: (suspend (DriverBase) -> Unit)? = null
     ): Resource<StringBuilder> = withContext(Dispatchers.IO) {
         var simpleRetries = 0
@@ -202,21 +203,22 @@ object Functions {
                 )
             }
         }
-        val driverBase = DriverBaseImpl(
+        val finalDriverBase = driverBase ?: DriverBaseImpl(
             userAgent = userAgent,
             manualSetup = true
         )
-        driverBase.setup()
+        finalDriverBase.setup()
+        finalDriverBase.waitForSetup()
         var fullModeRetries = 0
         var fullModeException: Exception? = null
         while (fullModeRetries <= Defaults.FULL_RETRIES.int()) {
             try {
-                driverBase.executeJs(
+                finalDriverBase.executeJs(
                     JavascriptHelper.changeUrlInternally(url)
                 )
-                driverBase.waitForPageJs()
-                fullModeFunction?.invoke(driverBase)
-                val source = driverBase.driver.source()
+                finalDriverBase.waitForPageJs()
+                fullModeFunction?.invoke(finalDriverBase)
+                val source = finalDriverBase.driver.source()
                 if (source.contains("404 - Page not Found")) {
                     return@withContext Resource.Error("[Selenium] 404 Page not found.")
                 } else if (source.contains("403 Forbidden")) {
@@ -236,7 +238,9 @@ object Functions {
                 fullModeRetries++
                 continue
             } finally {
-                driverBase.killDriver()
+                if (driverBase == null) {
+                    finalDriverBase.killDriver()
+                }
             }
         }
         return@withContext Resource.Error(

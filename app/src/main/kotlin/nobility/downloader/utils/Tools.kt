@@ -72,7 +72,7 @@ object Tools {
             link.substring(
                 //after the https:// and after the .com/
                 link.ordinalIndexOf("/", 3) + 1
-            )
+            ).removeSeasonExtra()
         } catch (_: Exception) {
             ""
         }

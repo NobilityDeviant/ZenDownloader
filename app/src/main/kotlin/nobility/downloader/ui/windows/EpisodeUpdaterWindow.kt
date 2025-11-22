@@ -29,6 +29,7 @@ import kotlinx.coroutines.*
 import nobility.downloader.core.BoxHelper.Companion.int
 import nobility.downloader.core.BoxHelper.Companion.update
 import nobility.downloader.core.Core
+import nobility.downloader.core.driver.DriverBaseImpl
 import nobility.downloader.core.entities.Episode
 import nobility.downloader.core.entities.Series
 import nobility.downloader.core.scraper.DownloadHandler
@@ -361,6 +362,9 @@ class EpisodeUpdaterWindow(
         split.forEach { list ->
             jobs.add(
                 launch {
+                    val driverBase = DriverBaseImpl(manualSetup = true)
+                    driverBase.setup()
+                    driverBase.waitForSetup()
                     list.forEach { seriesUpdate ->
                         if (!running) {
                             return@forEach
@@ -370,7 +374,8 @@ class EpisodeUpdaterWindow(
                             state = State.CHECKING
                         )
                         val result = SeriesUpdater.getNewEpisodesAlwaysSuccess(
-                            seriesUpdate.series
+                            seriesUpdate.series,
+                            driverBase
                         )
                         val data = result.data
                         if (data != null) {
@@ -396,6 +401,7 @@ class EpisodeUpdaterWindow(
                         }
                         checkedSeries++
                     }
+                    driverBase.killDriver()
                 }
             )
         }
