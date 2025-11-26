@@ -60,8 +60,23 @@ data class DropdownOption(
     val modifier: Modifier = Modifier,
     val startIcon: ImageVector? = null,
     val endIcon: ImageVector? = null,
+    val visible: Boolean = true,
     val onClick: () -> Unit
-)
+) {
+    constructor(
+        title: String,
+        startIcon: ImageVector? = null,
+        visible: Boolean = true,
+        onClick: () -> Unit
+    ) : this(
+        title,
+        modifier = Modifier,
+        startIcon = startIcon,
+        endIcon = null,
+        visible = visible,
+        onClick = onClick
+    )
+}
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -79,6 +94,7 @@ fun DefaultDropdown(
     labelFontSize: TextUnit = 12.sp,
     labelFontWeight: FontWeight = FontWeight.Bold,
     centerBoxText: Boolean = false,
+    primaryColor: Color = MaterialTheme.colorScheme.primary,
     onTextClick: () -> Unit = {},
     onDismissRequest: () -> Unit = {}
 ) {
@@ -110,25 +126,54 @@ fun DefaultDropdown(
                 tint = boxTextColor
             )
         }
-        CursorDropdownMenu(
+        DefaultCursorDropdownMenu(
             expanded,
-            onDismissRequest,
+            dropdownOptions,
             modifier = dropdownModifier
                 .background(dropdownColor)
-                .border(1.dp, dropdownColor.toColorOnThis())
-        ) {
-            dropdownOptions.forEachIndexed { index, option ->
+                .border(1.dp, primaryColor),
+            dropdownColor,
+            onDismissRequest = onDismissRequest
+        )
+    }
+}
+
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+fun DefaultCursorDropdownMenu(
+    expanded: Boolean,
+    dropdownOptions: List<DropdownOption>,
+    modifier: Modifier = Modifier.wrapContentWidth(),
+    dropdownColor: Color = MaterialTheme.colorScheme.background,
+    primaryColor: Color = MaterialTheme.colorScheme.primary,
+    onDismissRequest: () -> Unit = {}
+) {
+    CursorDropdownMenu(
+        expanded,
+        onDismissRequest,
+        modifier = modifier
+            .background(dropdownColor)
+            .border(
+                1.dp,
+                primaryColor
+            )
+    ) {
+        dropdownOptions.forEachIndexed { index, option ->
+            if (option.visible) {
                 DefaultDropdownItem(
                     option.title,
                     option.startIcon,
                     option.endIcon,
-                    contentColor = dropdownColor.toColorOnThis()
+                    modifier = option.modifier,
+                    contentColor = dropdownColor.toColorOnThis(),
+                    primaryColor = primaryColor
                 ) {
+                    onDismissRequest()
                     option.onClick()
                 }
                 if (index != dropdownOptions.lastIndex) {
                     HorizontalDivider(
-                        color = boxTextColor
+                        color = primaryColor
                     )
                 }
             }
@@ -144,6 +189,7 @@ fun DefaultDropdownItem(
     enabled: Boolean = true,
     modifier: Modifier = Modifier,
     contentColor: Color = MaterialTheme.colorScheme.onSurface,
+    primaryColor: Color = MaterialTheme.colorScheme.primary,
     onClick: () -> Unit
 ) {
     val interaction = remember { MutableInteractionSource() }
@@ -168,7 +214,7 @@ fun DefaultDropdownItem(
                     startIcon,
                     "",
                     modifier = Modifier.size(24.dp),
-                    contentColor
+                    primaryColor
                 )
             }
             Text(
@@ -182,7 +228,7 @@ fun DefaultDropdownItem(
                     endIcon,
                     "",
                     modifier = Modifier.size(24.dp),
-                    contentColor
+                    primaryColor
                 )
             }
         }

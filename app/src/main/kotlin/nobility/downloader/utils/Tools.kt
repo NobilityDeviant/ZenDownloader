@@ -41,6 +41,30 @@ object Tools {
 
     val currentTime: Long get() = Date().time
 
+    val dateAndTimeFormatted: String
+        get() {
+            val sdf = SimpleDateFormat(DATE_TIME_FORMAT)
+            return sdf.format(Date())
+        }
+
+    val dateFormatted: String
+        get() {
+            val sdf = SimpleDateFormat(DATE_FORMAT)
+            return sdf.format(Date())
+        }
+
+    val timeFormatted: String
+        get() {
+            val sdf = SimpleDateFormat(TIME_FORMAT)
+            return sdf.format(Date())
+        }
+
+    fun isUrl(url: String): Boolean {
+        return Regex(
+            pattern = """^(https?://)?(www\.)?[a-zA-Z0-9\-]+\.[a-zA-Z]{2,}(/.*)?$"""
+        ).matches(url.trim())
+    }
+
     /**
      * Access clipboard outside a composable.
      */
@@ -202,24 +226,6 @@ object Tools {
         }
         return String.format("%.1f %cB", mBytes / 1000.0, ci.current())
     }
-
-    val dateAndTimeFormatted: String
-        get() {
-            val sdf = SimpleDateFormat(DATE_TIME_FORMAT)
-            return sdf.format(Date())
-        }
-
-    val dateFormatted: String
-        get() {
-            val sdf = SimpleDateFormat(DATE_FORMAT)
-            return sdf.format(Date())
-        }
-
-    val timeFormatted: String
-        get() {
-            val sdf = SimpleDateFormat(TIME_FORMAT)
-            return sdf.format(Date())
-        }
 
     fun dateAndTimeFormatted(
         time: Long,

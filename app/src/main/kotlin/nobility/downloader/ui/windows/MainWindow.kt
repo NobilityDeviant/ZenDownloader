@@ -12,7 +12,6 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.CursorDropdownMenu
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -246,47 +245,46 @@ private fun UiWrapper(
                             )
                         }
 
-                        val options = mutableStateListOf<@Composable () -> Unit>()
+                        val options = mutableStateListOf<DropdownOption>()
 
                         when (Core.currentPage) {
                             Page.DOWNLOADER -> {
-                                options.add {
-                                    DefaultDropdownItem(
+                                options.add(
+                                    DropdownOption(
                                         "Check For Updates",
                                         EvaIcons.Fill.CloudDownload
                                     ) {
-                                        closeMenu()
                                         Core.openUpdate()
                                     }
-                                }
-                                options.add {
-                                    DefaultDropdownItem(
+                                )
+                                options.add(
+                                    DropdownOption(
                                         "How To Use",
                                         EvaIcons.Fill.Book
                                     ) {
-                                        closeMenu()
                                         DialogHelper.showMessage(
                                             "How To Use",
                                             HowToUse.text,
                                             DpSize(400.dp, 400.dp)
                                         )
                                     }
-                                }
-                                options.add {
-                                    DefaultDropdownItem(
+                                )
+
+                                options.add(
+                                    DropdownOption(
                                         "Key Combinations",
                                         EvaIcons.Fill.Keypad
                                     ) {
-                                        closeMenu()
                                         DialogHelper.showMessage(
                                             "Key Combinations",
                                             KeyEvents.keyGuide,
                                             DpSize(400.dp, 400.dp)
                                         )
                                     }
-                                }
-                                options.add {
-                                    DefaultDropdownItem(
+                                )
+
+                                options.add(
+                                    DropdownOption(
                                         "Donate",
                                         EvaIcons.Fill.Gift
                                     ) {
@@ -301,13 +299,13 @@ private fun UiWrapper(
                                             """.trimIndent()
                                         )
                                     }
-                                }
-                                options.add {
-                                    DefaultDropdownItem(
+                                )
+
+                                options.add(
+                                    DropdownOption(
                                         "About",
                                         EvaIcons.Fill.Info
                                     ) {
-                                        closeMenu()
                                         DialogHelper.showMessage(
                                             "About",
                                             """
@@ -329,30 +327,29 @@ private fun UiWrapper(
                                             size = DpSize(400.dp, 400.dp)
                                         )
                                     }
-                                }
+                                )
                             }
 
                             Page.DOWNLOADS -> {
                                 if (Core.child.isRunning) {
-                                    options.add {
-                                        DefaultDropdownItem(
+                                    options.add(
+                                        DropdownOption(
                                             "Stop Downloads",
                                             EvaIcons.Fill.Close
                                         ) {
-                                            closeMenu()
                                             Core.child.stop()
                                             windowScope.showToast("All downloads have been stopped.")
                                         }
-                                    }
+                                    )
                                 }
-                                options.add {
-                                    DefaultDropdownItem(
+
+                                options.add(
+                                    DropdownOption(
                                         "Clear All Downloads",
                                         EvaIcons.Fill.Trash
                                     ) {
-                                        closeMenu()
                                         if (Core.child.downloadList.isEmpty()) {
-                                            return@DefaultDropdownItem
+                                            return@DropdownOption
                                         }
                                         if (!Core.child.isRunning) {
                                             DialogHelper.showConfirm(
@@ -377,15 +374,15 @@ private fun UiWrapper(
                                             DialogHelper.showError("You can't clear downloads while things are downloading.")
                                         }
                                     }
-                                }
-                                options.add {
-                                    DefaultDropdownItem(
+                                )
+
+                                options.add(
+                                    DropdownOption(
                                         "Clear Downloads & Delete Incomplete Files",
                                         EvaIcons.Fill.Trash
                                     ) {
-                                        closeMenu()
                                         if (Core.child.downloadList.isEmpty()) {
-                                            return@DefaultDropdownItem
+                                            return@DropdownOption
                                         }
                                         if (!Core.child.isRunning) {
                                             DialogHelper.showConfirm(
@@ -418,19 +415,22 @@ private fun UiWrapper(
                                             DialogHelper.showError("You can't clear downloads while things are downloading.")
                                         }
                                     }
-                                }
+                                )
                             }
 
                             Page.SETTINGS -> {
-                                options.add {
-                                    DefaultDropdownItem(
+
+                                options.add(
+                                    DropdownOption(
                                         "Open Database Folder",
                                         EvaIcons.Fill.Folder
                                     ) {
-                                        closeMenu()
                                         Tools.openFile(AppInfo.databasePath)
                                     }
-                                    DefaultDropdownItem(
+                                )
+
+                                options.add(
+                                    DropdownOption(
                                         "Reset Settings",
                                         EvaIcons.Fill.Refresh
                                     ) {
@@ -444,16 +444,16 @@ private fun UiWrapper(
                                             windowScope.showToast("Settings have been reset.")
                                         }
                                     }
-                                }
+                                )
                             }
 
                             Page.RECENT -> {
-                                options.add {
-                                    DefaultDropdownItem(
+
+                                options.add(
+                                    DropdownOption(
                                         "Clear Recent Data",
                                         EvaIcons.Fill.Trash
                                     ) {
-                                        closeMenu()
                                         DialogHelper.showConfirm(
                                             "Are you sure you want to remove all the recent data?",
                                             size = DpSize(300.dp, 200.dp),
@@ -464,7 +464,7 @@ private fun UiWrapper(
                                             }
                                         }
                                     }
-                                }
+                                )
                             }
 
                             else -> {}
@@ -479,17 +479,10 @@ private fun UiWrapper(
                                 spacePosition = SpacePosition.START,
                                 space = 10.dp
                             )
-                            CursorDropdownMenu(
-                                expanded = showFileMenu,
-                                onDismissRequest = { closeMenu() },
-                                modifier = Modifier.background(
-                                    MaterialTheme.colorScheme.background
-                                )
-                            ) {
-                                options.forEach { o ->
-                                    o.invoke()
-                                }
-                            }
+                            DefaultCursorDropdownMenu(
+                                showFileMenu,
+                                options
+                            ) { closeMenu() }
                         }
                     },
                     colors = TopAppBarDefaults.topAppBarColors(

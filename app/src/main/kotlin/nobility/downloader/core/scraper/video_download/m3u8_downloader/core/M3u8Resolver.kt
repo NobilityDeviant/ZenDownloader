@@ -12,16 +12,18 @@ import java.nio.charset.StandardCharsets
 class M3u8Resolver(
     val m3u8Uri: URI,
     private val requestConfigStrategy: M3u8HttpRequestConfigStrategy,
-    val bytesResponseGetter: (URI, HttpRequestConfig?) -> ByteBuffer
+    val bytesResponseGetter: suspend (URI, HttpRequestConfig?) -> ByteBuffer
 ) {
-    // ----------- result ------------ //
+
     var finalM3u8Uri: URI? = null
     var masterM3u8Uri: URI? = null
     var finalM3u8Content: String? = null
     var masterM3u8Content: String? = null
     var mediaSegments: List<MediaSegment> = listOf()
 
-    fun fetchSecretKey(segments: List<MediaSegment>): Map<MediaSegment, M3u8SecretKey> {
+    suspend fun fetchSecretKey(
+        segments: List<MediaSegment>
+    ): Map<MediaSegment, M3u8SecretKey> {
 
         if (segments.isEmpty()) {
             return emptyMap()
@@ -87,25 +89,25 @@ class M3u8Resolver(
         return ByteArray(16)
     }
 
-    fun resolve() {
+    suspend fun resolve() {
         doResolve(this.m3u8Uri, null, false)
     }
 
-    private fun doResolve(
+    private suspend fun doResolve(
         m3u8Uri: URI,
         segmentKey: MediaSegmentKey?,
         secondaryStream: Boolean
     ) {
         var mSegmentKey = segmentKey
+        val requestConfig: HttpRequestConfig = getConfig(
+            if (secondaryStream)
+                M3u8HttpRequestType.REQ_FOR_VARIANT_PLAYLIST
+            else
+                M3u8HttpRequestType.REQ_FOR_M3U8_CONTENT,
+            m3u8Uri
+        )
+        val buffer = bytesResponseGetter(m3u8Uri, requestConfig)
         val m3u8ContentSupplier = {
-            val requestConfig: HttpRequestConfig = getConfig(
-                if (secondaryStream)
-                    M3u8HttpRequestType.REQ_FOR_VARIANT_PLAYLIST
-                else
-                    M3u8HttpRequestType.REQ_FOR_M3U8_CONTENT,
-                m3u8Uri
-            )
-            val buffer = bytesResponseGetter(m3u8Uri, requestConfig)
             String(
                 buffer.array(),
                 buffer.arrayOffset() + buffer.position(),
@@ -114,39 +116,8 @@ class M3u8Resolver(
             )
         }
 
-
-
-
-
-        /*val m3u8ContentSupplier = Supplier {
-            val requestConfig: HttpRequestConfig = getConfig(
-                if (secondaryStream)
-                    M3u8HttpRequestType.REQ_FOR_VARIANT_PLAYLIST
-                else
-                    M3u8HttpRequestType.REQ_FOR_M3U8_CONTENT,
-                m3u8Uri
-            )
-            val buffer = bytesResponseGetter(m3u8Uri, requestConfig)
-            return@Supplier String(
-                buffer.array(),
-                buffer.arrayOffset() + buffer.position(),
-                buffer.remaining(),
-                StandardCharsets.UTF_8
-            )
-            bytesResponseGetter.andThen { buffer: ByteBuffer ->
-                String(
-                    buffer.array(),
-                    buffer.arrayOffset() + buffer.position(),
-                    buffer.remaining(),
-                    StandardCharsets.UTF_8
-                )
-            }.apply(m3u8Uri, requestConfig)
-        }*/
-
         val url = m3u8Uri.toString()
         val m3u8Content = m3u8ContentSupplier()
-
-        //log.info("{} get content: \n{}", url, m3u8Content)
 
         val lineAry = m3u8Content.split("\\n".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
         m3u8Check(lineAry[0].startsWith("#EXTM3U"), "not m3u8: %s", url)
@@ -167,16 +138,6 @@ class M3u8Resolver(
             }
             // version
             if (mLine.startsWith("#EXT-X-VERSION")) {
-                //val strAry = mLine.split(":".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
-                //if (strAry.size == 2 && strAry[1].length > 0) {
-                    //val version = strAry[1].trim { it <= ' ' }.toInt()
-                    //if (version > 3) {
-                        //log.warn(
-                          //  "compatible version is HLS 3, the current HLS version is {}, some functions are not supported",
-                            //version
-                        //)
-                    //}
-                //}
                 continue
             }
             // variant stream

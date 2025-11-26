@@ -1,351 +1,335 @@
 package nobility.downloader.core.scraper.video_download.m3u8_downloader.http
 
-import nobility.downloader.core.scraper.video_download.m3u8_downloader.http.component.CustomHttpRequestRetryStrategy
+import kotlinx.coroutines.*
 import nobility.downloader.core.scraper.video_download.m3u8_downloader.http.config.HttpRequestConfig
 import nobility.downloader.core.scraper.video_download.m3u8_downloader.http.config.HttpRequestManagerConfig
-import nobility.downloader.core.scraper.video_download.m3u8_downloader.http.pool.ScopedIdentity
-import nobility.downloader.core.scraper.video_download.m3u8_downloader.http.response.BytesResponseConsumer
-import nobility.downloader.core.scraper.video_download.m3u8_downloader.http.response.FileDownloadOptions
 import nobility.downloader.core.scraper.video_download.m3u8_downloader.http.response.FileDownloadPostProcessor
-import nobility.downloader.core.scraper.video_download.m3u8_downloader.http.response.FileResponseConsumer
-import nobility.downloader.core.scraper.video_download.m3u8_downloader.http.response.sink.*
-import nobility.downloader.core.scraper.video_download.m3u8_downloader.util.Utils.genIdentity
-import org.apache.commons.lang3.StringUtils
-import org.apache.hc.client5.http.async.methods.SimpleHttpRequest
-import org.apache.hc.client5.http.async.methods.SimpleRequestProducer
-import org.apache.hc.client5.http.config.RequestConfig
-import org.apache.hc.client5.http.impl.async.CloseableHttpAsyncClient
-import org.apache.hc.client5.http.protocol.HttpClientContext
-import org.apache.hc.core5.concurrent.FutureCallback
-import org.apache.hc.core5.http.Method
-import org.apache.hc.core5.http.nio.AsyncRequestProducer
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.ResponseBody
+import okio.Buffer
+import okio.BufferedSink
+import okio.BufferedSource
+import okio.FileSystem
+import okio.Path.Companion.toOkioPath
+import okio.buffer
+import okio.sink
+import okio.source
 import java.net.URI
 import java.nio.ByteBuffer
 import java.nio.file.Path
-import java.util.concurrent.CompletableFuture
-import java.util.concurrent.Executor
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicReference
+import javax.crypto.Cipher
+import kotlin.io.use
+import kotlin.math.min
+import kotlin.random.Random
 
-@Suppress("UNUSED")
 class HttpRequestManager(
-    private var managerConfig: HttpRequestManagerConfig? = null
+    private val managerConfig: HttpRequestManagerConfig = HttpRequestManagerConfig.Companion.DEFAULT
 ) {
-    private val state: AtomicReference<State>
-    private val managerResource: HttpManagerResource
+
+    private val state: AtomicReference<State> = AtomicReference(State.ACTIVE)
+
+    private val client: OkHttpClient
+    private val scope: CoroutineScope
 
     init {
-        if (null == managerConfig) {
-            managerConfig = HttpRequestManagerConfig.DEFAULT
-        }
-        this.state = AtomicReference(State.ACTIVE)
-        this.managerResource = HttpManagerResource(managerConfig!!)
-        //log.info("managerConfig={}", managerConfig)
+        val cfg = managerConfig
+        client = OkHttpClient.Builder()
+            .connectTimeout(cfg.connectTimeoutMills, TimeUnit.MILLISECONDS)
+            .readTimeout(cfg.socketTimeoutMills, TimeUnit.MILLISECONDS)
+            .callTimeout((cfg.connectTimeoutMills + cfg.socketTimeoutMills), TimeUnit.MILLISECONDS)
+            .retryOnConnectionFailure(false)
+            .build()
+
+        scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     }
 
-    @Throws(Exception::class)
     fun shutdown() {
         if (state.compareAndSet(State.ACTIVE, State.SHUTDOWN)) {
-            //log.info("shutdown HttpRequestManager")
-            managerResource.shutdown()
+            scope.cancel()
+            try {
+                client.dispatcher.executorService.shutdownNow()
+            } catch (_: Exception) {}
+            try {
+                client.connectionPool.evictAll()
+            } catch (_: Exception) {}
         }
     }
 
-    @Throws(InterruptedException::class)
-    fun awaitTermination(timeout: Long, unit: TimeUnit) {
-        managerResource.awaitTermination(timeout, unit)
+    private fun isShutdown(): Boolean {
+        return state.get() == State.SHUTDOWN
     }
 
-    fun getBytes(
+    suspend fun getBytes(
         uri: URI,
         requestConfig: HttpRequestConfig?
-    ): CompletableFuture<ByteBuffer> {
+    ): ByteBuffer = withContext(Dispatchers.IO) {
 
-        checkState()
-        val uriIdentity: String = genIdentity(uri)
-
-        val clientContext = HttpClientContext.create()
-
-        val requestProducer: AsyncRequestProducer =
-            SimpleRequestProducer.create(getRequest(uri, requestConfig, clientContext))
-
-        val responseConsumer = BytesResponseConsumer(uriIdentity)
-
-        val future = CompletableFuture<ByteBuffer>()
-
-        val futureCallback: FutureCallback<ByteBuffer> = object : FutureCallback<ByteBuffer> {
-            override fun completed(result: ByteBuffer) {
-                future.complete(result)
-            }
-
-            override fun failed(ex: Exception) {
-                future.completeExceptionally(ex)
-            }
-
-            override fun cancelled() {
-                future.cancel(false)
-            }
+        if (isShutdown()) {
+            return@withContext ByteBuffer.allocate(0)
         }
-        httpClient.execute(
-            requestProducer,
-            responseConsumer,
-            clientContext,
-            futureCallback
-        )
-        return future
+        val headers = requestConfig?.requestHeaderMap
+        val retries = requestConfig?.retryCount ?: managerConfig.defaultMaxRetries
+        val backoffBase = managerConfig.defaultRetryIntervalMills
+
+        retryWithBackoff(retries, backoffBase) {
+            val rb = Request.Builder().url(uri.toString()).get()
+            headers?.forEach { (k, v) -> rb.header(k, v.toString()) }
+            rb.header(
+                "User-Agent",
+                managerConfig.userAgent
+            )
+
+            client.newCall(rb.build()).execute().use { resp ->
+                if (!resp.isSuccessful) {
+                    throw RuntimeException("HTTP ${resp.code}")
+                }
+                val body: ResponseBody = resp.body ?: throw RuntimeException(
+                    "Empty response body"
+                )
+                body.source().use { src ->
+                    val buffer = Buffer()
+                    src.readAll(buffer)
+                    val arr = buffer.readByteArray()
+                    return@retryWithBackoff arr
+                }
+            }
+        }.let { byteArray ->
+            ByteBuffer.wrap(byteArray)
+        }
     }
 
-    @JvmOverloads
-    fun downloadFile(
+    suspend fun downloadFile(
         uri: URI,
         filePath: Path,
-        parentIdentity: String? = null,
-        requestConfig: HttpRequestConfig? = null,
-        postProcessor: FileDownloadPostProcessor = FileDownloadPostProcessor.NOP
-    ): CompletableFuture<Path> {
-        return downloadFile(
-            uri,
-            filePath,
-            parentIdentity,
-            requestConfig,
-            null,
-            postProcessor
-        )
-    }
-
-    @Suppress("SameParameterValue")
-    private fun downloadFile(
-        uri: URI,
-        filePath: Path,
-        parentIdentity: String?,
-        requestConfig: HttpRequestConfig?,
-        decryptionKey: DecryptionKey? = null,
-        postProcessor: FileDownloadPostProcessor = FileDownloadPostProcessor.NOP
-    ): CompletableFuture<Path> {
-        return downloadFile(
-            uri,
-            filePath,
-            parentIdentity,
-            null,
-            decryptionKey,
-            requestConfig,
-            postProcessor
-        )
-    }
-
-    fun downloadFile(
-        uri: URI,
-        filePath: Path,
-        parentIdentity: String?,
-        options: FileDownloadOptions?,
-        requestConfig: HttpRequestConfig?,
-        postProcessor: FileDownloadPostProcessor = FileDownloadPostProcessor.NOP
-    ): CompletableFuture<Path> {
-        return downloadFile(
-            uri,
-            filePath,
-            parentIdentity,
-            options,
-            null,
-            requestConfig,
-            postProcessor
-        )
-    }
-
-    fun downloadFile(
-        uri: URI,
-        filePath: Path,
-        parentIdentity: String?,
-        options: FileDownloadOptions?,
         decryptionKey: DecryptionKey?,
         requestConfig: HttpRequestConfig?,
-        postProcessor: FileDownloadPostProcessor = FileDownloadPostProcessor.NOP
-    ): CompletableFuture<Path> {
-        var mOptions = options
-        var parentScope: ScopedIdentity? = null
-        val uriIdentity: String = genIdentity(uri)
-        if (StringUtils.isNotBlank(parentIdentity)) {
-            parentScope = ScopedIdentity(parentIdentity!!)
+        postProcessor: FileDownloadPostProcessor = FileDownloadPostProcessor.Companion.NOP
+    ): Path = withContext(Dispatchers.IO) {
+
+        if (isShutdown()) {
+            filePath.toFile().parentFile?.mkdirs()
+            return@withContext filePath
         }
 
-        val scopedIdentity = ScopedIdentity(uriIdentity, parentScope)
-        val identity: String = scopedIdentity.fullIdentity
+        val headers = requestConfig?.requestHeaderMap ?: emptyMap()
+        val retries = requestConfig?.retryCount ?: managerConfig.defaultMaxRetries
+        val backoffBase = managerConfig.defaultRetryIntervalMills
 
-        var asyncSink: AsyncSink? = null
-        val bufferProvider: BufferProvider
-        var decipherable: Decipherable? = null
-        mOptions = FileDownloadOptions.defaultOptionsIfNull(mOptions)
+        val file = filePath.toFile()
+        file.parentFile?.mkdirs()
+        var existingSize = if (file.exists()) file.length() else 0L
+        var reStart = existingSize > 0L
 
-        if (mOptions.ifAsyncSink()) {
-            asyncSink = AsyncSink(
-                identity
-            ) { executor!!.execute(it) }
-        }
+        postProcessor.startDownload(null, reStart)
 
-        if (null != decryptionKey) {
-            decipherable = Decipherable(identity, decryptionKey)
-        }
-
-        if (mOptions.useBufferPool()) {
-            val byteBufferPool: ByteBufferPool = if (null != decipherable) {
-                heapBufferPool
-            } else {
-                directBufferPool
+        var remoteSize: Long? = null
+        try {
+            val headReqB = Request.Builder().url(uri.toString()).head()
+            headers.forEach { (k, v) ->
+                headReqB.header(k, v.toString())
             }
+            headReqB.header(
+                "User-Agent",
+                managerConfig.userAgent
+            )
+            client.newCall(headReqB.build()).execute().use { headResp ->
+                if (headResp.isSuccessful) {
+                    headResp.header("Content-Length")?.let { v ->
+                        v.toLongOrNull()?.let { remoteSize = it }
+                    }
+                }
+            }
+        } catch (_: Exception) {}
 
-            bufferProvider = if (null != asyncSink) {
-                BufferProvider.coteriePoolBuffer(byteBufferPool, scopedIdentity)
-            } else {
-                BufferProvider.localPoolBuffer(byteBufferPool)
-            }
-        } else {
-            bufferProvider = if (null != decipherable) {
-                BufferProvider.plainHeapBuffer(managerResource.bufferSize)
-            } else {
-                BufferProvider.plainDirectBuffer(managerResource.bufferSize)
-            }
+        if (remoteSize != null && existingSize == remoteSize) {
+            postProcessor.afterReadBytes(0, true)
+            postProcessor.afterDownloadComplete()
+            return@withContext filePath
         }
 
-        val utilitySinkHandler = UtilitySinkHandler(
-            filePath,
-            bufferProvider,
-            asyncSink,
-            decipherable
-        )
-        return downloadFile(
-            uri,
-            filePath,
-            identity,
-            postProcessor,
-            utilitySinkHandler,
-            requestConfig
-        )
-    }
+        var cipher: Cipher? = null
+        if (decryptionKey != null) {
+            cipher = decryptionKey.andInitCipher
+        }
 
-    private fun downloadFile(
-        uri: URI,
-        filePath: Path,
-        identity: String,
-        postProcessor: FileDownloadPostProcessor = FileDownloadPostProcessor.NOP,
-        sinkHandler: SinkHandler,
-        requestConfig: HttpRequestConfig?
-    ): CompletableFuture<Path> {
-        checkState()
-        val clientContext = HttpClientContext.create()
-        val requestProducer: AsyncRequestProducer =
-            SimpleRequestProducer.create(getRequest(uri, requestConfig, clientContext))
-        val responseConsumer = FileResponseConsumer(
-            filePath,
-            identity,
-            sinkHandler,
-            postProcessor
-        )
-        val downloadCompletedFuture = CompletableFuture<Path>()
-        val futureCallback: FutureCallback<Path> = object : FutureCallback<Path> {
-            override fun completed(result: Path) {
-                val actionFutures = responseConsumer.getSinkFutures()
-                actionFutures.removeIf { f: CompletableFuture<Void?> -> f.isDone && !f.isCompletedExceptionally }
-                val future = CompletableFuture.allOf(*actionFutures.toTypedArray<CompletableFuture<*>>())
-                future.whenComplete { _: Void?, th: Throwable? ->
-                    var mThrowable = th
-                    try {
-                        responseConsumer.dispose()
-                    } catch (ex: Exception) {
-                        if (null != mThrowable) {
-                            mThrowable.addSuppressed(ex)
-                        } else {
-                            mThrowable = ex
+        var lastEx: Throwable? = null
+
+        for (attempt in 0 until retries) {
+            try {
+                val reqB = Request.Builder().url(uri.toString()).get()
+                headers.forEach { (k, v) ->
+                    reqB.header(k, v.toString())
+                }
+                reqB.header(
+                    "User-Agent",
+                    managerConfig.userAgent
+                )
+
+                if (existingSize > 0L) {
+                    reqB.header("Range", "bytes=$existingSize-")
+                }
+
+                client.newCall(reqB.build()).execute().use { resp ->
+                    val code = resp.code
+
+                    if (existingSize > 0L && code == 200) {
+                        existingSize = 0L
+                        reStart = false
+                        try {
+                            file.delete()
+                        } catch (_: Exception) {}
+                    }
+
+                    if (code >= 400) {
+                        throw RuntimeException("HTTP $code")
+                    }
+
+                    val contentLenHdr = resp.header("Content-Length")
+                    val contentRangeHdr = resp.header("Content-Range")
+                    val resolvedRemote = when {
+                        contentRangeHdr != null -> {
+                            val parts = contentRangeHdr.split("/", limit = 2)
+                            parts.getOrNull(1)?.toLongOrNull()
                         }
+
+                        contentLenHdr != null -> contentLenHdr.toLongOrNull()?.let { len ->
+                            if (code == 206) {
+                                if (existingSize > 0L) {
+                                    existingSize + len
+                                } else {
+                                    len
+                                }
+                            } else {
+                                len
+                            }
+                        }
+
+                        else -> null
                     }
-                    if (null != mThrowable) {
-                        postProcessor.afterDownloadFailed()
-                        downloadCompletedFuture.completeExceptionally(mThrowable)
-                        //log.error(th.message, th)
-                    } else {
+                    resolvedRemote?.let { remoteSize = it }
+
+                    postProcessor.startDownload(remoteSize, reStart)
+
+                    val fs = FileSystem.Companion.SYSTEM
+                    val okioPath = file.toPath().toOkioPath()
+                    val sink: BufferedSink = try {
+                        if (existingSize > 0L && file.exists()) {
+                            fs.appendingSink(okioPath, true).buffer()
+                        } else {
+                            fs.sink(okioPath, true).buffer()
+                        }
+                    } catch (_: Exception) {
+                        val fallback = file.sink().buffer()
+                        fallback
+                    }
+
+                    val body: ResponseBody = resp.body ?: throw RuntimeException(
+                        "Empty body"
+                    )
+                    val src: BufferedSource = body.byteStream().source().buffer()
+
+                    val chunk = ByteArray(8192)
+                    var readTotalThisAttempt = 0L
+
+                    try {
+                        while (true) {
+
+                            ensureActive()
+
+                            val read = src.read(chunk, 0, chunk.size)
+
+                            if (read == -1) {
+                                break
+                            }
+
+                            if (cipher != null) {
+                                val out = try {
+                                    cipher.update(chunk, 0, read)
+                                } catch (ex: Exception) {
+                                    throw ex
+                                }
+                                if (out != null && out.isNotEmpty()) {
+                                    sink.write(out)
+                                }
+                            } else {
+                                sink.write(chunk, 0, read)
+                            }
+
+                            readTotalThisAttempt += read
+                            postProcessor.afterReadBytes(read, false)
+                        }
+
+                        if (cipher != null) {
+                            try {
+                                val finalBytes = cipher.doFinal()
+                                if (finalBytes != null && finalBytes.isNotEmpty()) {
+                                    sink.write(finalBytes)
+                                }
+                            } catch (ex: Exception) {
+                                throw ex
+                            }
+                        }
+
+                        sink.flush()
+                        sink.close()
+                        postProcessor.afterReadBytes(0, true)
                         postProcessor.afterDownloadComplete()
-                        downloadCompletedFuture.complete(result)
+                        return@withContext filePath
+                    } catch (ex: Throwable) {
+                        try {
+                            sink.close()
+                        } catch (_: Exception) {}
+                        throw ex
                     }
                 }
-            }
-
-            override fun failed(ex: Exception) {
-                try {
-                    responseConsumer.dispose()
-                } catch (e: Exception) {
-                    ex.addSuppressed(e)
+            } catch (t: Throwable) {
+                lastEx = t
+                if (attempt == retries - 1) {
+                    try {
+                        file.delete()
+                    } catch (_: Exception) {}
+                    postProcessor.afterDownloadFailed()
+                    throw t
+                } else {
+                    val backoff = exponentialBackoffMillis(backoffBase, attempt)
+                    delay(backoff)
+                    continue
                 }
-                //log.error(ex.message, ex)
-                postProcessor.afterDownloadFailed()
-                downloadCompletedFuture.completeExceptionally(ex)
-            }
-
-            override fun cancelled() {
-                try {
-                    responseConsumer.dispose()
-                } catch (ex: Exception) {
-                    //log.error(ex.message, ex)
-                }
-                postProcessor.afterDownloadFailed()
-                downloadCompletedFuture.cancel(false)
             }
         }
 
-        httpClient.execute(requestProducer, responseConsumer, clientContext, futureCallback)
-
-        return downloadCompletedFuture
+        throw (lastEx ?: RuntimeException("Unknown error"))
     }
 
-    private fun checkState() {
-        check(state.get() != State.SHUTDOWN) { "httpRequestManager already shutdown" }
-    }
-
-    private fun getRequest(
-        uri: URI,
-        requestConfig: HttpRequestConfig?,
-        context: HttpClientContext
-    ): SimpleHttpRequest {
-        val request = SimpleHttpRequest.create(Method.GET, uri)
-        if (null == requestConfig) {
-            return request
-        }
-
-        val retryCount = requestConfig.retryCount
-        CustomHttpRequestRetryStrategy.setMaxRetries(context, retryCount)
-        val requestHeaderMap = requestConfig.requestHeaderMap
-        if (!requestHeaderMap.isNullOrEmpty()) {
-            for ((key, value) in requestHeaderMap) {
-                request.addHeader(key, value)
+    private suspend fun <T> retryWithBackoff(
+        retries: Int,
+        baseDelayMs: Long,
+        block: suspend () -> T
+    ): T {
+        var last: Throwable? = null
+        for (i in 0 until retries) {
+            try {
+                return block()
+            } catch (t: Throwable) {
+                last = t
+                if (i == retries - 1) break
+                val backoff = exponentialBackoffMillis(baseDelayMs, i)
+                delay(backoff)
             }
         }
-
-        return request
+        throw last ?: RuntimeException("retry failed")
     }
 
-    private val directBufferPool: ByteBufferPool
-        get() = managerResource.getDirectBufferPool()
-
-    private val heapBufferPool: ByteBufferPool
-        get() = managerResource.getHeapBufferPool()
-
-    private val executor: Executor?
-        get() = managerResource.getExecutor()
-
-    private val defaultRequestConfig: RequestConfig?
-        get() = managerResource.defaultRequestConfig
-
-    private val httpClient: CloseableHttpAsyncClient
-        get() = managerResource.httpClient
+    private fun exponentialBackoffMillis(baseMs: Long, attempt: Int): Long {
+        val multiplier = 1L shl min(attempt, 10)
+        val jitter = Random.Default.nextLong(baseMs / 4 + 1)
+        return baseMs * multiplier + jitter
+    }
 
     internal enum class State {
         ACTIVE, SHUTDOWN,
-    }
-
-    companion object {
-        val instance: HttpRequestManager
-            get() = HttpRequestManager()
-
-        fun getInstance(managerConfig: HttpRequestManagerConfig?): HttpRequestManager {
-            return HttpRequestManager(managerConfig)
-        }
     }
 }

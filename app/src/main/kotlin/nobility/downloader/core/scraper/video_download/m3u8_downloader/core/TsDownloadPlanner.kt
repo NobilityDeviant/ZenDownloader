@@ -23,9 +23,9 @@ import java.util.stream.Collectors
 
 class TsDownloadPlanner(
     private val m3u8Download: M3u8Download,
-    private val bytesResponseGetter: (URI, HttpRequestConfig?) -> ByteBuffer
+    private val bytesResponseGetter: suspend (URI, HttpRequestConfig?) -> ByteBuffer
 ) {
-    fun plan(): List<TsDownload> {
+    suspend fun plan(): List<TsDownload> {
         val m3u8Download = this.m3u8Download
         val bytesResponseGetter = this.bytesResponseGetter
 

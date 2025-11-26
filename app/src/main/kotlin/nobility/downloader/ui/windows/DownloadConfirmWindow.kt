@@ -12,7 +12,6 @@ import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.*
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.CursorDropdownMenu
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.Saver
@@ -21,8 +20,11 @@ import androidx.compose.runtime.snapshots.SnapshotStateMap
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.key.isShiftPressed
+import androidx.compose.ui.input.pointer.PointerIcon
+import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -50,6 +52,7 @@ import nobility.downloader.ui.windows.utils.AppWindowScope
 import nobility.downloader.ui.windows.utils.ApplicationState
 import nobility.downloader.utils.*
 import nobility.downloader.utils.Constants.bottomBarHeight
+import nobility.downloader.utils.Constants.mediumIconSize
 import java.util.*
 
 class DownloadConfirmWindow(
@@ -73,6 +76,8 @@ class DownloadConfirmWindow(
     private var searchText by mutableStateOf("")
     private var favorited by mutableStateOf(BoxHelper.isSeriesFavorited(series))
     private val scope = CoroutineScope(Dispatchers.IO)
+    @Volatile
+    private var startedDownloading = false
 
     init {
         if (toDownload.episode != null) {
@@ -250,6 +255,7 @@ class DownloadConfirmWindow(
                                 .padding(end = 4.dp)
                                 .height(45.dp)
                         ) {
+                            val focusRequester = remember { FocusRequester() }
                             DefaultSettingsTextField(
                                 searchText,
                                 onValueChanged = {
@@ -260,7 +266,22 @@ class DownloadConfirmWindow(
                                 modifier = Modifier.fillMaxWidth(0.50f)
                                     .fillMaxHeight()
                                     .padding(4.dp),
-                                requestFocus = true
+                                requestFocus = true,
+                                focusRequester = focusRequester,
+                                trailingIcon = {
+                                    if (searchText.isNotEmpty()) {
+                                        DefaultIcon(
+                                            EvaIcons.Fill.Close,
+                                            Modifier.size(mediumIconSize)
+                                                .pointerHoverIcon(PointerIcon.Hand),
+                                            iconColor = MaterialTheme.colorScheme.primary,
+                                            onClick = {
+                                                searchText = ""
+                                                focusRequester.requestFocus()
+                                            }
+                                        )
+                                    }
+                                }
                             )
                             DefaultButton(
                                 selectText,
@@ -552,46 +573,38 @@ class DownloadConfirmWindow(
         var showFileMenu by remember {
             mutableStateOf(false)
         }
-        val closeMenu = { showFileMenu = false }
-        CursorDropdownMenu(
-            expanded = showFileMenu,
-            onDismissRequest = { closeMenu() },
-            modifier = Modifier.background(
-                MaterialTheme.colorScheme.background
-            )
-        ) {
-            if (downloaded != null) {
-                DefaultDropdownItem(
+
+        DefaultCursorDropdownMenu(
+            showFileMenu,
+            listOf(
+                DropdownOption(
                     "Remove From Downloaded",
-                    EvaIcons.Fill.Trash
+                    EvaIcons.Fill.Trash,
+                    downloaded != null
                 ) {
-                    closeMenu()
                     BoxHelper.removeDownloadedEpisode(episode)
                     downloaded = null
-                }
-            } else {
-                DefaultDropdownItem(
+                },
+                DropdownOption(
                     "Mark As Downloaded",
-                    EvaIcons.Fill.Info
+                    EvaIcons.Fill.Info,
+                    downloaded == null
                 ) {
-                    closeMenu()
                     downloaded = BoxMaker.makeDownloadedEpisode(
                         episode.slug
                     )
-                }
-            }
-            if (downloaded != null) {
-                DefaultDropdownItem(
+                },
+                DropdownOption(
                     "View Downloaded Episode",
-                    EvaIcons.Fill.Eye
+                    EvaIcons.Fill.Eye,
+                    downloaded != null
                 ) {
-                    closeMenu()
                     Core.openDownloadedEpisodesWindow(
                         episode.slug
                     )
                 }
-            }
-        }
+            )
+        ) { showFileMenu = false }
         Row(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.height(55.dp).background(
@@ -806,20 +819,15 @@ class DownloadConfirmWindow(
                 var showFileMenu by remember {
                     mutableStateOf(false)
                 }
-                val closeMenu = { showFileMenu = false }
-                CursorDropdownMenu(
-                    expanded = showFileMenu,
-                    onDismissRequest = { closeMenu() },
-                    modifier = Modifier.background(
-                        MaterialTheme.colorScheme.background
-                    )
-                ) {
-                    if (downloaded) {
-                        DefaultDropdownItem(
+
+                DefaultCursorDropdownMenu(
+                    showFileMenu,
+                    listOf(
+                        DropdownOption(
                             "Remove All From Downloaded",
-                            EvaIcons.Fill.Trash
+                            EvaIcons.Fill.Trash,
+                            downloaded
                         ) {
-                            closeMenu()
                             if (seasonData.episodes.size > 250) {
                                 DialogHelper.showConfirm(
                                     """
@@ -850,13 +858,12 @@ class DownloadConfirmWindow(
                                     updateRowsKey = 0
                                 }
                             }
-                        }
-                    } else {
-                        DefaultDropdownItem(
+                        },
+                        DropdownOption(
                             "Mark All As Downloaded",
-                            EvaIcons.Fill.Info
+                            EvaIcons.Fill.Info,
+                            !downloaded
                         ) {
-                            closeMenu()
                             if (seasonData.episodes.size > 250) {
                                 DialogHelper.showConfirm(
                                     """
@@ -892,8 +899,9 @@ class DownloadConfirmWindow(
                                 }
                             }
                         }
-                    }
-                }
+                    )
+                ) { showFileMenu = false }
+
                 SeasonHeader(
                     seasonData = seasonData,
                     expanded = isExpanded,
@@ -1070,40 +1078,56 @@ class DownloadConfirmWindow(
                                 padding = 0.dp,
                                 enabled = downloadButtonEnabled,
                             ) {
-                                if (!Core.child.canSoftStart()) {
-                                    windowScope.showToast("Failed to start download. Check the console.")
+                                if (startedDownloading) {
                                     return@DefaultButton
                                 }
-                                BoxMaker.makeHistory(
-                                    series.slug
-                                )
-                                val movieEpisode = Episode()
-                                movieEpisode.name = series.name
-                                movieEpisode.slug = series.slug
-                                movieEpisode.seriesSlug = series.slug
-                                movieEpisode.isMovie = true
-                                movieEpisode.lastUpdated = System.currentTimeMillis()
-                                if (Core.child.isRunning) {
-                                    val added = Core.child.downloadThread.addToQueue(
-                                        movieEpisode
-                                    )
-                                    if (added > 0) {
-                                        ApplicationState.showToastForMain(
-                                            "Added movie to current queue."
-                                        )
-                                        windowScope.closeWindow()
-                                    } else {
-                                        windowScope.showToast(
-                                            "Movie is already in queue."
-                                        )
+                                windowScope.showToast("Checking requirements...")
+                                scope.launch(Dispatchers.Default) {
+                                    startedDownloading = true
+                                    if (!Core.child.canSoftStart()) {
+                                        windowScope.showToast("Failed to start download. Check the console.")
+                                        startedDownloading = false
+                                        return@launch
                                     }
-                                    return@DefaultButton
+                                    BoxMaker.makeHistory(
+                                        series.slug
+                                    )
+                                    val movieEpisode = Episode()
+                                    movieEpisode.name = series.name
+                                    movieEpisode.slug = series.slug
+                                    movieEpisode.seriesSlug = series.slug
+                                    movieEpisode.isMovie = true
+                                    movieEpisode.lastUpdated = System.currentTimeMillis()
+                                    if (Core.child.isRunning) {
+                                        val added = Core.child.downloadThread.addToQueue(
+                                            movieEpisode
+                                        )
+                                        if (added > 0) {
+                                            ApplicationState.showToastForMain(
+                                                "Added movie to current queue."
+                                            )
+                                            ApplicationState.bringMainToFront()
+                                            windowScope.closeWindow()
+                                        } else {
+                                            windowScope.showToast(
+                                                "Movie is already in queue."
+                                            )
+                                            startedDownloading = false
+                                        }
+                                        return@launch
+                                    }
+                                    Core.child.softStart()
+                                    Core.child.downloadThread.addToQueue(
+                                        movieEpisode,
+                                        temporaryQuality = temporaryQuality
+                                    )
+                                    Core.child.launchStopJob()
+                                    withContext(Dispatchers.Main) {
+                                        ApplicationState.showToastForMain("Launched video downloader for movie.")
+                                        ApplicationState.bringMainToFront()
+                                        windowScope.closeWindow()
+                                    }
                                 }
-                                Core.child.softStart()
-                                Core.child.downloadThread.addToQueue(movieEpisode)
-                                Core.child.launchStopJob()
-                                ApplicationState.showToastForMain("Launched video downloader for movie.")
-                                windowScope.closeWindow()
                             }
                         } else {
                             DefaultButton(
@@ -1118,48 +1142,64 @@ class DownloadConfirmWindow(
                                 padding = 0.dp,
                                 enabled = downloadButtonEnabled,
                             ) {
-                                if (!Core.child.canSoftStart()) {
-                                    windowScope.showToast("Failed to start download. Check the console.")
+                                if (startedDownloading) {
                                     return@DefaultButton
                                 }
-                                if (series.episodes.isEmpty()) {
-                                    windowScope.showToast("There's no episodes to download.")
-                                    return@DefaultButton
-                                }
-                                if (!singleEpisode && selectedEpisodes.isEmpty()) {
-                                    windowScope.showToast("You must select at least 1 episode.")
-                                    return@DefaultButton
-                                }
-                                BoxMaker.makeHistory(series.slug)
-                                if (Core.child.isRunning) {
-                                    val added = Core.child.downloadThread.addToQueue(
-                                        if (singleEpisode)
-                                            listOf(series.episodes.first())
-                                        else
-                                            selectedEpisodes.map { it }
-                                    )
-                                    if (added > 0) {
-                                        ApplicationState.showToastForMain(
-                                            "Added $added episode(s) to current queue."
-                                        )
-                                        windowScope.closeWindow()
-                                    } else {
-                                        windowScope.showToast(
-                                            "No episodes have been added to current queue. They have already been added before."
-                                        )
+                                windowScope.showToast("Checking requirements...")
+                                scope.launch(Dispatchers.Default) {
+                                    startedDownloading = true
+                                    if (!Core.child.canSoftStart()) {
+                                        windowScope.showToast("Failed to start download. Check the console.")
+                                        startedDownloading = false
+                                        return@launch
                                     }
-                                    return@DefaultButton
+                                    if (series.episodes.isEmpty()) {
+                                        windowScope.showToast("There's no episodes to download.")
+                                        startedDownloading = false
+                                        return@launch
+                                    }
+                                    if (!singleEpisode && selectedEpisodes.isEmpty()) {
+                                        windowScope.showToast("You must select at least 1 episode.")
+                                        startedDownloading = false
+                                        return@launch
+                                    }
+                                    BoxMaker.makeHistory(series.slug)
+                                    if (Core.child.isRunning) {
+                                        val added = Core.child.downloadThread.addToQueue(
+                                            if (singleEpisode)
+                                                listOf(series.episodes.first())
+                                            else
+                                                selectedEpisodes.map { it },
+                                            temporaryQuality
+                                        )
+                                        if (added > 0) {
+                                            withContext(Dispatchers.Main) {
+                                                ApplicationState.showToastForMain(
+                                                    "Added $added episode(s) to current queue."
+                                                )
+                                                windowScope.closeWindow()
+                                            }
+                                        } else {
+                                            windowScope.showToast(
+                                                "No episodes have been added to current queue. They have already been added before."
+                                            )
+                                            startedDownloading = false
+                                        }
+                                        return@launch
+                                    }
+                                    if (singleEpisode) {
+                                        selectedEpisodes.add(series.episodes.first())
+                                    }
+                                    Core.child.softStart()
+                                    Core.child.downloadThread.addToQueue(
+                                        selectedEpisodes.sortedWith(Tools.baseEpisodesComparator),
+                                        temporaryQuality
+                                    )
+                                    Core.child.launchStopJob()
+                                    ApplicationState.showToastForMain("Launched video downloader for ${selectedEpisodes.size} episode(s).")
+                                    ApplicationState.bringMainToFront()
+                                    windowScope.closeWindow()
                                 }
-                                if (singleEpisode) {
-                                    selectedEpisodes.add(series.episodes.first())
-                                }
-                                Core.child.softStart()
-                                Core.child.downloadThread.addToQueue(
-                                    selectedEpisodes.sortedWith(Tools.baseEpisodesComparator)
-                                )
-                                Core.child.launchStopJob()
-                                ApplicationState.showToastForMain("Launched video downloader for ${selectedEpisodes.size} episode(s).")
-                                windowScope.closeWindow()
                             }
                         }
 

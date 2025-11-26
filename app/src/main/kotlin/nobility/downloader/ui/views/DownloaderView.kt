@@ -13,7 +13,6 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.CursorDropdownMenu
 import androidx.compose.material.Text
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -81,6 +80,7 @@ class DownloaderView : ViewPage {
                     onValueChanged = {
                         Core.currentUrl = it
                         Defaults.LAST_DOWNLOAD.update(it)
+                        Core.startButtonText = if (Tools.isUrl(it)) "Start" else "Search DB"
                     },
                     hint = Core.currentUrlHint,
                     singleLine = true,
@@ -229,49 +229,45 @@ class DownloaderView : ViewPage {
                         var showMenu by remember {
                             mutableStateOf(false)
                         }
-                        val closeMenu = { showMenu = false }
                         var scrolled = remember { false }
 
-                        CursorDropdownMenu(
-                            expanded = showMenu,
-                            onDismissRequest = { closeMenu() },
-                            modifier = Modifier.background(
-                                MaterialTheme.colorScheme.background
+                        DefaultCursorDropdownMenu(
+                            showMenu,
+                            listOf(
+                                DropdownOption(
+                                    "Reload Random Series",
+                                    EvaIcons.Fill.Refresh
+                                ) {
+
+                                    Core.reloadRandomSeries()
+                                },
+                                DropdownOption(
+                                    "Scroll To Start",
+                                    EvaIcons.Fill.ArrowLeft
+                                ) {
+                                    scrolled = true
+                                    coroutineScope.launch {
+                                        seriesStateList.scrollToItem(0)
+                                        seriesStateList2.scrollToItem(0)
+                                    }
+                                },
+                                DropdownOption(
+                                    "Scroll To End",
+                                    EvaIcons.Fill.ArrowRight
+                                ) {
+                                    scrolled = true
+                                    coroutineScope.launch {
+                                        seriesStateList.scrollToItem(
+                                            seriesStateList.layoutInfo.totalItemsCount
+                                        )
+                                        seriesStateList2.scrollToItem(
+                                            seriesStateList2.layoutInfo.totalItemsCount
+                                        )
+                                    }
+                                }
                             )
                         ) {
-                            DefaultDropdownItem(
-                                "Reload Random Series",
-                                EvaIcons.Fill.Refresh
-                            ) {
-                                closeMenu()
-                                Core.reloadRandomSeries()
-                            }
-                            DefaultDropdownItem(
-                                "Scroll To Start",
-                                EvaIcons.Fill.ArrowLeft
-                            ) {
-                                closeMenu()
-                                scrolled = true
-                                coroutineScope.launch {
-                                    seriesStateList.scrollToItem(0)
-                                    seriesStateList2.scrollToItem(0)
-                                }
-                            }
-                            DefaultDropdownItem(
-                                "Scroll To End",
-                                EvaIcons.Fill.ArrowRight
-                            ) {
-                                closeMenu()
-                                scrolled = true
-                                coroutineScope.launch {
-                                    seriesStateList.scrollToItem(
-                                        seriesStateList.layoutInfo.totalItemsCount
-                                    )
-                                    seriesStateList2.scrollToItem(
-                                        seriesStateList2.layoutInfo.totalItemsCount
-                                    )
-                                }
-                            }
+                            showMenu = false
                         }
 
                         LazyRow(
@@ -476,7 +472,7 @@ class DownloaderView : ViewPage {
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         DefaultButton(
-                            "Start",
+                            Core.startButtonText,
                             Modifier.weight(1f)
                                 .height(60.dp),
                             fontSize = 16.sp,

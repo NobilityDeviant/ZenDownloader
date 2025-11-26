@@ -5,7 +5,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.CursorDropdownMenu
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -205,25 +204,21 @@ class RecentView: ViewPage {
         var showFileMenu by remember {
             mutableStateOf(false)
         }
-        val closeMenu = { showFileMenu = false }
-        CursorDropdownMenu(
-            expanded = showFileMenu,
-            onDismissRequest = { closeMenu() },
-            modifier = Modifier.background(
-                MaterialTheme.colorScheme.background
+
+        DefaultCursorDropdownMenu(
+            showFileMenu,
+            listOf(
+                DropdownOption(
+                    "Download ${type(recentData)}",
+                    EvaIcons.Fill.Info
+                ) {
+                    Core.openSeriesDetails(
+                        recentData.link,
+                        windowScope
+                    )
+                }
             )
-        ) {
-            DefaultDropdownItem(
-                "Download ${type(recentData)}",
-                EvaIcons.Fill.Info
-            ) {
-                closeMenu()
-                Core.openSeriesDetails(
-                    recentData.link,
-                    windowScope
-                )
-            }
-        }
+        ) { showFileMenu = false}
         Row(
             modifier = Modifier
                 .multiClickable(

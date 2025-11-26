@@ -273,6 +273,14 @@ enum class Defaults(
             Default: Off
         """.trimIndent()
     ),
+    DISABLE_MOVIE_LIST_UPDATE(
+        "disable_movie_list_update",
+        false,
+        """
+            Used to disable the movies.txt list updating at launch.
+            Default: Off
+        """.trimIndent()
+    ),
     DISABLE_WCO_DATA_UPDATE(
         "disable_wco_data_update",
         false,
@@ -536,6 +544,7 @@ enum class Defaults(
             DISABLE_USER_AGENTS_UPDATE,
             DISABLE_WCO_DATA_UPDATE,
             DISABLE_WCO_SERIES_LINKS_UPDATE,
+            DISABLE_MOVIE_LIST_UPDATE,
             DISABLE_WCO_URLS_UPDATE,
             WCO_PREMIUM_USERNAME,
             WCO_PREMIUM_PASSWORD,
@@ -598,6 +607,7 @@ enum class Defaults(
             DISABLE_MOVIES_UPDATE,
             DISABLE_CARTOON_UPDATE,
             DISABLE_WCO_SERIES_LINKS_UPDATE,
+            DISABLE_MOVIE_LIST_UPDATE,
             DISABLE_WCO_DATA_UPDATE
         )
 

@@ -29,10 +29,7 @@ import nobility.downloader.ui.windows.*
 import nobility.downloader.ui.windows.database.DatabaseWindow
 import nobility.downloader.ui.windows.utils.AppWindowScope
 import nobility.downloader.ui.windows.utils.ApplicationState
-import nobility.downloader.utils.ErrorStreamFilter
-import nobility.downloader.utils.FrogLog
-import nobility.downloader.utils.fileExists
-import nobility.downloader.utils.linkToSlug
+import nobility.downloader.utils.*
 import java.io.File
 import java.io.PrintStream
 import java.io.UnsupportedEncodingException
@@ -64,6 +61,7 @@ class Core private constructor() {
         var currentUrl by mutableStateOf("")
         var currentUrlHint by mutableStateOf("")
         var startButtonEnabled by mutableStateOf(true)
+        var startButtonText by mutableStateOf("Start")
         var stopButtonEnabled by mutableStateOf(false)
         var currentUrlFocused = false
         var settingsFieldFocused = false
@@ -131,6 +129,7 @@ class Core private constructor() {
             recentView = RecentView()
             errorConsoleView = ErrorConsoleView()
             currentUrl = Defaults.LAST_DOWNLOAD.string()
+            startButtonText = if (Tools.isUrl(currentUrl)) "Start" else "Search DB"
             currentUrlHint = exampleSeries
             darkMode.value = Defaults.DARK_MODE.boolean()
             reloadRandomSeries()

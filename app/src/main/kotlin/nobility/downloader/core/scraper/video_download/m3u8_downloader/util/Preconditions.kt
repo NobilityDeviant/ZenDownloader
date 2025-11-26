@@ -30,11 +30,6 @@ object Preconditions {
         return reference
     }
 
-    fun <T> checkNotEmpty(coll: Collection<T>?): Collection<T> {
-        require(!coll.isNullOrEmpty())
-        return coll
-    }
-
     fun <T> checkNotNull(reference: T?): T {
         requireNotNull(reference)
         return reference
@@ -53,16 +48,6 @@ object Preconditions {
     fun checkNonNegative(value: Int, name: String): Int {
         require(value >= 0) { "$name cannot be negative but was: $value" }
         return value
-    }
-
-    fun checkState(expression: Boolean, errorMessageTemplate: String?, vararg errorMessageArgs: Any?) {
-        check(expression) { String.format(errorMessageTemplate!!, *errorMessageArgs) }
-    }
-
-    fun m3u8Check(expression: Boolean, errorMessage: String?) {
-        if (!expression) {
-            throw M3u8Exception(errorMessage)
-        }
     }
 
     fun m3u8Check(expression: Boolean, format: String?, vararg args: Any?) {

@@ -11,6 +11,7 @@ import nobility.downloader.core.scraper.data.DownloadQueue
 import nobility.downloader.core.scraper.data.M3U8Data
 import nobility.downloader.core.scraper.video_download.VideoDownloadHandler
 import nobility.downloader.core.settings.Defaults
+import nobility.downloader.core.settings.Quality
 import nobility.downloader.utils.FrogLog
 import java.util.*
 import java.util.concurrent.atomic.AtomicInteger
@@ -81,7 +82,10 @@ class DownloadThread {
         }
         currentJobs.incrementAndGet()
         scope.launch(Dispatchers.IO) {
-            val downloader = VideoDownloadHandler(nextDownload)
+            val downloader = VideoDownloadHandler(
+                nextDownload,
+                nextDownload.quality
+            )
             try {
                 downloader.run()
             } catch (e: Exception) {
@@ -119,16 +123,28 @@ class DownloadThread {
         return false
     }
 
-    fun addToQueue(vararg downloads: Episode): Int {
-        return addToQueue(listOf(*downloads))
+    fun addToQueue(
+        vararg downloads: Episode,
+        temporaryQuality: Quality? = null
+    ): Int {
+        return addToQueue(
+            listOf(*downloads),
+            temporaryQuality
+        )
     }
 
-    fun addToQueue(downloads: List<Episode>): Int {
+    fun addToQueue(
+        downloads: List<Episode>,
+        temporaryQuality: Quality? = null
+    ): Int {
         var added = 0
         for (dl in downloads) {
             if (!isInQueue(dl)) {
                 downloadQueue.add(
-                    DownloadQueue(dl)
+                    DownloadQueue(
+                        dl,
+                        quality = temporaryQuality
+                    )
                 )
                 added++
             }

@@ -8,21 +8,16 @@ import nobility.downloader.core.scraper.video_download.m3u8_downloader.util.Util
 import nobility.downloader.core.scraper.video_download.m3u8_downloader.util.Utils.checkAndCreateDir
 import nobility.downloader.core.scraper.video_download.m3u8_downloader.util.VideoUtil
 import nobility.downloader.core.scraper.video_download.m3u8_downloader.util.function.Try
-import org.slf4j.Logger
-import org.slf4j.LoggerFactory
+import nobility.downloader.utils.Tools
 import java.io.File
 import java.io.IOException
 import java.lang.String.format
-import java.math.BigDecimal
-import java.math.MathContext
-import java.math.RoundingMode
 import java.net.URI
 import java.nio.ByteBuffer
 import java.nio.channels.FileChannel
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.StandardOpenOption
-import java.time.Duration
 import java.util.*
 import java.util.concurrent.atomic.LongAdder
 import kotlin.io.path.ExperimentalPathApi
@@ -44,6 +39,10 @@ class M3u8Download(
     private val finishedTsDownloads = LongAdder()
     private val tsDownloads = mutableListOf<TsDownload>()
     private val readingTsDownloads = CollUtil.newConcurrentHashSet<TsDownload>()
+    var completed: Boolean = false
+        private set
+    var success: Boolean = false
+        private set
 
     init {
         m3u8Check(Utils.isValidURL(uri), "uri is invalid: %s", uri)
@@ -90,15 +89,10 @@ class M3u8Download(
 
         this.identity = this.fileName + "@" + this.hashCode()
 
-        log.info(
-            "download m3u8, uri={}, fileName={}, targetFileDir={}, identity={}",
-            this.uri, this.fileName, this.targetFileDir, this.identity
-        )
-
     }
 
-    fun resolveTsDownloads(
-        bytesResponseGetter: (URI, HttpRequestConfig?) -> ByteBuffer
+    suspend fun resolveTsDownloads(
+        bytesResponseGetter: suspend (URI, HttpRequestConfig?) -> ByteBuffer
     ): List<TsDownload> {
         notifyDownloadStart()
 
@@ -111,8 +105,6 @@ class M3u8Download(
         val newDownloads = downloads.filter { it.isNew }
         tsDownloads.clear()
         tsDownloads.addAll(downloads)
-
-        //log.info("resolved {} ts downloads, {} need to download: {}", downloads.size, newDownloads.size, this.identity)
 
         return newDownloads
     }
@@ -128,7 +120,6 @@ class M3u8Download(
     @OptIn(ExperimentalPathApi::class)
     fun mergeIntoVideo() {
 
-        val identity = this.identity
         val downloadList = this.tsDownloads
 
         // check uncompletedTs
@@ -140,17 +131,9 @@ class M3u8Download(
                 this,
                 Exception("Incomplete ts files found.")
             )
-            log.error(
-                String.format(
-                    "ts unCompleted, identity=%s: %s",
-                    identity,
-                    uncompletedTs
-                )
-            )
             return
         }
 
-        // cal fileSize
         val totalSizeOfAllTsFiles = downloadList.sumOf {
             Try.ofCallable {
                 checkPositive(
@@ -162,25 +145,6 @@ class M3u8Download(
 
         downloadListener?.downloadSizeUpdated?.invoke(totalSizeOfAllTsFiles)
 
-        val totalSize = Utils.bytesFormat(totalSizeOfAllTsFiles, 3)
-
-        // cal duration
-        val sumOfDuration = downloadList.stream()
-            .map { d: TsDownload -> BigDecimal.valueOf(d.durationInSeconds ?: 0.0) }
-            .reduce(BigDecimal.ZERO, BigDecimal::add)
-        val seconds = BigDecimal.valueOf(sumOfDuration.toBigInteger().toLong())
-        val nanos = sumOfDuration.subtract(seconds)
-            .multiply(
-                BigDecimal.TEN.pow(9),
-                MathContext(0, RoundingMode.DOWN)
-            )
-        val duration = Duration.ofSeconds(seconds.toLong(), nanos.toLong())
-
-        log.info(
-            "download finished, {} ts, totalSizeOfAllTsFiles={}, duration={}, identity={}",
-            downloadList.size, totalSize, Utils.secondsFormat(duration.seconds), identity
-        )
-
         val targetFile = if (targetFileDir.endsWith("/"))
             File(targetFileDir + fileName)
         else
@@ -188,12 +152,13 @@ class M3u8Download(
         if (targetFile.exists()) {
             targetFile.delete()
         }
-        //FrogLog.logInfo("Merging M3U8 files into ${targetFile.absolutePath}")
+
         val tsFiles = downloadList.sortedBy {
             it.sequence
         }.map { it.finalFilePath }
 
-        downloadListener?.onMergeStarted?.invoke(this)
+        val totalSize = Tools.bytesToString(totalSizeOfAllTsFiles)
+        downloadListener?.onMergeStarted?.invoke(this, "($totalSize)")
 
         if (m3u8DownloadOptions.mergeWithoutConvertToMp4) {
             // merge into large ts
@@ -213,7 +178,6 @@ class M3u8Download(
                     }
                 }
             } catch (e: Exception) {
-                log.error("merge ts error(file={" + targetFile + "}): " + e.message, e)
                 downloadListener?.onMergeFinished?.invoke(
                     this,
                     e
@@ -221,7 +185,7 @@ class M3u8Download(
                 throw RuntimeException(e)
             }
         } else {
-            // merge into mp4
+
             val success = VideoUtil.convertToMp4(
                 targetFile,
                 tsFiles
@@ -236,19 +200,14 @@ class M3u8Download(
 
         }
 
-        // delete ts
         if (m3u8DownloadOptions.deleteTsOnComplete) {
             try {
                 tsDir.deleteRecursively()
-            } catch (e: IOException) {
-                log.error("delete tsDir(" + tsDir + ") error" + e.message, e)
-            }
+            } catch (_: IOException) {}
         }
 
         downloadListener?.onMergeFinished?.invoke(this, null)
-        //downloadListener?.downloadFinished(this)
 
-        log.info("merge complete path={}", targetFile)
     }
 
     override fun equals(other: Any?): Boolean {
@@ -302,12 +261,12 @@ class M3u8Download(
         }
     }
 
-    val instantReadingAndRemainedCount: Long
-        get() = tsDownloadsCount - getFinishedTsDownloads() - getFailedTsDownloads()
+    fun markComplete(success: Boolean) {
+        this.completed = true
+        this.success = success
+    }
 
     companion object {
-
-        val log: Logger = LoggerFactory.getLogger(M3u8Download::class.java)
 
         const val M3U8_STORE_NAME: String = "m3u8Index.xml"
         const val UNF_TS_EXTENSION: String = "progress"

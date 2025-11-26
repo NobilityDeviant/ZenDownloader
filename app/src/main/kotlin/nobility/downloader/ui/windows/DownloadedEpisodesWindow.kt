@@ -6,7 +6,6 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.CursorDropdownMenu
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -229,74 +228,68 @@ class DownloadedEpisodesWindow(
         var showFileMenu by remember {
             mutableStateOf(false)
         }
-        val closeMenu = { showFileMenu = false }
-        CursorDropdownMenu(
-            expanded = showFileMenu,
-            onDismissRequest = { closeMenu() },
-            modifier = Modifier.background(
-                MaterialTheme.colorScheme.background
-            )
-        ) {
-            DefaultDropdownItem(
-                "Series Details",
-                EvaIcons.Fill.Info
-            ) {
-                closeMenu()
-                Core.openSeriesDetails(
-                    episode.episode.seriesSlug,
-                    windowScope
-                )
-            }
-            DefaultDropdownItem(
-                "Open Episode Folder",
-                EvaIcons.Fill.Folder
-            ) {
-                closeMenu()
-                windowScope.showToast(
-                    "Checking files for episode"
-                )
-                scope.launch {
-                    val downloadFolder = File(Defaults.SAVE_FOLDER.string())
-                    if (downloadFolder.exists()) {
-                        var opened = false
-                        downloadFolder.walk().forEach {
-                            if (!it.isDirectory) {
-                                val name = it.nameWithoutExtension
-                                    .replace(Regex("\\(\\d+p\\)", RegexOption.IGNORE_CASE), "")
-                                    .replace(Regex("(?<=Episode )0([1-9])", RegexOption.IGNORE_CASE), "$1")
-                                    .trim()
-                                if (episode.episode.name.equals(name, true)) {
-                                    Tools.openFile(it.absolutePath, true)
-                                    opened = true
-                                    return@forEach
+
+        DefaultCursorDropdownMenu(
+            showFileMenu,
+            listOf(
+                DropdownOption(
+                    "Series Details",
+                    EvaIcons.Fill.Info
+                ) {
+                    Core.openSeriesDetails(
+                        episode.episode.seriesSlug,
+                        windowScope
+                    )
+                },
+                DropdownOption(
+                    "Open Episode Folder",
+                    EvaIcons.Fill.Folder
+                ) {
+                    windowScope.showToast(
+                        "Checking files for episode"
+                    )
+                    scope.launch {
+                        val downloadFolder = File(Defaults.SAVE_FOLDER.string())
+                        if (downloadFolder.exists()) {
+                            var opened = false
+                            downloadFolder.walk().forEach {
+                                if (!it.isDirectory) {
+                                    val name = it.nameWithoutExtension
+                                        .replace(Regex("\\(\\d+p\\)", RegexOption.IGNORE_CASE), "")
+                                        .replace(Regex("(?<=Episode )0([1-9])", RegexOption.IGNORE_CASE), "$1")
+                                        .trim()
+                                    if (episode.episode.name.equals(name, true)) {
+                                        Tools.openFile(it.absolutePath, true)
+                                        opened = true
+                                        return@forEach
+                                    }
                                 }
                             }
+                            if (!opened) {
+                                windowScope.showToast(
+                                    "Failed to find episode in your download folder."
+                                )
+                            }
+                        } else {
+                            windowScope.showToast("Your download folder doesn't exist.")
                         }
-                        if (!opened) {
-                            windowScope.showToast(
-                                "Failed to find episode in your download folder."
-                            )
-                        }
-                    } else {
-                        windowScope.showToast("Your download folder doesn't exist.")
+                    }
+                },
+                DropdownOption(
+                    "Remove",
+                    EvaIcons.Fill.Trash
+                ) {
+                    DialogHelper.showConfirm(
+                        "Are you sure you want to remove this from your Downloaded Episode History?",
+                        size = smallWindowSize
+                    ) {
+                        BoxHelper.removeDownloadedEpisode(episode.downloadedEpisode)
+                        downloadedEpisodes.remove(episode)
+                        mInitialEpisodeSlug = ""
                     }
                 }
-            }
-            DefaultDropdownItem(
-                "Remove",
-                EvaIcons.Fill.Trash
-            ) {
-                closeMenu()
-                DialogHelper.showConfirm(
-                    "Are you sure you want to remove this from your Downloaded Episode History?",
-                    size = smallWindowSize
-                ) {
-                    BoxHelper.removeDownloadedEpisode(episode.downloadedEpisode)
-                    downloadedEpisodes.remove(episode)
-                    mInitialEpisodeSlug = ""
-                }
-            }
-        }
+            )
+        ) { showFileMenu = false }
 
         Row(
             modifier = Modifier

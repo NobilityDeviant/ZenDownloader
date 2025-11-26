@@ -12,6 +12,7 @@ import javax.crypto.spec.IvParameterSpec
 import javax.crypto.spec.SecretKeySpec
 
 object CipherUtil {
+
     init {
         Security.addProvider(BouncyCastleProvider())
     }

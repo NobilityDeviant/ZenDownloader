@@ -7,6 +7,6 @@ data class M3u8DownloadListener(
     var downloadSizeUpdated: ((Long) -> Unit)? = null,
     //download, success
     var downloadFinished: ((M3u8Download, Boolean) -> Unit)? = null,
-    var onMergeStarted: ((M3u8Download) -> Unit)? = null,
+    var onMergeStarted: ((M3u8Download, String) -> Unit)? = null,
     var onMergeFinished: ((M3u8Download, Exception?) -> Unit)? = null
 )

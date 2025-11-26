@@ -1,11 +1,9 @@
 package nobility.downloader.core.scraper.video_download.m3u8_downloader.http.config
 
-import nobility.downloader.core.scraper.video_download.m3u8_downloader.http.pool.PoolConfig
 import nobility.downloader.core.scraper.video_download.m3u8_downloader.util.Preconditions
-import nobility.downloader.core.scraper.video_download.m3u8_downloader.util.Utils
+import nobility.downloader.utils.user_agents.UserAgents
 import java.util.concurrent.TimeUnit
 
-@Suppress("UNUSED")
 class HttpRequestManagerConfig private constructor(
     val userAgent: String,
     val ioThreads: Int,
@@ -17,28 +15,9 @@ class HttpRequestManagerConfig private constructor(
     val socketTimeoutMills: Long,
     val connectTimeoutMills: Long,
     val connectionMaxIdleMills: Long,
-    val objectPoolConfig: PoolConfig = PoolConfig.DEFAULT,
     val defaultRetryIntervalMills: Long,
     val connectionRequestTimeoutMills: Long
 ) {
-
-    override fun toString(): String {
-        return "HttpRequestManagerConfig{" +
-                "userAgent='" + userAgent + '\'' +
-                ", ioThreads=" + ioThreads +
-                ", maxConnTotal=" + maxConnTotal +
-                ", maxConnPerRoute=" + maxConnPerRoute +
-                ", executorThreads=" + executorThreads +
-                ", defaultMaxRetries=" + defaultMaxRetries +
-                ", selectIntervalMills=" + selectIntervalMills +
-                ", socketTimeoutMills=" + socketTimeoutMills +
-                ", connectTimeoutMills=" + connectTimeoutMills +
-                ", connectionMaxIdleMills=" + connectionMaxIdleMills +
-                ", objectPoolConfig=" + objectPoolConfig +
-                ", defaultRetryIntervalMills=" + defaultRetryIntervalMills +
-                ", connectionRequestTimeoutMills=" + connectionRequestTimeoutMills +
-                '}'
-    }
 
     class Builder internal constructor() {
         private var userAgent: String
@@ -61,8 +40,6 @@ class HttpRequestManagerConfig private constructor(
 
         private var connectionMaxIdleMills: Long
 
-        private var objectPoolConfig: PoolConfig? = null
-
         private var defaultRetryIntervalMills: Long
 
         private var connectionRequestTimeoutMills: Long
@@ -73,7 +50,7 @@ class HttpRequestManagerConfig private constructor(
 
         init {
             this.ioThreads = availableProcessors() * 2
-            this.userAgent = Utils.defaultUserAgent
+            this.userAgent = UserAgents.random
             this.socketTimeoutMills = TimeUnit.SECONDS.toMillis(5)
             this.connectTimeoutMills = TimeUnit.SECONDS.toMillis(5)
             this.connectionMaxIdleMills = TimeUnit.MINUTES.toMillis(5)
@@ -114,12 +91,6 @@ class HttpRequestManagerConfig private constructor(
         fun defaultMaxRetries(defaultMaxRetries: Int): Builder {
             Preconditions.checkPositive(defaultMaxRetries, "defaultMaxRetries")
             this.defaultMaxRetries = defaultMaxRetries
-            return this
-        }
-
-        fun selectIntervalMills(selectIntervalMills: Long): Builder {
-            Preconditions.checkPositive(selectIntervalMills, "selectIntervalMills")
-            this.selectIntervalMills = selectIntervalMills
             return this
         }
 
@@ -166,11 +137,6 @@ class HttpRequestManagerConfig private constructor(
             return this
         }
 
-        fun objectPoolConfig(objectPoolConfig: PoolConfig): Builder {
-            this.objectPoolConfig = objectPoolConfig
-            return this
-        }
-
         fun build(): HttpRequestManagerConfig {
             val globalPoolCount: Int
             val ioThreads = this.ioThreads
@@ -178,18 +144,6 @@ class HttpRequestManagerConfig private constructor(
                 if (ioThreads >= 32) 4 else 2
             } else {
                 1
-            }
-
-            var objectPoolConfig: PoolConfig? = this.objectPoolConfig
-            objectPoolConfig = if (null == objectPoolConfig) {
-                if (globalPoolCount == PoolConfig.DEFAULT.globalPoolCount()) PoolConfig.DEFAULT else PoolConfig.copy(
-                    PoolConfig.DEFAULT
-                )
-                    .globalPoolCount(globalPoolCount).build()
-            } else {
-                if (globalPoolCount == objectPoolConfig.globalPoolCount()) objectPoolConfig else PoolConfig.copy(
-                    objectPoolConfig
-                ).globalPoolCount(globalPoolCount).build()
             }
 
             return HttpRequestManagerConfig(
@@ -203,7 +157,6 @@ class HttpRequestManagerConfig private constructor(
                 this.socketTimeoutMills,
                 this.connectTimeoutMills,
                 this.connectionMaxIdleMills,
-                objectPoolConfig,
                 this.defaultRetryIntervalMills,
                 this.connectionRequestTimeoutMills
             )

@@ -530,14 +530,22 @@ class DatabaseWindow {
         var showFileMenu by remember {
             mutableStateOf(false)
         }
-        val closeMenu = { showFileMenu = false }
+
+        val closeMenu = {
+            showFileMenu = false
+        }
+
         CursorDropdownMenu(
             expanded = showFileMenu,
             onDismissRequest = { closeMenu() },
             modifier = Modifier.background(
                 MaterialTheme.colorScheme.background
+            ).border(
+                1.dp,
+                MaterialTheme.colorScheme.primary
             )
         ) {
+
             DefaultDropdownItem(
                 "Series Details",
                 EvaIcons.Fill.Info
@@ -548,6 +556,11 @@ class DatabaseWindow {
                     windowScope
                 )
             }
+
+            HorizontalDivider(
+                color = MaterialTheme.colorScheme.primary
+            )
+
             val favorited by remember {
                 mutableStateOf(BoxHelper.isSeriesFavorited(series))
             }
@@ -566,6 +579,11 @@ class DatabaseWindow {
                     BoxMaker.makeFavorite(series.slug)
                 }
             }
+
+            HorizontalDivider(
+                color = MaterialTheme.colorScheme.primary
+            )
+
             DefaultDropdownItem(
                 "Copy Name",
                 EvaIcons.Fill.Copy
@@ -574,7 +592,11 @@ class DatabaseWindow {
                 Tools.clipboardString = series.name
                 windowScope.showToast("Copied Name")
             }
+
             if (series.description.isNotEmpty()) {
+                HorizontalDivider(
+                    color = MaterialTheme.colorScheme.primary
+                )
                 DefaultDropdownItem(
                     "Copy Description",
                     EvaIcons.Fill.Copy
@@ -585,6 +607,9 @@ class DatabaseWindow {
                 }
             }
             if (series.seriesIdentity == SeriesIdentity.MOVIE) {
+                HorizontalDivider(
+                    color = MaterialTheme.colorScheme.primary
+                )
                 DefaultDropdownItem(
                     "Edit Movie",
                     EvaIcons.Fill.Edit

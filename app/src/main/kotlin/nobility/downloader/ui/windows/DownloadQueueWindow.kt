@@ -5,7 +5,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.CursorDropdownMenu
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -109,58 +108,50 @@ class DownloadQueueWindow {
         var showFileMenu by remember {
             mutableStateOf(false)
         }
-        val closeMenu = { showFileMenu = false }
 
-        CursorDropdownMenu(
-            expanded = showFileMenu,
-            onDismissRequest = { closeMenu() },
-            modifier = Modifier.background(
-                MaterialTheme.colorScheme.background
-            )
-        ) {
-            DefaultDropdownItem(
-                "Series Details",
-                EvaIcons.Fill.Info
-            ) {
-                closeMenu()
-                Core.openSeriesDetails(
-                    queue.episode.seriesSlug
-                )
-            }
-            if (index != 0) {
-                DefaultDropdownItem(
-                    "Move Up",
-                    EvaIcons.Fill.ArrowUp
+        DefaultCursorDropdownMenu(
+            showFileMenu,
+            listOf(
+                DropdownOption(
+                    "Series Details",
+                    EvaIcons.Fill.Info
                 ) {
-                    closeMenu()
+                    Core.openSeriesDetails(
+                        queue.episode.seriesSlug
+                    )
+                },
+                DropdownOption(
+                    "Move Up",
+                    EvaIcons.Fill.ArrowUp,
+                    index != 0
+                ) {
+
                     val currentIndex = thread.downloadQueue.indexOfFirst {
                         it.episode.matches(queue.episode)
                     }
                     thread.downloadQueue.removeAt(currentIndex)
                     thread.downloadQueue.add(currentIndex - 1, queue)
-                }
-            }
-            if (index != thread.downloadQueue.lastIndex) {
-                DefaultDropdownItem(
+                },
+                DropdownOption(
                     "Move Down",
-                    EvaIcons.Fill.ArrowDown
+                    EvaIcons.Fill.ArrowDown,
+                    index != thread.downloadQueue.lastIndex
                 ) {
-                    closeMenu()
+
                     val currentIndex = thread.downloadQueue.indexOfFirst {
                         it.episode.matches(queue.episode)
                     }
                     thread.downloadQueue.removeAt(currentIndex)
                     thread.downloadQueue.add(currentIndex + 1, queue)
+                },
+                DropdownOption(
+                    "Remove",
+                    EvaIcons.Fill.Trash
+                ) {
+                    thread.removeFromQueue(queue)
                 }
-            }
-            DefaultDropdownItem(
-                "Remove",
-                EvaIcons.Fill.Trash
-            ) {
-                closeMenu()
-                thread.removeFromQueue(queue)
-            }
-        }
+            )
+        ) { showFileMenu = false }
 
         Row(
             modifier = Modifier

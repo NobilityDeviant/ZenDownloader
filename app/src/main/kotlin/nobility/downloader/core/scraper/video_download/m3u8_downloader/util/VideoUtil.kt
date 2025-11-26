@@ -33,7 +33,6 @@ object VideoUtil {
             return databaseFfmpeg
         }
         if (execCommand(listOf("ffmpeg", "-version"))) {
-            //FrogLog.info("Found ffmpeg installed.")
             return "ffmpeg"
         }
         return ""
@@ -87,6 +86,15 @@ object VideoUtil {
             command.add("-safe")
             command.add("0")
 
+            command.add("-analyzeduration")
+            command.add("2147483647")
+
+            command.add("-probesize")
+            command.add("2147483647")
+
+            command.add("-fflags")
+            command.add("+genpts+igndts+discardcorrupt")
+
             command.add("-i")
             command.add(listFile.toString())
 
@@ -110,11 +118,14 @@ object VideoUtil {
         command.add("-i")
         command.add(allTsFile.toString())
 
-        command.add("-acodec")
+        command.add("-c:v")
         command.add("copy")
 
-        command.add("-vcodec")
+        command.add("-c:a")
         command.add("copy")
+
+        command.add("-movflags")
+        command.add("+faststart")
 
         command.add(destVideoPath.toString())
 
@@ -150,14 +161,28 @@ object VideoUtil {
         //ffmpeg -i video.mp4 -i audio.m4a -acodec copy -vcodec copy output.mp4
         val command = mutableListOf<String>()
         command.add(ffmpegPath)
+
+        command.add("-analyzeduration")
+        command.add("2147483647")
+        command.add("-probesize")
+        command.add("2147483647")
+
+        command.add("-fflags")
+        command.add("+genpts+discardcorrupt")
+
         command.add("-i")
         command.add(videoFile.absolutePath)
         command.add("-i")
         command.add(audioFile.absolutePath)
-        command.add("-acodec")
+
+        command.add("-c:v")
         command.add("copy")
-        command.add("-vcodec")
+        command.add("-c:a")
         command.add("copy")
+
+        command.add("-movflags")
+        command.add("+faststart")
+
         command.add(destVideoFile.absolutePath)
 
         try {

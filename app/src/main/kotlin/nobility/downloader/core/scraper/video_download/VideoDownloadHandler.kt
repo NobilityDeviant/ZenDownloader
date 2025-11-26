@@ -3,6 +3,7 @@ package nobility.downloader.core.scraper.video_download
 import Resource
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import nobility.downloader.core.BoxHelper.Companion.boolean
 import nobility.downloader.core.BoxHelper.Companion.int
 import nobility.downloader.core.BoxMaker
 import nobility.downloader.core.Core
@@ -24,7 +25,7 @@ import nobility.downloader.utils.update
  */
 class VideoDownloadHandler(
     private val queue: DownloadQueue,
-    temporaryQuality: Quality? = null
+    temporaryQuality: Quality? = queue.quality
 ) {
 
     private val help = VideoDownloadHelper(
@@ -101,7 +102,9 @@ class VideoDownloadHandler(
                     val m3u8MasterLink = data.m3u8MasterLink
                     //only open the window when the m3u8 data is null.
                     //m3u8data is only passed when downloaded from ChooseM3U8Window
-                    if (queue.m3U8Data == null && m3u8Source != null
+                    if (Defaults.CHOOSE_M3U8_STREAM.boolean()
+                        && queue.m3U8Data == null
+                        && m3u8Source != null
                         && m3u8Domain != null
                         && m3u8MasterLink != null) {
                         data.finishEpisode(true)

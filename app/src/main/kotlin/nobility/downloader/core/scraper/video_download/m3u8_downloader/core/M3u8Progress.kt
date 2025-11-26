@@ -1,94 +1,65 @@
 package nobility.downloader.core.scraper.video_download.m3u8_downloader.core
 
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.withContext
 import nobility.downloader.core.scraper.video_download.m3u8_downloader.util.CollUtil
 import nobility.downloader.utils.Tools
-import java.util.concurrent.Future
 import java.util.concurrent.atomic.AtomicLong
 import kotlin.math.ceil
 import kotlin.math.max
 
-class M3u8ExecutorProgress : Runnable {
+class M3u8Progress {
 
     private val elapsedSeconds = AtomicLong(0)
     private val m3u8Progresses = CollUtil.newCopyOnWriteArrayList<M3u8Progress>()
 
-    override fun run() {
-        try {
-            doProgress()
-        } catch (_: Exception) {}
-    }
+    suspend fun run() = withContext(Dispatchers.Default) {
 
-    @Suppress("warnings")
-    private fun doProgress() {
-        val elapsedSecondsInc = elapsedSeconds.incrementAndGet()
-        if (m3u8Progresses.isEmpty()) {
-            return
-        }
-        var idx = 0
-        val limitTableSize = 10
-        val completes = CollUtil.newArrayDeque<M3u8Progress>()
-        val removeItems = mutableListOf<M3u8Progress>()
-        for (progress in m3u8Progresses) {
-            idx++
-            val doProgress = progress.doProgress(elapsedSecondsInc)
-            //this isnt needed, remove and test
-            if (doProgress) {
-                completes.offer(progress)
+        while (isActive) {
+            delay(1000)
+            elapsedSeconds.andIncrement
+            val snapshot = m3u8Progresses.toList()
+            if (snapshot.isEmpty()) {
+                break
             }
-            if (idx > limitTableSize) {
-                completes.poll()?.let {
-                    removeItems.add(it)
+            snapshot.forEach { progress ->
+                val isDone = progress.doProgress()
+
+                if (isDone) {
+                    m3u8Progresses.remove(progress)
                 }
             }
         }
-
-        if (removeItems.isNotEmpty()) {
-            m3u8Progresses.removeIf { p ->
-                removeItems.any { it === p }
-            }
-        }
     }
 
+
     fun addM3u8(
-        m3u8Download: M3u8Download,
-        downloadFuture: Future<*>
+        m3u8Download: M3u8Download
     ) {
         m3u8Progresses.add(
             M3u8Progress(
                 m3u8Download,
-                downloadFuture,
                 elapsedSeconds.get()
             )
         )
     }
 
-    //companion object {
-      //  const val VIDEO_TAG = "(VIDEO)"
-        //const val AUDIO_TAG = "(AUDIO)"
-    //}
-
-    private class M3u8Progress(
+    private inner class M3u8Progress(
         val m3u8Download: M3u8Download,
-        val downloadFuture: Future<*>,
         val startSeconds: Long
     ) {
         @Volatile
-        private var endSeconds: Long = 0
+        private var endSeconds = 0L
         private val nowBytes = AtomicLong(0)
         private val lastBytes = AtomicLong(0)
-        /*private val tag = if (m3u8Download.fileName.endsWith("mp4"))
-            VIDEO_TAG
-        else if (m3u8Download.fileName.endsWith("m4a"))
-            AUDIO_TAG
-        else ""*/
 
         fun alreadyEnd(): Boolean {
             return endSeconds > 0
         }
 
-        fun doProgress(
-            sec: Long
-        ): Boolean {
+        fun doProgress(): Boolean {
 
             if (alreadyEnd()) {
                 return true
@@ -112,7 +83,7 @@ class M3u8ExecutorProgress : Runnable {
             val finishedCount = m3u8Download.getFinishedTsDownloads().toInt()
 
             // timeliness param end
-            val seconds = sec - startSeconds
+            val seconds = elapsedSeconds.get() - startSeconds
             val lastBytes = this.nowBytes.get()
 
             this.nowBytes.set(nowBytes)
@@ -125,7 +96,6 @@ class M3u8ExecutorProgress : Runnable {
             val remainingSeconds: Long
             val conCount = finishedCount + readingCount
             remainingSeconds = if (readBytes > 0 && conCount > 0) {
-                //just added brackets for clarification of ordery
                 ceil(
                     ((remainedCount * readBytes * seconds) +
                             (remainedCount.toLong() * remainBytesInReading) +
@@ -143,15 +113,15 @@ class M3u8ExecutorProgress : Runnable {
                 }
             }
 
-            val isDone = downloadFuture.isDone
+            val isDone = m3u8Download.completed
             if (isDone) {
                 if ((endSeconds.also { endSeconds = it }) > 0) endSeconds else (seconds.also {
                     this.endSeconds = it
                 })
-                m3u8Download.downloadListener?.downloadProgress?.invoke(
-                    "100%",
-                    0
-                )
+                //m3u8Download.downloadListener?.downloadProgress?.invoke(
+                   // "100%",
+                   // 0
+                //)
                 return true
             }
 

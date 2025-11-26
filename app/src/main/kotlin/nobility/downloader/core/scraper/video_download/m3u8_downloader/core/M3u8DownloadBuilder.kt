@@ -2,14 +2,12 @@ package nobility.downloader.core.scraper.video_download.m3u8_downloader.core
 import nobility.downloader.core.scraper.video_download.m3u8_downloader.util.Preconditions.checkNonNegative
 import nobility.downloader.core.scraper.video_download.m3u8_downloader.util.Preconditions.checkNotBlank
 import org.apache.commons.collections4.MapUtils
-import java.net.Proxy
 import java.net.URI
 
 @Suppress("UNUSED")
 class M3u8DownloadBuilder internal constructor() {
 
     private lateinit var uri: URI
-    private var proxy: Proxy? = null
     private var workHomeDirectory: String? = null
     private lateinit var fileName: String
     private lateinit var targetFileDir: String
@@ -227,7 +225,6 @@ class M3u8DownloadBuilder internal constructor() {
         if (null == configStrategy) {
             configStrategy =
                 M3u8HttpRequestConfigStrategy.DefaultM3u8HttpRequestConfigStrategy(
-                    this.proxy,
                     this.retryCount,
                     this.requestTypeHeaderMap
                 )

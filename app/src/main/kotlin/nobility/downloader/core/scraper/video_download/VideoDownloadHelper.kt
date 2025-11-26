@@ -38,10 +38,6 @@ import java.time.Duration
  * Just used to make the video handler smaller and easier to manage.
  */
 
-//ok if the m3u8data isnt null then we need to skip the parsing and use the
-//user agent to download.
-//todo fix all that and it should be good
-//also remember to add right click to add "Already downloaded" in dl confirm
 class VideoDownloadHelper(
     private val queue: DownloadQueue,
     val temporaryQuality: Quality?
@@ -472,9 +468,10 @@ class VideoDownloadHelper(
 
                 if (hslSourceData != null) {
 
-                    //val debug = File("./${videoDownloadData.episode.name.fixForFiles()}_debug_.m3u8")
+                    //val debug = File("./test.m3u8.txt")
                     //debug.writeText(hslSourceData.toString())
                     //Tools.openFile(debug.absolutePath)
+
                     videoDownloadData.m3u8MasterLink = hslLink
                     val hslLines = hslSourceData.lines()
                     val audioMap = mutableMapOf<String, String>()
@@ -500,6 +497,15 @@ class VideoDownloadHelper(
                                     val videoUri = hslLines.getOrNull(index + 1)?.trim()
 
                                     if (videoUri != null) {
+
+                                        /*val videoUriSource = readUrlLines("$domain/$videoUri", videoDownloadData)
+                                        val videoUriData = videoUriSource.data
+
+                                        if (videoUriData != null) {
+                                            val debug = File("./test-index(${quality.resolution}).m3u8.txt")
+                                            debug.writeText(videoUriData.toString())
+                                            Tools.openFile(debug.absolutePath)
+                                        }*/
 
                                         val audioGroupId = Regex("""AUDIO="([^"]+)"""")
                                             .find(line)?.groupValues?.get(1)
@@ -808,10 +814,10 @@ class VideoDownloadHelper(
                 videoDownloadData.currentDownload.fileSize = it
                 videoDownloadData.currentDownload.update()
             },
-            onMergeStarted = {
+            onMergeStarted = { download, eta ->
                 Core.child.m3u8UpdateDownloadProgress(
                     videoDownloadData.currentDownload,
-                    "Merging ts files",
+                    "Merging ts files $eta",
                     0,
                     CoreChild.M3U8FileType.VIDEO
                 )
@@ -887,13 +893,13 @@ class VideoDownloadHelper(
                         CoreChild.M3U8FileType.AUDIO
                     )
                 },
-                onMergeStarted = {
+                onMergeStarted = { download, eta ->
                     if (exx != null) {
                         return@M3u8DownloadListener
                     }
                     Core.child.m3u8UpdateDownloadProgress(
                         videoDownloadData.currentDownload,
-                        "Merging ts files",
+                        "Merging ts files $eta",
                         0,
                         CoreChild.M3U8FileType.AUDIO
                     )
@@ -946,13 +952,13 @@ class VideoDownloadHelper(
                         CoreChild.M3U8FileType.SUBTITLES
                     )
                 },
-                onMergeStarted = {
+                onMergeStarted = { download, eta ->
                     if (exx != null) {
                         return@M3u8DownloadListener
                     }
                     Core.child.m3u8UpdateDownloadProgress(
                         videoDownloadData.currentDownload,
-                        "Merging ts files",
+                        "Merging ts files $eta",
                         0,
                         CoreChild.M3U8FileType.SUBTITLES
                     )
@@ -1106,6 +1112,8 @@ class VideoDownloadHelper(
                     )
                 }
             } else {
+                //todo throws this error on m3u8 download
+                //after pressing stop manually.
                 videoDownloadData.error(
                     "Failed to download m3u8 video. | Retrying",
                     e

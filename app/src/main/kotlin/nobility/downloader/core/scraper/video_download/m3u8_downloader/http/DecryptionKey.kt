@@ -5,6 +5,7 @@ import javax.crypto.Cipher
 
 class DecryptionKey(
     private val key: ByteArray,
+    @Suppress("UNUSED")
     val method: String,
     private val initVector: ByteArray
 ) {

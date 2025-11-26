@@ -2,6 +2,7 @@ package nobility.downloader.ui.views
 
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -203,12 +204,16 @@ class HistoryView : ViewPage {
         var showFileMenu by remember {
             mutableStateOf(false)
         }
+
         val closeMenu = { showFileMenu = false }
         CursorDropdownMenu(
             expanded = showFileMenu,
             onDismissRequest = { closeMenu() },
             modifier = Modifier.background(
                 MaterialTheme.colorScheme.background
+            ).border(
+                1.dp,
+                MaterialTheme.colorScheme.primary
             )
         ) {
             DefaultDropdownItem(
@@ -221,6 +226,11 @@ class HistoryView : ViewPage {
                     windowScope
                 )
             }
+
+            HorizontalDivider(
+                color = MaterialTheme.colorScheme.primary
+            )
+
             DefaultDropdownItem(
                 "Check For New Episodes",
                 EvaIcons.Fill.Search
@@ -237,9 +247,9 @@ class HistoryView : ViewPage {
                 window.open()
             }
 
-            //val ignored by remember {
-              //  mutableStateOf(BoxHelper.isSeriesIgnored(seriesData.series))
-            //}
+            HorizontalDivider(
+                color = MaterialTheme.colorScheme.primary
+            )
 
             val favorited by remember {
                 mutableStateOf(BoxHelper.isSeriesFavorited(seriesData.series))
@@ -261,19 +271,9 @@ class HistoryView : ViewPage {
                 }
             }
 
-            /*DefaultDropdownItem(
-                if (ignored)
-                "Remove From Ignored" else "Add To Ignored",
-                EvaIcons.Fill.MinusSquare
-            ) {
-                closeMenu()
-                if (ignored) {
-                    BoxHelper.removeSeriesIgnored(seriesData.series.slug)
-                } else {
-                    BoxMaker.makeIgnore(seriesData.series.slug)
-                    this@HistoryView.seriesDatas.remove(seriesData)
-                }
-            }*/
+            HorizontalDivider(
+                color = MaterialTheme.colorScheme.primary
+            )
 
             DefaultDropdownItem(
                 "Remove From History",

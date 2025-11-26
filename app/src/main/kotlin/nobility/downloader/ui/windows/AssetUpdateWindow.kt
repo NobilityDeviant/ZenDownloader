@@ -362,7 +362,11 @@ class AssetUpdateWindow {
         WCO_SERIES_LINKS_DISABLE(
             Defaults.DISABLE_WCO_SERIES_LINKS_UPDATE
         ),
-        ELSE(Defaults.ELSE);
+        MOVIE_LIST_DISABLE(
+            Defaults.DISABLE_MOVIE_LIST_UPDATE
+        )
+
+        ;
 
         companion object {
             fun disableForAsset(asset: Asset): AssetDisable {
@@ -373,8 +377,8 @@ class AssetUpdateWindow {
                     Asset.CARTOON -> CARTOON_DISABLE
                     Asset.MOVIES -> MOVIES_DISABLE
                     Asset.LINKS -> WCO_SERIES_LINKS_DISABLE
+                    Asset.MOVIE_LIST -> MOVIE_LIST_DISABLE
                     Asset.WCO_DATA -> WCO_DATA_DISABLE
-                    else -> ELSE
                 }
             }
         }

@@ -30,7 +30,7 @@ kotlin {
 }
 
 group = "nobility.downloader"
-version = "1.2.8"
+version = "1.2.9"
 
 repositories {
     maven("https://maven.pkg.jetbrains.space/public/p/compose/dev")
@@ -113,11 +113,17 @@ dependencies {
     //m3u8 downloading
     implementation("org.apache.commons:commons-lang3:3.18.0")
     implementation("org.apache.commons:commons-collections4:4.4")
-    implementation("org.bouncycastle:bcprov-jdk18on:1.80")
-    implementation("org.apache.httpcomponents.client5:httpclient5:5.5")
+
+    //implementation("org.apache.httpcomponents.client5:httpclient5:5.5")
     implementation("io.netty:netty-common:4.2.1.Final")
     implementation("org.jctools:jctools-core:4.0.5")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.8.1")
+
+    implementation("com.squareup.okhttp3:okhttp:4.11.0")
+    implementation("com.squareup.okio:okio:3.5.0")
+    implementation("org.bouncycastle:bcprov-jdk18on:1.80")
+
+
 }
 
 compose.desktop {

@@ -28,7 +28,6 @@ import nobility.downloader.utils.update
 import nobility.downloader.utils.user_agents.UserAgents
 import org.openqa.selenium.WebDriver
 import java.io.File
-import java.net.URI
 import java.util.*
 import kotlin.system.exitProcess
 
@@ -339,12 +338,12 @@ class CoreChild {
             Core.openWco(url)
             return false
         }
-        try {
-            URI(url).toURL()
-        } catch (_: Exception) {
+
+        if (!Tools.isUrl(url)) {
             Core.openWco(url)
             return false
         }
+
         if (!ChromeDriverBuilder.isChromeInstalled()) {
             showError(
                 """

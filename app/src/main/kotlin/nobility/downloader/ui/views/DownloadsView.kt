@@ -5,7 +5,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.CursorDropdownMenu
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.VerticalDivider
@@ -24,11 +23,8 @@ import compose.icons.evaicons.fill.*
 import nobility.downloader.Page
 import nobility.downloader.core.Core
 import nobility.downloader.core.entities.Download
-import nobility.downloader.ui.components.DefaultDropdownItem
-import nobility.downloader.ui.components.HeaderItem
-import nobility.downloader.ui.components.SortedLazyColumn
+import nobility.downloader.ui.components.*
 import nobility.downloader.ui.components.dialog.DialogHelper
-import nobility.downloader.ui.components.multiClickable
 import nobility.downloader.ui.windows.utils.AppWindowScope
 import nobility.downloader.utils.Tools
 import nobility.downloader.utils.hover
@@ -89,17 +85,12 @@ class DownloadsView : ViewPage {
         var showFileMenu by remember {
             mutableStateOf(false)
         }
-        val closeMenu = { showFileMenu = false }
-        CursorDropdownMenu(
-            expanded = showFileMenu,
-            onDismissRequest = { closeMenu() },
-            modifier = Modifier.background(
-                MaterialTheme.colorScheme.background
-            )
-        ) {
-            if (!download.isComplete) {
-                if (!download.downloading) {
-                    DefaultDropdownItem(
+        val options = mutableListOf<DropdownOption>()
+
+        if (!download.isComplete) {
+            if (!download.downloading) {
+                options.add(
+                    DropdownOption(
                         "Resume",
                         EvaIcons.Fill.Download
                     ) {
@@ -107,54 +98,49 @@ class DownloadsView : ViewPage {
                             download.slug,
                             windowScope
                         )
-                        closeMenu()
                     }
-                }
-                //todo would really love to figure out how to do this
-                /*else {
-                    defaultDropdownItem(
-                        "Pause",
-                        EvaIcons.Fill.PauseCircle
-                    ) {
-                        closeMenu()
-                    }
-                }*/
+                )
             }
-            DefaultDropdownItem(
+        }
+        options.add(
+            DropdownOption(
                 "Series Details",
                 EvaIcons.Fill.Info
             ) {
-                closeMenu()
                 Core.openSeriesDetails(
                     download.seriesSlug,
                     windowScope
                 )
             }
-            DefaultDropdownItem(
+        )
+        options.add(
+            DropdownOption(
                 "Open Folder",
                 EvaIcons.Fill.Folder
             ) {
-                closeMenu()
                 Tools.openFile(
                     download.downloadPath,
                     true
                 )
             }
-            if (download.isComplete) {
-                DefaultDropdownItem(
+        )
+
+        if (download.isComplete) {
+            options.add(
+                DropdownOption(
                     "Play Video",
                     EvaIcons.Fill.Video
                 ) {
-                    closeMenu()
                     Tools.openFile(download.downloadPath)
                 }
-            }
-            if (!download.downloading) {
-                DefaultDropdownItem(
+            )
+        }
+        if (!download.downloading) {
+            options.add(
+                DropdownOption(
                     "Remove From Downloads",
                     EvaIcons.Fill.Trash
                 ) {
-                    closeMenu()
                     if (download.downloading || download.queued) {
                         windowScope.showToast("You can't remove a download that's downloading.")
                     } else {
@@ -162,11 +148,12 @@ class DownloadsView : ViewPage {
                         Core.child.removeDownload(download)
                     }
                 }
-                DefaultDropdownItem(
-                    "Delete FIle",
+            )
+            options.add(
+                DropdownOption(
+                    "Delete File",
                     EvaIcons.Fill.FileRemove
                 ) {
-                    closeMenu()
                     if (download.downloading || download.queued) {
                         windowScope.showToast("You can't delete a file that's downloading.")
                     } else {
@@ -197,8 +184,15 @@ class DownloadsView : ViewPage {
                         }
                     }
                 }
-            }
+            )
         }
+
+        DefaultCursorDropdownMenu(
+            showFileMenu,
+            options,
+            onDismissRequest = { showFileMenu = false }
+        )
+
         Row(
             modifier = Modifier
                 .multiClickable(
