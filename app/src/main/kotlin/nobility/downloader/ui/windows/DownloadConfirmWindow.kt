@@ -466,15 +466,32 @@ class DownloadConfirmWindow(
         }
         val hasSeasons = episodes.any { it.name.contains("Season", true) }
         if (hasSeasons) {
-            val subLists = episodes.groupBy {
-                val match = Regex("Season(?:\\s|\\s?[:/]\\s?)\\d+").find(it.name)
-                return@groupBy if (match != null) {
-                    val seasonName = it.name.substring(match.range)
+            val subLists = episodes.groupBy { episode ->
+
+                val type = when {
+                    episode.name.contains("Dubbed", ignoreCase = true) -> "Dubbed"
+                    episode.name.contains("Subbed", ignoreCase = true) -> "Subbed"
+                    else -> null
+                }
+
+                val match = Regex(
+                    "Season(?:\\s|\\s?[:/]\\s?)\\d+"
+                ).find(episode.name)
+
+                val seasonNumber = if (match != null) {
+                    val seasonName = episode.name.substring(match.range)
                     seasonName.filter { char -> char.isDigit() }.ifEmpty { "1" }
                 } else {
-                    "Random"
+                    "1"
+                }
+                return@groupBy if (type != null) {
+                    "$seasonNumber $type"
+                } else {
+                    seasonNumber
                 }
             }.mapValues { map -> map.value.distinctBy { episode -> episode.name } }
+
+
             seasonDataList.addAll(subLists.map {
                 SeasonData(
                     if (it.key == "Random") "${series.name} ${it.key}" else "${series.name} Season ${it.key}",
@@ -484,17 +501,28 @@ class DownloadConfirmWindow(
             }.sortedBy { data ->
                 val number = data.seasonTitle.filter { ch -> ch.isDigit() }.toIntOrNull()
                 return@sortedBy number?.toString() ?: data.seasonTitle
-
             })
         } else {
             if (episodes.isNotEmpty()) {
-                seasonDataList.add(
+
+                val subLists = episodes.groupBy { episode ->
+
+                    val type = when {
+                        episode.name.contains("Dubbed", ignoreCase = true) -> "Dubbed"
+                        episode.name.contains("Subbed", ignoreCase = true) -> "Subbed"
+                        else -> null
+                    }
+
+                    return@groupBy type ?: ""
+                }.mapValues { map -> map.value.distinctBy { episode -> episode.name } }
+
+                seasonDataList.addAll(subLists.map {
                     SeasonData(
-                        series.name,
-                        episodes,
-                        true
+                        "${series.name} ${it.key}",
+                        it.value,
+                        it.value.contains(toDownload.episode)
                     )
-                )
+                })
             }
         }
         if (seasonDataList.size == 1) {

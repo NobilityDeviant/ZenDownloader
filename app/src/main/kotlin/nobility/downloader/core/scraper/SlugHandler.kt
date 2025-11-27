@@ -14,10 +14,7 @@ import nobility.downloader.core.entities.Series
 import nobility.downloader.core.entities.data.SeriesIdentity
 import nobility.downloader.core.scraper.data.ToDownload
 import nobility.downloader.core.scraper.video_download.Functions
-import nobility.downloader.utils.FrogLog
-import nobility.downloader.utils.ImageUtils
-import nobility.downloader.utils.Tools
-import nobility.downloader.utils.slugToLink
+import nobility.downloader.utils.*
 import org.jsoup.Jsoup
 import java.util.*
 
@@ -193,8 +190,7 @@ class SlugHandler {
 
                     val episode = Episode(
                         title,
-                        Tools.extractSlugFromLink(link)
-                            .replaceFirst("/", ""),
+                        link.linkToSlug(),
                         seriesSlug
                     )
                     episodes.add(episode)
@@ -208,7 +204,7 @@ class SlugHandler {
                         val episodeLink = element.select("a").attr("href")
                         val episode = Episode(
                             episodeTitle,
-                            Tools.extractSlugFromLink(episodeLink),
+                            episodeLink.linkToSlug(),
                             seriesSlug
                         )
                         episodes.add(episode)
@@ -247,7 +243,7 @@ class SlugHandler {
                         genresList.add(
                             Genre(
                                 name = genre.text(),
-                                slug = Tools.extractSlugFromLink(linkElement)
+                                slug = linkElement.linkToSlug()
                             )
                         )
                     }
@@ -293,7 +289,7 @@ class SlugHandler {
                 val h2 = category[0].select("h2")
                 val categoryLink = h2.select("a").attr("href")
                 val categoryName = h2.text()
-                seriesSlug = Tools.extractSlugFromLink(categoryLink)
+                seriesSlug = categoryLink.linkToSlug()
                 if (categoryName.isNotEmpty() && seriesSlug.isNotEmpty()) {
                     /**
                      * If the series is "movies" then it's not treated like a series.

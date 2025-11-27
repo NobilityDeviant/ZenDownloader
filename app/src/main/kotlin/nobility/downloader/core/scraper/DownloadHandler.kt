@@ -12,7 +12,7 @@ import nobility.downloader.core.entities.Series
 import nobility.downloader.core.scraper.data.ToDownload
 import nobility.downloader.core.settings.Defaults
 import nobility.downloader.utils.FrogLog
-import nobility.downloader.utils.Tools
+import nobility.downloader.utils.linkToSlug
 import java.io.File
 
 object DownloadHandler {
@@ -23,7 +23,7 @@ object DownloadHandler {
 
         var toDownload: ToDownload? = null
 
-        val slug = Tools.extractSlugFromLink(url)
+        val slug = url.linkToSlug()
         if (slug == "anime/movies") {
             return@withContext Resource.Error(
                 "You can't scrape the movies series. Please use the database window instead."
@@ -104,7 +104,7 @@ object DownloadHandler {
         url: String
     ): Resource<Episode> = withContext(Dispatchers.IO) {
 
-        val slug = Tools.extractSlugFromLink(url)
+        val slug = url.linkToSlug()
         if (slug == "anime/movies") {
             return@withContext Resource.Error(
                 "You can't scrape the movies series. Please use the database window instead."

@@ -8,10 +8,7 @@ import nobility.downloader.core.BoxHelper.Companion.addIdentityLinkWithSlug
 import nobility.downloader.core.BoxHelper.Companion.addIdentityLinksWithSlug
 import nobility.downloader.core.entities.data.SeriesIdentity
 import nobility.downloader.core.scraper.video_download.Functions
-import nobility.downloader.utils.FrogLog
-import nobility.downloader.utils.Tools
-import nobility.downloader.utils.removeSeasonExtra
-import nobility.downloader.utils.slugToLink
+import nobility.downloader.utils.*
 import org.jsoup.Jsoup
 
 /**
@@ -44,15 +41,12 @@ object IdentityScraper {
             for (ul in uls) {
                 val lis = ul.select("li")
                 for (li in lis) {
-                    var s = li.select("a").attr("href")
-                    if (s.contains("//")) {
-                        s = Tools.extractSlugFromLink(s)
+                    var slug = li.select("a").attr("href")
+                    if (slug.contains("//")) {
+                        slug = slug.linkToSlug()
                     }
-                    if (s.startsWith("/")) {
-                        s = s.replaceFirst("/", "")
-                    }
-                    s = s.removeSeasonExtra()
-                    slugs.add(s)
+                    slug = slug.fixedSlug()
+                    slugs.add(slug)
                 }
             }
             if (slugs.isEmpty()) {
@@ -117,8 +111,7 @@ object IdentityScraper {
     suspend fun findIdentityForSlugOnline(
         slug: String
     ): Resource<SeriesIdentity> = withContext(Dispatchers.IO) {
-        val fixedSlug = slug.removeSeasonExtra()
-        val fullSeriesLink = slug.slugToLink()
+        val fixedSlug = slug.fixedAnimeSlug()
         FrogLog.message("Looking for identity for $fixedSlug online")
         for (identity in SeriesIdentity.filteredValues()) {
             val fullIdentityLink = identity.slug.slugToLink()
@@ -139,16 +132,14 @@ object IdentityScraper {
             for (uls in ul) {
                 val lis = uls.select("li")
                 for (li in lis) {
-                    var s = li.select("a").attr("href")
-                    if (s.contains("//")) {
-                        s = Tools.extractSlugFromLink(s)
+                    var slug = li.select("a").attr("href")
+                    if (slug.contains("//")) {
+                        slug = slug.linkToSlug()
                     }
-                    if (s.startsWith("/")) {
-                        s = s.replaceFirst("/", "")
-                    }
-                    if (s.contains(fixedSlug) || s == fixedSlug) {
+                    slug = slug.fixedSlug()
+                    if (slug.contains(fixedSlug) || slug == fixedSlug) {
                         addIdentityLinkWithSlug(fixedSlug, identity)
-                        FrogLog.message("Successfully labeled $fullSeriesLink as $identity")
+                        FrogLog.message("Successfully labeled $fixedSlug as $identity")
                         return@withContext Resource.Success(identity)
                     }
                 }
@@ -157,7 +148,7 @@ object IdentityScraper {
         val new = SeriesIdentity.NEW
         FrogLog.message("Failed to find identity for $fixedSlug")
         FrogLog.message("Labeling it as $new")
-        addIdentityLinkWithSlug(slug, new)
+        addIdentityLinkWithSlug(fixedSlug, new)
         return@withContext Resource.Success(new)
     }
 

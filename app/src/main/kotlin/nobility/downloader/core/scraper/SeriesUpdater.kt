@@ -9,7 +9,7 @@ import nobility.downloader.core.entities.Series
 import nobility.downloader.core.entities.data.SeriesIdentity
 import nobility.downloader.core.scraper.data.NewEpisodes
 import nobility.downloader.core.scraper.video_download.Functions
-import nobility.downloader.utils.Tools
+import nobility.downloader.utils.linkToSlug
 import nobility.downloader.utils.slugToLink
 import org.jsoup.Jsoup
 
@@ -110,8 +110,7 @@ object SeriesUpdater {
 
                         val episode = Episode(
                             title,
-                            Tools.extractSlugFromLink(link)
-                                .replaceFirst("/", ""),
+                            link.linkToSlug(),
                             series.slug
                         )
                         episodes.add(episode)
@@ -131,7 +130,7 @@ object SeriesUpdater {
                         val episodeLink = element.select("a").attr("href")
                         val episode = Episode(
                             episodeTitle,
-                            Tools.extractSlugFromLink(episodeLink),
+                            episodeLink.linkToSlug(),
                             series.slug
                         )
                         episodes.add(episode)

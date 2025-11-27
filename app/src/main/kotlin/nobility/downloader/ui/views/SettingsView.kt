@@ -2,6 +2,7 @@ package nobility.downloader.ui.views
 
 import AppInfo
 import androidx.compose.foundation.*
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
@@ -13,6 +14,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.input.pointer.PointerIcon
 import androidx.compose.ui.input.pointer.pointerHoverIcon
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
@@ -150,10 +152,14 @@ class SettingsView : ViewPage {
                     modifier = Modifier.padding(
                         bottom = it.calculateBottomPadding(),
                         end = verticalScrollbarEndPadding
-                    ).fillMaxWidth().verticalScroll(scrollState)
-                        .onClick {
-                            focusManager.clearFocus(true)
+                    ).fillMaxWidth()
+                        //fix scroll up on click
+                        .pointerInput(Unit) {
+                            detectTapGestures {
+                                focusManager.clearFocus(true)
+                            }
                         }
+                        .verticalScroll(scrollState)
                 ) {
                     FieldRow(Defaults.SAVE_FOLDER)
                     FieldRow(Defaults.CHROME_BROWSER_PATH)

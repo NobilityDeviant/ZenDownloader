@@ -3,6 +3,7 @@ package nobility.downloader.core.entities
 import io.objectbox.annotation.Entity
 import io.objectbox.annotation.Id
 import nobility.downloader.core.entities.data.Website
+import nobility.downloader.utils.capitalizeFirst
 
 @Entity
 open class Episode() {
@@ -21,6 +22,11 @@ open class Episode() {
         this.slug = slug
         this.seriesSlug = seriesSlug
     }
+
+    val seriesName: String get() =
+        seriesSlug.replace("anime/", "")
+            .split("-")
+            .joinToString(" ") { it.capitalizeFirst() }
 
     fun matches(episode: Episode): Boolean {
         return equals(episode)

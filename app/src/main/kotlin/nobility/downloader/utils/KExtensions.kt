@@ -116,28 +116,56 @@ fun String.ordinalIndexOf(searchString: String, ordinal: Int): Int {
 }
 
 fun String.domainFromLink(): String {
-    return Tools.extractDomainFromLink(this)
+    val mLink = replace("www.", "")
+    val key1 = "https://"
+    return mLink.substring(
+        mLink.indexOf(key1) + key1.length,
+        mLink.indexOf(".")
+    )
 }
 
 fun String.fixForFiles(): String {
     return Tools.fixTitle(this)
 }
 
+fun String.fixedSlug(): String {
+    var s = this
+    if (s.startsWith("/")) {
+        s = s.substring(1)
+    }
+    if (s.endsWith("/") || s.contains("season=")) {
+        s = s.substringBeforeLast("/")
+    }
+    return s
+}
+
 fun String.slugToLink(): String {
-    return Core.wcoUrl + this
+    return Core.wcoUrl + this.fixedSlug()
 }
 
 fun String.linkToSlug(): String {
-    return Tools.extractSlugFromLink(this)
+    if (isNullOrEmpty()) {
+        return ""
+    }
+    if (!Tools.isUrl(this)) {
+        return this.fixedSlug()
+    }
+    return try {
+        var s = substring(
+            ordinalIndexOf("/", 3) + 1
+        ).substringBeforeLast("/")
+        if (s.startsWith("/")) {
+            s = s.substring(1)
+        }
+        return s
+    } catch (_: Exception) {
+        ""
+    }
 }
 
 fun String.fixedAnimeSlug(): String {
     return this.replace("anime/", "")
-        .removeSeasonExtra()
-}
-
-fun String.removeSeasonExtra(): String {
-    return this.replace(Regex("/season=[^/&]+&lang=[^/&]+"), "")
+        .fixedSlug()
 }
 
 fun String.fileExists(): Boolean {

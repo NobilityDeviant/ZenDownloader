@@ -13,6 +13,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
@@ -39,6 +40,10 @@ class DownloadsView : ViewPage {
         val lazyListState = rememberLazyListState()
         SortedLazyColumn(
             listOf(
+                HeaderItem(
+                    "Series",
+                    SERIES_NAME_WEIGHT
+                ) { it.seriesName },
                 HeaderItem(
                     "Name",
                     NAME_WEIGHT
@@ -212,6 +217,18 @@ class DownloadsView : ViewPage {
             horizontalArrangement = Arrangement.spacedBy(4.dp)
         ) {
             Text(
+                text = download.seriesName,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                fontSize = MaterialTheme.typography.bodySmall.fontSize,
+                fontWeight = FontWeight.SemiBold,
+                textAlign = TextAlign.Center,
+                modifier = Modifier
+                    .padding(4.dp)
+                    .align(Alignment.CenterVertically)
+                    .weight(SERIES_NAME_WEIGHT)
+            )
+            Divider()
+            Text(
                 text = download.nameAndResolution(),
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 fontSize = MaterialTheme.typography.bodyMedium.fontSize,
@@ -281,7 +298,8 @@ class DownloadsView : ViewPage {
 
     companion object {
         private val rowHeight = 85.dp
-        private const val NAME_WEIGHT = 5f
+        private const val SERIES_NAME_WEIGHT = 0.7f
+        private const val NAME_WEIGHT = 4f
         private const val FILE_SIZE_WEIGHT = 1f
         private const val DATE_WEIGHT = 1.5f
         private const val PROGRESS_WEIGHT = 1.5f

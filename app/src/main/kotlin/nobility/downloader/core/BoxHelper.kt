@@ -13,7 +13,6 @@ import nobility.downloader.core.settings.Quality
 import nobility.downloader.utils.FrogLog
 import nobility.downloader.utils.findUniqueOrFirst
 import nobility.downloader.utils.findUniqueOrNull
-import nobility.downloader.utils.fixedAnimeSlug
 import java.io.File
 
 /**
@@ -633,8 +632,7 @@ class BoxHelper {
         }
 
         fun identityForSeriesSlug(slug: String): SeriesIdentity {
-            val fixedSlug = slug.fixedAnimeSlug()
-            val categoryLink = identityLinkForSeriesSlug(fixedSlug)
+            val categoryLink = identityLinkForSeriesSlug(slug)
             if (categoryLink != null) {
                 return categoryLink.identity
             }

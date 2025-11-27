@@ -121,9 +121,9 @@ class HttpRequestManager(
         val file = filePath.toFile()
         file.parentFile?.mkdirs()
         var existingSize = if (file.exists()) file.length() else 0L
-        var reStart = existingSize > 0L
+        var restart = existingSize > 0L
 
-        postProcessor.startDownload(null, reStart)
+        postProcessor.startDownload(null, restart)
 
         var remoteSize: Long? = null
         try {
@@ -177,7 +177,7 @@ class HttpRequestManager(
 
                     if (existingSize > 0L && code == 200) {
                         existingSize = 0L
-                        reStart = false
+                        restart = false
                         try {
                             file.delete()
                         } catch (_: Exception) {}
@@ -211,7 +211,7 @@ class HttpRequestManager(
                     }
                     resolvedRemote?.let { remoteSize = it }
 
-                    postProcessor.startDownload(remoteSize, reStart)
+                    postProcessor.startDownload(remoteSize, restart)
 
                     val fs = FileSystem.Companion.SYSTEM
                     val okioPath = file.toPath().toOkioPath()

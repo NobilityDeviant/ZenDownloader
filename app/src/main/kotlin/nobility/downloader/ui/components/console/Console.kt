@@ -9,6 +9,7 @@ import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.PointerButton
 import androidx.compose.ui.unit.DpSize
@@ -23,6 +24,8 @@ import compose.icons.evaicons.outline.DiagonalArrowRightUp
 import kotlinx.coroutines.launch
 import nobility.downloader.core.BoxHelper.Companion.boolean
 import nobility.downloader.core.settings.Defaults
+import nobility.downloader.ui.components.DefaultScrollbarStyle
+import nobility.downloader.ui.components.FullBox
 import nobility.downloader.ui.components.TooltipIconButton
 import nobility.downloader.ui.windows.utils.AppWindowScope
 import nobility.downloader.ui.windows.utils.ApplicationState
@@ -57,6 +60,7 @@ class Console(
         modifier: Modifier = Modifier,
         popoutMode: Boolean = false,
     ) {
+
         val scrollState = rememberScrollState(state.lineCount)
         val scope = rememberCoroutineScope()
         val contextMenuRepresentation = DefaultContextMenuRepresentation(
@@ -130,30 +134,51 @@ class Console(
                         }
                     }
                     if ((!popoutMode && !state.consolePoppedOut) || (popoutMode && state.consolePoppedOut)) {
-                        Column(
-                            Modifier.padding(1.dp)
-                                .border(
-                                    1.dp,
-                                    MaterialTheme.colorScheme.primary,
-                                    RoundedCornerShape(8.dp)
+                        FullBox {
+                            Column(
+                                Modifier.padding(1.dp)
+                                    .border(
+                                        1.dp,
+                                        MaterialTheme.colorScheme.primary,
+                                        RoundedCornerShape(8.dp)
+                                    )
+                            ) {
+                                TextField(
+                                    value = consoleText,
+                                    readOnly = true,
+                                    onValueChange = {},
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .onClick(
+                                            matcher = PointerMatcher.mouse(PointerButton.Secondary)
+                                        ) {}
+                                        .verticalScroll(scrollState),
+                                    colors = TextFieldDefaults.colors(),
+                                    shape = RoundedCornerShape(8.dp),
+                                    textStyle = if (errorMode)
+                                        MaterialTheme.typography.labelSmall
+                                    else
+                                        MaterialTheme.typography.labelLarge
                                 )
-                        ) {
-                            TextField(
-                                value = consoleText,
-                                readOnly = true,
-                                onValueChange = {},
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .onClick(
-                                        matcher = PointerMatcher.mouse(PointerButton.Secondary)
-                                    ) {}
-                                    .verticalScroll(scrollState),
-                                colors = TextFieldDefaults.colors(),
-                                shape = RoundedCornerShape(8.dp),
-                                textStyle = if (errorMode)
-                                    MaterialTheme.typography.labelSmall
-                                else
-                                    MaterialTheme.typography.labelLarge
+                            }
+                            VerticalScrollbar(
+                                modifier = Modifier.align(Alignment.CenterEnd)
+                                    .padding(
+                                        top = 5.dp,
+                                        bottom = 5.dp,
+                                        end = 3.dp
+                                    )
+                                    .background(
+                                        MaterialTheme.colorScheme
+                                            .surface
+                                            .tone(15.0),
+                                    )
+                                    .clipToBounds()
+                                    .fillMaxHeight(),
+                                style = DefaultScrollbarStyle,
+                                adapter = rememberScrollbarAdapter(
+                                    scrollState = scrollState
+                                )
                             )
                         }
                     } else if (!popoutMode && state.consolePoppedOut) {
@@ -180,6 +205,7 @@ class Console(
                 }
             }
         }
+
     }
 
     private val windowTitle = "${if (errorMode) "Error " else ""}Console"

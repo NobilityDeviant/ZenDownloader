@@ -88,36 +88,8 @@ object Tools {
             clipboard.setContents(stringSelection, null)
         }
 
-    fun extractSlugFromLink(link: String?): String {
-        if (link.isNullOrEmpty()) {
-            return ""
-        }
-        return try {
-            link.substring(
-                //after the https:// and after the .com/
-                link.ordinalIndexOf("/", 3) + 1
-            ).removeSeasonExtra()
-        } catch (_: Exception) {
-            ""
-        }
-    }
-
     fun extractExtensionFromLink(link: String): String {
         return link.substringAfterLast(".").substringBefore("/")
-    }
-
-    /**
-     * Extracts the domain name without the www. (because it's never needed)
-     * and without the extension.
-     * Doesn't support subdomains.
-     */
-    fun extractDomainFromLink(link: String): String {
-        val mLink = link.replace("www.", "")
-        val key1 = "https://"
-        return mLink.substring(
-            mLink.indexOf(key1) + key1.length,
-            mLink.indexOf(".")
-        )
     }
 
     /**

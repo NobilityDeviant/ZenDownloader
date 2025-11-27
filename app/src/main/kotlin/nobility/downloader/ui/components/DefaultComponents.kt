@@ -21,6 +21,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
@@ -643,23 +644,27 @@ fun FullBox(
     )
 }
 
+@get:Composable
+val DefaultScrollbarStyle get() = ScrollbarStyle(
+    minimalHeight = 24.dp,
+    thickness = 16.dp,
+    shape = RoundedCornerShape(4.dp),
+    hoverDurationMillis = 300,
+    unhoverColor = MaterialTheme.colorScheme.primary.tone(50.0),
+    hoverColor = MaterialTheme.colorScheme.primary.tone(70.0).copy(alpha = 0.90f)
+)
+
 @Composable
 fun BoxScope.VerticalScrollbar(
     scrollState: ScrollState
 ) {
     VerticalScrollbar(
         modifier = Modifier.align(Alignment.CenterEnd)
+            .padding(top = 3.dp, bottom = 3.dp)
             .background(MaterialTheme.colorScheme.surface.tone(20.0))
-            .fillMaxHeight()
-            .padding(top = 3.dp, bottom = 3.dp),
-        style = ScrollbarStyle(
-            minimalHeight = 16.dp,
-            thickness = 10.dp,
-            shape = RoundedCornerShape(10.dp),
-            hoverDurationMillis = 300,
-            unhoverColor = MaterialTheme.colorScheme.surface.tone(50.0).copy(alpha = 0.70f),
-            hoverColor = MaterialTheme.colorScheme.surface.tone(50.0).copy(alpha = 0.90f)
-        ),
+            .clipToBounds()
+            .fillMaxHeight(),
+        style = DefaultScrollbarStyle,
         adapter = rememberScrollbarAdapter(
             scrollState = scrollState
         )
@@ -672,17 +677,11 @@ fun BoxScope.VerticalScrollbar(
 ) {
     VerticalScrollbar(
         modifier = Modifier.align(Alignment.CenterEnd)
+            .padding(top = 3.dp, bottom = 3.dp)
             .background(MaterialTheme.colorScheme.surface.tone(20.0))
-            .fillMaxHeight()
-            .padding(top = 3.dp, bottom = 3.dp),
-        style = ScrollbarStyle(
-            minimalHeight = 16.dp,
-            thickness = 10.dp,
-            shape = RoundedCornerShape(10.dp),
-            hoverDurationMillis = 300,
-            unhoverColor = MaterialTheme.colorScheme.surface.tone(50.0).copy(alpha = 0.70f),
-            hoverColor = MaterialTheme.colorScheme.surface.tone(50.0).copy(alpha = 0.90f)
-        ),
+            .clipToBounds()
+            .fillMaxHeight(),
+        style = DefaultScrollbarStyle,
         adapter = rememberScrollbarAdapter(
             scrollState = scrollState
         )
