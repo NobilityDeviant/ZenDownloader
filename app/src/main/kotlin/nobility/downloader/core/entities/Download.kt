@@ -73,11 +73,8 @@ data class Download(
     }
 
     fun matches(download: Download): Boolean {
-        return download.id > 0
-                && download.id == id
-                || download.slug == slug
-                && resolution == download.resolution
-                && name == download.name
+        return download.slug == slug
+                && download.nameAndResolution() == nameAndResolution()
     }
 
     fun updateProgress() {

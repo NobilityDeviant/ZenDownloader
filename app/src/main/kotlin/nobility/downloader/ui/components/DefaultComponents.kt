@@ -756,8 +756,6 @@ private fun <T> CustomHeader(
                                     currentSort.value?.descending?.value = true
                                     currentSort.value = null
                                 }
-                                //currentSort.value?.descending?.value =
-                                //  currentSort.value?.descending?.value != true
                             } else {
                                 currentSort.value = item.headerSort
                             }

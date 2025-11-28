@@ -49,7 +49,9 @@ class CoreChild {
     var forceStopped = false
 
     fun init() {
-        BoxHelper.shared.downloadBox.all.forEach {
+        BoxHelper.shared.downloadBox.all.distinctBy {
+            it.nameAndResolution()
+        }.forEach {
             addDownload(it)
         }
         movieHandler = MovieHandler()
