@@ -199,25 +199,27 @@ private fun UiWrapper(
                                 }
                             }
                         ) { options ->
-                            TooltipIconButton(
-                                "Options",
-                                EvaIcons.Fill.MoreVertical,
-                                mediumIconSize,
-                                onClick = { showFileMenu = !showFileMenu }
-                            )
-                            DefaultCursorDropdownMenu(
-                                showFileMenu,
-                                options.map {
-                                    DropdownOption(
-                                        it.tooltip,
-                                        it.modifier,
-                                        it.icon,
-                                        it.visible,
-                                        it.contentColor,
-                                        it.onClick
-                                    )
-                                }
-                            ) { closeMenu() }
+                            Box {
+                                TooltipIconButton(
+                                    "Options",
+                                    EvaIcons.Fill.MoreVertical,
+                                    mediumIconSize,
+                                    onClick = { showFileMenu = !showFileMenu }
+                                )
+                                DefaultCursorDropdownMenu(
+                                    showFileMenu,
+                                    options.map {
+                                        DropdownOption(
+                                            it.tooltip,
+                                            it.modifier,
+                                            it.icon,
+                                            it.visible,
+                                            it.contentColor,
+                                            it.onClick
+                                        )
+                                    }
+                                ) { closeMenu() }
+                            }
                         }
                     },
                     colors = TopAppBarDefaults.topAppBarColors(
