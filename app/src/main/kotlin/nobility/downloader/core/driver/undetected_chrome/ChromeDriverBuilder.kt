@@ -2,7 +2,6 @@ package nobility.downloader.core.driver.undetected_chrome
 
 import AppInfo
 import com.alibaba.fastjson.JSONObject
-import io.github.bonigarcia.wdm.WebDriverManager
 import nobility.downloader.core.BoxHelper.Companion.string
 import nobility.downloader.core.driver.undetected_chrome.SysUtil.getString
 import nobility.downloader.core.driver.undetected_chrome.SysUtil.isLinux
@@ -539,15 +538,12 @@ class ChromeDriverBuilder {
         fun isDriverSetup(): Boolean {
             val chromePath = Defaults.CHROME_BROWSER_PATH.string()
             val chromeDriverPath = Defaults.CHROME_DRIVER_PATH.string()
-            if (chromePath.isNotEmpty()
-                && chromePath.fileExists()
-                && chromeDriverPath.isNotEmpty()
-                && chromeDriverPath.fileExists()
+            if (chromePath.fileExists() && chromeDriverPath.fileExists()
             ) {
                 return true
             }
-            val binary = WebDriverManager.chromedriver().browserPath
-            return binary.isPresent
+            return System.getProperty("webdriver.chrome.driver").fileExists()
+
         }
 
         fun chromePath(): String {

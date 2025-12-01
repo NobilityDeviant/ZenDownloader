@@ -1,16 +1,11 @@
 package nobility.downloader.ui.windows
 
-import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -27,20 +22,23 @@ import nobility.downloader.core.Core
 import nobility.downloader.core.entities.DownloadedEpisode
 import nobility.downloader.core.entities.Episode
 import nobility.downloader.core.settings.Defaults
-import nobility.downloader.ui.components.*
+import nobility.downloader.ui.components.ColumnItem
+import nobility.downloader.ui.components.DefaultButton
+import nobility.downloader.ui.components.DropdownOption
+import nobility.downloader.ui.components.LazyTable
 import nobility.downloader.ui.components.dialog.DialogHelper
 import nobility.downloader.ui.components.dialog.DialogHelper.smallWindowSize
 import nobility.downloader.ui.windows.utils.AppWindowScope
 import nobility.downloader.ui.windows.utils.ApplicationState
 import nobility.downloader.utils.Constants.bottomBarHeight
 import nobility.downloader.utils.Tools
-import nobility.downloader.utils.hover
 import java.io.File
 
 class DownloadedEpisodesWindow(
     private val initialEpisodeSlug: String = ""
 ) {
 
+    private lateinit var windowScope: AppWindowScope
     private val downloadedEpisodes = mutableStateListOf<EpisodeHistory>()
     private val scope = CoroutineScope(Dispatchers.Default)
     private var loading by mutableStateOf(true)
@@ -68,6 +66,7 @@ class DownloadedEpisodesWindow(
                 return@newWindow true
             }
         ) {
+            windowScope = this@newWindow
             val lazyListState = rememberLazyListState()
             val composeScope = rememberCoroutineScope()
 
@@ -180,20 +179,35 @@ class DownloadedEpisodesWindow(
                         )
                     }
                 } else {
-                    SortedLazyColumn(
+
+                    LazyTable(
                         listOf(
-                            HeaderItem(
+                            ColumnItem(
                                 "Name",
-                                NAME_WEIGHT
-                            ) {
-                                it.episode.name
+                                5f,
+                                sortSelector = { it.episode.name }
+                            ) { _, episode ->
+                                Text(
+                                    text = episode.episode.name,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    fontSize = 18.sp,
+                                    textAlign = TextAlign.Center
+                                )
                             },
-                            HeaderItem(
+                            ColumnItem(
                                 "Downloaded Date",
-                                DATE_WEIGHT,
-                                true
-                            ) {
-                                it.downloadedEpisode.downloadedDate
+                                1.5f,
+                                true to true,
+                                sortSelector = { it.downloadedEpisode.downloadedDate }
+                            ) { _, episode ->
+                                Text(
+                                    text = Tools.dateAndTimeFormatted(
+                                        episode.downloadedEpisode.downloadedDate
+                                    ),
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    fontSize = 14.sp,
+                                    textAlign = TextAlign.Center
+                                )
                             }
                         ),
                         downloadedEpisodes,
@@ -202,9 +216,67 @@ class DownloadedEpisodesWindow(
                         lazyListState = lazyListState,
                         scrollToPredicate = {
                             it.downloadedEpisode.episodeSlug == initialEpisodeSlug
-                        }
-                    ) { i, episode ->
-                        EpisodeRow(episode, this)
+                        },
+                        rowHeight = 60.dp
+                    ) { _, episode ->
+                        listOf(
+                            DropdownOption(
+                                "Series Details",
+                                EvaIcons.Fill.Info
+                            ) {
+                                Core.openSeriesDetails(
+                                    episode.episode.seriesSlug,
+                                    windowScope
+                                )
+                            },
+                            DropdownOption(
+                                "Open Episode Folder",
+                                EvaIcons.Fill.Folder
+                            ) {
+                                windowScope.showToast(
+                                    "Checking files for episode"
+                                )
+                                scope.launch {
+                                    val downloadFolder = File(Defaults.SAVE_FOLDER.string())
+                                    if (downloadFolder.exists()) {
+                                        var opened = false
+                                        downloadFolder.walk().forEach {
+                                            if (!it.isDirectory) {
+                                                val name = it.nameWithoutExtension
+                                                    .replace(Regex("\\(\\d+p\\)", RegexOption.IGNORE_CASE), "")
+                                                    .replace(Regex("(?<=Episode )0([1-9])", RegexOption.IGNORE_CASE), "$1")
+                                                    .trim()
+                                                if (episode.episode.name.equals(name, true)) {
+                                                    Tools.openFile(it.absolutePath, true)
+                                                    opened = true
+                                                    return@forEach
+                                                }
+                                            }
+                                        }
+                                        if (!opened) {
+                                            windowScope.showToast(
+                                                "Failed to find episode in your download folder."
+                                            )
+                                        }
+                                    } else {
+                                        windowScope.showToast("Your download folder doesn't exist.")
+                                    }
+                                }
+                            },
+                            DropdownOption(
+                                "Remove",
+                                EvaIcons.Fill.Trash
+                            ) {
+                                DialogHelper.showConfirm(
+                                    "Are you sure you want to remove this from your Downloaded Episode History?",
+                                    size = smallWindowSize
+                                ) {
+                                    BoxHelper.removeDownloadedEpisode(episode.downloadedEpisode)
+                                    downloadedEpisodes.remove(episode)
+                                    mInitialEpisodeSlug = ""
+                                }
+                            }
+                        )
                     }
                 }
                 LaunchedEffect(Unit) {
@@ -214,148 +286,11 @@ class DownloadedEpisodesWindow(
                     loading = false
                 }
             }
-            ApplicationState.AddToastToWindow(this)
         }
     }
 
-    @OptIn(ExperimentalFoundationApi::class)
-    @Composable
-    private fun EpisodeRow(
-        episode: EpisodeHistory,
-        windowScope: AppWindowScope
-    ) {
-
-        var showFileMenu by remember {
-            mutableStateOf(false)
-        }
-
-        DefaultCursorDropdownMenu(
-            showFileMenu,
-            listOf(
-                DropdownOption(
-                    "Series Details",
-                    EvaIcons.Fill.Info
-                ) {
-                    Core.openSeriesDetails(
-                        episode.episode.seriesSlug,
-                        windowScope
-                    )
-                },
-                DropdownOption(
-                    "Open Episode Folder",
-                    EvaIcons.Fill.Folder
-                ) {
-                    windowScope.showToast(
-                        "Checking files for episode"
-                    )
-                    scope.launch {
-                        val downloadFolder = File(Defaults.SAVE_FOLDER.string())
-                        if (downloadFolder.exists()) {
-                            var opened = false
-                            downloadFolder.walk().forEach {
-                                if (!it.isDirectory) {
-                                    val name = it.nameWithoutExtension
-                                        .replace(Regex("\\(\\d+p\\)", RegexOption.IGNORE_CASE), "")
-                                        .replace(Regex("(?<=Episode )0([1-9])", RegexOption.IGNORE_CASE), "$1")
-                                        .trim()
-                                    if (episode.episode.name.equals(name, true)) {
-                                        Tools.openFile(it.absolutePath, true)
-                                        opened = true
-                                        return@forEach
-                                    }
-                                }
-                            }
-                            if (!opened) {
-                                windowScope.showToast(
-                                    "Failed to find episode in your download folder."
-                                )
-                            }
-                        } else {
-                            windowScope.showToast("Your download folder doesn't exist.")
-                        }
-                    }
-                },
-                DropdownOption(
-                    "Remove",
-                    EvaIcons.Fill.Trash
-                ) {
-                    DialogHelper.showConfirm(
-                        "Are you sure you want to remove this from your Downloaded Episode History?",
-                        size = smallWindowSize
-                    ) {
-                        BoxHelper.removeDownloadedEpisode(episode.downloadedEpisode)
-                        downloadedEpisodes.remove(episode)
-                        mInitialEpisodeSlug = ""
-                    }
-                }
-            )
-        ) { showFileMenu = false }
-
-        Row(
-            modifier = Modifier
-                .multiClickable(
-                    indication = ripple(
-                        color = MaterialTheme.colorScheme
-                            .secondaryContainer.hover()
-                    ),
-                    onSecondaryClick = {
-                        showFileMenu = showFileMenu.not()
-                    }
-                ) {
-                    showFileMenu = showFileMenu.not()
-                }
-                .background(
-                    color = MaterialTheme.colorScheme.secondaryContainer,
-                    shape = RoundedCornerShape(4.dp)
-                ).height(rowHeight).fillMaxWidth()
-                .border(
-                    1.dp,
-                    if (episode.downloadedEpisode.episodeSlug == mInitialEpisodeSlug)
-                        Color.Green else Color.Transparent
-                ),
-            horizontalArrangement = Arrangement.spacedBy(4.dp)
-        ) {
-            Text(
-                text = episode.episode.name,
-                modifier = Modifier
-                    .padding(4.dp)
-                    .align(Alignment.CenterVertically)
-                    .weight(NAME_WEIGHT),
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                fontSize = 18.sp,
-                textAlign = TextAlign.Center
-            )
-            Divider()
-            Text(
-                text = Tools.dateAndTimeFormatted(episode.downloadedEpisode.downloadedDate),
-                modifier = Modifier
-                    .padding(4.dp)
-                    .align(Alignment.CenterVertically)
-                    .weight(DATE_WEIGHT),
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                fontSize = 14.sp,
-                textAlign = TextAlign.Center
-            )
-        }
-    }
 
     companion object {
-        private val rowHeight = 60.dp
-        private const val NAME_WEIGHT = 5f
-        private const val DATE_WEIGHT = 1.5f
-
-        @Composable
-        private fun Divider() {
-            VerticalDivider(
-                modifier = Modifier.fillMaxHeight()
-                    .width(1.dp)
-                    .background(
-                        MaterialTheme.colorScheme.onSurfaceVariant
-                    ),
-                color = Color.Transparent
-            )
-        }
-
         data class EpisodeHistory(
             val downloadedEpisode: DownloadedEpisode,
             val episode: Episode

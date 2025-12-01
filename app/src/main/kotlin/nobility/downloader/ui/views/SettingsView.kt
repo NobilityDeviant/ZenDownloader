@@ -23,9 +23,9 @@ import com.darkrockstudios.libraries.mpfilepicker.DirectoryPicker
 import com.darkrockstudios.libraries.mpfilepicker.FilePicker
 import compose.icons.EvaIcons
 import compose.icons.evaicons.Fill
-import compose.icons.evaicons.fill.ArrowDown
-import compose.icons.evaicons.fill.ArrowUp
+import compose.icons.evaicons.fill.*
 import nobility.downloader.Page
+import nobility.downloader.core.BoxHelper
 import nobility.downloader.core.BoxHelper.Companion.boolean
 import nobility.downloader.core.BoxHelper.Companion.int
 import nobility.downloader.core.BoxHelper.Companion.long
@@ -38,6 +38,7 @@ import nobility.downloader.core.settings.Quality
 import nobility.downloader.core.settings.VideoPlayer
 import nobility.downloader.ui.components.*
 import nobility.downloader.ui.components.dialog.DialogHelper
+import nobility.downloader.ui.components.dialog.DialogHelper.smallWindowSize
 import nobility.downloader.ui.windows.utils.AppWindowScope
 import nobility.downloader.ui.windows.utils.ApplicationState
 import nobility.downloader.utils.Constants.bottomBarHeight
@@ -58,9 +59,10 @@ class SettingsView : ViewPage {
 
     private var saveButtonEnabled = mutableStateOf(false)
     private lateinit var windowScope: AppWindowScope
-    private val focusModifier get() = Modifier.onFocusChanged {
-        Core.settingsFieldFocused = it.isFocused
-    }
+    private val focusModifier
+        get() = Modifier.onFocusChanged {
+            Core.settingsFieldFocused = it.isFocused
+        }
     private val stringOptions = mutableStateMapOf<Defaults, MutableState<String>>()
     private val booleanOptions = mutableStateMapOf<Defaults, MutableState<Boolean>>()
     private val intOptions = mutableStateMapOf<Defaults, MutableState<Int>>()
@@ -267,7 +269,7 @@ class SettingsView : ViewPage {
                     var showFilePicker by remember { mutableStateOf(false) }
                     DirectoryPicker(
                         show = showFilePicker,
-                        initialDirectory = option.value.ifEmpty { Defaults.SAVE_FOLDER.value.toString() } ,
+                        initialDirectory = option.value.ifEmpty { Defaults.SAVE_FOLDER.value.toString() },
                         title = "Choose Save Folder"
                     ) {
                         if (it != null) {
@@ -458,9 +460,11 @@ class SettingsView : ViewPage {
                 Defaults.DOWNLOAD_THREADS -> {
                     FieldType.THREADS
                 }
+
                 Defaults.TIMEOUT -> {
                     FieldType.TIMEOUT
                 }
+
                 else -> {
                     FieldType.DEFAULT
                 }
@@ -937,7 +941,32 @@ class SettingsView : ViewPage {
         }
     }
 
+    override val menuOptions: List<OverflowOption>
+        get() = listOf(
+            OverflowOption(
+                EvaIcons.Fill.QuestionMarkCircle,
+                "Hover over each settings title to see it's description.",
+            ) {},
+            OverflowOption(
+                EvaIcons.Fill.Folder,
+                "Open Database Folder"
+            ) {
+                Tools.openFile(AppInfo.databasePath)
+            },
+            OverflowOption(
+                EvaIcons.Fill.Refresh,
+                "Reset Settings",
+            ) {
+                DialogHelper.showConfirm(
+                    "Are you sure you want to reset your settings to the default ones?",
+                    "Reset Settings",
+                    size = smallWindowSize
+                ) {
+                    BoxHelper.resetSettings()
+                    Core.settingsView.updateValues()
+                    windowScope.showToast("Settings have been reset.")
+                }
+            }
 
-    override fun onClose() {}
-
+        )
 }

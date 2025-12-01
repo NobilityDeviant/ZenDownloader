@@ -1,5 +1,6 @@
 package nobility.downloader.ui.views
 
+import AppInfo
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.spring
@@ -42,10 +43,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import compose.icons.EvaIcons
 import compose.icons.evaicons.Fill
-import compose.icons.evaicons.fill.ArrowLeft
-import compose.icons.evaicons.fill.ArrowRight
-import compose.icons.evaicons.fill.Close
-import compose.icons.evaicons.fill.Refresh
+import compose.icons.evaicons.fill.*
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
@@ -59,9 +57,12 @@ import nobility.downloader.core.entities.Series
 import nobility.downloader.core.entities.data.SeriesIdentity
 import nobility.downloader.core.settings.Defaults
 import nobility.downloader.ui.components.*
+import nobility.downloader.ui.components.dialog.DialogHelper
 import nobility.downloader.ui.windows.utils.AppWindowScope
 import nobility.downloader.utils.Constants.mediumIconSize
 import nobility.downloader.utils.Constants.randomSeriesRowHeight
+import nobility.downloader.utils.HowToUse
+import nobility.downloader.utils.KeyEvents
 import nobility.downloader.utils.Tools
 
 class DownloaderView : ViewPage {
@@ -502,7 +503,67 @@ class DownloaderView : ViewPage {
         }
     }
 
-    override fun onClose() {
-
-    }
+    override val menuOptions: List<OverflowOption>
+        get() = listOf(
+            OverflowOption(
+                EvaIcons.Fill.CloudDownload,
+                "Check For Updates",
+            ) {
+                Core.openUpdate()
+            },
+            OverflowOption(
+                EvaIcons.Fill.Gift,
+                "Donate",
+            ) {
+                DialogHelper.showLinkPrompt(
+                    "https://donate.stripe.com/6oEeV1aGb9lZgCIfYY",
+                    prompt = false
+                )
+            },
+            OverflowOption(
+                EvaIcons.Fill.Book,
+                "How To Use",
+            ) {
+                DialogHelper.showMessage(
+                    "How To Use",
+                    HowToUse.text,
+                    DpSize(400.dp, 400.dp)
+                )
+            },
+            OverflowOption(
+                EvaIcons.Fill.Keypad,
+                "Key Combinations",
+            ) {
+                DialogHelper.showMessage(
+                    "Key Combinations",
+                    KeyEvents.keyGuide,
+                    DpSize(400.dp, 400.dp)
+                )
+            },
+            OverflowOption(
+                EvaIcons.Fill.Info,
+                "About"
+            ) {
+                DialogHelper.showMessage(
+                    "About",
+                    """
+                                 This is an improved version of my old WcoDownloader created entirely with Jetpack Compose.
+                                                                
+                                 This free program is used to download videos from ${Core.wcoUrl}.
+                                                                
+                                 That's all :)
+                                                                
+                                 Other anime sites are locked down hard and are really tough to scrape from.
+                                 This program is designed for wcofun only, but it is possible to expand if other sites are vulnerable.
+                                                                
+                                 Creator: NobilityDev
+                                                                
+                                 Github: 
+                                 ${AppInfo.GITHUB_URL}
+                                                                
+                              """.trimIndent(),
+                    size = DpSize(400.dp, 400.dp)
+                )
+            }
+        )
 }

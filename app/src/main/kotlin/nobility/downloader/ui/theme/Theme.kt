@@ -1,12 +1,12 @@
 package nobility.downloader.ui.theme
 
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import com.materialkolor.DynamicMaterialTheme
 import nobility.downloader.core.Core
 
-
+@Suppress("UNUSED")
 private val LightColors = lightColorScheme(
     primary = md_theme_light_primary,
     onPrimary = md_theme_light_onPrimary,
@@ -39,6 +39,7 @@ private val LightColors = lightColorScheme(
     scrim = md_theme_light_scrim,
 )
 
+@Suppress("UNUSED")
 private val DarkColors = darkColorScheme(
     primary = md_theme_dark_primary,
     onPrimary = md_theme_dark_onPrimary,
@@ -71,19 +72,16 @@ private val DarkColors = darkColorScheme(
     scrim = md_theme_dark_scrim,
 )
 
-@Suppress("FunctionName")
 @Composable
 fun CoreTheme(
     useDarkTheme: Boolean = Core.darkMode.value,
     content: @Composable () -> Unit
 ) {
-    val colors = if (!useDarkTheme) {
-        LightColors
-    } else {
-        DarkColors
-    }
-    MaterialTheme(
-        colorScheme = colors,
+    DynamicMaterialTheme(
+        Core.mainColor,
+        useDarkTheme,
+        style = Core.mainPaletteStyle,
+        animate = true,
         content = content
     )
 }

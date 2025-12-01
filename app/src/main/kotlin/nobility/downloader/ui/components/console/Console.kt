@@ -38,19 +38,19 @@ class Console(
     private val errorMode: Boolean = false
 ) : OutputStream() {
 
-    val state = ConsoleState(errorMode)
+    val consoleState = ConsoleState(errorMode)
 
     override fun write(b: Int) {}
 
     override fun write(b: ByteArray, off: Int, len: Int) {
         val text = String(b, off, len, Charsets.UTF_8)
         text.forEach {
-            state.appendChar(it)
+            consoleState.appendChar(it)
         }
     }
 
     override fun close() {
-        state.clear()
+        consoleState.clear()
     }
 
     @OptIn(ExperimentalFoundationApi::class)
@@ -61,7 +61,7 @@ class Console(
         popoutMode: Boolean = false,
     ) {
 
-        val scrollState = rememberScrollState(state.lineCount)
+        val scrollState = rememberScrollState(consoleState.lineCount)
         val scope = rememberCoroutineScope()
         val contextMenuRepresentation = DefaultContextMenuRepresentation(
             backgroundColor = if (isSystemInDarkTheme()) Color.DarkGray else Color.LightGray,
@@ -84,13 +84,13 @@ class Console(
                             }
                         },
                         ContextMenuItem("Clear Console") {
-                            state.clear()
+                            consoleState.clear()
                         }
                     )
                 }
             ) {
                 val consoleText by remember {
-                    derivedStateOf { state.consoleText }
+                    derivedStateOf { consoleState.consoleText }
                 }
                 Column(
                     modifier
@@ -100,7 +100,7 @@ class Console(
                         horizontalArrangement = Arrangement.spacedBy(4.dp),
                         modifier = Modifier.align(Alignment.End)
                     ) {
-                        if ((!popoutMode && !state.consolePoppedOut) || popoutMode) {
+                        if ((!popoutMode && !consoleState.consolePoppedOut) || popoutMode) {
                             TooltipIconButton(
                                 "Copy Console Text",
                                 EvaIcons.Fill.Copy,
@@ -110,30 +110,30 @@ class Console(
                                 windowScope.showToast("Copied Console Text")
                             }
                         }
-                        if ((!popoutMode && !state.consolePoppedOut) || popoutMode) {
+                        if ((!popoutMode && !consoleState.consolePoppedOut) || popoutMode) {
                             TooltipIconButton(
                                 "Clear Console",
                                 EvaIcons.Fill.Trash,
                                 iconColor = MaterialTheme.colorScheme.primary
                             ) {
-                                state.clear()
+                                consoleState.clear()
                             }
                         }
                         TooltipIconButton(
-                            if (state.consolePoppedOut)
+                            if (consoleState.consolePoppedOut)
                                 "Close Console Window" else "Pop out Console",
-                            if (state.consolePoppedOut)
+                            if (consoleState.consolePoppedOut)
                                 EvaIcons.Outline.Close else EvaIcons.Outline.DiagonalArrowRightUp,
                             iconColor = MaterialTheme.colorScheme.primary
                         ) {
-                            if (state.consolePoppedOut) {
+                            if (consoleState.consolePoppedOut) {
                                 closeWindow()
                             } else {
                                 openWindow()
                             }
                         }
                     }
-                    if ((!popoutMode && !state.consolePoppedOut) || (popoutMode && state.consolePoppedOut)) {
+                    if ((!popoutMode && !consoleState.consolePoppedOut) || (popoutMode && consoleState.consolePoppedOut)) {
                         FullBox {
                             Column(
                                 Modifier.padding(1.dp)
@@ -181,7 +181,7 @@ class Console(
                                 )
                             )
                         }
-                    } else if (!popoutMode && state.consolePoppedOut) {
+                    } else if (!popoutMode && consoleState.consolePoppedOut) {
                         Column(
                             modifier = modifier
                                 .padding(1.dp)
@@ -215,14 +215,14 @@ class Console(
     }
 
     fun openWindow() {
-        state.consolePoppedOut = true
+        consoleState.consolePoppedOut = true
         ApplicationState.newWindow(
             windowTitle,
             size = DpSize(400.dp, 250.dp),
             windowAlignment = Alignment.BottomEnd,
             alwaysOnTop = Defaults.CONSOLE_ON_TOP.boolean(),
             onClose = {
-                state.consolePoppedOut = false
+                consoleState.consolePoppedOut = false
                 return@newWindow true
             }
         ) {

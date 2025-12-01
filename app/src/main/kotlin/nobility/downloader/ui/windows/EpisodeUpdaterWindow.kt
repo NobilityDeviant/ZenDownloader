@@ -1,15 +1,11 @@
 package nobility.downloader.ui.windows
 
-import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.*
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Alignment
@@ -35,6 +31,7 @@ import nobility.downloader.core.entities.Series
 import nobility.downloader.core.scraper.DownloadHandler
 import nobility.downloader.core.scraper.SeriesUpdater
 import nobility.downloader.core.settings.Defaults
+import nobility.downloader.core.settings.Save
 import nobility.downloader.ui.components.*
 import nobility.downloader.ui.components.dialog.DialogHelper
 import nobility.downloader.ui.components.dialog.DialogHelper.smallWindowSize
@@ -52,7 +49,7 @@ class EpisodeUpdaterWindow(
     constructor(
         series: Series,
         tag: String = ""
-    ): this(listOf(series), tag)
+    ) : this(listOf(series), tag)
 
     private val seriesList = nSeries.distinctBy { it.name }.map {
         SeriesUpdate(it)
@@ -229,29 +226,61 @@ class EpisodeUpdaterWindow(
 
                     val lazyListState = rememberLazyListState()
 
-                    SortedLazyColumn(
+                    LazyTable(
                         listOf(
-                            HeaderItem(
+                            ColumnItem(
                                 "Name",
-                                NAME_WEIGHT
-                            ),
-                            HeaderItem(
+                                5f,
+                                sortSelector = { it.series.name },
+                                weightSaveKey = Save.EU_N_WEIGHT
+                            ) { _, seriesUpdate ->
+                                Text(
+                                    text = seriesUpdate.series.name,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    fontSize = 20.sp
+                                )
+                            },
+                            ColumnItem(
                                 "New Episodes",
-                                EPISODES_WEIGHT
-                            ),
-                            HeaderItem(
-                                "Complete",
-                                COMPLETE_WEIGHT
-                            )
+                                sortSelector = { it.newEpisodeSlugs.size },
+                                weightSaveKey = Save.EU_E_WEIGHT
+                            ) { _, seriesUpdate ->
+                                Text(
+                                    text = seriesUpdate.newEpisodeSlugs.size.toString(),
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    fontSize = 16.sp,
+                                    textAlign = TextAlign.Center
+                                )
+                            },
+                            ColumnItem(
+                                "Status",
+                                defaultSort = true to true,
+                                sortSelector = { it.state.value },
+                                weightSaveKey = Save.EU_S_WEIGHT
+                            ) { _, seriesUpdate ->
+                                Text(
+                                    text = State.fromOrdinal(seriesUpdate.state.value)
+                                        .name
+                                        .normalizeEnumName(),
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    fontSize = 16.sp,
+                                    textAlign = TextAlign.Center
+                                )
+                            }
                         ),
                         items = seriesList,
                         lazyListState = lazyListState,
                         key = { it.series.name },
                         modifier = Modifier.weight(0.85f)
-                            .fillMaxWidth()
-                    ) { _, series ->
-                        SeriesRow(series)
-                    }
+                            .fillMaxWidth(),
+                        sortSaveKey = Save.EU_SORT,
+                        rowModifier = { seriesUpdate ->
+                            Modifier.border(
+                                2.dp, if (seriesUpdate.newEpisodeSlugs.isNotEmpty())
+                                    Color.Green else Color.Transparent
+                            )
+                        }
+                    )
 
                     Text(
                         "$checkedSeries/$totalSeries Finished\nFailed: $failed\nNew Episodes Found: $newEpisodesFound",
@@ -263,7 +292,6 @@ class EpisodeUpdaterWindow(
                     )
                 }
             }
-            ApplicationState.AddToastToWindow(this)
             LaunchedEffect(Unit) {
                 if (seriesList.size == 1 && !complete) {
                     scope.launch {
@@ -272,74 +300,6 @@ class EpisodeUpdaterWindow(
                 }
             }
         }
-    }
-
-    @OptIn(ExperimentalFoundationApi::class)
-    @Composable
-    private fun SeriesRow(
-        seriesUpdate: SeriesUpdate
-    ) {
-        Row(
-            modifier = Modifier
-                .background(
-                    color = MaterialTheme.colorScheme.secondaryContainer,
-                    shape = RoundedCornerShape(5.dp)
-                )
-                .border(
-                    2.dp, if (seriesUpdate.newEpisodeSlugs.isNotEmpty())
-                        Color.Green else Color.Transparent
-                )
-                .height(rowHeight)
-                .fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(4.dp)
-        ) {
-            Text(
-                text = seriesUpdate.series.name,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                fontSize = 20.sp,
-                modifier = Modifier
-                    .padding(4.dp)
-                    .align(Alignment.CenterVertically)
-                    .weight(NAME_WEIGHT)
-            )
-            Divider()
-            Text(
-                text = seriesUpdate.newEpisodeSlugs.size.toString(),
-                modifier = Modifier
-                    .padding(4.dp)
-                    .align(Alignment.CenterVertically)
-                    .weight(EPISODES_WEIGHT),
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                fontSize = 16.sp,
-                textAlign = TextAlign.Center
-            )
-            Divider()
-
-            Text(
-                text = State.fromOrdinal(seriesUpdate.state.value)
-                    .name
-                    .normalizeEnumName(),
-                modifier = Modifier
-                    .padding(4.dp)
-                    .align(Alignment.CenterVertically)
-                    .weight(COMPLETE_WEIGHT),
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                fontSize = 16.sp,
-                textAlign = TextAlign.Center
-            )
-        }
-    }
-
-    @Composable
-    private fun Divider() {
-        VerticalDivider(
-            modifier = Modifier.fillMaxHeight()
-                .width(1.dp)
-                .background(
-                    MaterialTheme.colorScheme.onSurfaceVariant
-                ),
-            color = Color.Transparent
-        )
     }
 
     private suspend fun start() = withContext(Dispatchers.IO) {
@@ -440,7 +400,7 @@ class EpisodeUpdaterWindow(
             return
         }
         val toEpisodes = buildList {
-            newEpisodeSlugs.forEach {  slug ->
+            newEpisodeSlugs.forEach { slug ->
                 val episodeResult = DownloadHandler.launchForEpisodeData(slug)
                 val episodeData = episodeResult.data
                 if (episodeData != null) {
@@ -518,16 +478,12 @@ class EpisodeUpdaterWindow(
             companion object {
 
                 fun fromOrdinal(ordinal: Int): State {
-                    return entries.find { it.ordinal == ordinal }?: NOT_CHECKED
+                    return entries.find { it.ordinal == ordinal } ?: NOT_CHECKED
                 }
             }
         }
 
         private const val TITLE = "New Episode Checker"
-        private val rowHeight = 85.dp
-        private const val NAME_WEIGHT = 5f
-        private const val EPISODES_WEIGHT = 1f
-        private const val COMPLETE_WEIGHT = 1f
     }
 
 }

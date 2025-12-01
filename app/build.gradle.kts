@@ -30,7 +30,7 @@ kotlin {
 }
 
 group = "nobility.downloader"
-version = "1.2.9"
+version = "1.3.0"
 
 repositories {
     maven("https://maven.pkg.jetbrains.space/public/p/compose/dev")
@@ -105,11 +105,13 @@ dependencies {
     implementation("com.alibaba:fastjson:2.0.57")
     //ui
     implementation(compose.material3)
-    implementation("com.materialkolor:material-kolor:2.1.1")
+    implementation("com.materialkolor:material-kolor:4.0.5")
     implementation("br.com.devsrsouza.compose.icons:eva-icons:1.1.1")
     implementation("io.coil-kt.coil3:coil-compose:3.2.0")
     implementation("io.coil-kt.coil3:coil-network-okhttp:3.2.0")
     implementation("com.darkrockstudios:mpfilepicker:3.1.0")
+    implementation("com.github.skydoves:colorpicker-compose:1.1.3")
+
     //m3u8 downloading
     implementation("org.apache.commons:commons-lang3:3.18.0")
     implementation("org.apache.commons:commons-collections4:4.4")

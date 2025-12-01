@@ -23,6 +23,4 @@ class ErrorConsoleView: ViewPage {
             )
         }
     }
-
-    override fun onClose() {}
 }

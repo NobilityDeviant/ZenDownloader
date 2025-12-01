@@ -1,6 +1,5 @@
 package nobility.downloader.core.driver
 
-import io.github.bonigarcia.wdm.WebDriverManager
 import kotlinx.coroutines.*
 import nobility.downloader.core.BoxHelper.Companion.boolean
 import nobility.downloader.core.BoxHelper.Companion.int
@@ -129,21 +128,14 @@ abstract class DriverBase(
                 binaryLocation = chromePath
             )
         } else {
-            //WebDriverManager.chromedriver().setup()
-            val binary = WebDriverManager.chromedriver().browserPath
             val exportedChromeDriver = System.getProperty("webdriver.chrome.driver")
-            nDriver = if (binary.isPresent) {
+            nDriver = if (exportedChromeDriver.fileExists()) {
                 ChromeDriverBuilder().build(
                     options = chromeOptions,
-                    driverExecutablePath = exportedChromeDriver,
-                    binaryLocation = binary.get().toString(),
+                    driverExecutablePath = exportedChromeDriver
                 )
             } else {
-                //if not found with WDM, it will look for it.
-                ChromeDriverBuilder().build(
-                    options = chromeOptions,
-                    driverExecutablePath = exportedChromeDriver,
-                )
+                throw Exception("chromedriver file not found.")
             }
         }
 

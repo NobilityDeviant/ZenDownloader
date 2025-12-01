@@ -171,7 +171,6 @@ class UpdateWindow(
                         }
                     }
                 }
-                ApplicationState.AddToastToWindow(this)
             }
         }
     }

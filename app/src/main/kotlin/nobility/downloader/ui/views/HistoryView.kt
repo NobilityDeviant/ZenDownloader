@@ -1,12 +1,7 @@
 package nobility.downloader.ui.views
 
-import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.CursorDropdownMenu
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -32,13 +27,13 @@ import nobility.downloader.core.BoxMaker
 import nobility.downloader.core.Core
 import nobility.downloader.core.entities.Series
 import nobility.downloader.core.entities.SeriesHistory
+import nobility.downloader.core.settings.Save
 import nobility.downloader.ui.components.*
 import nobility.downloader.ui.components.dialog.DialogHelper
 import nobility.downloader.ui.windows.EpisodeUpdaterWindow
 import nobility.downloader.ui.windows.utils.AppWindowScope
 import nobility.downloader.utils.Constants.bottomBarHeight
 import nobility.downloader.utils.Tools
-import nobility.downloader.utils.hover
 
 class HistoryView : ViewPage {
 
@@ -145,44 +140,146 @@ class HistoryView : ViewPage {
                 }
             } else {
                 val lazyListState = rememberLazyListState()
-                val fastScrolling = rememberScrollSpeed(lazyListState)
-                SortedLazyColumn<SeriesData>(
+                val fastScrolling by rememberScrollSpeed(lazyListState)
+                var forceUpdateName by mutableStateOf(0)
+
+                LazyTable(
                     listOf(
-                        HeaderItem(
+                        ColumnItem(
                             "Name",
-                            NAME_WEIGHT
-                        ) {
-                            it.series.name
+                            5f,
+                            weightSaveKey = Save.H_N_WEIGHT,
+                            contentAlignment = Alignment.CenterStart,
+                            sortSelector = { it.series.name }
+                        ) { _, seriesData ->
+                            key(forceUpdateName) {
+                                Box(
+                                    modifier = Modifier.fillMaxSize()
+                                ) {
+                                    val favorited = BoxHelper
+                                        .isSeriesFavorited(seriesData.series)
+
+                                    if (favorited) {
+                                        DefaultIcon(
+                                            EvaIcons.Fill.Star,
+                                            iconColor = Color.Yellow,
+                                            modifier = Modifier
+                                                .padding(start = 4.dp, top = 8.dp)
+                                                .align(Alignment.TopStart)
+                                        )
+                                    }
+                                    Text(
+                                        text = seriesData.series.name,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        fontSize = MaterialTheme.typography.headlineSmall.fontSize,
+                                        modifier = Modifier
+                                            .padding(4.dp)
+                                            .align(Alignment.CenterStart)
+                                    )
+                                }
+                            }
                         },
-                        HeaderItem(
+                        ColumnItem(
                             "Date Added",
-                            DATE_WEIGHT,
-                            true
-                        ) {
-                            it.history.dateAdded
+                            1.1f,
+                            true to true,
+                            weightSaveKey = Save.H_D_WEIGHT,
+                            sortSelector = { it.history.dateAdded }
+                        ) { _, seriesData ->
+                            Text(
+                                text = Tools.dateAndTimeFormatted(seriesData.history.dateAdded),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                fontSize = MaterialTheme.typography.bodySmall.fontSize,
+                                textAlign = TextAlign.Center
+                            )
                         },
-                        HeaderItem(
+                        ColumnItem(
                             "Episodes",
-                            EPISODES_WEIGHT
-                        ) {
-                            it.series.episodesSize
+                            1f,
+                            weightSaveKey = Save.H_E_WEIGHT,
+                            sortSelector = { it.series.episodesSize }
+                        ) { _, seriesData ->
+                            Text(
+                                text = seriesData.series.episodesSize.toString(),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                fontSize = MaterialTheme.typography.bodySmall.fontSize,
+                                textAlign = TextAlign.Center
+                            )
                         },
-                        HeaderItem(
+                        ColumnItem(
                             "Image",
-                            IMAGE_WEIGHT
-                        )
+                            1.9f,
+                            weightSaveKey = Save.H_I_WEIGHT
+                        ) { _, seriesData ->
+                            DefaultImage(
+                                seriesData.series.imagePath,
+                                seriesData.series.imageLink,
+                                fastScrolling = fastScrolling,
+                                contentScale = ContentScale.FillBounds,
+                                modifier = Modifier.fillMaxSize()
+                            )
+                        }
                     ),
                     seriesDatas,
                     lazyListState = lazyListState,
                     key = { it.series.slug + it.series.id },
                     modifier = Modifier.padding(
                         bottom = padding.calculateBottomPadding()
-                    ).fillMaxSize()
-                ) { _, item ->
-                    SeriesDataRow(
-                        item,
-                        windowScope,
-                        fastScrolling.value
+                    ).fillMaxSize(),
+                    rowHeight = 120.dp,
+                    sortSaveKey = Save.H_SORT,
+                ) { _, seriesData ->
+
+                    val favorited = BoxHelper.isSeriesFavorited(seriesData.series)
+
+                    listOf(
+                        DropdownOption(
+                            "Series Details",
+                            EvaIcons.Fill.Info
+                        ) {
+                            Core.openSeriesDetails(
+                                seriesData.series.slug,
+                                windowScope
+                            )
+                        },
+                        DropdownOption(
+                            "Check For New Episodes",
+                            EvaIcons.Fill.Search
+                        ) {
+                            if (!Core.child.canSoftStart()) {
+                                windowScope.showToast(
+                                    "Failed to check for new episodes. Check the console."
+                                )
+                                return@DropdownOption
+                            }
+                            val window = EpisodeUpdaterWindow(
+                                seriesData.series,
+                                "History: ${seriesData.series.name}"
+                            )
+                            window.open()
+                        },
+                        DropdownOption(
+                            if (favorited)
+                                "Remove From Favorite" else "Add To Favorite",
+                            if (favorited)
+                                EvaIcons.Fill.Star else EvaIcons.Outline.Star,
+                            contentColor = if (favorited)
+                                Color.Yellow else LocalContentColor.current
+                        ) {
+                            if (favorited) {
+                                BoxHelper.removeSeriesFavorite(seriesData.series.slug)
+                            } else {
+                                BoxMaker.makeFavorite(seriesData.series.slug)
+                            }
+                            forceUpdateName++
+                        },
+                        DropdownOption(
+                            "Remove From History",
+                            EvaIcons.Fill.Trash
+                        ) {
+                            BoxHelper.shared.historyBox.remove(seriesData.history)
+                            seriesDatas.remove(seriesData)
+                        }
                     )
                 }
             }
@@ -192,193 +289,5 @@ class HistoryView : ViewPage {
             loadHistoryData()
             loading = false
         }
-    }
-
-    @OptIn(ExperimentalFoundationApi::class)
-    @Composable
-    private fun SeriesDataRow(
-        seriesData: SeriesData,
-        windowScope: AppWindowScope,
-        fastScrolling: Boolean
-    ) {
-        var showFileMenu by remember {
-            mutableStateOf(false)
-        }
-
-        val closeMenu = { showFileMenu = false }
-        CursorDropdownMenu(
-            expanded = showFileMenu,
-            onDismissRequest = { closeMenu() },
-            modifier = Modifier.background(
-                MaterialTheme.colorScheme.background
-            ).border(
-                1.dp,
-                MaterialTheme.colorScheme.primary
-            )
-        ) {
-            DefaultDropdownItem(
-                "Series Details",
-                EvaIcons.Fill.Info
-            ) {
-                closeMenu()
-                Core.openSeriesDetails(
-                    seriesData.series.slug,
-                    windowScope
-                )
-            }
-
-            HorizontalDivider(
-                color = MaterialTheme.colorScheme.primary
-            )
-
-            DefaultDropdownItem(
-                "Check For New Episodes",
-                EvaIcons.Fill.Search
-            ) {
-                closeMenu()
-                if (!Core.child.canSoftStart()) {
-                    windowScope.showToast("Failed to check for new episodes. Check the console.")
-                    return@DefaultDropdownItem
-                }
-                val window = EpisodeUpdaterWindow(
-                    seriesData.series,
-                    "History: ${seriesData.series.name}"
-                )
-                window.open()
-            }
-
-            HorizontalDivider(
-                color = MaterialTheme.colorScheme.primary
-            )
-
-            val favorited by remember {
-                mutableStateOf(BoxHelper.isSeriesFavorited(seriesData.series))
-            }
-
-            DefaultDropdownItem(
-                if (favorited)
-                    "Remove From Favorite" else "Add To Favorite",
-                if (favorited)
-                    EvaIcons.Fill.Star else EvaIcons.Outline.Star,
-                contentColor = if (favorited)
-                    Color.Yellow else LocalContentColor.current
-            ) {
-                closeMenu()
-                if (favorited) {
-                    BoxHelper.removeSeriesFavorite(seriesData.series.slug)
-                } else {
-                    BoxMaker.makeFavorite(seriesData.series.slug)
-                }
-            }
-
-            HorizontalDivider(
-                color = MaterialTheme.colorScheme.primary
-            )
-
-            DefaultDropdownItem(
-                "Remove From History",
-                EvaIcons.Fill.Trash
-            ) {
-                closeMenu()
-                BoxHelper.shared.historyBox.remove(seriesData.history)
-                this@HistoryView.seriesDatas.remove(seriesData)
-            }
-        }
-        Row(
-            modifier = Modifier
-                .multiClickable(
-                    indication = ripple(
-                        color = MaterialTheme.colorScheme
-                            .secondaryContainer.hover()
-                    ),
-                    onSecondaryClick = {
-                        showFileMenu = showFileMenu.not()
-                    }
-                ) {
-                    showFileMenu = showFileMenu.not()
-                }
-                .background(
-                    color = MaterialTheme.colorScheme.secondaryContainer,
-                    shape = RoundedCornerShape(5.dp)
-                ).height(rowHeight).fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(4.dp)
-        ) {
-            Box(
-                modifier = Modifier.fillMaxSize()
-                    .weight(NAME_WEIGHT)
-            ) {
-                val favorited = BoxHelper.isSeriesFavorited(seriesData.series)
-                if (favorited) {
-                    DefaultIcon(
-                        EvaIcons.Fill.Star,
-                        iconColor = Color.Yellow,
-                        modifier = Modifier
-                            .padding(start = 4.dp, top = 8.dp)
-                            .align(Alignment.TopStart)
-                    )
-                }
-                Text(
-                    text = seriesData.series.name,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    fontSize = MaterialTheme.typography.headlineSmall.fontSize,
-                    modifier = Modifier
-                        .padding(4.dp)
-                        .align(Alignment.CenterStart)
-                )
-            }
-            Divider()
-            Text(
-                text = Tools.dateAndTimeFormatted(seriesData.history.dateAdded),
-                modifier = Modifier
-                    .padding(4.dp)
-                    .align(Alignment.CenterVertically)
-                    .weight(DATE_WEIGHT),
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                fontSize = MaterialTheme.typography.bodySmall.fontSize,
-                textAlign = TextAlign.Center
-            )
-            Divider()
-            Text(
-                text = seriesData.series.episodesSize.toString(),
-                modifier = Modifier
-                    .padding(4.dp)
-                    .align(Alignment.CenterVertically)
-                    .weight(EPISODES_WEIGHT),
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                fontSize = MaterialTheme.typography.bodySmall.fontSize,
-                textAlign = TextAlign.Center
-            )
-            Divider()
-            DefaultImage(
-                seriesData.series.imagePath,
-                seriesData.series.imageLink,
-                fastScrolling = fastScrolling,
-                contentScale = ContentScale.FillBounds,
-                modifier = Modifier.fillMaxSize()
-                    .padding(10.dp)
-                    .align(Alignment.CenterVertically)
-                    .weight(IMAGE_WEIGHT)
-            )
-        }
-    }
-
-    @Composable
-    private fun Divider() {
-        VerticalDivider(
-            modifier = Modifier.fillMaxHeight()
-                .width(1.dp)
-                .background(
-                    MaterialTheme.colorScheme.onSurfaceVariant
-                ),
-            color = Color.Transparent
-        )
-    }
-
-    companion object {
-        private val rowHeight = 130.dp
-        private const val NAME_WEIGHT = 5f
-        private const val EPISODES_WEIGHT = 1f
-        private const val DATE_WEIGHT = 1.1f
-        private const val IMAGE_WEIGHT = 1.9f
     }
 }

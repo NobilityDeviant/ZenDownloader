@@ -1,11 +1,8 @@
 package nobility.downloader.core.settings
 
-import nobility.downloader.core.BoxHelper.Companion.boolean
-import nobility.downloader.core.BoxHelper.Companion.float
-import nobility.downloader.core.BoxHelper.Companion.int
-import nobility.downloader.core.BoxHelper.Companion.long
+import com.materialkolor.PaletteStyle
 import nobility.downloader.core.BoxHelper.Companion.string
-import nobility.downloader.ui.windows.database.DatabaseSort
+import nobility.downloader.ui.theme.seedColor
 import nobility.downloader.ui.windows.database.DatabaseType
 import nobility.downloader.utils.Constants
 import nobility.downloader.utils.fileExists
@@ -468,7 +465,6 @@ enum class Defaults(
     WCO_RECENT_LAST_UPDATED("wco_recent_last_updated", 0L),
     DB_LAST_SCROLL_POS("db_last_scroll_pos", 0),
     DB_LAST_TYPE_USED("db_last_type", DatabaseType.ALL.id),
-    DB_LAST_SORT_USED("db_last_sort", DatabaseSort.NAME.id),
     DB_SEARCH_GENRE("db_search_genre", true),
     DB_SEARCH_DESC("db_search_desc", true),
     EPISODE_UPDATER_THREADS("ep_updater_threads", 3),
@@ -481,39 +477,15 @@ enum class Defaults(
     ENABLE_PROXY("enable_proxy", false),
     FIRST_LAUNCH("1st-launch", false),
     DARK_MODE("dark_mode", true),
+    MAIN_COLOR("main_color", seedColor.value),
+    MAIN_PALETTE_STYLE(
+        "main_palette_style",
+        PaletteStyle.TonalSpot.name
+    ),
     ELSE("else", false),
     ;
 
     companion object {
-
-        @Suppress("UNUSED")
-        fun Defaults.savedValue(): Any {
-            return when (value) {
-                is String -> {
-                    string()
-                }
-
-                is Boolean -> {
-                    boolean()
-                }
-
-                is Int -> {
-                    int()
-                }
-
-                is Long -> {
-                    long()
-                }
-
-                is Float -> {
-                    float()
-                }
-
-                else -> {
-                    value
-                }
-            }
-        }
 
         /**
          * Since there are a lot of Defaults, everything that will be used

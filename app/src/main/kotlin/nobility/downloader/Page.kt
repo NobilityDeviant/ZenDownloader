@@ -1,5 +1,8 @@
 package nobility.downloader
 
+import nobility.downloader.core.Core
+import nobility.downloader.ui.views.ViewPage
+
 enum class Page(val title: String) {
     DOWNLOADER("Downloader"),
     DOWNLOADS("Downloads"),
@@ -33,6 +36,18 @@ enum class Page(val title: String) {
                 }
             }
             return -1
+        }
+
+        fun Page.viewPage(): ViewPage {
+            // might check Core::view.isInitialized
+            return when (this) {
+                DOWNLOADS -> Core.downloadsView
+                DOWNLOADER -> Core.downloaderView
+                HISTORY -> Core.historyView
+                RECENT -> Core.recentView
+                SETTINGS -> Core.settingsView
+                ERROR_CONSOLE -> Core.errorConsoleView
+            }
         }
     }
 }

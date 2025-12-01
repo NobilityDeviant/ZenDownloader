@@ -1,5 +1,6 @@
 package nobility.downloader.utils
 
+import AppInfo
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.painter.BitmapPainter
 import androidx.compose.ui.graphics.painter.Painter
@@ -13,7 +14,7 @@ import javax.imageio.ImageIO
 object ImageUtils {
 
     //it's way faster to preload it and re-use it everywhere.
-    val noImage = loadImageBitmap(AppInfo.NO_IMAGE_PATH)
+    val noImage = loadImageBitmapFromResource(AppInfo.NO_IMAGE_PATH)
 
     suspend fun downloadSeriesImage(series: Series) {
         if (series.imageLink.isEmpty() || series.imageLink == "N/A") {
@@ -41,7 +42,19 @@ object ImageUtils {
         }
     }
 
-    fun loadImageBitmap(resourcePath: String): ImageBitmap {
+    fun loadImageBitmapFromFile(
+        filePath: String
+    ): ImageBitmap {
+        val file = File(filePath)
+        if (!file.exists()) {
+            return noImage
+        }
+        return ImageIO.read(
+            file
+        ).toComposeImageBitmap()
+    }
+
+    fun loadImageBitmapFromResource(resourcePath: String): ImageBitmap {
         val inputStream = checkNotNull(ClassLoader.getSystemResourceAsStream(resourcePath)) {
             "Resource not found: $resourcePath"
         }

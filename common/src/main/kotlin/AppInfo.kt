@@ -6,7 +6,7 @@ object AppInfo {
     const val USE_CUSTOM_ERROR_PS = true
     const val UPDATE_ASSETS_ON_LAUNCH = true
     private const val NAME = "ZenDownloader"
-    const val VERSION = "1.2.9" //version can only have 3 numbers split by decimals
+    const val VERSION = "1.3.0" //version can only have 3 numbers split by decimals
     const val TITLE = "$NAME v$VERSION"
     const val RELEASES_LINK = "https://github.com/NobilityDeviant/ZenDownloader/releases"
     const val GITHUB_LATEST = "https://api.github.com/repos/NobilityDeviant/ZenDownloader/releases/latest"
@@ -23,5 +23,8 @@ object AppInfo {
     private const val IMAGE_PATH = "images/"
     const val APP_ICON_PATH = IMAGE_PATH + "icon.png"
     const val NO_IMAGE_PATH = IMAGE_PATH + "no_image.png"
+    const val COLOR_WHEEL_PATH = IMAGE_PATH + "color_wheel.png"
+    const val CURSOR_PATH = IMAGE_PATH + "cursor.png"
+    const val CURSOR2_PATH = IMAGE_PATH + "cursor-2.png"
     const val UPDATE_CODE = 108
 }

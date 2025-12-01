@@ -1,10 +1,8 @@
 package nobility.downloader.ui.components
 
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.*
-import androidx.compose.foundation.gestures.Orientation
-import androidx.compose.foundation.gestures.draggable
-import androidx.compose.foundation.gestures.rememberDraggableState
-import androidx.compose.foundation.gestures.scrollBy
+import androidx.compose.foundation.gestures.*
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsHoveredAsState
 import androidx.compose.foundation.layout.*
@@ -19,17 +17,16 @@ import androidx.compose.material.DropdownMenuItem
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.input.pointer.PointerIcon
-import androidx.compose.ui.input.pointer.pointerHoverIcon
+import androidx.compose.ui.input.pointer.*
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -44,13 +41,15 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import compose.icons.EvaIcons
 import compose.icons.evaicons.Fill
-import compose.icons.evaicons.fill.ArrowDown
-import compose.icons.evaicons.fill.ArrowIosDownward
-import compose.icons.evaicons.fill.ArrowIosUpward
+import compose.icons.evaicons.fill.*
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import nobility.downloader.Page
+import nobility.downloader.core.BoxHelper.Companion.float
+import nobility.downloader.core.BoxHelper.Companion.string
+import nobility.downloader.core.BoxHelper.Companion.update
 import nobility.downloader.core.Core
+import nobility.downloader.core.settings.Save
 import nobility.downloader.utils.Constants
 import nobility.downloader.utils.hover
 import nobility.downloader.utils.toColorOnThis
@@ -60,21 +59,22 @@ data class DropdownOption(
     val title: String,
     val modifier: Modifier = Modifier,
     val startIcon: ImageVector? = null,
-    val endIcon: ImageVector? = null,
     val visible: Boolean = true,
+    val contentColor: Color? = null,
     val onClick: () -> Unit
 ) {
     constructor(
         title: String,
         startIcon: ImageVector? = null,
         visible: Boolean = true,
+        contentColor: Color? = null,
         onClick: () -> Unit
     ) : this(
         title,
         modifier = Modifier,
         startIcon = startIcon,
-        endIcon = null,
         visible = visible,
+        contentColor = contentColor,
         onClick = onClick
     )
 }
@@ -164,7 +164,6 @@ fun DefaultCursorDropdownMenu(
                 DefaultDropdownItem(
                     option.title,
                     option.startIcon,
-                    option.endIcon,
                     modifier = option.modifier,
                     contentColor = dropdownColor.toColorOnThis(),
                     primaryColor = primaryColor
@@ -200,7 +199,7 @@ fun DefaultDropdownItem(
         enabled = enabled,
         modifier = modifier.then(
             Modifier.background(
-                if (hovered) MaterialTheme.colorScheme.surface.tone(35.0)
+                if (hovered) MaterialTheme.colorScheme.surface.hover()
                 else MaterialTheme.colorScheme.surface
             )
         ),
@@ -401,12 +400,13 @@ fun DefaultButton(
 
 @Composable
 fun PageButton(
-    page: Page,
-    modifier: Modifier = Modifier
+    page: Page
 ) {
-    defaultButton(
+
+    DefaultButton(
         page.title + if (page == Page.DOWNLOADS) " (${Core.child.downloadThread.downloadsInProgress.value})" else "",
-        modifier = modifier,
+        Modifier.size(120.dp, 40.dp)
+            .pointerHoverIcon(PointerIcon.Hand),
         colors = ButtonDefaults.buttonColors(
             containerColor = if (Core.currentPage == page)
                 MaterialTheme.colorScheme.surface
@@ -417,13 +417,11 @@ fun PageButton(
             topStart = 7.dp,
             topEnd = 7.dp
         ),
-        height = 35.dp,
-        width = 110.dp,
-        padding = PaddingValues(0.dp),
+        contentPadding = PaddingValues(0.dp),
         fontColor = if (Core.currentPage == page)
             MaterialTheme.colorScheme.onSurface
         else
-            MaterialTheme.colorScheme.onSecondaryContainer,
+            MaterialTheme.colorScheme.onPrimaryContainer,
         fontSize = 11.sp
     ) {
         Core.changePage(page)
@@ -433,26 +431,24 @@ fun PageButton(
 @Composable
 fun TabButton(
     title: String,
-    modifier: Modifier = Modifier,
     onClick: () -> Unit
 ) {
-    defaultButton(
+    DefaultButton(
         title,
-        modifier = modifier,
+        Modifier.size(120.dp, 40.dp)
+            .pointerHoverIcon(PointerIcon.Hand),
         colors = ButtonDefaults.buttonColors(
-            containerColor = MaterialTheme.colorScheme.tertiaryContainer
+            containerColor = MaterialTheme.colorScheme.primaryContainer
         ),
         shape = RoundedCornerShape(
             topStart = 7.dp,
             topEnd = 7.dp
         ),
-        height = 35.dp,
-        width = 110.dp,
-        padding = PaddingValues(0.dp),
-        fontColor = MaterialTheme.colorScheme.onTertiaryContainer,
+        contentPadding = PaddingValues(0.dp),
+        fontColor = MaterialTheme.colorScheme.onPrimaryContainer,
         fontSize = 11.sp
     ) {
-        onClick.invoke()
+        onClick()
     }
 }
 
@@ -594,6 +590,7 @@ fun TooltipIconButton(
     }
 }
 
+@OptIn(ExperimentalComposeUiApi::class)
 @Composable
 fun TooltipIconButton(
     tooltipText: String,
@@ -601,31 +598,20 @@ fun TooltipIconButton(
     iconSize: Dp = Constants.mediumIconSize,
     iconColor: Color = MaterialTheme.colorScheme.onPrimary,
     contentDescription: String = "",
-    spacePosition: SpacePosition? = null,
-    space: Dp = 0.dp,
+    modifier: Modifier = Modifier,
     onClick: () -> Unit = {}
 ) {
-    val modifier = Modifier
-    if (spacePosition != null) {
-        if (spacePosition == SpacePosition.START) {
-            modifier.apply {
-                padding(start = space)
-            }
-        } else if (spacePosition == SpacePosition.END) {
-            modifier.apply {
-                padding(end = space)
-            }
-        }
-    }
     Tooltip(tooltipText) {
         IconButton(
-            onClick = onClick
+            onClick = onClick,
+            modifier.pointerHoverIcon(PointerIcon.Hand)
         ) {
             Icon(
                 icon,
                 contentDescription,
                 tint = iconColor,
                 modifier = Modifier.size(iconSize)
+                    .offset(y = 4.dp)
             )
         }
     }
@@ -645,14 +631,15 @@ fun FullBox(
 }
 
 @get:Composable
-val DefaultScrollbarStyle get() = ScrollbarStyle(
-    minimalHeight = 24.dp,
-    thickness = 16.dp,
-    shape = RoundedCornerShape(4.dp),
-    hoverDurationMillis = 300,
-    unhoverColor = MaterialTheme.colorScheme.primary.tone(50.0),
-    hoverColor = MaterialTheme.colorScheme.primary.tone(70.0).copy(alpha = 0.90f)
-)
+val DefaultScrollbarStyle
+    get() = ScrollbarStyle(
+        minimalHeight = 24.dp,
+        thickness = 16.dp,
+        shape = RoundedCornerShape(4.dp),
+        hoverDurationMillis = 300,
+        unhoverColor = MaterialTheme.colorScheme.primary.tone(50.0),
+        hoverColor = MaterialTheme.colorScheme.primary.tone(70.0).copy(alpha = 0.90f)
+    )
 
 @Composable
 fun BoxScope.VerticalScrollbar(
@@ -688,200 +675,276 @@ fun BoxScope.VerticalScrollbar(
     )
 }
 
-enum class SpacePosition {
-    START, END
-}
-
-data class HeaderSort(
-    val title: String,
-    var descending: MutableState<Boolean> = mutableStateOf(true)
-) {
-    override fun equals(other: Any?): Boolean {
-        if (other is HeaderSort) {
-            return title == other.title
-        }
-        return false
-    }
-
-    override fun hashCode(): Int {
-        var result = descending.hashCode()
-        result = 31 * result + title.hashCode()
-        return result
-    }
-}
-
-data class HeaderItem<T>(
-    val title: String,
-    val weight: Float = 1f,
-    val defaultSort: Boolean = false,
-    val sortSelector: ((T) -> Comparable<*>)? = null
-) {
-    val headerSort: HeaderSort? = if (sortSelector != null)
-        HeaderSort(title)
-    else null
-}
-
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
-private fun <T> CustomHeader(
-    items: List<HeaderItem<T>>,
-    currentSort: MutableState<HeaderSort?>,
-    mainColor: Color = MaterialTheme.colorScheme.inversePrimary,
-    height: Dp = 40.dp,
-    padding: PaddingValues = PaddingValues(end = verticalScrollbarEndPadding)
+private fun DefaultVerticalDivider(
+    modifier: Modifier = Modifier.fillMaxHeight(),
+    thickness: Dp = 1.dp,
+    color: Color = MaterialTheme.colorScheme.onSurfaceVariant,
 ) {
-    val onMainColor = mainColor.toColorOnThis()
-    Row(
-        modifier = Modifier.background(
-            color = mainColor,
-            shape = RectangleShape
-        ).height(height)
-            .fillMaxWidth()
-            .padding(padding),
-        horizontalArrangement = Arrangement.spacedBy(4.dp)
-    ) {
-        items.forEachIndexed { index, item ->
-            if (item.headerSort != null) {
-                Row(
-                    horizontalArrangement = Arrangement.Center,
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier
-                        .fillMaxHeight()
-                        .weight(item.weight)
-                        .onClick {
-                            if (currentSort.value == item.headerSort) {
-                                if (currentSort.value?.descending?.value == true) {
-                                    currentSort.value?.descending?.value = false
-                                } else if (currentSort.value?.descending?.value == false) {
-                                    currentSort.value?.descending?.value = true
-                                    currentSort.value = null
-                                }
-                            } else {
-                                currentSort.value = item.headerSort
-                            }
-                        }
-                        .pointerHoverIcon(PointerIcon.Hand)
-                ) {
-                    Text(
-                        text = item.title,
-                        modifier = Modifier
-                            .padding(4.dp),
-                        color = onMainColor,
-                        fontSize = 14.sp,
-                        textAlign = TextAlign.Center
-                    )
-                    Icon(
-                        if (currentSort.value?.descending?.value == true)
-                            EvaIcons.Fill.ArrowIosDownward
-                        else
-                            EvaIcons.Fill.ArrowIosUpward,
-                        "",
-                        modifier = Modifier.size(16.dp)
-                            .alpha(
-                                if (currentSort.value == item.headerSort) 1f else 0f
-                            ).offset(y = 2.dp),
-                        tint = onMainColor
-                    )
-                }
-            } else {
-                Row(
-                    horizontalArrangement = Arrangement.Center,
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier
-                        .fillMaxHeight()
-                        .weight(item.weight)
-                ) {
-                    Text(
-                        text = item.title,
-                        modifier = Modifier
-                            .padding(4.dp),
-                        color = onMainColor,
-                        fontSize = 14.sp,
-                        textAlign = TextAlign.Center
-                    )
-                }
-            }
-            if (index != items.lastIndex) {
-                VerticalDivider(
-                    modifier = Modifier.fillMaxHeight()
-                        .width(1.dp)
-                        .background(
-                            onMainColor
-                        ),
-                    color = Color.Transparent
-                )
+    VerticalDivider(
+        modifier = modifier,
+        thickness = thickness,
+        color = color
+    )
+}
+
+data class ColumnItem<T>(
+    val title: String,
+    var initialWeight: Float = 1f,
+    //enabled to descending
+    val defaultSort: Pair<Boolean, Boolean> = false to false,
+    val contentAlignment: Alignment = Alignment.Center,
+    var forceUpdate: MutableState<Int> = mutableStateOf(0),
+    val weightSaveKey: Save? = null,
+    val sortSelector: ((T) -> Comparable<*>)? = null,
+    val cell: @Composable (Int, T) -> Unit
+) {
+    init {
+        if (weightSaveKey != null) {
+            try {
+                initialWeight = weightSaveKey.defaultValue as Float
+            } catch (_: Exception) {
             }
         }
     }
+
+    val savedWeight = weightSaveKey?.float() ?: initialWeight
 }
 
-/**
- * A lazy column with a custom header created to be used universally.
- * I was trying to figure this out for a while and eventually came up with this.
- * Now we don't need tons of enums and bloated sorting code.
- * All you need to do is: Pass the headerItems, sortState, items and the row.
- * key is also advised or else the LazyColumn's performance will suffer.
- * This is not the best, but you can build on it.
- * The major downside is the weights and dividers needed for the row.
- * Maybe there can be a row class? IDK ill figure it out one day.
- * It could also use some more customization parameters.
- * @author NobilityDev
- */
+@OptIn(ExperimentalFoundationApi::class, ExperimentalComposeUiApi::class)
 @Composable
-fun <T> SortedLazyColumn(
-    headerItems: List<HeaderItem<T>>,
+fun <T> LazyTable(
+    columns: List<ColumnItem<T>>,
     items: List<T>,
     headerColor: Color = MaterialTheme.colorScheme.inversePrimary,
-    modifier: Modifier = Modifier.fillMaxSize()
-        .background(MaterialTheme.colorScheme.surface),
+    headerHeight: Dp = 40.dp,
+    modifier: Modifier = Modifier.fillMaxSize(),
     endingComparator: Comparator<T>? = null,
     key: ((T) -> Any)? = null,
     lazyListState: LazyListState = rememberLazyListState(),
     scope: CoroutineScope = rememberCoroutineScope(),
     scrollToPredicate: ((T) -> Boolean)? = null,
-    lazyColumnRow: @Composable (Int, T) -> Unit
+    rowHeight: Dp = 65.dp,
+    rowModifier: ((T) -> Modifier)? = null,
+    sortSaveKey: Save? = null,
+    rightClickOptions: @Composable (Int, T) -> (List<DropdownOption>) = { i, item ->
+        listOf()
+    }
 ) {
-    val sortState: MutableState<HeaderSort?> = remember {
-        mutableStateOf(
-            headerItems.firstOrNull { it.defaultSort }?.headerSort
-        )
+
+    val onHeaderColor = headerColor.toColorOnThis()
+
+    val columnWeights = remember {
+        columns.map { mutableStateOf(it.savedWeight) }
     }
 
-    Column(
-        modifier = modifier
-    ) {
-        CustomHeader(
-            headerItems,
-            sortState,
-            mainColor = headerColor
-        )
+    val sortState = remember {
+        mutableStateOf<Pair<Int, Boolean>?>(null)
+    }
 
-        val sortedItems by remember(
-            items,
-            sortState.value,
-            endingComparator
-        ) {
-            derivedStateOf {
-                val item = headerItems.find { it.headerSort == sortState.value }
-                val selector = item?.sortSelector
+    val defaultSortApplied = remember { mutableStateOf(false) }
 
-                val sortedItems = if (selector != null) {
-                    @Suppress("UNCHECKED_CAST")
-                    val castSelector = selector as (T) -> Comparable<Any>
-                    if (sortState.value?.descending?.value == true) {
-                        items.sortedByDescending(castSelector)
-                    } else {
-                        items.sortedBy(castSelector)
+    LaunchedEffect(Unit) {
+        if (!defaultSortApplied.value) {
+            if (sortSaveKey != null) {
+                val value = sortSaveKey.string()
+                if (value.isNotEmpty()) {
+                    val split = sortSaveKey.string().split(":")
+                    val index = split[0].toIntOrNull()
+                    val desc = split[1].toBoolean()
+                    if (index != null && index <= columns.lastIndex) {
+                        sortState.value = index to desc
+                        defaultSortApplied.value = true
+                        return@LaunchedEffect
                     }
-                } else {
-                    items
+                }
+            }
+            val index = columns.indexOfFirst { it.defaultSort.first }
+            if (index >= 0 && columns[index].sortSelector != null) {
+                sortState.value = index to columns[index].defaultSort.second
+            }
+            defaultSortApplied.value = true
+        }
+    }
+
+    val sortedItems by remember(
+        items,
+        sortState.value,
+        endingComparator
+    ) {
+        derivedStateOf {
+            val (index, descending) = sortState.value ?: return@derivedStateOf items
+
+            val selector = columns[index].sortSelector
+
+            val sorted = if (selector != null) {
+                @Suppress("UNCHECKED_CAST")
+                val castSelector = selector as (T) -> Comparable<Any>
+                if (descending)
+                    items.sortedByDescending { castSelector(it) }
+                else
+                    items.sortedBy { castSelector(it) }
+            } else items
+
+            if (endingComparator != null)
+                sorted.sortedWith(endingComparator)
+            else sorted
+        }
+    }
+
+    var checkedScroll by remember { mutableStateOf(false) }
+    LaunchedEffect(sortedItems) {
+        if (!checkedScroll && scrollToPredicate != null) {
+            val index = sortedItems.indexOfFirst(scrollToPredicate)
+            if (index >= 0) {
+                lazyListState.animateScrollToItem(index)
+            }
+            checkedScroll = true
+        }
+    }
+
+    Column(modifier) {
+        var showMenu by remember {
+            mutableStateOf(false)
+        }
+        DefaultCursorDropdownMenu(
+            showMenu,
+            listOf(
+                DropdownOption(
+                    "Reset Sizes",
+                    EvaIcons.Fill.Refresh
+                ) {
+                    columns.forEachIndexed { i, col ->
+                        columnWeights[i].value = col.initialWeight
+                        col.weightSaveKey?.update(col.initialWeight)
+                    }
+                },
+                DropdownOption(
+                    "Scroll To Top",
+                    EvaIcons.Fill.ArrowUpward
+                ) {
+                    scope.launch {
+                        lazyListState.scrollToItem(0)
+                    }
+                },
+                DropdownOption(
+                    "Scroll To Bottom",
+                    EvaIcons.Fill.ArrowDownward
+                ) {
+                    scope.launch {
+                        lazyListState.scrollToItem(items.size)
+                    }
+                }
+            )
+        ) { showMenu = false }
+        Row(
+            modifier = Modifier
+                .background(headerColor)
+                .fillMaxWidth()
+                .height(headerHeight)
+                .padding(end = verticalScrollbarEndPadding)
+                .multiClickable(
+                    onSecondaryClick = {
+                        showMenu = true
+                    }
+                ),
+            horizontalArrangement = Arrangement.Start
+        ) {
+            for ((i, col) in columns.withIndex()) {
+                if (col.title.isEmpty()) {
+                    continue
+                }
+                Row(
+                    modifier = Modifier
+                        .weight(columnWeights[i].value)
+                        .fillMaxHeight()
+                        .pointerHoverIcon(
+                            if (col.sortSelector != null)
+                                PointerIcon.Hand else PointerIcon.Default
+                        )
+                        .onClick(true) {
+                            if (col.sortSelector == null) {
+                                return@onClick
+                            }
+                            val current = sortState.value
+                            sortState.value = if (current?.first == i)
+                                if (!current.second) i to true
+                                else null
+                            else
+                                i to false
+                            val sortValue = sortState.value
+                            if (sortValue != null) {
+                                sortSaveKey?.update(
+                                    "${sortValue.first}:${sortValue.second}"
+                                )
+                            } else {
+                                sortSaveKey?.update("")
+                            }
+                            scope.launch {
+                                lazyListState.scrollToItem(0)
+                            }
+                        },
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center
+                ) {
+                    Spacer(Modifier.width(12.dp))
+                    Text(
+                        col.title,
+                        color = onHeaderColor,
+                        textAlign = TextAlign.Center,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                    val isSorted = sortState.value?.first == i
+                    val isDescending = sortState.value?.second == true
+
+                    if (col.sortSelector != null) {
+                        Icon(
+                            imageVector =
+                                if (isDescending)
+                                    EvaIcons.Fill.ArrowIosDownward
+                                else
+                                    EvaIcons.Fill.ArrowIosUpward,
+                            contentDescription = "",
+                            modifier = Modifier
+                                .size(14.dp)
+                                .offset(y = 2.dp)
+                                .alpha(if (isSorted) 1f else 0f),
+                            tint = onHeaderColor
+                        )
+                    }
                 }
 
-                if (endingComparator != null) {
-                    sortedItems.sortedWith(endingComparator)
-                } else sortedItems
+                Box(
+                    Modifier
+                        .width(10.dp)
+                        .fillMaxHeight()
+                        .pointerHoverIcon(PointerIcon.Crosshair)
+                        .pointerInput(Unit) {
+                            detectDragGestures { change, dragAmount ->
+
+                                val (dx, dy) = dragAmount
+
+                                if (dx != 0f || dy != 0f) {
+                                    val newWeight = (columnWeights[i].value + dx / 400f + dy / 400f)
+                                        .coerceIn(0.5f, 5f)
+                                    columnWeights[i].value = newWeight
+                                    col.weightSaveKey?.update(newWeight)
+                                }
+                            }
+                        }
+                ) {
+                    DefaultVerticalDivider(
+                        Modifier.padding(top = 2.dp),
+                        color = onHeaderColor
+                    )
+                }
             }
         }
+
+        HorizontalDivider(
+            color = onHeaderColor
+        )
 
         FullBox {
             LazyColumn(
@@ -906,27 +969,96 @@ fun <T> SortedLazyColumn(
                 itemsIndexed(
                     sortedItems,
                     key = { index, item ->
-                        key?.invoke(item) ?: index
+                        key?.invoke(item) ?: item.hashCode()
                     }
                 ) { index, item ->
-                    lazyColumnRow(index, item)
+                    var isHovered by remember { mutableStateOf(false) }
+                    val rowBackgroundColor by animateColorAsState(
+                        if (isHovered) MaterialTheme.colorScheme.secondaryContainer.hover()
+                        else MaterialTheme.colorScheme.secondaryContainer,
+                        label = "rowHover"
+                    )
+                    var showMenu by remember {
+                        mutableStateOf(false)
+                    }
+                    DefaultCursorDropdownMenu(
+                        showMenu,
+                        rightClickOptions(
+                            index,
+                            item
+                        ),
+                        onDismissRequest = { showMenu = false }
+                    )
+                    Row(
+                        modifier = Modifier
+                            .height(rowHeight)
+                            .fillMaxWidth()
+                            .onPointerEvent(PointerEventType.Move) {
+                            }
+                            .onPointerEvent(PointerEventType.Enter) {
+                                isHovered = true
+                            }
+                            .onPointerEvent(PointerEventType.Exit) {
+                                isHovered = false
+                            }
+                            .multiClickable(
+                                indication = ripple(
+                                    color = MaterialTheme.colorScheme.secondaryContainer.hover()
+                                ),
+                                onSecondaryClick = {
+                                    showMenu = showMenu.not()
+                                }
+                            ) {
+                                showMenu = showMenu.not()
+                            }
+                            .background(
+                                color = rowBackgroundColor,
+                                shape = RoundedCornerShape(5.dp)
+                            ).then(rowModifier?.invoke(item) ?: Modifier),
+                        horizontalArrangement = Arrangement.Start
+                    ) {
+                        for ((i, col) in columns.withIndex()) {
+                            if (col.title.isEmpty()) {
+                                continue
+                            }
+                            Box(
+                                modifier = Modifier
+                                    .weight(columnWeights[i].value)
+                                    .fillMaxHeight()
+                                    .padding(6.dp),
+                                contentAlignment = col.contentAlignment
+                            ) {
+                                col.cell(i, item)
+                            }
+                            Box(
+                                Modifier
+                                    .width(10.dp)
+                                    .fillMaxHeight()
+                                    .pointerHoverIcon(PointerIcon.Crosshair)
+                                    .pointerInput(Unit) {
+                                        detectDragGestures { change, dragAmount ->
+
+                                            val (dx, dy) = dragAmount
+
+                                            if (dx != 0f || dy != 0f) {
+                                                val newWeight = (columnWeights[i].value + dx / 400f + dy / 400f)
+                                                    .coerceIn(0.5f, 5f)
+                                                columnWeights[i].value = newWeight
+                                                col.weightSaveKey?.update(newWeight)
+                                            }
+                                        }
+                                    }
+                            ) {
+                                DefaultVerticalDivider(
+                                    color = onHeaderColor
+                                )
+                            }
+                        }
+                    }
                 }
             }
             VerticalScrollbar(lazyListState)
         }
-
-        var checkedScroll by remember {
-            mutableStateOf(false)
-        }
-
-        LaunchedEffect(sortedItems) {
-            if (!checkedScroll && sortedItems.isNotEmpty() && scrollToPredicate != null) {
-                val index = sortedItems.indexOfFirst(scrollToPredicate)
-                if (index >= 0) {
-                    lazyListState.animateScrollToItem(index)
-                }
-                checkedScroll = true
-            }
-        }
     }
 }
+

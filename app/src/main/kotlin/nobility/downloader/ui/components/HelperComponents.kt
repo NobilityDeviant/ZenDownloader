@@ -4,9 +4,12 @@ package nobility.downloader.ui.components
 
 import androidx.compose.foundation.*
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -14,23 +17,26 @@ import androidx.compose.foundation.text.selection.LocalTextSelectionColors
 import androidx.compose.foundation.text.selection.TextSelectionColors
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
 import androidx.compose.ui.graphics.*
-import androidx.compose.ui.input.pointer.PointerButton
-import androidx.compose.ui.input.pointer.PointerEventPass
-import androidx.compose.ui.input.pointer.PointerType
-import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.input.pointer.*
+import androidx.compose.ui.layout.SubcomposeLayout
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.input.VisualTransformation
-import androidx.compose.ui.unit.DpOffset
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import androidx.compose.ui.unit.*
+import androidx.compose.ui.window.Popup
+import androidx.compose.ui.window.PopupProperties
+import kotlinx.coroutines.delay
 import nobility.downloader.core.BoxHelper.Companion.boolean
 import nobility.downloader.core.settings.Defaults
+import nobility.downloader.utils.tone
 import kotlin.math.abs
 
 @Composable
@@ -182,38 +188,72 @@ fun FixedTextField(
     }
 }
 
-@OptIn(ExperimentalFoundationApi::class)
+@OptIn(ExperimentalComposeUiApi::class)
 @Composable
 fun Tooltip(
     tooltipText: String,
     modifier: Modifier = Modifier,
     content: @Composable () -> Unit
 ) {
-    if (tooltipText.isNotEmpty()) {
-        TooltipArea(
-            tooltip = {
-                if (Defaults.SHOW_TOOLTIPS.boolean()) {
-                    Surface(
-                        shadowElevation = 2.dp,
-                        color = MaterialTheme.colorScheme.primaryContainer.copy(0.90f)
-                    ) {
-                        Text(
-                            text = tooltipText,
-                            modifier = Modifier.padding(4.dp),
-                            color = MaterialTheme.colorScheme.onPrimaryContainer,
-                            fontSize = 13.sp
-                        )
-                    }
-                }
-            },
-            modifier = modifier,
-            content = content,
-            tooltipPlacement = TooltipPlacement.CursorPoint(
-                offset = DpOffset(16.dp, 16.dp)
-            )
-        )
-    } else {
+
+    var anchorHovered by remember { mutableStateOf(false) }
+    var popupHovered by remember { mutableStateOf(false) }
+
+    val pointerOver = anchorHovered || popupHovered
+
+    var showTooltip by remember { mutableStateOf(false) }
+
+    LaunchedEffect(pointerOver) {
+        if (pointerOver) {
+            if (!showTooltip) {
+                delay(350)
+                showTooltip = true
+            }
+        } else {
+            showTooltip = false
+        }
+    }
+
+    Box(
+        modifier = modifier
+            .onPointerEvent(PointerEventType.Enter) { anchorHovered = true }
+            .onPointerEvent(PointerEventType.Exit) { anchorHovered = false }
+    ) {
+
         content()
+
+        if (Defaults.SHOW_TOOLTIPS.boolean() && tooltipText.isNotEmpty() && showTooltip) {
+            Popup(
+                offset = IntOffset(64, 84),
+                properties = PopupProperties(focusable = false),
+                onDismissRequest = { showTooltip = false }
+            ) {
+                Box(
+                    modifier = Modifier
+                        .onPointerEvent(PointerEventType.Enter) { popupHovered = true }
+                        .onPointerEvent(PointerEventType.Exit) { popupHovered = false }
+                        .background(
+                            MaterialTheme.colorScheme.primaryContainer
+                                .copy(alpha = 0.95f),
+                            RoundedCornerShape(6.dp)
+                        )
+                        .border(
+                            1.dp,
+                            MaterialTheme.colorScheme.primaryContainer
+                                .tone(40.0)
+                                .copy(alpha = 0.95f),
+                            RoundedCornerShape(6.dp)
+                        )
+                        .padding(horizontal = 8.dp, vertical = 6.dp)
+                ) {
+                    Text(
+                        tooltipText,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer,
+                        fontSize = 13.sp
+                    )
+                }
+            }
+        }
     }
 }
 
@@ -287,4 +327,122 @@ fun Modifier.multiClickable(
         ) {
             onSecondaryClick()
         }
+}
+
+data class OverflowOption(
+    val icon: ImageVector,
+    val tooltip: String = "",
+    val visible: Boolean = true,
+    val modifier: Modifier = Modifier,
+    val contentColor: Color? = null,
+    val badge: (@Composable BoxScope.() -> Unit)? = null,
+    val onClick: () -> Unit
+)
+
+@Composable
+fun <T> OverflowRow(
+    items: List<T>,
+    modifier: Modifier = Modifier,
+    horizontalSpacing: Dp = 4.dp,
+    contentAlignment: Alignment.Horizontal = Alignment.End,
+    itemContent: @Composable (T) -> Unit,
+    overflowContent: @Composable (List<T>) -> Unit
+) {
+    SubcomposeLayout(modifier) { constraints ->
+
+        val spacingPx = horizontalSpacing.roundToPx()
+
+        val loose = Constraints(
+            minWidth = 0,
+            maxWidth = Int.MAX_VALUE,
+            minHeight = 0,
+            maxHeight = constraints.maxHeight
+        )
+
+        val itemPlaceables = items.mapIndexed { index, item ->
+            subcompose(item.hashCode()) {
+                itemContent(item)
+            }.first().measure(loose)
+        }
+
+        val overflowProbe = subcompose("overflow-probe") {
+            key("probe") { overflowContent(emptyList()) }
+        }.first().measure(loose)
+
+
+        val maxWidth = constraints.maxWidth
+
+        var fitCount = items.size
+        while (fitCount >= 0) {
+
+            val visibleWidth = itemPlaceables
+                .take(fitCount)
+                .foldIndexed(0) { i, acc, p ->
+                acc + p.width + if (i > 0) spacingPx else 0
+            }
+
+            val needsOverflow = fitCount < items.size
+
+            val spacingBeforeOverflow = if (needsOverflow && fitCount > 0) spacingPx else 0
+
+            val totalWidth = visibleWidth + (
+                    if (needsOverflow)
+                        spacingBeforeOverflow + overflowProbe.width else 0
+                    )
+
+            if (totalWidth <= maxWidth) {
+                break
+            }
+            fitCount--
+        }
+
+        val visiblePlaceables = itemPlaceables.take(fitCount)
+        val hiddenItems = items.drop(fitCount)
+
+        val finalOverflowPlaceable = if (hiddenItems.isNotEmpty()) {
+            subcompose("overflow-final-${hiddenItems.hashCode()}") {
+                key(hiddenItems) { overflowContent(hiddenItems) }
+            }.first().measure(loose)
+        } else null
+
+        val layoutHeight = listOfNotNull(
+            visiblePlaceables.maxOfOrNull { it.height },
+            finalOverflowPlaceable?.height
+        ).maxOrNull() ?: 0
+
+        layout(maxWidth, layoutHeight) {
+
+            val visibleWidth = visiblePlaceables.foldIndexed(0) { i, acc, p ->
+                acc + p.width + if (i > 0) spacingPx else 0
+            }
+
+            val overflowWidth = finalOverflowPlaceable?.let { ow ->
+                    if (fitCount > 0) spacingPx + ow.width else ow.width
+                } ?: 0
+
+            val totalContentWidth = visibleWidth + overflowWidth
+
+            val startX = when (contentAlignment) {
+                Alignment.Start -> 0
+                Alignment.End -> maxWidth - totalContentWidth
+                Alignment.CenterHorizontally -> (maxWidth - totalContentWidth) / 2
+                else -> 0
+            }
+
+            var x = startX
+
+            visiblePlaceables.forEachIndexed { i, p ->
+                if (i > 0) x += spacingPx
+                p.placeRelative(x, 0)
+                x += p.width
+            }
+
+            finalOverflowPlaceable?.let { of ->
+                if (fitCount > 0) {
+                    x += spacingPx
+                }
+                of.placeRelative(x, 0)
+            }
+        }
+    }
 }

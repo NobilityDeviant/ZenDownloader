@@ -350,7 +350,6 @@ class DownloadConfirmWindow(
                     }
                 }
             }
-            ApplicationState.AddToastToWindow(this@newWindow)
         }
     }
 

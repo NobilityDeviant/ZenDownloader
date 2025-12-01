@@ -10,6 +10,7 @@ import nobility.downloader.core.entities.settings.SettingsMeta
 import nobility.downloader.core.entities.settings.SettingsMeta_
 import nobility.downloader.core.settings.Defaults
 import nobility.downloader.core.settings.Quality
+import nobility.downloader.core.settings.Save
 import nobility.downloader.utils.FrogLog
 import nobility.downloader.utils.findUniqueOrFirst
 import nobility.downloader.utils.findUniqueOrNull
@@ -158,6 +159,35 @@ class BoxHelper {
             return doubleSetting(this)
         }
 
+        fun Save.update(newValue: Any) {
+            setSetting(this, newValue)
+        }
+
+        fun Save.string(): String {
+            return stringSetting(this)
+        }
+
+        fun Save.boolean(): Boolean {
+            return booleanSetting(this)
+        }
+
+        fun Save.int(): Int {
+            return integerSetting(this)
+        }
+
+        fun Save.long(): Long {
+            return longSetting(this)
+        }
+
+        fun Save.float(): Float {
+            return floatSetting(this)
+        }
+
+        @Suppress("UNUSED")
+        fun Save.double(): Double {
+            return doubleSetting(this)
+        }
+
         private fun loadSettings() {
             if (shared.settingsBox.isEmpty) {
                 loadDefaultSettings()
@@ -187,6 +217,10 @@ class BoxHelper {
 
         private fun setSetting(setting: Defaults, value: Any) {
             setSetting(setting.key, value)
+        }
+
+        private fun setSetting(setting: Save, value: Any) {
+            setSetting(setting.name, value)
         }
 
         private fun metaForKey(key: String): SettingsMeta? {
@@ -237,6 +271,9 @@ class BoxHelper {
             for (setting in Defaults.entries.filter { it != filter }) {
                 setSetting(setting.key, setting.value)
             }
+            Save.entries.forEach {
+                setSetting(it.name, it.defaultValue)
+            }
         }
 
         fun resetSettings() {
@@ -250,6 +287,43 @@ class BoxHelper {
                     setSetting(it.key, it.value)
                 }
             }
+            Save.entries.forEach {
+                val meta = metaForKey(it.name)
+                if (meta == null) {
+                    setSetting(it.name, it.defaultValue)
+                }
+            }
+        }
+
+
+        private fun stringSetting(setting: Save): String {
+            val meta = metaForKey(setting.name)
+            return meta?.stringVal() ?: ""
+        }
+
+        private fun booleanSetting(setting: Save): Boolean {
+            val meta = metaForKey(setting.name)
+            return meta?.booleanVal() == true
+        }
+
+        private fun integerSetting(setting: Save): Int {
+            val meta = metaForKey(setting.name)
+            return meta?.intVal() ?: 0
+        }
+
+        private fun doubleSetting(setting: Save): Double {
+            val meta = metaForKey(setting.name)
+            return meta?.doubleVal() ?: 0.0
+        }
+
+        private fun longSetting(setting: Save): Long {
+            val meta = metaForKey(setting.name)
+            return meta?.longVal() ?: integerSetting(setting).toLong()
+        }
+
+        private fun floatSetting(setting: Save): Float {
+            val meta = metaForKey(setting.name)
+            return meta?.floatVal() ?: 0f
         }
 
         fun downloadForSlugAndQuality(slug: String, quality: Quality): Download? {
@@ -704,6 +778,7 @@ class BoxHelper {
                 }
         }
 
+        @Suppress("UNUSED")
         fun removeSeriesIgnored(slug: String) {
             shared.ignoreBox.query()
                 .equal(Ignore_.seriesSlug, slug, QueryBuilder.StringOrder.CASE_SENSITIVE)

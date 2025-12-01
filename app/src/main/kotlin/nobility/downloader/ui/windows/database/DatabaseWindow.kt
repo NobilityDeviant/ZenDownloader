@@ -8,8 +8,6 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.CursorDropdownMenu
-import androidx.compose.material.Icon
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -17,8 +15,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.RectangleShape
-import androidx.compose.ui.input.pointer.PointerButton
 import androidx.compose.ui.input.pointer.PointerIcon
 import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.input.pointer.pointerInput
@@ -49,6 +45,7 @@ import nobility.downloader.core.Core
 import nobility.downloader.core.entities.Series
 import nobility.downloader.core.entities.data.SeriesIdentity
 import nobility.downloader.core.settings.Defaults
+import nobility.downloader.core.settings.Save
 import nobility.downloader.ui.components.*
 import nobility.downloader.ui.windows.MovieEditorWindow
 import nobility.downloader.ui.windows.utils.AppWindowScope
@@ -66,6 +63,7 @@ import java.util.regex.Pattern
  */
 class DatabaseWindow {
 
+    private lateinit var windowScope: AppWindowScope
     private var loading by mutableStateOf(false)
     private var resultText by mutableStateOf("")
 
@@ -87,38 +85,31 @@ class DatabaseWindow {
     )
     private val databaseType = mDatabaseType.asStateFlow()
 
-    private val mDatabaseSort = MutableStateFlow(
-        DatabaseSort.sortForId(Defaults.DB_LAST_SORT_USED.int())
-    )
-    private val databaseSort = mDatabaseSort.asStateFlow()
-
     private val searchText = Core.databaseSearchText.asStateFlow()
 
     @Suppress("TYPE_INTERSECTION_AS_REIFIED_WARNING")
     private val series = combine(
         databaseType,
-        databaseSort,
         searchText,
         searchByGenre,
         searchByDesc,
         showFavorites
     ) { seriesData ->
         //val type = it[0] as DatabaseType
-        //val sort = it[1] as DatabaseSort
-        val search = seriesData[2] as String
-        val byGenre = seriesData[3] as Boolean
-        val byDesc = seriesData[4] as Boolean
-        val favorite = seriesData[5] as Boolean
+        val search = seriesData[1] as String
+        val byGenre = seriesData[2] as Boolean
+        val byDesc = seriesData[3] as Boolean
+        val favorite = seriesData[4] as Boolean
         if (search.isBlank()) {
             if (favorite) {
-                sortedSeries.filter {
+                databaseByType.filter {
                     BoxHelper.isSeriesFavorited(it)
                 }
             } else {
-                sortedSeries
+                databaseByType
             }
         } else {
-            sortedSeries.filter {
+            databaseByType.filter {
                 var foundGenre = false
                 if (byGenre) {
                     for (genre in it.filteredGenres) {
@@ -141,7 +132,7 @@ class DatabaseWindow {
     }.stateIn(
         Core.taskScope,
         SharingStarted.WhileSubscribed(5000),
-        sortedSeries
+        databaseByType
     )
 
     private val databaseByType: List<Series>
@@ -156,16 +147,6 @@ class DatabaseWindow {
             }
         }
 
-    private val sortedSeries: List<Series>
-        get() {
-            return when (databaseSort.value) {
-                DatabaseSort.NAME -> databaseByType.sortedBy { it.name }
-                DatabaseSort.NAME_DESC -> databaseByType.sortedByDescending { it.name }
-                DatabaseSort.EPISODES -> databaseByType.sortedBy { it.episodesSize }
-                DatabaseSort.EPISODES_DESC -> databaseByType.sortedByDescending { it.episodesSize }
-            }
-        }
-
     @OptIn(ExperimentalFoundationApi::class)
     fun open(
         initialSearch: String = ""
@@ -175,9 +156,11 @@ class DatabaseWindow {
             "Database",
             maximized = true
         ) {
-            val scope = rememberCoroutineScope()
+            windowScope = this@newWindow
             val seasonsListState = rememberLazyListState()
-            val fastScrolling = rememberScrollSpeed(seasonsListState)
+            val fastScrolling by rememberScrollSpeed(seasonsListState)
+            var forceUpdateName by mutableStateOf(0)
+
             Scaffold(
                 modifier = Modifier.fillMaxSize(50f),
                 bottomBar = {
@@ -294,10 +277,10 @@ class DatabaseWindow {
                                 DatabaseType.entries,
                                 key = { it.title }
                             ) {
-                                defaultButton(
+                                DefaultButton(
                                     it.title,
-                                    height = 35.dp,
-                                    width = 110.dp,
+                                    Modifier.size(110.dp, 35.dp)
+                                        .padding(horizontal = 2.dp),
                                     enabled = !loading,
                                     colors = ButtonDefaults.buttonColors(
                                         containerColor = if (type == it)
@@ -322,36 +305,182 @@ class DatabaseWindow {
                     ).fillMaxSize()
                 ) {
                     val series by series.collectAsState()
-                    Header()
+                    val type by databaseType.collectAsState()
+
                     FullBox {
-                        LazyColumn(
-                            verticalArrangement = Arrangement.spacedBy(1.dp),
-                            modifier = Modifier.padding(
-                                top = 5.dp,
-                                bottom = 5.dp,
-                                end = verticalScrollbarEndPadding
-                            ).fillMaxSize().draggable(
-                                state = rememberDraggableState {
-                                    scope.launch {
-                                        seasonsListState.scrollBy(-it)
+
+                        LazyTable(
+                            listOf(
+                                ColumnItem(
+                                    "Series Name",
+                                    3f,
+                                    weightSaveKey = Save.DB_N_WEIGHT,
+                                    defaultSort = true to false,
+                                    sortSelector = { it.name }
+                                ) { _, series ->
+                                    key(forceUpdateName) {
+                                        val favorited = BoxHelper.isSeriesFavorited(series)
+                                        Box(
+                                            Modifier.fillMaxSize()
+                                        ) {
+                                            if (favorited) {
+                                                DefaultIcon(
+                                                    EvaIcons.Fill.Star,
+                                                    iconColor = Color.Yellow,
+                                                    modifier = Modifier
+                                                        .padding(4.dp)
+                                                        .align(Alignment.TopStart)
+                                                )
+                                            }
+                                            Text(
+                                                text = series.name,
+                                                color = MaterialTheme.colorScheme.onSecondaryContainer,
+                                                fontSize = MaterialTheme.typography.bodyMedium.fontSize,
+                                                modifier = Modifier
+                                                    .padding(4.dp)
+                                                    .align(Alignment.CenterStart)
+                                            )
+                                        }
                                     }
                                 },
-                                orientation = Orientation.Vertical,
+                                ColumnItem(
+                                    "Description",
+                                    2.5f,
+                                    weightSaveKey = Save.DB_D_WEIGHT
+                                ) { _, series ->
+                                    Text(
+                                        text = series.description.ifEmpty { "No Description" },
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        fontSize = MaterialTheme.typography.bodyMedium.fontSize,
+                                        textAlign = TextAlign.Center,
+                                        modifier = Modifier
+                                            .fillMaxSize(0.85f)
+                                            .background(
+                                                Color.Transparent
+                                            ).border(
+                                                1.dp,
+                                                Brush.verticalGradient(
+                                                    colors = listOf(
+                                                        Color.Transparent,
+                                                        Color.Transparent,
+                                                        Color.Transparent,
+                                                        Color.Transparent,
+                                                        Color.Transparent,
+                                                        Color.Transparent,
+                                                        Color.Transparent,
+                                                        Color.Transparent,
+                                                        Color.Transparent,
+                                                        Color.Transparent,
+                                                        Color.Transparent,
+                                                        Color.Transparent,
+                                                        Color.Transparent,
+                                                        Color.Transparent,
+                                                        MaterialTheme.colorScheme.primary
+                                                    )
+                                                ),
+                                                RoundedCornerShape(2.dp)
+                                            ).verticalScroll(rememberScrollState())
+                                    )
+                                },
+                                ColumnItem(
+                                    "Genres",
+                                    2f,
+                                    weightSaveKey = Save.DB_G_WEIGHT
+                                ) { _, series ->
+                                    LinkifyGenres(
+                                        series.filteredGenres,
+                                        textColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                                        linkColor = MaterialTheme.colorScheme.primary
+                                    )
+                                },
+                                ColumnItem(
+                                    if (type != DatabaseType.MOVIE) "Episodes" else "",
+                                    1.1f,
+                                    weightSaveKey = Save.DB_E_WEIGHT,
+                                    sortSelector = { it.episodesSize }
+                                ) { _, series ->
+                                    if (type != DatabaseType.MOVIE) {
+                                        Text(
+                                            text = if (series.seriesIdentity != SeriesIdentity.MOVIE)
+                                                series.episodesSize.toString() else "Movie",
+                                            color = MaterialTheme.colorScheme.onSecondaryContainer,
+                                            fontSize = MaterialTheme.typography.bodyLarge.fontSize,
+                                            textAlign = TextAlign.Center
+                                        )
+                                    }
+                                },
+                                ColumnItem(
+                                    "Image",
+                                    2.5f,
+                                    weightSaveKey = Save.DB_I_WEIGHT
+                                ) { _, series ->
+                                    DefaultImage(
+                                        series.imagePath,
+                                        series.imageLink,
+                                        fastScrolling = fastScrolling,
+                                        contentScale = ContentScale.FillBounds,
+                                        modifier = Modifier.fillMaxSize()
+                                    )
+                                }
                             ),
-                            state = seasonsListState
-                        ) {
-                            items(
-                                series,
-                                key = { it.slug + it.id }
-                            ) {
-                                SeriesRow(
-                                    it,
-                                    fastScrolling.value,
-                                    this@newWindow
-                                )
-                            }
+                            series,
+                            lazyListState = seasonsListState,
+                            key = { it.slug + it.id },
+                            rowHeight = 150.dp,
+                            sortSaveKey = Save.DB_SORT
+                        ) { _, series ->
+
+                            val favorited = BoxHelper.isSeriesFavorited(series)
+
+                            listOf(
+                                DropdownOption(
+                                    "Series Details",
+                                    EvaIcons.Fill.Info
+                                ) {
+                                    Core.openSeriesDetails(
+                                        series.slug,
+                                        windowScope
+                                    )
+                                },
+                                DropdownOption(
+                                    if (favorited)
+                                        "Remove From Favorite" else "Add To Favorite",
+                                    if (favorited)
+                                        EvaIcons.Fill.Star else EvaIcons.Outline.Star,
+                                    contentColor = if (favorited)
+                                        Color.Yellow else LocalContentColor.current
+                                ) {
+                                    if (favorited) {
+                                        BoxHelper.removeSeriesFavorite(series.slug)
+                                    } else {
+                                        BoxMaker.makeFavorite(series.slug)
+                                    }
+                                    forceUpdateName++
+                                },
+                                DropdownOption(
+                                    "Copy Name",
+                                    EvaIcons.Fill.Copy
+                                ) {
+                                    Tools.clipboardString = series.name
+                                    windowScope.showToast("Copied Name")
+                                },
+                                DropdownOption(
+                                    "Copy Description",
+                                    EvaIcons.Fill.Copy,
+                                    visible = series.description.isNotEmpty()
+                                ) {
+                                    Tools.clipboardString = series.description
+                                    windowScope.showToast("Copied Description")
+                                },
+                                DropdownOption(
+                                    "Edit Movie",
+                                    EvaIcons.Fill.Edit,
+                                    visible = series.seriesIdentity == SeriesIdentity.MOVIE
+                                ) {
+                                    MovieEditorWindow.open(series)
+                                }
+                            )
                         }
-                        VerticalScrollbar(seasonsListState)
                         LaunchedEffect(series.size) {
                             resultText = "Showing ${series.size} series results"
                         }
@@ -369,392 +498,12 @@ class DatabaseWindow {
                         }
                     }
                 }
-                ApplicationState.AddToastToWindow(this)
             }
         }
     }
 
-    @OptIn(ExperimentalFoundationApi::class)
     @Composable
-    private fun Header() {
-        Row(
-            modifier = Modifier.background(
-                color = MaterialTheme.colorScheme.inversePrimary,
-                shape = RectangleShape
-            ).height(40.dp)
-                .fillMaxWidth()
-                .padding(end = verticalScrollbarEndPadding),
-            horizontalArrangement = Arrangement.spacedBy(4.dp)
-        ) {
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier.weight(NAME_WEIGHT)
-                    .align(Alignment.CenterVertically).onClick {
-                        mDatabaseSort.value = when (databaseSort.value) {
-                            DatabaseSort.NAME -> {
-                                DatabaseSort.NAME_DESC
-                            }
-
-                            DatabaseSort.NAME_DESC -> {
-                                DatabaseSort.NAME
-                            }
-
-                            else -> {
-                                DatabaseSort.NAME_DESC
-                            }
-                        }
-                        Defaults.DB_LAST_SORT_USED.update(databaseSort.value.id)
-                    }
-            ) {
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(spaceBetweenNameAndIcon),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Text(
-                        text = "Series Name",
-                        modifier = Modifier
-                            .padding(4.dp)
-                            .align(Alignment.CenterVertically),
-                        color = MaterialTheme.colorScheme.onPrimaryContainer,
-                        fontSize = MaterialTheme.typography.bodySmall.fontSize,
-                        textAlign = TextAlign.Center
-                    )
-                    val dbSort by databaseSort.collectAsState()
-                    if (dbSort == DatabaseSort.NAME || dbSort == DatabaseSort.NAME_DESC) {
-                        Icon(
-                            if (dbSort == DatabaseSort.NAME_DESC)
-                                EvaIcons.Fill.ArrowIosDownward
-                            else
-                                EvaIcons.Fill.ArrowIosUpward,
-                            "",
-                            modifier = Modifier.size(18.dp),
-                            tint = MaterialTheme.colorScheme.onPrimaryContainer
-                        )
-                    }
-                }
-            }
-            this@DatabaseWindow.Divider()
-            Text(
-                text = "Description",
-                modifier = Modifier
-                    .padding(4.dp)
-                    .align(Alignment.CenterVertically)
-                    .weight(DESC_WEIGHT),
-                color = MaterialTheme.colorScheme.onPrimaryContainer,
-                fontSize = MaterialTheme.typography.bodySmall.fontSize,
-                textAlign = TextAlign.Center
-            )
-            this@DatabaseWindow.Divider()
-            Text(
-                text = "Genres",
-                modifier = Modifier
-                    .padding(4.dp)
-                    .align(Alignment.CenterVertically)
-                    .weight(GENRES_WEIGHT),
-                color = MaterialTheme.colorScheme.onPrimaryContainer,
-                fontSize = MaterialTheme.typography.bodySmall.fontSize,
-                textAlign = TextAlign.Center
-            )
-            val type by databaseType.collectAsState()
-            if (type != DatabaseType.MOVIE) {
-                this@DatabaseWindow.Divider()
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    modifier = Modifier.weight(EPISODES_WEIGHT)
-                        .align(Alignment.CenterVertically).onClick {
-                            mDatabaseSort.value = when (databaseSort.value) {
-                                DatabaseSort.EPISODES -> {
-                                    DatabaseSort.EPISODES_DESC
-                                }
-
-                                DatabaseSort.EPISODES_DESC -> {
-                                    DatabaseSort.EPISODES
-                                }
-
-                                else -> {
-                                    DatabaseSort.EPISODES_DESC
-                                }
-                            }
-                            Defaults.DB_LAST_SORT_USED.update(databaseSort.value.id)
-                        }
-                ) {
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(spaceBetweenNameAndIcon),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Text(
-                            text = "Episodes",
-                            modifier = Modifier
-                                .padding(4.dp)
-                                .align(Alignment.CenterVertically),
-                            color = MaterialTheme.colorScheme.onPrimaryContainer,
-                            fontSize = MaterialTheme.typography.bodySmall.fontSize,
-                            textAlign = TextAlign.Center
-                        )
-                        val dbSort by databaseSort.collectAsState()
-                        if (dbSort == DatabaseSort.EPISODES || dbSort == DatabaseSort.EPISODES_DESC) {
-                            Icon(
-                                if (dbSort == DatabaseSort.EPISODES_DESC)
-                                    EvaIcons.Fill.ArrowIosDownward
-                                else
-                                    EvaIcons.Fill.ArrowIosUpward,
-                                "",
-                                modifier = Modifier.size(18.dp),
-                                tint = MaterialTheme.colorScheme.onPrimaryContainer
-                            )
-                        }
-                    }
-                }
-            }
-            this@DatabaseWindow.Divider()
-            Text(
-                text = "Image",
-                modifier = Modifier
-                    .padding(4.dp)
-                    .align(Alignment.CenterVertically)
-                    .weight(IMAGE_WEIGHT),
-                color = MaterialTheme.colorScheme.onPrimaryContainer,
-                fontSize = MaterialTheme.typography.bodySmall.fontSize,
-                textAlign = TextAlign.Center
-            )
-        }
-    }
-
-    @OptIn(ExperimentalFoundationApi::class)
-    @Composable
-    private fun SeriesRow(
-        series: Series,
-        fastScrolling: Boolean,
-        windowScope: AppWindowScope
-    ) {
-        var showFileMenu by remember {
-            mutableStateOf(false)
-        }
-
-        val closeMenu = {
-            showFileMenu = false
-        }
-
-        CursorDropdownMenu(
-            expanded = showFileMenu,
-            onDismissRequest = { closeMenu() },
-            modifier = Modifier.background(
-                MaterialTheme.colorScheme.background
-            ).border(
-                1.dp,
-                MaterialTheme.colorScheme.primary
-            )
-        ) {
-
-            DefaultDropdownItem(
-                "Series Details",
-                EvaIcons.Fill.Info
-            ) {
-                closeMenu()
-                Core.openSeriesDetails(
-                    series.slug,
-                    windowScope
-                )
-            }
-
-            HorizontalDivider(
-                color = MaterialTheme.colorScheme.primary
-            )
-
-            val favorited by remember {
-                mutableStateOf(BoxHelper.isSeriesFavorited(series))
-            }
-            DefaultDropdownItem(
-                if (favorited)
-                    "Remove From Favorite" else "Add To Favorite",
-                if (favorited)
-                    EvaIcons.Fill.Star else EvaIcons.Outline.Star,
-                contentColor = if (favorited)
-                    Color.Yellow else LocalContentColor.current
-            ) {
-                closeMenu()
-                if (favorited) {
-                    BoxHelper.removeSeriesFavorite(series.slug)
-                } else {
-                    BoxMaker.makeFavorite(series.slug)
-                }
-            }
-
-            HorizontalDivider(
-                color = MaterialTheme.colorScheme.primary
-            )
-
-            DefaultDropdownItem(
-                "Copy Name",
-                EvaIcons.Fill.Copy
-            ) {
-                closeMenu()
-                Tools.clipboardString = series.name
-                windowScope.showToast("Copied Name")
-            }
-
-            if (series.description.isNotEmpty()) {
-                HorizontalDivider(
-                    color = MaterialTheme.colorScheme.primary
-                )
-                DefaultDropdownItem(
-                    "Copy Description",
-                    EvaIcons.Fill.Copy
-                ) {
-                    closeMenu()
-                    Tools.clipboardString = series.description
-                    windowScope.showToast("Copied Description")
-                }
-            }
-            if (series.seriesIdentity == SeriesIdentity.MOVIE) {
-                HorizontalDivider(
-                    color = MaterialTheme.colorScheme.primary
-                )
-                DefaultDropdownItem(
-                    "Edit Movie",
-                    EvaIcons.Fill.Edit
-                ) {
-                    closeMenu()
-                    MovieEditorWindow.open(series)
-                }
-            }
-        }
-        Row(
-            modifier = Modifier
-                .multiClickable(
-                    indication = ripple(
-                        color = MaterialTheme.colorScheme
-                            .secondaryContainer.hover()
-                    ),
-                    onSecondaryClick = {
-                        showFileMenu = showFileMenu.not()
-                    }
-                ) {
-                    showFileMenu = showFileMenu.not()
-                }
-                .background(
-                    color = MaterialTheme.colorScheme.secondaryContainer,
-                    shape = RoundedCornerShape(5.dp)
-                ).height(rowHeight).fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(4.dp)
-        ) {
-            val favorited = BoxHelper.isSeriesFavorited(series)
-            Box(
-                modifier = Modifier.fillMaxSize()
-                    .weight(NAME_WEIGHT)
-            ) {
-                if (favorited) {
-                    DefaultIcon(
-                        EvaIcons.Fill.Star,
-                        iconColor = Color.Yellow,
-                        modifier = Modifier
-                            .padding(4.dp)
-                            .align(Alignment.TopStart)
-                    )
-                }
-                Text(
-                    text = series.name,
-                    color = MaterialTheme.colorScheme.onSecondaryContainer,
-                    fontSize = MaterialTheme.typography.bodyMedium.fontSize,
-                    modifier = Modifier
-                        .padding(4.dp)
-                        .align(Alignment.CenterStart)
-                )
-            }
-            this@DatabaseWindow.Divider()
-            Text(
-                text = series.description.ifEmpty { "No Description" },
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                fontSize = MaterialTheme.typography.bodyMedium.fontSize,
-                textAlign = TextAlign.Center,
-                modifier = Modifier
-                    .fillMaxSize(0.85f)
-                    .align(Alignment.CenterVertically)
-                    .weight(DESC_WEIGHT)
-                    .background(
-                        Color.Transparent
-                    ).border(
-                        1.dp,
-                        Brush.verticalGradient(
-                            colors = listOf(
-                                Color.Transparent,
-                                Color.Transparent,
-                                Color.Transparent,
-                                Color.Transparent,
-                                Color.Transparent,
-                                Color.Transparent,
-                                Color.Transparent,
-                                Color.Transparent,
-                                Color.Transparent,
-                                Color.Transparent,
-                                Color.Transparent,
-                                Color.Transparent,
-                                Color.Transparent,
-                                Color.Transparent,
-                                MaterialTheme.colorScheme.primary
-                            )
-                        ),
-                        RoundedCornerShape(2.dp)
-                    ).verticalScroll(rememberScrollState(0))
-                    .onClick(
-                        matcher = PointerMatcher.mouse(PointerButton.Secondary)
-                    ) {
-                        showFileMenu = showFileMenu.not()
-                    }
-            )
-            this@DatabaseWindow.Divider()
-            linkifyGenres(
-                series.filteredGenres,
-                textColor = MaterialTheme.colorScheme.onSecondaryContainer,
-                linkColor = MaterialTheme.colorScheme.primary,
-                modifier = Modifier
-                    .padding(4.dp)
-                    .align(Alignment.CenterVertically)
-                    .weight(GENRES_WEIGHT)
-            )
-            val type by databaseType.collectAsState()
-            if (type != DatabaseType.MOVIE) {
-                this@DatabaseWindow.Divider()
-                Text(
-                    text = if (series.seriesIdentity != SeriesIdentity.MOVIE)
-                        series.episodesSize.toString() else "Movie",
-                    modifier = Modifier
-                        .padding(4.dp)
-                        .align(Alignment.CenterVertically)
-                        .weight(EPISODES_WEIGHT),
-                    color = MaterialTheme.colorScheme.onSecondaryContainer,
-                    fontSize = MaterialTheme.typography.bodyLarge.fontSize,
-                    textAlign = TextAlign.Center
-                )
-            }
-            this@DatabaseWindow.Divider()
-            DefaultImage(
-                series.imagePath,
-                series.imageLink,
-                fastScrolling = fastScrolling,
-                contentScale = ContentScale.FillBounds,
-                modifier = Modifier.fillMaxSize()
-                    .padding(10.dp)
-                    .align(Alignment.CenterVertically)
-                    .weight(IMAGE_WEIGHT)
-            )
-        }
-    }
-
-    @Composable
-    private fun Divider() {
-        VerticalDivider(
-            modifier = Modifier.fillMaxHeight()
-                .width(1.dp)
-                .background(
-                    MaterialTheme.colorScheme.onPrimaryContainer
-                ),
-            color = Color.Transparent
-        )
-    }
-
-    @Composable
-    private fun linkifyGenres(
+    private fun LinkifyGenres(
         genreNames: List<String>,
         textColor: Color = Color.Unspecified,
         textAlign: TextAlign = TextAlign.Center,
@@ -941,13 +690,6 @@ class DatabaseWindow {
 
     companion object {
         private const val GENRE_TAG = "GEN"
-        private val spaceBetweenNameAndIcon = 1.dp
-        private val rowHeight = 150.dp
-        private const val NAME_WEIGHT = 3f
-        private const val DESC_WEIGHT = 2.5f
-        private const val EPISODES_WEIGHT = 1.1f
-        private const val GENRES_WEIGHT = 2f
-        private const val IMAGE_WEIGHT = 2.5f
     }
 
 }

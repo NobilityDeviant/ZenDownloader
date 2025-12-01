@@ -107,5 +107,4 @@ data class SettingsMeta(
     fun floatVal(): Float {
         return floatValue ?: 0.1f
     }
-
 }

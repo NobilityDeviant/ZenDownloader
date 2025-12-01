@@ -1,22 +1,23 @@
 package nobility.downloader.ui.views
 
-import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.*
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import compose.icons.EvaIcons
 import compose.icons.evaicons.Fill
 import compose.icons.evaicons.fill.Info
+import compose.icons.evaicons.fill.Trash
 import kotlinx.coroutines.launch
 import nobility.downloader.Page
 import nobility.downloader.core.BoxHelper
@@ -27,11 +28,12 @@ import nobility.downloader.core.Core
 import nobility.downloader.core.entities.RecentData
 import nobility.downloader.core.scraper.RecentScraper
 import nobility.downloader.core.settings.Defaults
+import nobility.downloader.core.settings.Save
 import nobility.downloader.ui.components.*
+import nobility.downloader.ui.components.dialog.DialogHelper
 import nobility.downloader.ui.windows.utils.AppWindowScope
 import nobility.downloader.utils.FrogLog
 import nobility.downloader.utils.Tools
-import nobility.downloader.utils.hover
 
 class RecentView: ViewPage {
 
@@ -153,23 +155,55 @@ class RecentView: ViewPage {
                     )
                 }
             } else {
-                val lazyListState = rememberLazyListState(0)
-                val fastScrolling = rememberScrollSpeed(lazyListState)
-                SortedLazyColumn<RecentData>(
+
+                val lazyListState = rememberLazyListState()
+                val fastScrolling by rememberScrollSpeed(lazyListState)
+
+                LazyTable(
                     listOf(
-                        HeaderItem(
+                        ColumnItem(
                             "Name",
-                            NAME_WEIGHT
-                        ) { it.name },
-                        HeaderItem(
+                            1f,
+                            sortSelector = { it.name },
+                            weightSaveKey = Save.R_N_WEIGHT
+                        ) { _, recentData ->
+                            Text(
+                                text = recentData.name,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                fontSize = 22.sp
+                            )
+                        },
+                        ColumnItem(
                             "Date Found",
-                            DATE_WEIGHT,
-                            true
-                        ) { it.dateFound },
-                        HeaderItem(
+                            0.2f,
+                            true to true,
+                            sortSelector = { it.dateFound },
+                            weightSaveKey = Save.R_D_WEIGHT
+                        ) { _, recentData ->
+                            Text(
+                                text = Tools.dateAndTimeFormatted(recentData.dateFound),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                fontSize = MaterialTheme.typography.bodySmall.fontSize,
+                                textAlign = TextAlign.Center
+                            )
+                        },
+                        ColumnItem(
                             "Image",
-                            IMAGE_WEIGHT
-                        )
+                            0.29f,
+                            weightSaveKey = Save.R_I_WEIGHT
+                        ) { _, recentData ->
+                            val imagePath = remember {
+                                BoxHelper.seriesImagesPath +
+                                        Tools.titleForImages(recentData.name)
+                            }
+                            DefaultImage(
+                                imagePath,
+                                recentData.imageLink,
+                                fastScrolling = fastScrolling,
+                                contentScale = ContentScale.FillBounds,
+                                modifier = Modifier.fillMaxSize()
+                            )
+                        }
                     ),
                     recentData,
                     scope = scope,
@@ -177,12 +211,20 @@ class RecentView: ViewPage {
                     key = { it.name + it.id },
                     modifier = Modifier.padding(
                         bottom = padding.calculateBottomPadding()
-                    ).fillMaxSize()
-                ) { _, item ->
-                    RecentDataRow(
-                        item,
-                        fastScrolling.value,
-                        windowScope
+                    ).fillMaxSize(),
+                    rowHeight = 120.dp,
+                    sortSaveKey = Save.R_SORT
+                ) { _, recentData ->
+                    listOf(
+                        DropdownOption(
+                            "Download ${type(recentData)}",
+                            EvaIcons.Fill.Info
+                        ) {
+                            Core.openSeriesDetails(
+                                recentData.link,
+                                windowScope
+                            )
+                        }
                     )
                 }
             }
@@ -192,99 +234,6 @@ class RecentView: ViewPage {
                 reloadRecentData()
             }
         }
-    }
-
-    @OptIn(ExperimentalFoundationApi::class)
-    @Composable
-    private fun RecentDataRow(
-        recentData: RecentData,
-        fastScrolling: Boolean,
-        windowScope: AppWindowScope
-    ) {
-        var showFileMenu by remember {
-            mutableStateOf(false)
-        }
-
-        DefaultCursorDropdownMenu(
-            showFileMenu,
-            listOf(
-                DropdownOption(
-                    "Download ${type(recentData)}",
-                    EvaIcons.Fill.Info
-                ) {
-                    Core.openSeriesDetails(
-                        recentData.link,
-                        windowScope
-                    )
-                }
-            )
-        ) { showFileMenu = false}
-        Row(
-            modifier = Modifier
-                .multiClickable(
-                    indication = ripple(
-                        color = MaterialTheme.colorScheme
-                            .secondaryContainer.hover()
-                    ),
-                    onSecondaryClick = {
-                        showFileMenu = showFileMenu.not()
-                    }
-                ) {
-                    showFileMenu = showFileMenu.not()
-                }
-                .background(
-                    color = MaterialTheme.colorScheme.secondaryContainer,
-                    shape = RoundedCornerShape(5.dp)
-                ).height(rowHeight).fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(4.dp)
-        ) {
-            Text(
-                text = recentData.name,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                fontSize = 22.sp,
-                modifier = Modifier
-                    .padding(4.dp)
-                    .align(Alignment.CenterVertically)
-                    .weight(NAME_WEIGHT)
-            )
-            Divider()
-            Text(
-                text = Tools.dateAndTimeFormatted(recentData.dateFound),
-                modifier = Modifier
-                    .padding(4.dp)
-                    .align(Alignment.CenterVertically)
-                    .weight(DATE_WEIGHT),
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                fontSize = MaterialTheme.typography.bodySmall.fontSize,
-                textAlign = TextAlign.Center
-            )
-            Divider()
-            val imagePath = remember {
-                BoxHelper.seriesImagesPath + Tools.titleForImages(recentData.name)
-            }
-            DefaultImage(
-                imagePath,
-                recentData.imageLink,
-                fastScrolling = fastScrolling,
-                contentScale = ContentScale.FillBounds,
-                modifier = Modifier.fillMaxSize()
-                    .padding(10.dp)
-                    .align(Alignment.CenterVertically)
-                    .weight(IMAGE_WEIGHT)
-            )
-        }
-    }
-
-    @Composable
-    private fun Divider() {
-        VerticalDivider(
-            modifier = Modifier.fillMaxHeight()
-                .width(1.dp)
-                .background(
-                    MaterialTheme.colorScheme.onSurfaceVariant
-                ),
-            color = Color.Transparent
-        )
     }
 
     private fun type(data: RecentData): String {
@@ -297,12 +246,21 @@ class RecentView: ViewPage {
         lastUpdated = 0
     }
 
-    override fun onClose() {}
-
-    companion object {
-        private val rowHeight = 130.dp
-        private const val NAME_WEIGHT = 1f
-        private const val IMAGE_WEIGHT = 0.29f
-        private const val DATE_WEIGHT = 0.2f
-    }
+    override val menuOptions: List<OverflowOption>
+        get() = listOf(
+            OverflowOption(
+                EvaIcons.Fill.Trash,
+                "Clear Recent Data",
+            ) {
+                DialogHelper.showConfirm(
+                    "Are you sure you want to remove all the recent data?",
+                    size = DpSize(300.dp, 200.dp),
+                ) {
+                    Core.taskScope.launch {
+                        BoxHelper.shared.wcoRecentBox.removeAll()
+                        Core.recentView.clear()
+                    }
+                }
+            }
+        )
 }

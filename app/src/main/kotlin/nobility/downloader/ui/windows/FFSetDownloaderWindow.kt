@@ -173,7 +173,6 @@ class FFSetDownloaderWindow() {
 
                     }
                 }
-                ApplicationState.AddToastToWindow(this)
             }
         }
     }

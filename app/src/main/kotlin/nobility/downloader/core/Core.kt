@@ -5,14 +5,17 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
+import com.materialkolor.PaletteStyle
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import nobility.downloader.Page
+import nobility.downloader.Page.Companion.viewPage
 import nobility.downloader.core.BoxHelper.Companion.boolean
 import nobility.downloader.core.BoxHelper.Companion.string
 import nobility.downloader.core.BoxHelper.Companion.update
@@ -24,6 +27,7 @@ import nobility.downloader.core.settings.Defaults
 import nobility.downloader.ui.components.console.Console
 import nobility.downloader.ui.components.dialog.DialogHelper
 import nobility.downloader.ui.components.dialog.DialogHelper.showError
+import nobility.downloader.ui.theme.seedColor
 import nobility.downloader.ui.views.*
 import nobility.downloader.ui.windows.*
 import nobility.downloader.ui.windows.database.DatabaseWindow
@@ -67,6 +71,8 @@ class Core private constructor() {
         var settingsFieldFocused = false
         val databaseSearchText = MutableStateFlow("")
         var darkMode = mutableStateOf(false)
+        var mainColor by mutableStateOf(seedColor)
+        var mainPaletteStyle by mutableStateOf(PaletteStyle.TonalSpot)
         val randomSeries = mutableStateListOf<Series>()
         val randomSeries2 = mutableStateListOf<Series>()
         var errorPrintStream: PrintStream? = null
@@ -132,6 +138,19 @@ class Core private constructor() {
             startButtonText = if (Tools.isUrl(currentUrl)) "Start" else "Search DB"
             currentUrlHint = exampleSeries
             darkMode.value = Defaults.DARK_MODE.boolean()
+            mainColor = Color(
+                Defaults.MAIN_COLOR.string().toULongOrNull()?: seedColor.value
+            )
+            var foundPaletteStyle = false
+            PaletteStyle.entries.forEach {
+                if (Defaults.MAIN_PALETTE_STYLE.string() == it.name) {
+                    mainPaletteStyle = it
+                    foundPaletteStyle = true
+                }
+            }
+            if (!foundPaletteStyle) {
+                mainPaletteStyle = PaletteStyle.TonalSpot
+            }
             reloadRandomSeries()
             initialized = true
             openUpdate(true)
@@ -167,31 +186,7 @@ class Core private constructor() {
             }
 
             //before close
-            when (currentPage) {
-                Page.DOWNLOADER -> {
-                    downloaderView.onClose()
-                }
-
-                Page.DOWNLOADS -> {
-                    downloadsView.onClose()
-                }
-
-                Page.SETTINGS -> {
-                    settingsView.onClose()
-                }
-
-                Page.HISTORY -> {
-                    historyView.onClose()
-                }
-
-                Page.RECENT -> {
-                    recentView.onClose()
-                }
-
-                Page.ERROR_CONSOLE -> {
-                    errorConsoleView.onClose()
-                }
-            }
+            currentPage.viewPage().onClose()
             //before open
             when (page) {
                 Page.SETTINGS -> {
@@ -199,7 +194,7 @@ class Core private constructor() {
                 }
 
                 Page.ERROR_CONSOLE -> {
-                    errorConsole.state.unreadErrors = false
+                    errorConsole.consoleState.unreadErrors = false
                 }
 
                 else -> {}
@@ -211,7 +206,7 @@ class Core private constructor() {
             //after open
             when (page) {
                 Page.ERROR_CONSOLE -> {
-                    errorConsole.state.unreadErrors = false
+                    errorConsole.consoleState.unreadErrors = false
                 }
 
                 else -> {}

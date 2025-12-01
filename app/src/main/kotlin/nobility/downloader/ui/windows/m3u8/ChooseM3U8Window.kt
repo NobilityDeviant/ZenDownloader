@@ -320,7 +320,6 @@ class ChooseM3U8Window(
                     }
                 }
             }
-            ApplicationState.AddToastToWindow(this)
         }
     }
 

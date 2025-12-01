@@ -70,7 +70,7 @@ class ApplicationState {
             id: String,
             triggerOnClose: Boolean = true
         ) {
-            shared.windows.forEach {
+            shared.windows.toList().forEach {
                 if (it.scope.windowId == id) {
                     it.scope.open.value = false
                     if (triggerOnClose) {
@@ -93,7 +93,7 @@ class ApplicationState {
         )
 
         @Composable
-        fun AddToastToWindow(scope: AppWindowScope) {
+        private fun Toaster(scope: AppWindowScope) {
             val toastHostState = remember { ToastHostState() }
             Box(
                 contentAlignment = Alignment.Center
@@ -124,6 +124,7 @@ class ApplicationState {
             alwaysOnTop: Boolean = false,
             windowAlignment: Alignment = Alignment.Center,
             isAssetWindow: Boolean = false,
+            addToast: Boolean = true,
             content: @Composable (AppWindowScope.() -> Unit)
         ) {
             val scope = object : AppWindowScope {
@@ -181,6 +182,9 @@ class ApplicationState {
                             }
                             CoreTheme {
                                 scope.content()
+                                if (addToast) {
+                                    Toaster(scope)
+                                }
                             }
                         }
                     )
