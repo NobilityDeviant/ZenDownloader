@@ -37,6 +37,7 @@ import javax.net.ssl.HttpsURLConnection
 
 class ImageUpdaterWindow() {
 
+
     private val seriesImageUrlTreeUrl =
         "https://api.github.com/repos/NobilityDeviant/ZenDownloaderSeriesImages/git/trees/393d8ae0809bed6043eff177ec9ab6d125c6a506"
     private val seriesImageRawUrl =

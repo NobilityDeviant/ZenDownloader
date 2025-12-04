@@ -24,7 +24,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import nobility.downloader.core.AssetBoxHelper
 import nobility.downloader.core.settings.Defaults
-import nobility.downloader.ui.components.defaultButton
+import nobility.downloader.ui.components.DefaultButton
 import nobility.downloader.ui.windows.utils.AppWindowScope
 import nobility.downloader.ui.windows.utils.ApplicationState
 import nobility.downloader.utils.Tools
@@ -115,9 +115,9 @@ class AssetUpdateWindow {
                         horizontalArrangement = Arrangement.spacedBy(4.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        defaultButton(
+                        DefaultButton(
                             "Retry",
-                            width = 150.dp
+                            modifier = Modifier.size(150.dp, 40.dp)
                         ) {
                             retry = false
                             coroutineScope.launch {
@@ -147,18 +147,18 @@ class AssetUpdateWindow {
                                 downloading = false
                             }
                         }
-                        defaultButton(
+                        DefaultButton(
                             "Continue To App",
-                            width = 150.dp
+                            modifier = Modifier.size(150.dp, 40.dp)
                         ) {
                             assetBoxHelper.close()
                             scope.closeWindow()
                         }
                     }
                 } else if (!shuttingDown) {
-                    defaultButton(
+                    DefaultButton(
                         if (downloading) "Shutdown" else "Continue To App",
-                        width = 150.dp
+                        modifier = Modifier.size(150.dp, 40.dp)
                     ) {
                         if (downloading) {
                             coroutineScope.launch(Dispatchers.Default) {

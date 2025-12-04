@@ -42,30 +42,13 @@ class UndetectedChromeDriver(
         go("https://blank.org")
     }
 
-    fun kill() {
-        try {
-            close()
-        } catch (_: Exception) {}
-        quit()
-    }
-
     override fun quit() {
         try {
             browser.destroy()
-        } catch (e: Exception) {
-            FrogLog.error(
-                "Failed to kill driver process.",
-                e
-            )
-        }
+        } catch (_: Exception) {}
         try {
             super.quit()
-        } catch (e: Exception) {
-            FrogLog.error(
-                "Failed to quit driver.",
-                e
-            )
-        }
+        } catch (_: Exception) {}
         if (!keepUserDataDir) {
             val file = File(userDataDir)
             if (file.exists()) {

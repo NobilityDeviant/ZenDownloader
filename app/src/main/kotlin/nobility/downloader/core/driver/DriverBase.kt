@@ -37,6 +37,7 @@ abstract class DriverBase(
     private val headless = headless ?: Defaults.HEADLESS_MODE.boolean()
     private val browserLogCoroutine = CoroutineScope(Dispatchers.Default)
     private val browserLogs = mutableListOf<String>()
+    private val builder = ChromeDriverBuilder()
 
 
     init {
@@ -101,10 +102,6 @@ abstract class DriverBase(
         if (userAgent.isEmpty()) {
             userAgent = UserAgents.random
         }
-        if (headless) {
-            chromeOptions.addArguments("--headless=new")
-            chromeOptions.addArguments("--window-position=-2400,-2400")
-        }
         chromeOptions.addArguments("--mute-audio")
         chromeOptions.addArguments("--user-agent=$userAgent")
         val chromePath = Defaults.CHROME_BROWSER_PATH.string()
@@ -122,17 +119,19 @@ abstract class DriverBase(
                 """.trimIndent()
             )
             System.setProperty("webdriver.chrome.driver", chromeDriverPath)
-            nDriver = ChromeDriverBuilder().build(
-                options = chromeOptions,
+            nDriver = builder.build(
+                chromeOptions = chromeOptions,
                 driverExecutablePath = chromeDriverPath,
-                binaryLocation = chromePath
+                binaryLocation = chromePath,
+                headless
             )
         } else {
             val exportedChromeDriver = System.getProperty("webdriver.chrome.driver")
             nDriver = if (exportedChromeDriver.fileExists()) {
-                ChromeDriverBuilder().build(
-                    options = chromeOptions,
-                    driverExecutablePath = exportedChromeDriver
+                builder.build(
+                    chromeOptions = chromeOptions,
+                    driverExecutablePath = exportedChromeDriver,
+                    headless = headless
                 )
             } else {
                 throw Exception("chromedriver file not found.")
@@ -199,11 +198,16 @@ abstract class DriverBase(
         }
     }
 
-
-    open fun killDriver() {
-        if (nDriver != null) {
+    fun killDriver() {
+        try {
+            builder.close()
             browserLogCoroutine.cancel()
-            undriver.kill()
+            try {
+                driver.close()
+            } catch (_: Exception) {}
+            driver.quit()
+        } catch (_: Exception) {
+        } finally {
             Core.child.runningDrivers.remove(id)
         }
     }

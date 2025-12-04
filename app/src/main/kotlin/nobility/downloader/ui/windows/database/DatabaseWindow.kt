@@ -201,7 +201,8 @@ class DatabaseWindow {
                                 hint = randomSearchHint,
                                 textStyle = MaterialTheme.typography.labelLarge,
                                 modifier = Modifier.fillMaxWidth(0.50f)
-                                    .padding(end = 10.dp).height(40.dp),
+                                    .padding(end = 10.dp)
+                                    .height(40.dp),
                                 requestFocus = true,
                                 focusRequester = focusRequester,
                                 trailingIcon = {
@@ -225,7 +226,8 @@ class DatabaseWindow {
                             Tooltip(genreTooltip) {
                                 DefaultCheckbox(
                                     searchByGenre,
-                                    modifier = Modifier.padding(top = 10.dp, bottom = 10.dp)
+                                    modifier = Modifier.padding(vertical = 10.dp)
+                                        .pointerHoverIcon(PointerIcon.Hand)
                                 ) {
                                     mSearchByGenre.value = searchByGenre.not()
                                     Defaults.DB_SEARCH_GENRE.update(mSearchByGenre.value)
@@ -239,13 +241,16 @@ class DatabaseWindow {
                                         mSearchByGenre.value = searchByGenre.not()
                                         Defaults.DB_SEARCH_GENRE.update(mSearchByGenre.value)
                                     }.padding(top = 10.dp, bottom = 15.dp)
+                                        .pointerHoverIcon(PointerIcon.Hand)
                                 )
                             }
                             val descTooltip = "Enables searching by description keywords."
                             Tooltip(descTooltip) {
                                 DefaultCheckbox(
                                     searchByDesc,
-                                    modifier = Modifier.padding(top = 10.dp, bottom = 10.dp)
+                                    modifier = Modifier
+                                        .padding(vertical = 10.dp)
+                                        .pointerHoverIcon(PointerIcon.Hand)
                                 ) {
                                     mSearchByDesc.value = searchByDesc.not()
                                     Defaults.DB_SEARCH_DESC.update(mSearchByDesc.value)
@@ -259,6 +264,7 @@ class DatabaseWindow {
                                         mSearchByDesc.value = searchByDesc.not()
                                         Defaults.DB_SEARCH_DESC.update(mSearchByDesc.value)
                                     }.padding(top = 10.dp, bottom = 15.dp)
+                                        .pointerHoverIcon(PointerIcon.Hand)
                                 )
                             }
                         }
@@ -280,7 +286,9 @@ class DatabaseWindow {
                                 DefaultButton(
                                     it.title,
                                     Modifier.size(110.dp, 35.dp)
-                                        .padding(horizontal = 2.dp),
+                                        .padding(horizontal = 2.dp)
+                                        .pointerHoverIcon(PointerIcon.Hand)
+                                    ,
                                     enabled = !loading,
                                     colors = ButtonDefaults.buttonColors(
                                         containerColor = if (type == it)

@@ -11,13 +11,13 @@ import io.github.bonigarcia.wdm.WebDriverManager
 import kotlinx.coroutines.*
 import nobility.downloader.Page
 import nobility.downloader.core.BoxHelper.Companion.string
-import nobility.downloader.core.driver.undetected_chrome.ChromeDriverBuilder
-import nobility.downloader.core.driver.undetected_chrome.UndetectedChromeDriver
+import nobility.downloader.core.driver.undetected_chrome.ChromeUtils
 import nobility.downloader.core.entities.Download
 import nobility.downloader.core.scraper.DownloadHandler
 import nobility.downloader.core.scraper.DownloadThread
 import nobility.downloader.core.scraper.MovieHandler
 import nobility.downloader.core.settings.Defaults
+import nobility.downloader.core.updates.ImageUpdateChecker
 import nobility.downloader.core.updates.UrlUpdater
 import nobility.downloader.ui.components.dialog.DialogHelper
 import nobility.downloader.ui.components.dialog.DialogHelper.showError
@@ -71,6 +71,14 @@ class CoreChild {
                     "FFmpeg or FFplay wasn't found. Opening downloader."
                 )
                 Core.openFfsetDownloaderWindow()
+            }
+            val result = ImageUpdateChecker.check()
+            if (result.data == true) {
+                FrogLog.message(
+                    """
+                        There's newly updated series images. Go into settings and click the Update Series Images button.
+                    """.trimIndent()
+                )
             }
         }
     }
@@ -219,11 +227,10 @@ class CoreChild {
             FrogLog.info("Killing driver [$key] — attempt ${attempt + 1}/$maxRetries")
             try {
                 val result = withTimeoutOrNull(killTimeout) {
-                    if (driver is UndetectedChromeDriver) {
-                        driver.kill()
-                    } else {
-                        driver.quit()
-                    }
+                    try {
+                        driver.close()
+                    } catch (_: Exception) {}
+                    driver.quit()
                     true
                 }
 
@@ -273,7 +280,7 @@ class CoreChild {
             return false
         }
 
-        if (!ChromeDriverBuilder.isDriverSetup()) {
+        if (!ChromeUtils.isDriverSetup()) {
             FrogLog.error(
                 """
                     The ChromeDriver isn't setup properly.
@@ -346,7 +353,7 @@ class CoreChild {
             return false
         }
 
-        if (!ChromeDriverBuilder.isChromeInstalled()) {
+        if (!ChromeUtils.isChromeInstalled()) {
             showError(
                 """
                     Chrome isn't installed. Install it and restart the app.
@@ -355,7 +362,7 @@ class CoreChild {
             )
             return false
         }
-        if (!ChromeDriverBuilder.isDriverSetup()) {
+        if (!ChromeUtils.isDriverSetup()) {
             showError(
                 """
                     The ChromeDriver isn't setup properly.
