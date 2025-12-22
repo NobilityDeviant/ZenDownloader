@@ -1,3 +1,11 @@
+I have decided to discontinue this project. While it was fun and I thank everybody for all their issue reports, I can't keep it up anymore.
+After a year and a half or so, It has not gained as much attention as I would have liked it to and I feel like my time is better spent somewhere else.
+WCO is a dying platform and the community isn't the best. I support piracy, but I don't support the path WCO and it's community are heading.
+
+The git will be archived, though you are allowed to do with this code as you like.
+
+Thank you all and good luck.
+
 # ZenDownloader
 
 A Kotlin & Jetpack Compose program used to download episodes, series and movies from: https://www.wcoflix.tv/
